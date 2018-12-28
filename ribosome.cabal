@@ -4,15 +4,15 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 38451771e832284e574a55d58f4ae89e59165af3e7a76d412295e3320f47866e
+-- hash: 3044c78924fbc3f752664beb04fcb36f3821d795c7a8fc89a0ecdfa32e894805
 
 name:           ribosome
 version:        0.1.0.0
-synopsis:       neovim api extensions
+synopsis:       api extensions for nvim-hs
 description:    Please see the README on GitHub at <https://github.com/tek/proteome-hs>
 category:       Neovim
-homepage:       https://github.com/tek/proteome-hs#readme
-bug-reports:    https://github.com/tek/proteome-hs/issues
+homepage:       https://github.com/tek/ribosome-hs#readme
+bug-reports:    https://github.com/tek/ribosome-hs/issues
 author:         Torsten Schmits
 maintainer:     tek@tryp.io
 copyright:      2018 Torsten Schmits
@@ -22,7 +22,7 @@ build-type:     Simple
 
 source-repository head
   type: git
-  location: https://github.com/tek/proteome-hs
+  location: https://github.com/tek/ribosome-hs
 
 library
   exposed-modules:
