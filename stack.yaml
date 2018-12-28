@@ -1,0 +1,6 @@
+resolver: lts-12.21
+packages:
+- .
+extra-deps:
+- strings-1.1
+- pretty-terminal-0.1.0.0

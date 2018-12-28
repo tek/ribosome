@@ -1,0 +1,68 @@
+name: ribosome
+version: 0.1.0.0
+synopsis: api extensions for nvim-hs
+description: Please see the README on GitHub at <https://github.com/tek/proteome-hs>
+github: "tek/ribosome-hs"
+license: MIT
+license-file: LICENSE
+author: "Torsten Schmits"
+maintainer: "tek@tryp.io"
+copyright: "2018 Torsten Schmits"
+category: Neovim
+build-type: Simple
+
+dependencies:
+- base >= 4.7 && < 5
+- unliftio
+- nvim-hs
+- utf8-string
+- split
+- time
+- prettyprinter
+- containers
+- filepath
+- resourcet
+- mtl
+- deepseq
+- messagepack
+- strings
+- text
+- pretty-terminal
+- ansi-terminal
+- hslogger
+- directory
+- process
+- stm
+- lens
+- data-default-class
+- MissingH
+- aeson
+- bytestring
+- transformers
+- safe
+- either
+
+library:
+  source-dirs: lib
+
+tests:
+  ribosome-unit:
+    main: SpecMain.hs
+    source-dirs: test/u
+    ghc-options:
+    - -threaded
+    - -rtsopts
+    - -with-rtsopts=-N
+    dependencies:
+    - ribosome
+    - HTF
+  ribosome-functional:
+    main: SpecMain.hs
+    source-dirs: test/f
+    ghc-options:
+    - -threaded
+    - -rtsopts
+    - -with-rtsopts=-N
+    dependencies:
+    - ribosome
+    - HTF
