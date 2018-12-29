@@ -3,6 +3,8 @@ module Ribosome.Data.ScratchOptions(
   defaultScratchOptions,
 ) where
 
+import Data.Default.Class (Default(def))
+
 data ScratchOptions =
   ScratchOptions {
     tab :: Bool,
@@ -14,3 +16,6 @@ data ScratchOptions =
 
 defaultScratchOptions :: String -> ScratchOptions
 defaultScratchOptions = ScratchOptions False False Nothing False
+
+instance Default ScratchOptions where
+  def = defaultScratchOptions "scratch"
