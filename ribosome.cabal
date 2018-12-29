@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 3044c78924fbc3f752664beb04fcb36f3821d795c7a8fc89a0ecdfa32e894805
+-- hash: 8a5a74f5f6cfa5d6bad73cbd66aede05096115328ebc40bd67eb96c5f00d4d45
 
 name:           ribosome
 version:        0.1.0.0
@@ -137,6 +137,7 @@ test-suite ribosome-unit
   type: exitcode-stdio-1.0
   main-is: SpecMain.hs
   other-modules:
+      ScratchSpec
       Paths_ribosome
   hs-source-dirs:
       test/u
