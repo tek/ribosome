@@ -1,3 +1,5 @@
+{-# LANGUAGE DefaultSignatures #-}
+
 module Ribosome.Internal.NvimObject(
   deriveString,
   extractObject,

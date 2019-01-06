@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 473e4deafa3bb3e51b7612893daa51020a229009cef026ee00b9974d477e32a0
+-- hash: 527e50f656885bbfba09f630f35eb03d17378d1449906d43f06dccd0f1ae0a5e
 
 name:           ribosome
 version:        0.1.2.0
@@ -48,6 +48,9 @@ library
       Ribosome.Internal.NvimObject
       Ribosome.Log
       Ribosome.Monad
+      Ribosome.Msgpack.Decode
+      Ribosome.Msgpack.Encode
+      Ribosome.Msgpack.Util
       Ribosome.Persist
       Ribosome.Scratch
       Ribosome.Test.Embed
@@ -60,6 +63,7 @@ library
       Paths_ribosome
   hs-source-dirs:
       lib
+  default-extensions: ExistentialQuantification UnicodeSyntax TypeApplications ScopedTypeVariables DeriveGeneric DeriveAnyClass
   build-depends:
       MissingH
     , aeson
@@ -79,6 +83,7 @@ library
     , nvim-hs
     , pretty-terminal
     , prettyprinter
+    , prettyprinter-ansi-terminal
     , process
     , resourcet
     , safe
@@ -99,6 +104,7 @@ test-suite ribosome-functional
       Paths_ribosome
   hs-source-dirs:
       test/f
+  default-extensions: ExistentialQuantification UnicodeSyntax TypeApplications ScopedTypeVariables DeriveGeneric DeriveAnyClass
   ghc-options: -threaded -rtsopts -with-rtsopts=-N
   build-depends:
       HTF
@@ -120,6 +126,7 @@ test-suite ribosome-functional
     , nvim-hs
     , pretty-terminal
     , prettyprinter
+    , prettyprinter-ansi-terminal
     , process
     , resourcet
     , ribosome
@@ -138,10 +145,12 @@ test-suite ribosome-unit
   type: exitcode-stdio-1.0
   main-is: SpecMain.hs
   other-modules:
+      MsgpackSpec
       ScratchSpec
       Paths_ribosome
   hs-source-dirs:
       test/u
+  default-extensions: ExistentialQuantification UnicodeSyntax TypeApplications ScopedTypeVariables DeriveGeneric DeriveAnyClass
   ghc-options: -threaded -rtsopts -with-rtsopts=-N
   build-depends:
       HTF
@@ -163,6 +172,7 @@ test-suite ribosome-unit
     , nvim-hs
     , pretty-terminal
     , prettyprinter
+    , prettyprinter-ansi-terminal
     , process
     , resourcet
     , ribosome

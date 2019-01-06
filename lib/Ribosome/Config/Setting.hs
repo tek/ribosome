@@ -4,8 +4,11 @@ module Ribosome.Config.Setting(
   settingE,
   updateSetting,
   settingVariableName,
+  settingOr,
+  settingMaybe,
 ) where
 
+import Data.Either (fromRight)
 import Neovim
 import Ribosome.Control.Ribo (Ribo)
 import qualified Ribosome.Control.Ribosome as R (name)
@@ -36,9 +39,17 @@ settingE s@(Setting _ _ fallback') = do
 setting :: NvimObject a => Setting a -> Ribo e a
 setting s = do
   raw <- settingE s
-  case raw of
-    Right o -> return o
-    Left e -> fail e
+  either fail return raw
+
+settingOr :: NvimObject a => a -> Setting a -> Ribo e a
+settingOr a s = do
+  raw <- settingE s
+  return $ fromRight a raw
+
+settingMaybe :: NvimObject a => Setting a -> Ribo e (Maybe a)
+settingMaybe s = do
+  raw <- settingE s
+  return $ either (const Nothing) Just raw
 
 updateSetting :: NvimObject a => Setting a -> a -> Ribo e ()
 updateSetting s a = do

@@ -41,6 +41,16 @@ dependencies:
 - transformers
 - safe
 - either
+- prettyprinter
+- prettyprinter-ansi-terminal
+
+default-extensions:
+- ExistentialQuantification
+- UnicodeSyntax
+- TypeApplications
+- ScopedTypeVariables
+- DeriveGeneric
+- DeriveAnyClass
 
 library:
   source-dirs: lib
