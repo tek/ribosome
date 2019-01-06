@@ -24,11 +24,11 @@ import GHC.Generics (
   from,
   conIsRecord,
   )
-import Data.Bifunctor (first, bimap)
+import Data.Bifunctor (bimap)
 import Data.Map.Strict (Map)
 import qualified Data.Map.Strict as Map (fromList, toList)
 import Data.MessagePack (Object(..))
-import qualified Ribosome.Msgpack.Util as Util (string)
+import qualified Ribosome.Msgpack.Util as Util (string, assembleMap)
 
 class MsgpackEncode a where
   toMsgpack :: a -> Object
@@ -45,14 +45,11 @@ class MsgpackEncodeProd f where
 instance GMsgpackEncode f => GMsgpackEncode (D1 c f) where
   gMsgpackEncode = gMsgpackEncode . unM1
 
-assembleMap :: [(String, Object)] -> Object
-assembleMap = ObjectMap . Map.fromList . (fmap . first) Util.string
-
 instance (Constructor c, MsgpackEncodeProd f) => GMsgpackEncode (C1 c f) where
   gMsgpackEncode c =
     f $ unM1 c
     where
-      f = if conIsRecord c then assembleMap . msgpackEncodeRecord else ObjectArray . msgpackEncodeProd
+      f = if conIsRecord c then Util.assembleMap . msgpackEncodeRecord else ObjectArray . msgpackEncodeProd
 
 instance (MsgpackEncodeProd f, MsgpackEncodeProd g) => MsgpackEncodeProd (f :*: g) where
   msgpackEncodeRecord (f :*: g) = msgpackEncodeRecord f ++ msgpackEncodeRecord g
