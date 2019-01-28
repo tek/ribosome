@@ -4,7 +4,6 @@ module RiboSpec(
   htf_thisModulesTests,
 ) where
 
-import Control.Newtype (under)
 import Control.Monad.IO.Class (liftIO)
 import Data.Bifunctor (Bifunctor(..))
 import Data.Default.Class (Default(def))
