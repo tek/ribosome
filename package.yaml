@@ -45,12 +45,15 @@ dependencies:
 - prettyprinter-ansi-terminal
 
 default-extensions:
-- ExistentialQuantification
-- UnicodeSyntax
-- TypeApplications
-- ScopedTypeVariables
 - DeriveGeneric
-- DeriveAnyClass
+- ExistentialQuantification
+- FlexibleContexts
+- FlexibleInstances
+- GeneralizedNewtypeDeriving
+- ScopedTypeVariables
+- TypeApplications
+- TypeSynonymInstances
+- UnicodeSyntax
 
 library:
   source-dirs: lib
