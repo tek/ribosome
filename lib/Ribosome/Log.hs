@@ -2,6 +2,7 @@ module Ribosome.Log(
   debug,
   info,
   p,
+  prefixed,
 ) where
 
 import Control.Monad.IO.Class (MonadIO, liftIO)
@@ -15,3 +16,6 @@ info name message = liftIO $ infoM name $ show message
 
 p :: (MonadIO m, Show a) => a -> m ()
 p = liftIO . print
+
+prefixed :: (MonadIO m, Show a) => String -> a -> m ()
+prefixed prefix a = liftIO $ putStrLn $ prefix ++ ": " ++ show a
