@@ -1,3 +1,4 @@
+{-# OPTIONS_GHC -fno-warn-orphans #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE UndecidableInstances #-}
@@ -15,27 +16,20 @@ module Ribosome.Control.Monad.Ribo(
   unsafeToNeovim,
 ) where
 
-import Control.Concurrent.STM.TVar (modifyTVar, swapTVar)
-import qualified Control.Lens as Lens (view, over, at)
-import Control.Newtype (Newtype(..))
-import Control.Monad.IO.Class (MonadIO, liftIO)
+import Control.Concurrent.STM.TVar (swapTVar)
 import Control.Monad.Error.Class (MonadError(..))
 import Control.Monad.State (MonadState(..))
-import Control.Monad.Trans.Class (MonadTrans(..))
 import Control.Monad.Trans.Except (ExceptT(ExceptT), runExceptT, mapExceptT)
 import qualified Control.Monad.Trans.Except as Except (catchE)
 import Data.Bifunctor (Bifunctor(..))
 import Data.Either.Combinators (mapLeft)
 import Data.Functor (void)
-import qualified Data.Map.Strict as Map (insert)
-import UnliftIO (finally)
 import UnliftIO.Exception (throwString)
-import UnliftIO.STM (TVar, TMVar, atomically, readTVarIO, newTMVarIO, tryTakeTMVar, tryPutTMVar)
+import UnliftIO.STM (TVar, atomically, readTVarIO)
 import Neovim (ask)
 import Neovim.Context.Internal (Neovim(Neovim))
-import Ribosome.Control.Ribosome (Ribosome(Ribosome), Locks)
+import Ribosome.Control.Ribosome (Ribosome)
 import qualified Ribosome.Control.Ribosome as Ribosome (env)
-import qualified Ribosome.Control.Ribosome as Ribosome (_locks, locks)
 
 type Ribo e = Neovim (Ribosome e)
 
