@@ -1,4 +1,5 @@
 {-# OPTIONS_GHC -F -pgmF htfpp #-}
+{-# LANGUAGE DeriveAnyClass #-}
 
 module MsgpackSpec(
   htf_thisModulesTests
