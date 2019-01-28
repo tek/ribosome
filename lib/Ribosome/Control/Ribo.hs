@@ -1,14 +1,17 @@
 module Ribosome.Control.Ribo(
   Ribo,
   state,
+  swap,
+  put,
   inspect,
   modify,
   name,
   lockOrSkip,
 ) where
 
-import Control.Concurrent.STM.TVar (modifyTVar)
+import Control.Concurrent.STM.TVar (modifyTVar, swapTVar)
 import qualified Control.Lens as Lens (view, over, at)
+import Data.Functor (void)
 import qualified Data.Map.Strict as Map (insert)
 import UnliftIO (finally)
 import UnliftIO.STM (TVar, TMVar, atomically, readTVarIO, newTMVarIO, tryTakeTMVar, tryPutTMVar)
@@ -22,6 +25,14 @@ state :: Ribo (TVar e) e
 state = do
   Ribosome _ _ t <- ask
   readTVarIO t
+
+swap :: e -> Ribo (TVar e) e
+swap newState = do
+  Ribosome _ _ t <- ask
+  atomically $ swapTVar t newState
+
+put :: e -> Ribo (TVar e) ()
+put = void . swap
 
 inspect :: (e -> a) -> Ribo (TVar e) a
 inspect f = fmap f state
