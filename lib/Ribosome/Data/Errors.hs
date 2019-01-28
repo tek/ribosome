@@ -17,11 +17,11 @@ data Error =
     errorTimestamp :: Int,
     errorMessage :: [String]
   }
-  deriving Show
+  deriving (Eq, Show)
 
 newtype Errors =
   Errors (Map ComponentName [Error])
-  deriving Show
+  deriving (Eq, Show)
 
 instance Default Errors where
   def = Errors Map.empty
