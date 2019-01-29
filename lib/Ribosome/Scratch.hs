@@ -54,8 +54,8 @@ createScratchUi False vertical wrap size =
 
 configureScratchBuffer :: Buffer -> String -> Neovim e ()
 configureScratchBuffer buffer name = do
-  buffer_set_option' buffer "buftype" (toObject "nofile")
-  buffer_set_option' buffer "bufhidden" (toObject "wipe")
+  buffer_set_option' buffer "buftype" (toObject ("nofile" :: String))
+  buffer_set_option' buffer "bufhidden" (toObject ("wipe" :: String))
   buffer_set_name' buffer name
 
 setupScratchBuffer :: Window -> String -> Neovim e Buffer

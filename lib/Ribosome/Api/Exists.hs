@@ -9,7 +9,7 @@ module Ribosome.Api.Exists(
 
 import Data.Default.Class (Default(def))
 import Data.Either (isRight)
-import Data.Text.Prettyprint.Doc ((<+>), viaShow)
+import Data.Text.Prettyprint.Doc ((<+>), viaShow, prettyList)
 import Data.Time.Clock.POSIX (getPOSIXTime)
 import Control.Monad.IO.Class (MonadIO, liftIO)
 import Control.Concurrent (threadDelay)
@@ -70,7 +70,7 @@ waitFor thunk check' =
 
 existsResult :: Object -> Either (Doc AnsiStyle) ()
 existsResult (ObjectInt 1) = Right ()
-existsResult a = Left $ viaShow "weird return type " <+> viaShow a
+existsResult a = Left $ prettyList "weird return type " <+> viaShow a
 
 vimExists :: String -> Neovim e Object
 vimExists entity =

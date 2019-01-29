@@ -14,7 +14,7 @@ deriveString cons o = fmap cons (fromObject o :: Either (Doc AnsiStyle) String)
 
 objectKeyMissing :: String -> Maybe Object -> Either (Doc AnsiStyle) Object
 objectKeyMissing _ (Just o) = Right o
-objectKeyMissing key Nothing = Left (pretty "missing key in nvim data:" <+> pretty key)
+objectKeyMissing key Nothing = Left (pretty ("missing key in nvim data:" :: String) <+> pretty key)
 
 extractObject :: NvimObject o => String -> Map Object Object -> Either (Doc AnsiStyle) o
 extractObject key data' = do
