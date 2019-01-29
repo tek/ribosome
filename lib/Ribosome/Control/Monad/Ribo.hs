@@ -1,18 +1,15 @@
-{-# OPTIONS_GHC -fno-warn-orphans #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE UndecidableInstances #-}
 {-# LANGUAGE DeriveFunctor #-}
 {-# LANGUAGE RankNTypes #-}
-{-# LANGUAGE StandaloneDeriving #-}
-{-# LANGUAGE KindSignatures #-}
+{-# LANGUAGE FunctionalDependencies #-}
 
 module Ribosome.Control.Monad.Ribo(
   Ribo,
-  state,
-  put,
   RiboT(..),
   MonadRibo(..),
+  MonadRiboError(..),
   unsafeToNeovim,
 ) where
 
@@ -43,27 +40,33 @@ instance Bifunctor (RiboT s) where
 
   second = fmap
 
-class Monad (t s e) => MonadRibo s e t where
-  nvim :: Neovim (Ribosome (TVar s)) a -> t s e a
-  asNeovim :: t s e a -> Neovim (Ribosome (TVar s)) (Either e a)
-  liftEither :: (Either e a) -> t s e a
-  catchE :: (e -> t s e' a) -> t s e a -> t s e' a
+class MonadRibo s e m | m -> s, m -> e where
+  nvim :: Neovim (Ribosome (TVar s)) a -> m a
+  asNeovim :: m a -> Neovim (Ribosome (TVar s)) (Either e a)
 
-instance MonadRibo s e RiboT where
+class Monad (t e) => MonadRiboError e t where
+  liftEither :: Either e a -> t e a
+  mapE :: (e -> e') -> t e a -> t e' a
+  catchE :: (e -> t e' a) -> t e a -> t e' a
+
+instance MonadRibo s e (RiboT s e) where
   nvim = RiboT . ExceptT . fmap Right
   asNeovim = runExceptT . unRiboT
-  liftEither = RiboT . ExceptT . return
-  catchE f = RiboT . (flip Except.catchE) (unRiboT . f) . unRiboT
 
-instance (Monad (t s e), MonadRibo s e t) => MonadError e (t s e) where
+instance MonadRiboError e (RiboT s) where
+  liftEither = RiboT . ExceptT . return
+  mapE f = RiboT . mapExceptT (fmap $ mapLeft f) . unRiboT
+  catchE f = RiboT . flip Except.catchE (unRiboT . f) . unRiboT
+
+instance MonadError e (RiboT s e) where
   throwError = liftEither . Left
   catchError = flip catchE
 
-stateTVar :: (MonadRibo s e t) => t s e (TVar s)
+stateTVar :: (Functor m, MonadRibo s e m) => m (TVar s)
 stateTVar =
   Ribosome.env <$> nvim ask
 
-instance (MonadRibo s e t) => MonadState s (t s e) where
+instance MonadState s (RiboT s e) where
   get = do
     t <- stateTVar
     nvim $ readTVarIO t
@@ -71,7 +74,7 @@ instance (MonadRibo s e t) => MonadState s (t s e) where
     t <- stateTVar
     void $ nvim $ atomically $ swapTVar t newState
 
-unsafeToNeovim :: (MonadRibo s e t, Show e) => t s e a -> Neovim (Ribosome (TVar s)) a
+unsafeToNeovim :: (MonadRibo s e m, Show e) => m a -> Neovim (Ribosome (TVar s)) a
 unsafeToNeovim ra = do
   r <- asNeovim ra
   either (throwString . show) return r

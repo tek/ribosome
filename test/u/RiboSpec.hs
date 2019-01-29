@@ -26,10 +26,10 @@ rib = do
 
 riboSpec :: Ribo (TVar Env) ()
 riboSpec = do
-  let lines = ["line 1", "line 2"]
-  _ <- setCurrentBufferContent lines
+  let target = ["line 1", "line 2"]
+  _ <- setCurrentBufferContent target
   content <- unsafeToNeovim $ first (const ()) rib
-  liftIO $ assertEqual lines content
+  liftIO $ assertEqual target content
 
 test_ribo :: IO ()
 test_ribo = do
