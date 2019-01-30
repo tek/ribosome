@@ -80,10 +80,6 @@ instance (MonadTrans t, Monad (t (Ribo s))) => MonadState s (RiboT t s e) where
     t <- stateTVar
     void $ nvim $ atomically $ swapTVar t newState
 
--- instance (Monad (t (Ribo s))) => MonadError e (RiboT t s e) where
---   throwError = liftEither . Left
---   catchError = flip catchE
-
 instance (Functor (t (Ribo s))) => Bifunctor (RiboT t s) where
   first = mapE
   second = fmap
