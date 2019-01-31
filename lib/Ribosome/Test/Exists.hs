@@ -1,19 +1,13 @@
 module Ribosome.Test.Exists(
   waitForPlugin,
-  sleep,
 ) where
 
-import Data.Time.Clock.POSIX
-import Data.Strings (strCapitalize)
-import Control.Monad.IO.Class
 import Control.Concurrent (threadDelay)
+import Control.Monad.IO.Class
+import Data.Strings (strCapitalize)
 import Neovim
 
-epochSeconds :: MonadIO f => f Int
-epochSeconds = liftIO $ fmap round getPOSIXTime
-
-sleep :: MonadIO f => Double -> f ()
-sleep seconds = liftIO $ threadDelay $ round $ seconds * 10e6
+import Ribosome.Data.Time (epochSeconds, sleep)
 
 retry :: MonadIO f => Double -> Int -> f a -> (a -> f (Either String b)) -> f b
 retry interval timeout thunk check = do

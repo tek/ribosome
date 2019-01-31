@@ -1,18 +1,14 @@
 module Ribosome.Api.Exists(
-  sleep,
   retry,
   waitForFunction,
   vimDoesExist,
   function,
-  epochSeconds,
 ) where
 
-import Data.Default.Class (Default(def))
+import Control.Monad.IO.Class (MonadIO, liftIO)
+import Data.Default (Default(def))
 import Data.Either (isRight)
 import Data.Text.Prettyprint.Doc ((<+>), viaShow, prettyList)
-import Data.Time.Clock.POSIX (getPOSIXTime)
-import Control.Monad.IO.Class (MonadIO, liftIO)
-import Control.Concurrent (threadDelay)
 import Neovim (
   Neovim,
   NvimObject,
@@ -24,18 +20,14 @@ import Neovim (
   vim_call_function',
   )
 
+import Ribosome.Data.Time (epochSeconds, sleep)
+
 data Retry =
   Retry Int Double
   deriving Show
 
 instance Default Retry where
   def = Retry 3 0.1
-
-epochSeconds :: MonadIO f => f Int
-epochSeconds = liftIO $ fmap round getPOSIXTime
-
-sleep :: MonadIO f => Double -> f ()
-sleep seconds = liftIO $ threadDelay $ round $ seconds * 10e6
 
 retry :: MonadIO f => f a -> (a -> f (Either c b)) -> Retry -> f (Either c b)
 retry thunk check (Retry timeout interval) = do
