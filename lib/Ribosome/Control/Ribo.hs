@@ -7,6 +7,8 @@ module Ribosome.Control.Ribo(
   modify,
   name,
   lockOrSkip,
+  prepend,
+  modifyL,
   riboInternal,
   getErrors,
   inspectErrors,
@@ -14,14 +16,17 @@ module Ribosome.Control.Ribo(
 ) where
 
 import Control.Concurrent.STM.TVar (modifyTVar, swapTVar)
+import Control.Lens (Lens')
 import qualified Control.Lens as Lens (view, over, at)
 import Data.Functor (void)
 import qualified Data.Map.Strict as Map (insert)
+import Neovim (Neovim, ask)
 import UnliftIO (finally)
 import UnliftIO.STM (TVar, TMVar, atomically, readTVarIO, newTMVarIO, tryTakeTMVar, tryPutTMVar)
-import Neovim (Neovim, ask)
-import Ribosome.Control.Ribosome (Ribosome(Ribosome), Locks)
-import qualified Ribosome.Control.Ribosome as Ribosome (_locks, locks)
+
+import Ribosome.Control.Ribosome (Ribosome(Ribosome), Locks, RibosomeInternal)
+import qualified Ribosome.Control.Ribosome as Ribosome (_locks, locks, errors, _errors)
+import Ribosome.Data.Errors (Errors)
 
 type Ribo e = Neovim (Ribosome e)
 
@@ -45,6 +50,14 @@ modify :: (e -> e) -> Ribo (TVar e) ()
 modify f = do
   Ribosome _ _ t <- ask
   atomically $ modifyTVar t f
+
+modifyL :: Lens' s a -> (a -> a) -> Ribo (TVar s) ()
+modifyL lens f =
+  modify $ Lens.over lens f
+
+prepend :: Lens' s [a] -> a -> Ribo (TVar s) ()
+prepend lens a =
+  modifyL lens (a :)
 
 name :: Ribo e String
 name = do
