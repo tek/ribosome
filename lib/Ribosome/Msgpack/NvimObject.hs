@@ -1,5 +1,6 @@
 module Ribosome.Msgpack.NvimObject(
   NO(..),
+  (-$),
 ) where
 
 import Control.DeepSeq (NFData)
@@ -15,3 +16,6 @@ newtype NO a =
 instance (MsgpackEncode a, MsgpackDecode a, NFData a) => NvimObject (NO a) where
   toObject (NO a) = toMsgpack a
   fromObject a = NO <$> fromMsgpack a
+
+(-$) :: (NO a -> b) -> a -> b
+(-$) f a = f (NO a)
