@@ -14,9 +14,9 @@ module Ribosome.Control.Monad.RiboE(
 
 import Control.Monad (join)
 import Control.Monad.Error.Class (MonadError(..))
-import Control.Monad.Trans.Except (ExceptT(ExceptT), mapExceptT, runExceptT)
-import Control.Monad.Trans.Class
 import Control.Monad.IO.Class (MonadIO)
+import Control.Monad.Trans.Class
+import Control.Monad.Trans.Except (ExceptT(ExceptT), mapExceptT, runExceptT)
 import Data.Either.Combinators (mapLeft)
 import Neovim.Context.Internal (Neovim)
 import UnliftIO.STM (TVar)
@@ -39,12 +39,12 @@ liftRibo = RiboE . lift
 runRiboE :: RiboE s e a -> Ribo s (Either e a)
 runRiboE = runExceptT . unRiboE
 
-runRiboReport :: ReportError e => RiboE s e () -> Ribo s ()
-runRiboReport ma = do
+runRiboReport :: ReportError e => String -> RiboE s e () -> Ribo s ()
+runRiboReport componentName ma = do
   result <- runRiboE ma
   case result of
     Right _ -> return ()
-    Left e -> reportError e
+    Left e -> reportError componentName e
 
 mapE :: (e -> e') -> RiboE s e a -> RiboE s e' a
 mapE f =

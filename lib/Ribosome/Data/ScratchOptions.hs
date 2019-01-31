@@ -3,7 +3,7 @@ module Ribosome.Data.ScratchOptions(
   defaultScratchOptions,
 ) where
 
-import Data.Default.Class (Default(def))
+import Data.Default (Default(def))
 
 data ScratchOptions =
   ScratchOptions {

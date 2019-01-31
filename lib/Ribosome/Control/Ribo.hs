@@ -7,6 +7,10 @@ module Ribosome.Control.Ribo(
   modify,
   name,
   lockOrSkip,
+  riboInternal,
+  getErrors,
+  inspectErrors,
+  modifyErrors,
 ) where
 
 import Control.Concurrent.STM.TVar (modifyTVar, swapTVar)
@@ -47,11 +51,14 @@ name = do
   Ribosome n _ _ <- ask
   return n
 
-getLocks :: Ribo e Locks
-getLocks = do
+riboInternal :: Ribo d RibosomeInternal
+riboInternal = do
   Ribosome _ intTv _ <- ask
-  int <- readTVarIO intTv
-  return $ Ribosome.locks int
+  readTVarIO intTv
+
+getLocks :: Ribo e Locks
+getLocks =
+  Ribosome.locks <$> riboInternal
 
 inspectLocks :: (Locks -> a) -> Ribo e a
 inspectLocks f = fmap f getLocks
@@ -60,6 +67,18 @@ modifyLocks :: (Locks -> Locks) -> Ribo e ()
 modifyLocks f = do
   Ribosome _ intTv _ <- ask
   atomically $ modifyTVar intTv $ Lens.over Ribosome._locks f
+
+getErrors :: Ribo e Errors
+getErrors =
+  Ribosome.errors <$> riboInternal
+
+inspectErrors :: (Errors -> a) -> Ribo e a
+inspectErrors f = fmap f getErrors
+
+modifyErrors :: (Errors -> Errors) -> Ribo e ()
+modifyErrors f = do
+  Ribosome _ intTv _ <- ask
+  atomically $ modifyTVar intTv $ Lens.over Ribosome._errors f
 
 getOrCreateLock :: String -> Ribo e (TMVar ())
 getOrCreateLock key = do

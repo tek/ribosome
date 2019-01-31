@@ -1,12 +1,20 @@
+{-# LANGUAGE TemplateHaskell #-}
+
 module Ribosome.Data.Errors(
   ComponentName(..),
-  Error(..),
   Errors(..),
+  Error(..),
+  componentErrors,
+  timestamp,
+  report,
 ) where
 
-import qualified Data.Map as Map
-import Data.Default.Class (Default(def))
+import Control.Lens (makeClassy)
+import Data.Default (Default(def))
 import Data.Map.Strict (Map)
+import Prelude hiding (error)
+
+import Ribosome.Data.ErrorReport (ErrorReport)
 
 newtype ComponentName =
   ComponentName String
@@ -14,14 +22,17 @@ newtype ComponentName =
 
 data Error =
   Error {
-    errorTimestamp :: Int,
-    errorMessage :: [String]
+    _timestamp :: Int,
+    _report :: ErrorReport
   }
   deriving (Eq, Show)
 
-newtype Errors =
-  Errors (Map ComponentName [Error])
-  deriving (Eq, Show)
+makeClassy ''Error
 
-instance Default Errors where
-  def = Errors Map.empty
+newtype Errors =
+  Errors {
+    _componentErrors :: Map ComponentName [Error]
+    }
+  deriving (Eq, Show, Default)
+
+makeClassy ''Errors

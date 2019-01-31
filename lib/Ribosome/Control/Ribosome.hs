@@ -5,25 +5,30 @@
 
 module Ribosome.Control.Ribosome(
   Ribosome (..),
-  newRibosome,
   RibosomeInternal (..),
-  _internal,
-  _locks,
   Locks,
+  newRibosome,
+  _locks,
+  _errors,
   newInternalTVar,
+  _internal,
 ) where
 
 import Control.Lens (makeClassy_)
-import UnliftIO.STM (TVar, newTVarIO, TMVar)
 import Control.Monad.IO.Class (MonadIO)
+import Data.Default (def)
 import Data.Map.Strict (Map)
 import qualified Data.Map.Strict as Map (empty)
+import UnliftIO.STM (TVar, newTVarIO, TMVar)
+
+import Ribosome.Data.Errors (Errors)
 
 type Locks = Map String (TMVar ())
 
-newtype RibosomeInternal =
+data RibosomeInternal =
   RibosomeInternal {
-    locks :: Locks
+    locks :: Locks,
+    errors :: Errors
   }
 makeClassy_ ''RibosomeInternal
 
@@ -36,7 +41,7 @@ data Ribosome e =
 makeClassy_ ''Ribosome
 
 newInternalTVar :: MonadIO m => m (TVar RibosomeInternal)
-newInternalTVar = newTVarIO (RibosomeInternal Map.empty)
+newInternalTVar = newTVarIO (RibosomeInternal Map.empty def)
 
 newRibosome :: MonadIO m => String -> e -> m (Ribosome (TVar e))
 newRibosome name' env' = do

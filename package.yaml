@@ -34,7 +34,7 @@ dependencies:
 - process
 - stm
 - lens
-- data-default-class
+- data-default
 - MissingH
 - aeson
 - bytestring

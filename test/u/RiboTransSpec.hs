@@ -6,10 +6,11 @@ module RiboTransSpec(
 
 import Control.Monad.IO.Class
 import Control.Monad.Trans.Reader
-import Data.Default.Class (Default(def))
-import Test.Framework
+import Data.Default (Default(def))
 import Neovim
+import Test.Framework
 import UnliftIO.STM
+
 import Ribosome.Api.Buffer
 import Ribosome.Control.Monad.Trans.Ribo
 import Ribosome.Test.Unit (unitSpec)

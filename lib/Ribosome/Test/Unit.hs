@@ -7,11 +7,11 @@ module Ribosome.Test.Unit(
 ) where
 
 import Control.Monad.IO.Class (MonadIO)
-import System.FilePath (takeDirectory, takeFileName, (</>))
 import Neovim (Neovim)
 import Ribosome.Control.Ribo (Ribo)
 import Ribosome.Test.Embed (TestConfig(..), setupPluginEnv, unsafeEmbeddedSpec)
 import qualified Ribosome.Test.File as F (tempDir, fixture)
+import System.FilePath (takeDirectory, takeFileName, (</>))
 
 uPrefix :: String
 uPrefix = "u"

@@ -8,24 +8,41 @@ module Ribosome.Error.Report(
   reportErrorOr_,
 ) where
 
+import qualified Control.Lens as Lens (over)
 import Control.Monad.IO.Class (liftIO)
 import Data.Foldable (traverse_)
-import System.Log (Priority)
-import System.Log.Logger (logM)
+import qualified Data.Map as Map (alter)
+import System.Log.Logger (logM, Priority(NOTICE, DEBUG))
+
 import Ribosome.Api.Echo (echom)
 import Ribosome.Control.Monad.Ribo (Ribo)
-import qualified Ribosome.Control.Ribo as Ribo (name)
-
-data ErrorReport =
-  ErrorReport {
-    errorReportUser :: String,
-    errorReportLog :: [String],
-    errorReportPriority :: Priority
-  }
-  deriving (Eq, Show)
+import qualified Ribosome.Control.Ribo as Ribo (modify, name, modifyErrors)
+import Ribosome.Data.Errors (Errors(Errors), ComponentName(ComponentName), Error(Error))
+import Ribosome.Data.ErrorReport (ErrorReport(ErrorReport))
+import Ribosome.Data.Time (epochSeconds)
 
 class ReportError a where
   errorReport :: a -> ErrorReport
+
+instance ReportError [Char] where
+  errorReport msg = ErrorReport msg [msg] NOTICE
+
+instance ReportError [[Char]] where
+  errorReport (msg:extra) = ErrorReport msg (msg:extra) NOTICE
+  errorReport [] = ErrorReport "empty error" ["empty error"] DEBUG
+
+storeError' :: Int -> String -> ErrorReport -> Errors -> Errors
+storeError' time name report (Errors errors) =
+  Errors (Map.alter alter (ComponentName name) errors)
+  where
+    err = Error time report
+    alter Nothing = Just [err]
+    alter (Just current) = Just (err:current)
+
+storeError :: String -> ErrorReport -> Ribo d ()
+storeError name e = do
+  time <- epochSeconds
+  Ribo.modifyErrors $ storeError' time name e
 
 logErrorReport :: ErrorReport -> Ribo d ()
 logErrorReport (ErrorReport user logMsgs prio) = do
@@ -33,16 +50,21 @@ logErrorReport (ErrorReport user logMsgs prio) = do
   liftIO $ traverse_ (logM name prio) logMsgs
   echom user
 
-reportErrorWith :: (a -> ErrorReport) -> a -> Ribo d ()
-reportErrorWith cons =
-  logErrorReport . cons
+reportErrorWith :: String -> (a -> ErrorReport) -> a -> Ribo d ()
+reportErrorWith name cons err = do
+  storeError name report
+  logErrorReport report
+  where
+    report = cons err
 
-reportError :: ReportError a => a -> Ribo d ()
-reportError =
-  reportErrorWith errorReport
+reportError :: ReportError a => String -> a -> Ribo d ()
+reportError name =
+  reportErrorWith name errorReport
 
-reportErrorOr :: ReportError e => (a -> Ribo d ()) -> Either e a -> Ribo d ()
-reportErrorOr = either reportError
+reportErrorOr :: ReportError e => String -> (a -> Ribo d ()) -> Either e a -> Ribo d ()
+reportErrorOr name =
+  either $ reportError name
 
-reportErrorOr_ :: ReportError e => Ribo d () -> Either e a -> Ribo d ()
-reportErrorOr_ = reportErrorOr . const
+reportErrorOr_ :: ReportError e => String -> Ribo d () -> Either e a -> Ribo d ()
+reportErrorOr_ name =
+  reportErrorOr name . const

@@ -9,14 +9,14 @@ module Ribosome.Test.Embed(
 ) where
 
 import Control.Monad.IO.Class (liftIO)
-import Data.Default.Class (Default(def))
+import Data.Default (Default(def))
 import Data.Foldable (traverse_)
-import System.Directory (makeAbsolute)
 import Neovim (Neovim, Object, vim_set_var')
 import Neovim.Test (testWithEmbeddedNeovim, Seconds(..))
+import Ribosome.Api.Option (rtpCat)
 import Ribosome.Control.Ribo (Ribo)
 import Ribosome.Control.Ribosome (Ribosome(Ribosome), newInternalTVar)
-import Ribosome.Api.Option (rtpCat)
+import System.Directory (makeAbsolute)
 
 type Runner env = TestConfig -> Neovim env () -> Neovim env ()
 
