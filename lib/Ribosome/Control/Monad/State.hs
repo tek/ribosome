@@ -3,9 +3,11 @@ module Ribosome.Control.Monad.State(
   riboStateT,
   riboStateLocal,
   riboState,
-  runRiboState,
   modifyL,
   prepend,
+  riboStateLocalE,
+  riboStateE,
+  runRiboStateE,
 ) where
 
 import Control.Lens (Lens')
@@ -35,26 +37,42 @@ riboStateT ::
 riboStateT =
   riboStateLocalT id
 
-riboStateLocal ::
+riboStateLocalE ::
   Lens' s s' ->
   StateT s' (ExceptT e (Ribo s)) a ->
   RiboE s e a
-riboStateLocal zoom ma = RiboE $ do
+riboStateLocalE zoom ma = RiboE $ do
   state <- lift $ Ribo.inspect $ Lens.view zoom
   (output, newState) <- runStateT ma state
   lift $ Ribo.modify $ Lens.set zoom newState
   return output
 
-riboState ::
+riboStateE ::
   StateT s (ExceptT e (Ribo s)) a ->
   RiboE s e a
-riboState =
-  riboStateLocal id
+riboStateE =
+  riboStateLocalE id
 
-runRiboState ::
+runRiboStateE ::
   StateT s (ExceptT e (Ribo s)) a ->
   Ribo s (Either e a)
-runRiboState = runRiboE . riboState
+runRiboStateE = runRiboE . riboStateE
+
+riboStateLocal ::
+  Lens' s s' ->
+  StateT s' (Ribo s) a ->
+  Ribo s a
+riboStateLocal zoom ma = do
+  state <- Ribo.inspect $ Lens.view zoom
+  (output, newState) <- runStateT ma state
+  Ribo.modify $ Lens.set zoom newState
+  return output
+
+riboState ::
+  StateT s (Ribo s) a ->
+  Ribo s a
+riboState =
+  riboStateLocal id
 
 modifyL ::
   (MonadState s m) =>
