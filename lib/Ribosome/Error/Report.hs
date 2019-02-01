@@ -6,19 +6,22 @@ module Ribosome.Error.Report(
   reportError,
   reportErrorOr,
   reportErrorOr_,
+  printAllErrors,
 ) where
 
 import qualified Control.Lens as Lens (over)
 import Control.Monad.IO.Class (liftIO)
 import Data.Foldable (traverse_)
-import qualified Data.Map as Map (alter)
+import qualified Data.Map as Map (alter, toList)
+import Data.Text.Prettyprint.Doc (Doc, pretty, line, vsep, (<+>), (<>))
+import Data.Text.Prettyprint.Doc.Render.Terminal (putDoc, AnsiStyle)
 import System.Log.Logger (logM, Priority(NOTICE, DEBUG))
 
 import Ribosome.Api.Echo (echom)
 import Ribosome.Control.Monad.Ribo (Ribo)
-import qualified Ribosome.Control.Ribo as Ribo (modify, name, modifyErrors)
-import Ribosome.Data.Errors (Errors(Errors), ComponentName(ComponentName), Error(Error))
+import qualified Ribosome.Control.Ribo as Ribo (modify, name, modifyErrors, getErrors)
 import Ribosome.Data.ErrorReport (ErrorReport(ErrorReport))
+import Ribosome.Data.Errors (Errors(Errors), ComponentName(ComponentName), Error(Error))
 import Ribosome.Data.Time (epochSeconds)
 
 class ReportError a where
@@ -68,3 +71,8 @@ reportErrorOr name =
 reportErrorOr_ :: ReportError e => String -> Ribo d () -> Either e a -> Ribo d ()
 reportErrorOr_ name =
   reportErrorOr name . const
+
+printAllErrors :: Ribo e ()
+printAllErrors = do
+  errors <- Ribo.getErrors
+  liftIO $ putDoc $ pretty errors

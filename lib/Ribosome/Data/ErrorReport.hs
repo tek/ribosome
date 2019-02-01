@@ -7,8 +7,8 @@ module Ribosome.Data.ErrorReport(
   priority,
 ) where
 
-import Prelude hiding (log)
 import Control.Lens (makeClassy)
+import Prelude hiding (log)
 import System.Log (Priority)
 
 data ErrorReport =
