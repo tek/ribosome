@@ -12,4 +12,4 @@ epochSeconds = liftIO $ fmap round getPOSIXTime
 
 sleep :: MonadIO f => Double -> f ()
 sleep seconds =
-  liftIO $ threadDelay $ round $ seconds * 10e6
+  liftIO $ threadDelay $ round $ seconds * 1e6
