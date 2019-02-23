@@ -2,7 +2,6 @@ module Ribosome.Test.Exists(
   waitForPlugin,
 ) where
 
-import Control.Concurrent (threadDelay)
 import Control.Monad.IO.Class
 import Data.Strings (strCapitalize)
 import Neovim

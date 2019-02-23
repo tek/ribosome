@@ -61,5 +61,7 @@ cataE f =
   riboE . fmap join . runRiboE . fmap (mapLeft f)
 
 instance MonadError e (RiboE s e) where
-  throwError = RiboE . throwError
-  catchError ma f = RiboE $ catchError (unRiboE ma) (unRiboE . f)
+  throwError =
+    RiboE . throwError
+  catchError ma f =
+    RiboE $ catchError (unRiboE ma) (unRiboE . f)

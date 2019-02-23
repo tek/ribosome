@@ -14,11 +14,11 @@ build-type: Simple
 dependencies:
 - base >= 4.7 && < 5
 - unliftio
+- unliftio-core
 - nvim-hs
 - utf8-string
 - split
 - time
-- prettyprinter
 - containers
 - filepath
 - resourcet

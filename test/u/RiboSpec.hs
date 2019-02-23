@@ -6,13 +6,13 @@ module RiboSpec(
 
 import Control.Monad.IO.Class (liftIO)
 import Data.Bifunctor (Bifunctor(..))
-import Data.Default.Class (Default(def))
-import Test.Framework
+import Data.Default (Default(def))
 import Neovim
-import UnliftIO.STM
 import Ribosome.Api.Buffer
 import Ribosome.Control.Monad.Ribo
 import Ribosome.Test.Unit (unitSpec)
+import Test.Framework
+import UnliftIO.STM
 
 newtype Env =
   Env Int

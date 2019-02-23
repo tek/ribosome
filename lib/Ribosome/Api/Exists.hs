@@ -5,7 +5,7 @@ module Ribosome.Api.Exists(
   function,
 ) where
 
-import Control.Monad.IO.Class (MonadIO, liftIO)
+import Control.Monad.IO.Class (MonadIO)
 import Data.Default (Default(def))
 import Data.Either (isRight)
 import Data.Text.Prettyprint.Doc ((<+>), viaShow, prettyList)
