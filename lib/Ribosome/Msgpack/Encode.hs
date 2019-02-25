@@ -72,3 +72,6 @@ instance {-# OVERLAPPABLE #-} MsgpackEncode a => MsgpackEncode [a] where
 
 instance MsgpackEncode a => MsgpackEncode (Maybe a) where
   toMsgpack = maybe ObjectNil toMsgpack
+
+instance MsgpackEncode Bool where
+  toMsgpack = ObjectBool

@@ -40,13 +40,13 @@ data Prod =
 data Dat =
   Dat {
     key1 :: Blob,
-    key2 :: Int,
+    key2 :: Bool,
     key3 :: Maybe Prod
   }
   deriving (Eq, Show, Generic, MsgpackEncode, MsgpackDecode)
 
 dat :: Dat
-dat = Dat (Blob [[1, 2], [3]] (Map.fromList [(1, "1"), (2, "2")]) (NT "nt")) 13 (Just $ Prod "dat" 27)
+dat = Dat (Blob [[1, 2], [3]] (Map.fromList [(1, "1"), (2, "2")]) (NT "nt")) False (Just $ Prod "dat" 27)
 
 os :: String -> Object
 os = Util.string
@@ -64,7 +64,11 @@ encodedBlob =
 
 encoded :: Object
 encoded =
-  ObjectMap $ Map.fromList [(os "key1", encodedBlob), (os "key2", i 13), (os "key3", ObjectArray [os "dat", i 27])]
+  ObjectMap $ Map.fromList [
+    (os "key1", encodedBlob),
+    (os "key2", ObjectBool False),
+    (os "key3", ObjectArray [os "dat", i 27])
+    ]
 
 test_encode :: IO ()
 test_encode =

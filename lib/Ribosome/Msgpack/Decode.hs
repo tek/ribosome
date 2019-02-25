@@ -123,3 +123,7 @@ instance MsgpackDecode a => MsgpackDecode (Maybe a) where
   fromMsgpack o = Just <$> fromMsgpack o
 
   missingKey _ _ = Right Nothing
+
+instance MsgpackDecode Bool where
+  fromMsgpack (ObjectBool a) = Right a
+  fromMsgpack o = Util.illegalType "Bool" o
