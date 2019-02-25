@@ -5,6 +5,10 @@ module Ribosome.Msgpack.Encode(
   MsgpackEncode(..),
 ) where
 
+import Data.Bifunctor (bimap)
+import Data.Map.Strict (Map)
+import qualified Data.Map.Strict as Map (fromList, toList)
+import Data.MessagePack (Object(..))
 import GHC.Generics (
   Generic,
   Rep,
@@ -20,10 +24,6 @@ import GHC.Generics (
   from,
   conIsRecord,
   )
-import Data.Bifunctor (bimap)
-import Data.Map.Strict (Map)
-import qualified Data.Map.Strict as Map (fromList, toList)
-import Data.MessagePack (Object(..))
 import qualified Ribosome.Msgpack.Util as Util (string, assembleMap)
 
 class MsgpackEncode a where
@@ -69,3 +69,6 @@ instance {-# OVERLAPPING #-} MsgpackEncode String where
 
 instance {-# OVERLAPPABLE #-} MsgpackEncode a => MsgpackEncode [a] where
   toMsgpack = ObjectArray . fmap toMsgpack
+
+instance MsgpackEncode a => MsgpackEncode (Maybe a) where
+  toMsgpack = maybe ObjectNil toMsgpack

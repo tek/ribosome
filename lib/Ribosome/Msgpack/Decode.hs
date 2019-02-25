@@ -1,10 +1,13 @@
-{-# LANGUAGE DefaultSignatures #-}
 {-# LANGUAGE TypeOperators #-}
 
 module Ribosome.Msgpack.Decode(
   MsgpackDecode(..),
 ) where
 
+import Data.ByteString.Internal (unpackChars)
+import Data.Map.Strict (Map, (!?))
+import qualified Data.Map.Strict as Map (fromList, toList)
+import Data.MessagePack (Object(..))
 import GHC.Generics (
   Generic,
   Rep,
@@ -20,10 +23,6 @@ import GHC.Generics (
   to,
   conIsRecord,
   )
-import Data.ByteString.Internal (unpackChars)
-import Data.Map.Strict (Map, (!?))
-import qualified Data.Map.Strict as Map (fromList, toList)
-import Data.MessagePack (Object(..))
 import Ribosome.Msgpack.Util (Err)
 import qualified Ribosome.Msgpack.Util as Util (string, invalid, missingRecordKey, illegalType)
 
@@ -32,15 +31,22 @@ class MsgpackDecode a where
   default fromMsgpack :: (Generic a, GMsgpackDecode (Rep a)) => Object -> Either Err a
   fromMsgpack = fmap to . gMsgpackDecode
 
+  missingKey :: String -> Object -> Either Err a
+  missingKey = Util.missingRecordKey
+
 class GMsgpackDecode f where
   gMsgpackDecode :: Object -> Either Err (f a)
+
+  gMissingKey :: String -> Object -> Either Err (f a)
+  gMissingKey = Util.missingRecordKey
 
 class MsgpackDecodeProd f where
   msgpackDecodeRecord :: Map Object Object -> Either Err (f a)
   msgpackDecodeProd :: [Object] -> Either Err ([Object], f a)
 
-instance GMsgpackDecode f => GMsgpackDecode (D1 c f) where
-  gMsgpackDecode = fmap M1 . gMsgpackDecode @f
+instance (GMsgpackDecode f) => GMsgpackDecode (D1 c f) where
+  gMsgpackDecode =
+    fmap M1 . gMsgpackDecode @f
 
 instance (Constructor c, MsgpackDecodeProd f) => GMsgpackDecode (C1 c f) where
   gMsgpackDecode =
@@ -57,8 +63,11 @@ instance (Constructor c, MsgpackDecodeProd f) => GMsgpackDecode (C1 c f) where
             case rest of
               [] -> Right a
               _ -> Util.invalid "too many values for product" o
-      decode o =
-        Util.invalid "illegal Object for constructor" o
+      decode o = do
+        (rest, a) <- msgpackDecodeProd [o]
+        case rest of
+          [] -> Right a
+          _ -> Util.invalid "too many values for newtype" o
 
 instance (MsgpackDecodeProd f, MsgpackDecodeProd g) => MsgpackDecodeProd (f :*: g) where
   msgpackDecodeRecord o = do
@@ -72,16 +81,19 @@ instance (MsgpackDecodeProd f, MsgpackDecodeProd g) => MsgpackDecodeProd (f :*: 
 
 instance (Selector s, GMsgpackDecode f) => MsgpackDecodeProd (S1 s f) where
   msgpackDecodeRecord o =
-    maybe (Util.missingRecordKey key (ObjectMap o)) (fmap M1 . gMsgpackDecode) (o !? Util.string key)
+    M1 <$> maybe (gMissingKey key (ObjectMap o)) gMsgpackDecode (o !? Util.string key)
     where
       key = selName (undefined :: t s f p)
   msgpackDecodeProd (cur:rest) = do
     a <- gMsgpackDecode cur
-    return $ (rest, M1 a)
+    return (rest, M1 a)
   msgpackDecodeProd [] = Util.invalid "too few values for product" ObjectNil
 
 instance MsgpackDecode a => GMsgpackDecode (K1 i a) where
   gMsgpackDecode = fmap K1 . fromMsgpack
+
+  gMissingKey key =
+    fmap K1 . missingKey key
 
 instance (Ord k, MsgpackDecode k, MsgpackDecode v) => MsgpackDecode (Map k v) where
   fromMsgpack (ObjectMap om) = do
@@ -105,3 +117,9 @@ instance {-# OVERLAPPING #-} MsgpackDecode String where
 instance {-# OVERLAPPABLE #-} MsgpackDecode a => MsgpackDecode [a] where
   fromMsgpack (ObjectArray oa) = traverse fromMsgpack oa
   fromMsgpack o = Util.illegalType "List" o
+
+instance MsgpackDecode a => MsgpackDecode (Maybe a) where
+  fromMsgpack ObjectNil = Right Nothing
+  fromMsgpack o = Just <$> fromMsgpack o
+
+  missingKey _ _ = Right Nothing

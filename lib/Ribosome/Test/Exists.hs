@@ -2,7 +2,7 @@ module Ribosome.Test.Exists(
   waitForPlugin,
 ) where
 
-import Control.Monad.IO.Class
+import Control.Monad.IO.Class (MonadIO)
 import Data.Char (toUpper)
 import Neovim
 
