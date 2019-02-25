@@ -160,7 +160,7 @@ runTest TestConfig{..} testCfg thunk _ = do
   result <- race (sleepW tcTimeout) (runNeovimThunk testCfg thunk)
   case result of
     Right _ -> return ()
-    Left _ -> fail $ "test exceeded timeout of " <> show tcTimeout <> " seconds"
+    Left _ -> fail $ "test exceeded timeout of " ++ show tcTimeout ++ " seconds"
 
 runEmbeddedNvim :: TestConfig -> Ribosome e -> Ribo e () -> NvimProc -> IO ()
 runEmbeddedNvim conf ribo thunk prc = do
