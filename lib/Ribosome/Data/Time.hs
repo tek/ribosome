@@ -1,15 +1,25 @@
 module Ribosome.Data.Time(
   epochSeconds,
+  usleep,
   sleep,
+  sleepW,
 ) where
 
 import Control.Concurrent (threadDelay)
 import Control.Monad.IO.Class (MonadIO, liftIO)
 import Data.Time.Clock.POSIX (getPOSIXTime)
+import GHC.Float (word2Double)
 
-epochSeconds :: MonadIO f => f Int
+epochSeconds :: MonadIO m => m Int
 epochSeconds = liftIO $ fmap round getPOSIXTime
 
-sleep :: MonadIO f => Double -> f ()
+usleep :: MonadIO m => Double -> m ()
+usleep =
+  liftIO . threadDelay . round
+
+sleep :: MonadIO m => Double -> m ()
 sleep seconds =
-  liftIO $ threadDelay $ round $ seconds * 1e6
+  usleep $ seconds * 1e6
+
+sleepW :: MonadIO m => Word -> m ()
+sleepW = sleep . word2Double

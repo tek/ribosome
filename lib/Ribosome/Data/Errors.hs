@@ -33,7 +33,7 @@ makeClassy ''Error
 
 instance Pretty Error where
   pretty (Error stamp (ErrorReport _ lines' _)) =
-    pretty stamp <+> (align $ vsep $ (pretty <$> lines'))
+    pretty stamp <+> align (vsep (pretty <$> lines'))
 
 newtype Errors =
   Errors {
@@ -49,4 +49,4 @@ prettyComponentErrors (ComponentName name) errors' =
 
 instance Pretty Errors where
   pretty (Errors errors') =
-    pretty ("Errors:" :: String) <> vsep ((uncurry prettyComponentErrors) <$> Map.toList errors')
+    pretty ("Errors:" :: String) <> vsep (uncurry prettyComponentErrors <$> Map.toList errors')
