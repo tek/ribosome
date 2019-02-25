@@ -6,12 +6,13 @@ module ScratchSpec(
 
 import Control.Monad.IO.Class (liftIO)
 import Data.Default (def)
+import Test.Framework
+
 import Ribosome.Api.Buffer (currentBufferContent)
 import Ribosome.Control.Ribo (Ribo)
 import Ribosome.Data.ScratchOptions (ScratchOptions(ScratchOptions))
 import Ribosome.Scratch (showInScratch)
 import Ribosome.Test.Unit (unitSpec)
-import Test.Framework
 
 target :: [String]
 target = ["line 1", "line 2"]

@@ -7,17 +7,18 @@ module Ribosome.Test.Functional(
   fixture,
 ) where
 
+import Control.Exception (finally)
 import Control.Monad (when)
 import Control.Monad.IO.Class
-import Control.Exception (finally)
 import Data.Foldable (traverse_)
+import Neovim (Neovim, vim_command')
+import System.Console.ANSI (setSGR, SGR(SetColor, Reset), ConsoleLayer(Foreground), ColorIntensity(Dull), Color(Green))
 import System.Directory (getCurrentDirectory, createDirectoryIfMissing, removePathForcibly, doesFileExist, makeAbsolute)
 import System.FilePath (takeDirectory, (</>), takeFileName)
-import System.Console.ANSI (setSGR, SGR(SetColor, Reset), ConsoleLayer(Foreground), ColorIntensity(Dull), Color(Green))
-import Neovim (Neovim, vim_command')
+
 import Ribosome.Control.Ribo (Ribo)
-import Ribosome.Test.Exists (waitForPlugin)
 import Ribosome.Test.Embed (TestConfig(..), unsafeEmbeddedSpec, setupPluginEnv)
+import Ribosome.Test.Exists (waitForPlugin)
 import qualified Ribosome.Test.File as F (tempDir, fixture)
 
 jobstart :: MonadIO f => String -> f String
@@ -26,18 +27,18 @@ jobstart cmd = do
   return $ "call jobstart('" ++ cmd ++ "', { 'rpc': v:true, 'cwd': '" ++ dir ++ "' })"
 
 logFile :: TestConfig -> IO FilePath
-logFile conf = makeAbsolute $ logPath conf ++ "-spec"
+logFile TestConfig{..} = makeAbsolute $ tcLogPath ++ "-spec"
 
 startPlugin :: TestConfig -> Neovim env ()
-startPlugin conf = do
-  absLogPath <- liftIO $ makeAbsolute (logPath conf)
-  absLogFile <- liftIO $ logFile conf
+startPlugin tc@TestConfig{..} = do
+  absLogPath <- liftIO $ makeAbsolute tcLogPath
+  absLogFile <- liftIO $ logFile tc
   liftIO $ createDirectoryIfMissing True (takeDirectory absLogPath)
   liftIO $ removePathForcibly absLogFile
-  setupPluginEnv conf
+  setupPluginEnv tc
   cmd <- jobstart $ "stack run -- -l " ++ absLogFile ++ " -v INFO"
   vim_command' cmd
-  waitForPlugin (pluginName conf) 0.1 3
+  waitForPlugin tcPluginName 0.1 3
 
 fSpec :: TestConfig -> Neovim env () -> Neovim env ()
 fSpec conf spec = startPlugin conf >> spec

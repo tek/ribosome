@@ -7,7 +7,7 @@ license: MIT
 license-file: LICENSE
 author: "Torsten Schmits"
 maintainer: "tek@tryp.io"
-copyright: "2018 Torsten Schmits"
+copyright: "2019 Torsten Schmits"
 category: Neovim
 build-type: Simple
 
@@ -42,6 +42,8 @@ dependencies:
 - either
 - prettyprinter
 - prettyprinter-ansi-terminal
+- typed-process
+- unix
 
 default-extensions:
 - AutoDeriveTypeable
