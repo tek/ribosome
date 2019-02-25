@@ -25,7 +25,6 @@ dependencies:
 - mtl
 - deepseq
 - messagepack
-- strings
 - text
 - pretty-terminal
 - ansi-terminal

@@ -3,10 +3,14 @@ module Ribosome.Test.Exists(
 ) where
 
 import Control.Monad.IO.Class
-import Data.Strings (strCapitalize)
+import Data.Char (toUpper)
 import Neovim
 
 import Ribosome.Data.Time (epochSeconds, sleep)
+
+capitalize :: String -> String
+capitalize [] = []
+capitalize (head' : tail') = toUpper head' : tail'
 
 retry :: MonadIO f => Double -> Int -> f a -> (a -> f (Either String b)) -> f b
 retry interval timeout thunk check = do
@@ -30,7 +34,7 @@ waitForPlugin :: String -> Double -> Int -> Neovim env ()
 waitForPlugin name interval timeout =
   retry interval timeout thunk check
   where
-    thunk = vim_call_function "exists" [toObject $ "*" ++ strCapitalize name ++ "Poll"]
+    thunk = vim_call_function "exists" [toObject $ "*" ++ capitalize name ++ "Poll"]
     check (Right (ObjectInt 1)) = return $ Right ()
     check (Right a) = return $ Left $ errormsg ++ "weird return type " ++ show a
     check (Left e) = return $ Left $ errormsg ++ show e
