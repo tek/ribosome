@@ -6,12 +6,40 @@ module Ribosome.Config.Setting(
   settingVariableName,
   settingOr,
   settingMaybe,
+  settingR,
+  SettingError(..),
+  updateSettingR,
 ) where
 
 import Data.Either (fromRight)
+import Data.Text.Prettyprint.Doc (Doc)
+import Data.Text.Prettyprint.Doc.Render.Terminal (AnsiStyle)
 import Neovim
+import System.Log (Priority(NOTICE))
+
+import Ribosome.Control.Monad.RiboE (RiboE, liftRibo, riboE, mapE)
 import Ribosome.Control.Ribo (Ribo)
 import qualified Ribosome.Control.Ribosome as R (name)
+import Ribosome.Data.ErrorReport (ErrorReport(..))
+import Ribosome.Error.Report (ReportError(..))
+import Ribosome.Msgpack.Decode (MsgpackDecode(fromMsgpack))
+import Ribosome.Msgpack.Encode (MsgpackEncode(toMsgpack))
+
+data SettingError =
+  Other String String
+  |
+  Decode String (Doc AnsiStyle)
+  |
+  Unset String
+  deriving Show
+
+instance ReportError SettingError where
+  errorReport (Other name message) =
+    ErrorReport ("weird setting: " ++ name) ["failed to read setting `" ++ name ++ "`", message] NOTICE
+  errorReport (Decode name message) =
+    ErrorReport ("invalid setting: " ++ name) ["failed to decode setting `" ++ name ++ "`", show message] NOTICE
+  errorReport (Unset name) =
+    ErrorReport ("required setting unset: " ++ name) ["unset setting: `" ++ name ++ "`"] NOTICE
 
 data Setting a =
   Setting {
@@ -56,3 +84,18 @@ updateSetting s a = do
   varName <- settingVariableName s
   _ <- vim_set_var' varName (toObject a)
   return ()
+
+settingR :: MsgpackDecode a => Setting a -> RiboE s SettingError a
+settingR s@(Setting n _ fallback') = do
+  varName <- liftRibo $ settingVariableName s
+  raw <- liftRibo $ vim_get_var varName
+  case raw of
+    Right o -> mapE (Decode n) $ riboE $ pure $ fromMsgpack o
+    Left _ -> riboE $ return $ case fallback' of
+      Just fb -> Right fb
+      Nothing -> Left $ Unset n
+
+updateSettingR :: MsgpackEncode a => Setting a -> a -> Ribo e ()
+updateSettingR s a = do
+  varName <- settingVariableName s
+  void $ vim_set_var' varName (toMsgpack a)
