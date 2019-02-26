@@ -6,7 +6,6 @@ module Ribosome.Control.Ribo(
   inspect,
   modify,
   name,
-  lockOrSkip,
   prepend,
   modifyL,
   riboInternal,
@@ -17,15 +16,13 @@ module Ribosome.Control.Ribo(
 
 import Control.Concurrent.STM.TVar (modifyTVar, swapTVar)
 import Control.Lens (Lens')
-import qualified Control.Lens as Lens (view, over, at)
+import qualified Control.Lens as Lens (over)
 import Data.Functor (void)
-import qualified Data.Map.Strict as Map (insert)
 import Neovim (Neovim, ask)
-import UnliftIO (finally)
-import UnliftIO.STM (TVar, TMVar, atomically, readTVarIO, newTMVarIO, tryTakeTMVar, tryPutTMVar)
+import UnliftIO.STM (TVar, atomically, readTVarIO)
 
-import Ribosome.Control.Ribosome (Ribosome(Ribosome), Locks, RibosomeInternal)
-import qualified Ribosome.Control.Ribosome as Ribosome (_locks, locks, errors, _errors)
+import Ribosome.Control.Ribosome (Ribosome(Ribosome), RibosomeInternal)
+import qualified Ribosome.Control.Ribosome as Ribosome (errors, _errors)
 import Ribosome.Data.Errors (Errors)
 
 type Ribo e = Neovim (Ribosome e)
@@ -69,18 +66,6 @@ riboInternal = do
   Ribosome _ intTv _ <- ask
   readTVarIO intTv
 
-getLocks :: Ribo e Locks
-getLocks =
-  Ribosome.locks <$> riboInternal
-
-inspectLocks :: (Locks -> a) -> Ribo e a
-inspectLocks f = fmap f getLocks
-
-modifyLocks :: (Locks -> Locks) -> Ribo e ()
-modifyLocks f = do
-  Ribosome _ intTv _ <- ask
-  atomically $ modifyTVar intTv $ Lens.over Ribosome._locks f
-
 getErrors :: Ribo e Errors
 getErrors =
   Ribosome.errors <$> riboInternal
@@ -92,21 +77,3 @@ modifyErrors :: (Errors -> Errors) -> Ribo e ()
 modifyErrors f = do
   Ribosome _ intTv _ <- ask
   atomically $ modifyTVar intTv $ Lens.over Ribosome._errors f
-
-getOrCreateLock :: String -> Ribo e (TMVar ())
-getOrCreateLock key = do
-  currentLock <- inspectLocks $ Lens.view $ Lens.at key
-  case currentLock of
-    Just tv -> return tv
-    Nothing -> do
-      tv <- newTMVarIO ()
-      modifyLocks $ Map.insert key tv
-      getOrCreateLock key
-
-lockOrSkip :: String -> Ribo e () -> Ribo e ()
-lockOrSkip key thunk = do
-  currentLock <- getOrCreateLock key
-  currentState <- atomically $ tryTakeTMVar currentLock
-  case currentState of
-    Just _ -> finally thunk $ atomically $ tryPutTMVar currentLock ()
-    Nothing -> return ()
