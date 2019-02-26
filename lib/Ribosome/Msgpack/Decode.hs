@@ -55,19 +55,15 @@ instance (Constructor c, MsgpackDecodeProd f) => GMsgpackDecode (C1 c f) where
       isRec = conIsRecord (undefined :: t c f p)
       decode o@(ObjectMap om) =
         if isRec then msgpackDecodeRecord om else Util.invalid "illegal ObjectMap for product" o
-      decode o@(ObjectArray oa) =
-        if isRec then Util.invalid "illegal ObjectArray for record" o else decode'
+      decode o | isRec =
+        Util.invalid "illegal non-ObjectMap for record" o
+      decode o =
+        msgpackDecodeProd (prod o) >>= check
         where
-          decode' = do
-            (rest, a) <- msgpackDecodeProd oa
-            case rest of
-              [] -> Right a
-              _ -> Util.invalid "too many values for product" o
-      decode o = do
-        (rest, a) <- msgpackDecodeProd [o]
-        case rest of
-          [] -> Right a
-          _ -> Util.invalid "too many values for newtype" o
+          check ([], a) = Right a
+          check _ = Util.invalid "too many values for product" o
+          prod (ObjectArray oa) = oa
+          prod ob = [ob]
 
 instance (MsgpackDecodeProd f, MsgpackDecodeProd g) => MsgpackDecodeProd (f :*: g) where
   msgpackDecodeRecord o = do

@@ -41,11 +41,18 @@ class MsgpackEncodeProd f where
 instance GMsgpackEncode f => GMsgpackEncode (D1 c f) where
   gMsgpackEncode = gMsgpackEncode . unM1
 
+prodOrNewtype :: MsgpackEncodeProd f => f a -> Object
+prodOrNewtype =
+  wrap . msgpackEncodeProd
+  where
+    wrap [a] = a
+    wrap as = ObjectArray as
+
 instance (Constructor c, MsgpackEncodeProd f) => GMsgpackEncode (C1 c f) where
   gMsgpackEncode c =
     f $ unM1 c
     where
-      f = if conIsRecord c then Util.assembleMap . msgpackEncodeRecord else ObjectArray . msgpackEncodeProd
+      f = if conIsRecord c then Util.assembleMap . msgpackEncodeRecord else prodOrNewtype
 
 instance (MsgpackEncodeProd f, MsgpackEncodeProd g) => MsgpackEncodeProd (f :*: g) where
   msgpackEncodeRecord (f :*: g) = msgpackEncodeRecord f ++ msgpackEncodeRecord g
