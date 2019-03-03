@@ -8,11 +8,9 @@ module Ribosome.Log(
 ) where
 
 import Control.Monad.IO.Class (MonadIO, liftIO)
-import Neovim (ask)
-import Neovim.Log (debugM, infoM, errorM)
+import Neovim.Log (debugM, errorM, infoM)
 
-import Ribosome.Control.Ribo (Ribo)
-import qualified Ribosome.Control.Ribosome as R (name)
+import Ribosome.Control.Monad.Ribo (MonadRibo, pluginName)
 
 debug :: (MonadIO m, Show a) => String -> a -> m ()
 debug name message = liftIO $ debugM name $ show message
@@ -29,7 +27,7 @@ p = liftIO . print
 prefixed :: (MonadIO m, Show a) => String -> a -> m ()
 prefixed prefix a = liftIO $ putStrLn $ prefix ++ ": " ++ show a
 
-debugR :: String -> Ribo e ()
+debugR :: (MonadRibo m, MonadIO m) => String -> m ()
 debugR a = do
-  pluginName <- R.name <$> ask
-  liftIO $ debugM pluginName a
+  n <- pluginName
+  liftIO $ debugM n a

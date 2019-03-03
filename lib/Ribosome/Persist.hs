@@ -6,50 +6,87 @@ module Ribosome.Persist(
   persistLoad,
 ) where
 
-import GHC.IO.Exception (IOException)
-import Control.Exception (try)
+import qualified Control.Lens as Lens (review)
+import Control.Monad (unless)
+import Control.Monad.Error.Class (MonadError(throwError))
 import Control.Monad.IO.Class (MonadIO, liftIO)
-import Control.Monad.Trans.Except (ExceptT(ExceptT), catchE)
-import Data.Aeson (ToJSON, FromJSON, encode, eitherDecode)
-import qualified Data.ByteString.Lazy as B (writeFile, readFile, ByteString)
+import Control.Monad.IO.Unlift (MonadUnliftIO)
+import Data.Aeson (FromJSON, ToJSON, eitherDecode, encode)
+import Data.ByteString.Lazy (ByteString)
+import qualified Data.ByteString.Lazy as B (readFile, writeFile)
+import System.Directory (XdgDirectory(XdgCache), createDirectoryIfMissing, getXdgDirectory)
 import System.FilePath (takeDirectory, (</>))
-import System.Directory (getXdgDirectory, XdgDirectory(XdgCache), createDirectoryIfMissing)
-import Ribosome.Monad (liftExceptT)
-import Ribosome.Control.Ribo (Ribo)
-import qualified Ribosome.Control.Ribo as Ribo (name)
-import Ribosome.Config.Setting (settingE)
+import UnliftIO.Directory (doesFileExist)
+import UnliftIO.Exception (tryIO)
+
+import Ribosome.Config.Setting (setting)
 import qualified Ribosome.Config.Settings as S (persistenceDir)
+import Ribosome.Control.Monad.Error (recoveryFor)
+import Ribosome.Control.Monad.Ribo
+import Ribosome.Data.PersistError (AsPersistError, _PersistError)
+import qualified Ribosome.Data.PersistError as PersistError (PersistError(..))
+import Ribosome.Data.Setting (AsSettingError)
+import Ribosome.Nvim.Api.RpcCall (AsRpcError)
 
-defaultPersistencePath :: FilePath -> IO FilePath
+defaultPersistencePath :: MonadIO m => m FilePath
 defaultPersistencePath =
-  getXdgDirectory XdgCache
+  liftIO $ getXdgDirectory XdgCache ""
 
-persistencePath :: FilePath -> Ribo e FilePath
+persistencePath ::
+  (MonadRibo m, Nvim m, MonadIO m, MonadError e m, AsRpcError e, AsSettingError e) =>
+  FilePath ->
+  m FilePath
 persistencePath path = do
-  name <- Ribo.name
-  let prefixed = name </> path
-  custom <- settingE S.persistenceDir
-  either (const $ liftIO $ defaultPersistencePath prefixed) (\c -> return $ c </> prefixed) custom
+  base <- defaultPersistencePath `recoveryFor` setting S.persistenceDir
+  name <- pluginName
+  return $ base </> name </> path
 
-persistenceFile :: FilePath -> Ribo e FilePath
+persistenceFile ::
+  (MonadRibo m, Nvim m, MonadIO m, MonadError e m, AsRpcError e, AsSettingError e) =>
+  FilePath ->
+  m FilePath
 persistenceFile path = do
   file <- persistencePath path
   liftIO $ createDirectoryIfMissing True (takeDirectory file)
   return $ file ++ ".json"
 
-persistStore :: ToJSON a => FilePath -> a -> Ribo e ()
+persistStore ::
+  (MonadRibo m, Nvim m, MonadIO m, MonadError e m, AsRpcError e, AsSettingError e) =>
+  ToJSON a =>
+  FilePath ->
+  a ->
+  m ()
 persistStore path a = do
   file <- persistenceFile path
   liftIO $ B.writeFile file (encode a)
 
-noSuchFile :: Monad m => FilePath -> ExceptT String m a
-noSuchFile file = ExceptT $ return $ Left $ "persistence file " ++ file ++ " doesn't exist"
+noSuchFile :: (MonadError e m, AsPersistError e) => FilePath -> m a
+noSuchFile = throwError . (Lens.review _PersistError . PersistError.NoSuchFile)
 
-safeReadFile :: MonadIO m => FilePath -> m (Either IOException B.ByteString)
-safeReadFile file = liftIO $ try $ B.readFile file
+ensureExistence :: (MonadUnliftIO m, MonadError e m, AsPersistError e) => FilePath -> m ()
+ensureExistence file = do
+  exists <- doesFileExist file
+  unless exists (noSuchFile file)
 
-persistLoad :: FromJSON a => FilePath -> ExceptT String (Ribo e) a
+safeReadFile ::
+  (MonadUnliftIO m, MonadError e m, AsPersistError e) =>
+  FilePath ->
+  m ByteString
+safeReadFile file =
+  either err return =<< (tryIO . liftIO . B.readFile $ file)
+  where
+    err _ = throwError $ Lens.review _PersistError $ PersistError.FileNotReadable file
+
+decodeError :: (MonadError e m, AsPersistError e) => FilePath -> String -> m a
+decodeError = curry $ throwError . (Lens.review _PersistError . uncurry PersistError.Decode)
+
+persistLoad ::
+  (MonadRibo m, Nvim m, MonadUnliftIO m, MonadError e m, AsPersistError e, AsSettingError e, AsRpcError e) =>
+  FromJSON a =>
+  FilePath ->
+  m a
 persistLoad path = do
-  file <- liftExceptT $ persistenceFile path
-  json <- catchE (ExceptT $ safeReadFile file) (const $ noSuchFile file)
-  ExceptT $ return $ eitherDecode json
+  file <- persistenceFile path
+  ensureExistence file
+  json <- safeReadFile file
+  either (decodeError path) return . eitherDecode $ json

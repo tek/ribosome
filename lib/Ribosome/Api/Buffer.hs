@@ -1,4 +1,4 @@
-module Ribosome.Api.Buffer(
+module Ribosome.Api.Buffer (
   edit,
   buflisted,
   setBufferContent,
@@ -8,21 +8,20 @@ module Ribosome.Api.Buffer(
 ) where
 
 import Neovim (
-  Neovim,
   Buffer,
+  Neovim,
   NvimObject(..),
   Object,
-  toObject,
-  vim_command',
-  vim_call_function',
-  buffer_get_number',
   buffer_get_lines',
+  buffer_get_number',
   buffer_set_lines',
+  toObject,
+  vim_call_function',
+  vim_command',
   vim_get_current_buffer',
   )
-import Ribosome.Control.Ribo (Ribo)
 
-edit :: FilePath -> Ribo e ()
+edit :: FilePath -> Neovim e ()
 edit path = vim_command' $ "silent! edit " ++ path
 
 nvimCallBool :: String -> [Object] -> Neovim e Bool

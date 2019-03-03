@@ -9,22 +9,23 @@ import Data.Map.Strict (Map, (!?))
 import qualified Data.Map.Strict as Map (fromList, toList)
 import Data.MessagePack (Object(..))
 import GHC.Generics (
-  Generic,
-  Rep,
-  (:*:)(..),
-  M1(..),
-  D1,
   C1,
-  S1,
-  K1(..),
-  Selector,
   Constructor,
+  D1,
+  Generic,
+  K1(..),
+  M1(..),
+  Rep,
+  S1,
+  Selector,
+  conIsRecord,
   selName,
   to,
-  conIsRecord,
+  (:*:)(..),
   )
+
 import Ribosome.Msgpack.Util (Err)
-import qualified Ribosome.Msgpack.Util as Util (string, invalid, missingRecordKey, illegalType)
+import qualified Ribosome.Msgpack.Util as Util (illegalType, invalid, missingRecordKey, string)
 
 class MsgpackDecode a where
   fromMsgpack :: Object -> Either Err a
@@ -123,3 +124,6 @@ instance MsgpackDecode a => MsgpackDecode (Maybe a) where
 instance MsgpackDecode Bool where
   fromMsgpack (ObjectBool a) = Right a
   fromMsgpack o = Util.illegalType "Bool" o
+
+instance MsgpackDecode () where
+  fromMsgpack _ = Right ()

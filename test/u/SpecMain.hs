@@ -2,11 +2,13 @@
 
 module Main where
 
-import {-@ HTF_TESTS @-} ScratchSpec
-import {-@ HTF_TESTS @-} MsgpackSpec
-import {-@ HTF_TESTS @-} RiboSpec
 import Test.Framework
 import Test.Framework.BlackBoxTest ()
+import {-@ HTF_TESTS @-} LocalSpec
+import {-@ HTF_TESTS @-} MsgpackSpec
+import {-@ HTF_TESTS @-} ScratchSpec
+import {-@ HTF_TESTS @-} SettingSpec
+import {-@ HTF_TESTS @-} THSpec
 
 main :: IO ()
 main = htfMain htf_importedTests

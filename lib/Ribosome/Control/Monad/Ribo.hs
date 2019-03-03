@@ -1,80 +1,192 @@
-{-# LANGUAGE FlexibleInstances #-}
-{-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE UndecidableInstances #-}
-{-# LANGUAGE DeriveFunctor #-}
-{-# LANGUAGE RankNTypes #-}
-{-# LANGUAGE FunctionalDependencies #-}
 
-module Ribosome.Control.Monad.Ribo(
-  Ribo,
-  RiboT(..),
-  MonadRibo(..),
-  MonadRiboError(..),
-  unsafeToNeovim,
-) where
+module Ribosome.Control.Monad.Ribo where
 
-import Control.Concurrent.STM.TVar (swapTVar)
+import Control.Concurrent.STM.TVar (modifyTVar)
+import Control.Lens (Lens')
+import qualified Control.Lens as Lens (over, set, view)
+import Control.Monad (join, (<=<))
 import Control.Monad.Error.Class (MonadError(..))
-import Control.Monad.State (MonadState(..))
-import Control.Monad.Trans.Except (ExceptT(ExceptT), runExceptT, mapExceptT)
-import qualified Control.Monad.Trans.Except as Except (catchE)
-import Data.Bifunctor (Bifunctor(..))
+import Control.Monad.IO.Class (MonadIO, liftIO)
+import Control.Monad.IO.Unlift (MonadUnliftIO(..), UnliftIO(..), withUnliftIO)
+import Control.Monad.Reader.Class (MonadReader, ask, asks)
+import Control.Monad.State.Class (MonadState(put, get))
+import Control.Monad.Trans.Class (MonadTrans, lift)
+import Control.Monad.Trans.Except (ExceptT, runExceptT, withExceptT)
+import Control.Monad.Trans.Reader (ReaderT(ReaderT), runReaderT)
+import Data.Either (fromRight)
 import Data.Either.Combinators (mapLeft)
 import Data.Functor (void)
-import UnliftIO.Exception (throwString)
+import Neovim (Neovim)
 import UnliftIO.STM (TVar, atomically, readTVarIO)
-import Neovim (ask)
-import Neovim.Context.Internal (Neovim(Neovim))
-import Ribosome.Control.Ribosome (Ribosome)
-import qualified Ribosome.Control.Ribosome as Ribosome (env)
 
-type Ribo e = Neovim (Ribosome e)
+import Ribosome.Control.Ribosome (Ribosome(Ribosome), RibosomeInternal, RibosomeState)
+import qualified Ribosome.Control.Ribosome as Ribosome (_errors, errors)
+import qualified Ribosome.Control.Ribosome as RibosomeState (internal, public)
+import Ribosome.Data.Errors (Errors)
+import Ribosome.Nvim.Api.RpcCall (Rpc, RpcError)
+import qualified Ribosome.Nvim.Api.RpcCall as Rpc (Rpc(..))
 
-newtype RiboT s e a =
-  RiboT { unRiboT :: ExceptT e (Neovim (Ribosome (TVar s))) a }
-  deriving (Functor, Applicative, Monad)
+type ConcNvimS s = Neovim (Ribosome s)
 
-instance Bifunctor (RiboT s) where
-  first f (RiboT r) =
-    RiboT $ mapExceptT (fmap $ mapLeft f) r
+-- FIXME change get/put to get/modify to avoid racing
+data RiboConcState s =
+  RiboConcState {
+    rsaName :: String,
+    rsaInternalGet :: IO RibosomeInternal,
+    rsaInternalPut :: RibosomeInternal -> IO (),
+    rsaGet :: IO s,
+    rsaPut :: s -> IO ()
+  }
 
-  second = fmap
+ribLocal :: Lens' s s' -> RiboConcState s -> RiboConcState s'
+ribLocal lens (RiboConcState n ig ip g p) =
+  RiboConcState n ig ip (Lens.view lens <$> g) (\s' -> g >>= p . Lens.set lens s')
 
-class MonadRibo s e m | m -> s, m -> e where
-  nvim :: Neovim (Ribosome (TVar s)) a -> m a
-  asNeovim :: m a -> Neovim (Ribosome (TVar s)) (Either e a)
+newtype Ribo s m a =
+  Ribo { unRibo :: ReaderT (RiboConcState s) m a }
+  deriving (Functor, Applicative, Monad, MonadIO)
 
-class Monad (t e) => MonadRiboError e t where
-  liftEither :: Either e a -> t e a
-  mapE :: (e -> e') -> t e a -> t e' a
-  catchE :: (e -> t e' a) -> t e a -> t e' a
-
-instance MonadRibo s e (RiboT s e) where
-  nvim = RiboT . ExceptT . fmap Right
-  asNeovim = runExceptT . unRiboT
-
-instance MonadRiboError e (RiboT s) where
-  liftEither = RiboT . ExceptT . return
-  mapE f = RiboT . mapExceptT (fmap $ mapLeft f) . unRiboT
-  catchE f = RiboT . flip Except.catchE (unRiboT . f) . unRiboT
-
-instance MonadError e (RiboT s e) where
-  throwError = liftEither . Left
-  catchError = flip catchE
-
-stateTVar :: (Functor m, MonadRibo s e m) => m (TVar s)
-stateTVar =
-  Ribosome.env <$> nvim ask
-
-instance MonadState s (RiboT s e) where
+instance MonadIO m => MonadState s (Ribo s m) where
   get = do
-    t <- stateTVar
-    nvim $ readTVarIO t
-  put newState = do
-    t <- stateTVar
-    void $ nvim $ atomically $ swapTVar t newState
+    RiboConcState{..} <- Ribo ask
+    liftIO rsaGet
+  put s = do
+    RiboConcState{..} <- Ribo ask
+    liftIO $ rsaPut s
 
-unsafeToNeovim :: (MonadRibo s e m, Show e) => m a -> Neovim (Ribosome (TVar s)) a
-unsafeToNeovim ra = do
-  r <- asNeovim ra
-  either (throwString . show) return r
+instance MonadTrans (Ribo s) where
+  lift = Ribo . lift
+
+instance MonadUnliftIO m => MonadUnliftIO (Ribo s m) where
+  askUnliftIO = Ribo . withUnliftIO $ \x -> return (UnliftIO (unliftIO x . unRibo))
+
+class Nvim m where
+  call :: Monad m => Rpc c a => c -> m (Either RpcError a)
+
+instance Nvim (Neovim e) where
+  call = Rpc.call
+
+instance (MonadTrans t, Nvim m, Monad m) => Nvim (t m) where
+  call = lift . call
+
+instance MonadError e m => MonadError e (Ribo s m) where
+  throwError e = Ribo $ lift $ throwError e
+  catchError ma f =
+    Ribo $ ReaderT (\r -> catchError (runReaderT (unRibo ma) r) ((`runReaderT` r) . unRibo . f))
+
+acall :: (Monad m, Nvim m, Rpc c ()) => c -> m ()
+acall c = fromRight () <$> call c
+
+writeTv :: Lens' (RibosomeState s) s' -> TVar (RibosomeState s) -> s' -> IO ()
+writeTv l t = void . atomically . modifyTVar t . Lens.set l
+
+ribId :: MonadReader (Ribosome s) m => m (RiboConcState s)
+ribId = do
+  Ribosome n tv <- ask
+  return $ RiboConcState n (read' RibosomeState.internal tv) (writeTv int tv) (read' pub tv) (writeTv pub tv)
+  where
+    int :: Lens' (RibosomeState s) RibosomeInternal
+    int = RibosomeState.internal
+    pub :: Lens' (RibosomeState s) s
+    pub = RibosomeState.public
+    read' l t = Lens.view l <$> readTVarIO t
+
+runRib :: MonadReader (Ribosome s) m => Ribo s m a -> m a
+runRib ma = do
+  rib0 <- ribId
+  (`runReaderT` rib0) . unRibo $ ma
+
+local :: Monad m => Lens' s s' -> Ribo s' m a -> Ribo s m a
+local lens ma = do
+  r <- Ribo ask
+  Ribo . lift . runReaderT (unRibo ma) $ ribLocal lens r
+
+type RiboE s e m = Ribo s (ExceptT e m)
+
+riboE :: Ribo s m (Either e a) -> RiboE s e m a
+riboE = undefined
+
+runRiboE ::
+  MonadReader (Ribosome s) m =>
+  RiboE s e m a ->
+  m (Either e a)
+runRiboE ma = do
+  rib0 <- ribId
+  runExceptT $ (`runReaderT` rib0) . unRibo $ ma
+
+unliftRiboE :: (ExceptT e m a -> ExceptT e' m b) -> RiboE s e m a -> RiboE s e' m b
+unliftRiboE f ma =
+  Ribo $ ReaderT (f . runReaderT (unRibo ma))
+
+riboE2ribo :: RiboE s e m a -> Ribo s m (Either e a)
+riboE2ribo ma =
+  Ribo $ ReaderT (runExceptT . runReaderT (unRibo ma))
+
+mapEither :: Monad m => (Either e a -> RiboE s e' m b) -> RiboE s e m a -> RiboE s e' m b
+mapEither f =
+  join . unliftRiboE (lift . (f <$>) . runExceptT)
+
+mapE :: Functor m => (e -> e') -> RiboE s e m a -> RiboE s e' m a
+mapE =
+  unliftRiboE . withExceptT
+
+catchE :: Monad m => (e -> RiboE s e' m a) -> RiboE s e m a -> RiboE s e' m a
+catchE f =
+  mapEither (either f (lift . return))
+
+anaE :: Functor m => (e -> e') -> RiboE s e m (Either e' a) -> RiboE s e' m a
+anaE f =
+  riboE . fmap (join . mapLeft f) . riboE2ribo
+
+cataE :: Functor m => (e' -> e) -> RiboE s e m (Either e' a) -> RiboE s e m a
+cataE f =
+  riboE . fmap join . riboE2ribo . fmap (mapLeft f)
+
+riboInternal :: (MonadReader (RiboConcState s) m, MonadIO m) => m RibosomeInternal
+riboInternal =
+  liftIO =<< asks rsaInternalGet
+
+class Monad m => MonadRibo m where
+  pluginName :: m String
+  pluginInternal :: m RibosomeInternal
+  pluginInternalPut :: RibosomeInternal -> m ()
+
+pluginInternals :: MonadRibo m => (RibosomeInternal -> a) -> m a
+pluginInternals = (<$> pluginInternal)
+
+pluginInternalL :: MonadRibo m => Lens' RibosomeInternal a -> m a
+pluginInternalL = pluginInternals . Lens.view
+
+pluginModifyInternal :: MonadRibo m => Lens' RibosomeInternal a -> (a -> a) -> m ()
+pluginModifyInternal l f = do
+  cur <- pluginInternal
+  pluginInternalPut $ Lens.over l f cur
+
+instance MonadIO m => MonadRibo (Ribo s m) where
+  pluginName =
+    Ribo (asks rsaName)
+
+  pluginInternal =
+    liftIO <=< Ribo $ asks rsaInternalGet
+
+  pluginInternalPut i = do
+    p <- Ribo $ asks rsaInternalPut
+    liftIO . p $ i
+
+instance MonadRibo m => MonadRibo (ExceptT e m) where
+  pluginName = lift pluginName
+  pluginInternal = lift pluginInternal
+
+  pluginInternalPut = lift . pluginInternalPut
+
+getErrors :: MonadRibo m => m Errors
+getErrors =
+  pluginInternals Ribosome._errors
+
+inspectErrors :: MonadRibo m => (Errors -> a) -> m a
+inspectErrors = (<$> getErrors)
+
+modifyErrors :: MonadRibo m => (Errors -> Errors) -> m ()
+modifyErrors =
+  pluginModifyInternal Ribosome.errors

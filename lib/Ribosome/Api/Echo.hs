@@ -1,20 +1,20 @@
 module Ribosome.Api.Echo(
   echom,
   echomS,
+  escapeQuotes,
 ) where
 
-import Neovim (vim_command')
-import Ribosome.Control.Ribo (Ribo)
-import qualified Ribosome.Control.Ribo as Ribo (name)
+import Control.Monad.Error.Class (MonadError)
 
-escapeQuotes :: Char -> String
-escapeQuotes '\'' = "''"
-escapeQuotes a = [a]
+import Ribosome.Control.Monad.Ribo (MonadRibo, Nvim, pluginName)
+import Ribosome.Data.String (escapeQuotes)
+import Ribosome.Nvim.Api.IO (vimCommand)
+import Ribosome.Nvim.Api.RpcCall (RpcError)
 
-echom :: String -> Ribo e ()
+echom :: (MonadError RpcError m, MonadRibo m, Nvim m) => String -> m ()
 echom msg = do
-  name <- Ribo.name
-  vim_command' $ "echom '" ++ name ++ ": " ++ concatMap escapeQuotes msg ++ "'"
+  name <- pluginName
+  vimCommand $ "echom '" ++ name ++ ": " ++ concatMap escapeQuotes msg ++ "'"
 
-echomS :: Show a => a -> Ribo e ()
+echomS :: (MonadError RpcError m, MonadRibo m, Nvim m, Show a) => a -> m ()
 echomS = echom . show

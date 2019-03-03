@@ -3,3 +3,4 @@ packages:
 - .
 extra-deps:
 - pretty-terminal-0.1.0.0
+- hoist-error-0.2.1.0

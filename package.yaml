@@ -44,6 +44,8 @@ dependencies:
 - prettyprinter-ansi-terminal
 - typed-process
 - unix
+- template-haskell
+- hoist-error
 
 default-extensions:
 - AutoDeriveTypeable

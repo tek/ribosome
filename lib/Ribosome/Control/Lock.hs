@@ -3,30 +3,30 @@ module Ribosome.Control.Lock(
   lockOrSkip,
 ) where
 
-import qualified Control.Lens as Lens (view, over, at)
+import qualified Control.Lens as Lens (at, view)
+import Control.Monad.IO.Class (MonadIO)
+import Control.Monad.IO.Unlift (MonadUnliftIO)
 import qualified Data.Map.Strict as Map (insert)
-import Neovim (ask)
 import UnliftIO (finally)
-import UnliftIO.STM (TMVar, atomically, newTMVarIO, tryTakeTMVar, tryPutTMVar, modifyTVar)
+import UnliftIO.STM (TMVar, atomically, newTMVarIO, tryPutTMVar, tryTakeTMVar)
 
-import Ribosome.Control.Ribo (Ribo, riboInternal)
-import Ribosome.Control.Ribosome (Ribosome(Ribosome), Locks)
-import qualified Ribosome.Control.Ribosome as Ribosome (_locks, locks)
+import Ribosome.Control.Monad.Ribo
+import Ribosome.Control.Ribosome (Locks)
+import qualified Ribosome.Control.Ribosome as Ribosome (locks)
 import qualified Ribosome.Log as Log (debugR)
 
-getLocks :: Ribo e Locks
+getLocks :: (MonadRibo m, MonadIO m) => m Locks
 getLocks =
-  Ribosome.locks <$> riboInternal
+  pluginInternalL Ribosome.locks
 
-inspectLocks :: (Locks -> a) -> Ribo e a
-inspectLocks f = fmap f getLocks
+inspectLocks :: (MonadRibo m, MonadIO m) => (Locks -> a) -> m a
+inspectLocks = (<$> getLocks)
 
-modifyLocks :: (Locks -> Locks) -> Ribo e ()
-modifyLocks f = do
-  Ribosome _ intTv _ <- ask
-  atomically $ modifyTVar intTv $ Lens.over Ribosome._locks f
+modifyLocks :: MonadRibo m => (Locks -> Locks) -> m ()
+modifyLocks =
+  pluginModifyInternal Ribosome.locks
 
-getOrCreateLock :: String -> Ribo e (TMVar ())
+getOrCreateLock :: (MonadRibo m, MonadIO m) => String -> m (TMVar ())
 getOrCreateLock key = do
   currentLock <- inspectLocks $ Lens.view $ Lens.at key
   case currentLock of
@@ -36,7 +36,7 @@ getOrCreateLock key = do
       modifyLocks $ Map.insert key tv
       getOrCreateLock key
 
-lockOrSkip :: String -> Ribo e () -> Ribo e ()
+lockOrSkip :: (MonadRibo m, MonadIO m, MonadUnliftIO m) => String -> m () -> m ()
 lockOrSkip key thunk = do
   currentLock <- getOrCreateLock key
   currentState <- atomically $ tryTakeTMVar currentLock

@@ -7,6 +7,7 @@ module Ribosome.Test.Embed(
   setVars,
   setupPluginEnv,
   quitNvim,
+  unsafeEmbeddedSpecR,
 ) where
 
 import Control.Monad.IO.Class (liftIO)
@@ -17,43 +18,43 @@ import Data.Foldable (traverse_)
 import Data.Functor (void)
 import Data.Maybe (fromMaybe)
 import GHC.IO.Handle (Handle)
-import Neovim (Neovim, Object, vim_set_var', vim_command)
-import qualified Neovim.Context.Internal as Internal(
-  Neovim(Neovim),
+import Neovim (Neovim, Object, vim_command, vim_set_var')
+import qualified Neovim.Context.Internal as Internal (
   Config,
-  newConfig,
-  retypeConfig,
-  mkFunctionMap,
-  pluginSettings,
+  Neovim(Neovim),
   globalFunctionMap,
+  mkFunctionMap,
+  newConfig,
+  pluginSettings,
+  retypeConfig,
   )
 import Neovim.RPC.Common (RPCConfig, newRPCConfig)
 import Neovim.RPC.EventHandler (runEventHandler)
 import Neovim.RPC.SocketReader (runSocketReader)
 import System.Directory (makeAbsolute)
 import System.Exit (ExitCode)
-import qualified System.Posix.Signals as Signal (signalProcess, killProcess)
+import qualified System.Posix.Signals as Signal (killProcess, signalProcess)
 import System.Process (getPid)
 import System.Process.Typed (
-  ProcessConfig,
   Process,
-  withProcess,
+  ProcessConfig,
+  createPipe,
+  getExitCode,
+  getStdin,
+  getStdout,
   proc,
   setStdin,
   setStdout,
-  getStdin,
-  getStdout,
   unsafeProcessHandle,
-  createPipe,
-  getExitCode,
+  withProcess,
   )
 import UnliftIO.Async (async, cancel, race)
-import UnliftIO.Exception (tryAny, bracket)
+import UnliftIO.Exception (bracket, tryAny)
 import UnliftIO.STM (atomically, putTMVar)
 
 import Ribosome.Api.Option (rtpCat)
-import Ribosome.Control.Ribo (Ribo)
-import Ribosome.Control.Ribosome (Ribosome(Ribosome), newInternalTVar)
+import Ribosome.Control.Monad.Ribo (ConcNvimS, Ribo, runRib)
+import Ribosome.Control.Ribosome (Ribosome(Ribosome), newRibosomeTVar)
 import Ribosome.Data.Time (sleep, sleepW)
 
 type Runner env = TestConfig -> Neovim env () -> Neovim env ()
@@ -155,26 +156,30 @@ shutdownNvim _ prc stopEventHandlers = do
   killProcess prc
   -- quitNvim testCfg prc
 
-runTest :: TestConfig -> Internal.Config (Ribosome e) -> Ribo e () -> IO () -> IO ()
+runTest :: TestConfig -> Internal.Config s -> Neovim s () -> IO () -> IO ()
 runTest TestConfig{..} testCfg thunk _ = do
   result <- race (sleepW tcTimeout) (runNeovimThunk testCfg thunk)
   case result of
     Right _ -> return ()
     Left _ -> fail $ "test exceeded timeout of " ++ show tcTimeout ++ " seconds"
 
-runEmbeddedNvim :: TestConfig -> Ribosome e -> Ribo e () -> NvimProc -> IO ()
+runEmbeddedNvim :: TestConfig -> s -> Neovim s () -> NvimProc -> IO ()
 runEmbeddedNvim conf ribo thunk prc = do
   nvimConf <- Internal.newConfig (pure Nothing) newRPCConfig
   let testCfg = Internal.retypeConfig ribo nvimConf
   bracket (startHandlers prc conf nvimConf) (shutdownNvim testCfg prc) (runTest conf testCfg thunk)
 
-runEmbedded :: TestConfig -> Ribosome e -> Ribo e () -> IO ()
+runEmbedded :: TestConfig -> s -> Neovim s () -> IO ()
 runEmbedded conf ribo thunk = do
   let pc = testNvimProcessConfig conf
   withProcess pc $ runEmbeddedNvim conf ribo thunk
 
-unsafeEmbeddedSpec :: Runner (Ribosome e) -> TestConfig -> e -> Ribo e () -> IO ()
-unsafeEmbeddedSpec runner conf env spec = do
-  internal <- newInternalTVar
-  let ribo = Ribosome (tcPluginName conf) internal env
-  runEmbedded conf ribo $ runner conf spec
+unsafeEmbeddedSpec :: Runner s -> TestConfig -> s -> Neovim s () -> IO ()
+unsafeEmbeddedSpec runner conf s spec =
+  runEmbedded conf s $ runner conf spec
+
+unsafeEmbeddedSpecR :: Runner (Ribosome s) -> TestConfig -> s -> Ribo s (ConcNvimS s) () -> IO ()
+unsafeEmbeddedSpecR runner conf s spec = do
+  tv <- newRibosomeTVar s
+  let ribo = Ribosome (tcPluginName conf) tv
+  unsafeEmbeddedSpec runner conf ribo (runRib spec)

@@ -1,101 +1,77 @@
 module Ribosome.Config.Setting(
-  Setting (..),
   setting,
-  settingE,
   updateSetting,
   settingVariableName,
   settingOr,
   settingMaybe,
-  settingR,
-  SettingError(..),
-  updateSettingR,
 ) where
 
+import qualified Control.Lens as Lens (preview, review)
+import Control.Monad.Error.Class (MonadError(throwError, catchError))
+import Control.Monad.IO.Class (MonadIO)
+import Control.Monad.Trans.Except (runExceptT)
 import Data.Either (fromRight)
-import Data.Text.Prettyprint.Doc (Doc)
-import Data.Text.Prettyprint.Doc.Render.Terminal (AnsiStyle)
-import Neovim
-import System.Log (Priority(NOTICE))
+import Data.Either.Combinators (rightToMaybe)
 
-import Ribosome.Control.Monad.RiboE (RiboE, liftRibo, riboE, mapE)
-import Ribosome.Control.Ribo (Ribo)
-import qualified Ribosome.Control.Ribosome as R (name)
-import Ribosome.Data.ErrorReport (ErrorReport(..))
-import Ribosome.Error.Report (ReportError(..))
-import Ribosome.Msgpack.Decode (MsgpackDecode(fromMsgpack))
+import Ribosome.Control.Monad.Ribo (MonadRibo, Nvim, pluginName)
+import Ribosome.Data.Setting (AsSettingError, Setting(Setting), SettingError, _SettingError)
+import qualified Ribosome.Data.Setting as SettingError (SettingError(..))
+import Ribosome.Msgpack.Decode (MsgpackDecode)
 import Ribosome.Msgpack.Encode (MsgpackEncode(toMsgpack))
+import Ribosome.Nvim.Api.IO
+import Ribosome.Nvim.Api.RpcCall (AsRpcError, _RpcError)
+import qualified Ribosome.Nvim.Api.RpcCall as RpcError (RpcError(..))
 
-data SettingError =
-  Other String String
-  |
-  Decode String (Doc AnsiStyle)
-  |
-  Unset String
-  deriving Show
+settingVariableName ::
+  (MonadRibo m) =>
+  Setting a ->
+  m String
+settingVariableName (Setting settingName False _) =
+  return settingName
+settingVariableName (Setting settingName True _) = do
+  name <- pluginName
+  return $ name ++ "_" ++ settingName
 
-instance ReportError SettingError where
-  errorReport (Other name message) =
-    ErrorReport ("weird setting: " ++ name) ["failed to read setting `" ++ name ++ "`", message] NOTICE
-  errorReport (Decode name message) =
-    ErrorReport ("invalid setting: " ++ name) ["failed to decode setting `" ++ name ++ "`", show message] NOTICE
-  errorReport (Unset name) =
-    ErrorReport ("required setting unset: " ++ name) ["unset setting: `" ++ name ++ "`"] NOTICE
+settingRaw :: (MonadRibo m, MonadError e m, AsRpcError e, Nvim m, MsgpackDecode a) => Setting a -> m a
+settingRaw s =
+  vimGetVar =<< settingVariableName s
 
-data Setting a =
-  Setting {
-    name :: String,
-    prefix :: Bool,
-    fallback :: Maybe a
-  }
+setting ::
+  ∀ e m a.
+  (MonadIO m, Nvim m, MonadRibo m, MonadError e m, AsRpcError e, AsSettingError e, MsgpackDecode a) =>
+  Setting a ->
+  m a
+setting s@(Setting n _ fallback') =
+  (`catchError` handleError) $ settingRaw s
+  where
+    handleError a =
+      case Lens.preview (_SettingError . _RpcError) a of
+        Just (RpcError.Nvim _) ->
+          case fallback' of
+            (Just fb) -> return fb
+            Nothing -> throwError $ Lens.review _SettingError $ SettingError.Unset n
+        _ ->
+          throwError a
 
-settingVariableName :: Setting a -> Ribo e String
-settingVariableName (Setting n False _) = return n
-settingVariableName (Setting n True _) = do
-  pluginName <- R.name <$> ask
-  return $ pluginName ++ "_" ++ n
+settingOr ::
+  (MonadIO m, Nvim m, MonadRibo m, MsgpackDecode a) =>
+  a ->
+  Setting a ->
+  m a
+settingOr a =
+  (fromRight a <$>) . runExceptT . setting @SettingError
 
-settingE :: NvimObject a => Setting a -> Ribo e (Either String a)
-settingE s@(Setting _ _ fallback') = do
-  varName <- settingVariableName s
-  raw <- vim_get_var varName
-  case raw of
-    Right o -> fromObject' o
-    Left a -> return $ case fallback' of
-      Just fb -> Right fb
-      Nothing -> Left $ show a
+settingMaybe ::
+  (MonadIO m, Nvim m, MonadRibo m, MsgpackDecode a) =>
+  Setting a ->
+  m (Maybe a)
+settingMaybe =
+  (rightToMaybe <$>) . runExceptT . setting @SettingError
 
-setting :: NvimObject a => Setting a -> Ribo e a
-setting s = do
-  raw <- settingE s
-  either fail return raw
-
-settingOr :: NvimObject a => a -> Setting a -> Ribo e a
-settingOr a s = do
-  raw <- settingE s
-  return $ fromRight a raw
-
-settingMaybe :: NvimObject a => Setting a -> Ribo e (Maybe a)
-settingMaybe s = do
-  raw <- settingE s
-  return $ either (const Nothing) Just raw
-
-updateSetting :: NvimObject a => Setting a -> a -> Ribo e ()
-updateSetting s a = do
-  varName <- settingVariableName s
-  _ <- vim_set_var' varName (toObject a)
-  return ()
-
-settingR :: MsgpackDecode a => Setting a -> RiboE s SettingError a
-settingR s@(Setting n _ fallback') = do
-  varName <- liftRibo $ settingVariableName s
-  raw <- liftRibo $ vim_get_var varName
-  case raw of
-    Right o -> mapE (Decode n) $ riboE $ pure $ fromMsgpack o
-    Left _ -> riboE $ return $ case fallback' of
-      Just fb -> Right fb
-      Nothing -> Left $ Unset n
-
-updateSettingR :: MsgpackEncode a => Setting a -> a -> Ribo e ()
-updateSettingR s a = do
-  varName <- settingVariableName s
-  void $ vim_set_var' varName (toMsgpack a)
+updateSetting ::
+  (MonadRibo m, MonadError e m, MonadIO m, Nvim m, AsRpcError e, MsgpackEncode a) =>
+  Setting a ->
+  a ->
+  m ()
+updateSetting s a =
+  (`vimSetVar` toMsgpack a) =<< settingVariableName s
