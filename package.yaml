@@ -45,6 +45,7 @@ dependencies:
 - typed-process
 - unix
 - template-haskell
+- th-abstraction
 - hoist-error
 
 default-extensions:
