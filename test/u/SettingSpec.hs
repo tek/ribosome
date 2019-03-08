@@ -17,15 +17,15 @@ import Ribosome.Test.Unit (unitSpecE, unitSpecR)
 sett :: Setting Int
 sett = Setting "name" True Nothing
 
-settingSpec :: RiboE s SettingError (ConcNvimS s) ()
-settingSpec = do
+settingSuccessSpec :: RiboE s SettingError (ConcNvimS s) ()
+settingSuccessSpec = do
   updateSetting sett 5
   r <- setting sett
   gassertEqual 5 r
 
-test_setting :: IO ()
-test_setting =
-  unitSpecE def () settingSpec
+test_settingSuccess :: IO ()
+test_settingSuccess =
+  unitSpecE def () settingSuccessSpec
 
 settingFailSpec :: Ribo s (ConcNvimS s) ()
 settingFailSpec = do
