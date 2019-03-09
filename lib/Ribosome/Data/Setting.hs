@@ -1,16 +1,16 @@
 {-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE DeriveAnyClass #-}
 
-module Ribosome.Data.Setting  where
+module Ribosome.Data.Setting where
 
-import Control.Lens (makeClassyPrisms)
 import Data.Text.Prettyprint.Doc (Doc)
 import Data.Text.Prettyprint.Doc.Render.Terminal (AnsiStyle)
 import System.Log (Priority(NOTICE))
 
+import Ribosome.Data.DeepError (deepError)
 import Ribosome.Data.ErrorReport (ErrorReport(..))
 import Ribosome.Error.Report1 (ReportError(..))
-import Ribosome.Nvim.Api.RpcCall (AsRpcError(_RpcError), RpcError)
+import Ribosome.Nvim.Api.RpcCall (AsRpcError(_RpcError), RpcError, _Nvim)
 
 data SettingError =
   Rpc RpcError
@@ -20,10 +20,7 @@ data SettingError =
   Unset String
   deriving Show
 
-makeClassyPrisms ''SettingError
-
-instance AsRpcError SettingError where
-  _RpcError = _Rpc
+deepError ''SettingError
 
 instance ReportError SettingError where
   errorReport (Rpc err) =
