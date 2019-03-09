@@ -5,10 +5,11 @@ module DeepErrorSpec(
   htf_thisModulesTests,
 ) where
 
+import Control.Monad.Error.Class (MonadError)
 import Control.Monad.Trans.Except (ExceptT, runExceptT)
 import Data.Foldable (traverse_)
-import Test.Framework
 import Language.Haskell.TH
+import Test.Framework
 
 import Ribosome.Data.DeepError
 
@@ -54,14 +55,14 @@ deepError ''MainErr
 
 $(return [])
 
-f :: MonadDeepError e Err m => m ()
-f = throwHoist (ErrC (Err1 5))
+throwDeep :: MonadDeepError e Err m => m ()
+throwDeep =
+  throwHoist (ErrC (Err1 5))
 
 ex :: ExceptT MainErr IO ()
-ex = f
+ex = throwDeep
 
 test_hoist :: IO ()
 test_hoist = do
-  traverse_ putStrLn $ lines $(stringE . pprint =<< deepError ''MainErr)
   a <- runExceptT ex
   assertEqual (Left (MainErrC (MiddleErrC (ErrC (Err1 5))))) a

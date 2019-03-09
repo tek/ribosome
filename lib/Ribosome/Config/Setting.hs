@@ -13,7 +13,7 @@ import Data.Either (fromRight)
 import Data.Either.Combinators (rightToMaybe)
 
 import Ribosome.Control.Monad.Ribo (MonadRibo, Nvim, pluginName)
-import Ribosome.Data.DeepError (MonadDeepError(throwHoist))
+import Ribosome.Data.DeepError (MonadDeepError(throwHoist), catchAt)
 import Ribosome.Data.Setting (AsSettingError, Setting(Setting), SettingError, _SettingError)
 import qualified Ribosome.Data.Setting as SettingError (SettingError(..))
 import Ribosome.Msgpack.Decode (MsgpackDecode)
@@ -42,17 +42,14 @@ setting ::
   Setting a ->
   m a
 setting s@(Setting n _ fallback') =
-  (`catchError` handleError) $ settingRaw s
+  catchAt handleError $ settingRaw s
   where
+    handleError (RpcError.Nvim _) =
+      case fallback' of
+        (Just fb) -> return fb
+        Nothing -> throwHoist $ SettingError.Unset n
     handleError a =
-      undefined
-      -- case Lens.preview (_SettingError . _RpcError) a of
-      --   Just (RpcError.Nvim _) ->
-      --     case fallback' of
-      --       (Just fb) -> return fb
-      --       Nothing -> throwHoist $ SettingError.Unset n
-      --   _ ->
-      --     throwError a
+      throwHoist a
 
 settingOr ::
   (MonadIO m, Nvim m, MonadRibo m, MsgpackDecode a) =>

@@ -24,7 +24,7 @@ import Ribosome.Unsafe (unsafeLog)
 class DeepError e e' where
   prism :: Prism' e e'
 
-class (MonadError e m) => MonadDeepError e e' m where
+class (MonadError e m, DeepError e e') => MonadDeepError e e' m where
   throwHoist :: e' -> m a
 
 instance (MonadError e m, DeepError e e') => MonadDeepError e e' m where
