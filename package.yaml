@@ -3,7 +3,7 @@ version: 0.2.2.0
 synopsis: api extensions for nvim-hs
 description: Please see the README on GitHub at <https://github.com/tek/proteome-hs>
 github: "tek/ribosome-hs"
-license: MIT
+license: BOML
 license-file: LICENSE
 author: "Torsten Schmits"
 maintainer: "tek@tryp.io"
@@ -47,6 +47,7 @@ dependencies:
 - template-haskell
 - th-abstraction
 - exceptions
+- mmorph
 
 default-extensions:
 - AutoDeriveTypeable
