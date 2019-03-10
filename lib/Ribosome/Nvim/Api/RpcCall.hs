@@ -9,7 +9,7 @@ import Neovim.Exceptions (NeovimException)
 import Neovim.Plugin.Classes (FunctionName)
 import Neovim.RPC.FunctionCall (scall)
 
-import Ribosome.Data.Deep (deepPrisms)
+import Ribosome.Data.DeepPrisms (deepPrisms)
 import Ribosome.Error.Report.Class (ReportError(..))
 import Ribosome.Msgpack.Decode (MsgpackDecode(..))
 import Ribosome.Msgpack.Util (Err)

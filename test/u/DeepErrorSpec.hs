@@ -9,7 +9,7 @@ import Control.Monad.Trans.Except (runExceptT)
 import Test.Framework
 
 import Ribosome.Control.Monad.DeepError (MonadDeepError(throwHoist))
-import Ribosome.Data.Deep (deepPrisms)
+import Ribosome.Data.DeepPrisms (deepPrisms)
 
 newtype Err1 =
   Err1 Int
@@ -57,5 +57,6 @@ throwDeep =
 
 test_hoist :: IO ()
 test_hoist = do
+  -- traverse_ putStrLn $ lines $(stringE . pprint =<< deepPrisms ''MainErr)
   a <- runExceptT throwDeep
   assertEqual (Left (MainErrC (MiddleErrC (ErrC (Err1 5))))) a

@@ -11,7 +11,7 @@ import Test.Framework
 
 import Ribosome.Config.Setting (setting, updateSetting)
 import Ribosome.Control.Monad.Ribo (ConcNvimS, Ribo, RiboE, riboE2ribo)
-import Ribosome.Data.Deep (deepPrisms)
+import Ribosome.Data.DeepPrisms (deepPrisms)
 import Ribosome.Data.Setting (Setting(Setting))
 import Ribosome.Data.SettingError (SettingError)
 import Ribosome.Nvim.Api.RpcCall (RpcError)

@@ -6,7 +6,7 @@ import Data.Text.Prettyprint.Doc (Doc)
 import Data.Text.Prettyprint.Doc.Render.Terminal (AnsiStyle)
 import System.Log (Priority(NOTICE))
 
-import Ribosome.Data.Deep (deepPrisms)
+import Ribosome.Data.DeepPrisms (deepPrisms)
 import Ribosome.Data.ErrorReport (ErrorReport(..))
 import Ribosome.Error.Report.Class (ReportError(..))
 

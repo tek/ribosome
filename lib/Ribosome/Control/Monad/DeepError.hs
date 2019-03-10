@@ -2,16 +2,16 @@ module Ribosome.Control.Monad.DeepError where
 
 import Control.Monad.Error.Class (MonadError(throwError, catchError))
 
-import Ribosome.Data.Deep (Deep, hoist, retrieve)
+import Ribosome.Data.DeepPrisms (DeepPrisms, hoist, retrieve)
 
-class (MonadError e m, Deep e e') => MonadDeepError e e' m where
+class (MonadError e m, DeepPrisms e e') => MonadDeepError e e' m where
   throwHoist :: e' -> m a
 
-instance (MonadError e m, Deep e e') => MonadDeepError e e' m where
+instance (MonadError e m, DeepPrisms e e') => MonadDeepError e e' m where
   throwHoist =
     throwError . hoist
 
-catchAt :: (MonadError e m, Deep e e') => (e' -> m a) -> m a -> m a
+catchAt :: (MonadError e m, DeepPrisms e e') => (e' -> m a) -> m a -> m a
 catchAt handle ma =
   catchError ma f
   where

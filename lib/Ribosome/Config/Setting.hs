@@ -15,7 +15,7 @@ import Data.Either.Combinators (rightToMaybe)
 
 import Ribosome.Control.Monad.DeepError (MonadDeepError(throwHoist), catchAt)
 import Ribosome.Control.Monad.Ribo (MonadRibo, Nvim, pluginName)
-import Ribosome.Data.Deep (deepPrisms)
+import Ribosome.Data.DeepPrisms (deepPrisms)
 import Ribosome.Data.Setting (Setting(Setting))
 import Ribosome.Data.SettingError (SettingError)
 import qualified Ribosome.Data.SettingError as SettingError (SettingError(..))

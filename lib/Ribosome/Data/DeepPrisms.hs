@@ -1,7 +1,7 @@
 {-# LANGUAGE CPP #-}
 {-# LANGUAGE TemplateHaskell #-}
 
-module Ribosome.Data.Deep where
+module Ribosome.Data.DeepPrisms where
 
 import Control.Lens (Prism', makeClassyPrisms)
 import qualified Control.Lens as Lens (preview, review)
@@ -14,14 +14,14 @@ import Language.Haskell.TH.Datatype (
   )
 import Language.Haskell.TH.Syntax (ModName(..), Name(Name), NameFlavour(NameQ, NameS, NameG), OccName(..))
 
-class Deep e e' where
+class DeepPrisms e e' where
   prism :: Prism' e e'
 
-hoist :: Deep e e' => e' -> e
+hoist :: DeepPrisms e e' => e' -> e
 hoist =
   Lens.review prism
 
-retrieve :: Deep e e' => e -> Maybe e'
+retrieve :: DeepPrisms e e' => e -> Maybe e'
 retrieve =
   Lens.preview prism
 
@@ -58,7 +58,7 @@ mkHoist _ _ body = do
 
 deepPrismsInstance :: TypeQ -> TypeQ -> BodyQ -> DecQ
 deepPrismsInstance top local body =
-  instanceD (cxt []) (appT (appT [t|Deep|] top) local) [mkHoist top local body]
+  instanceD (cxt []) (appT (appT [t|DeepPrisms|] top) local) [mkHoist top local body]
 
 idInstance :: Name -> DecQ
 idInstance name =
@@ -69,7 +69,7 @@ idInstance name =
 
 eligibleForDeepError :: Name -> Q Bool
 eligibleForDeepError tpe = do
-  (ConT name) <- [t|Deep|]
+  (ConT name) <- [t|DeepPrisms|]
   isInstance name [ConT tpe, ConT tpe]
 
 subInstances :: Name -> [Name] -> Name -> DecsQ
@@ -99,16 +99,14 @@ prismName (Name _ topFlavour) (Name (OccName n) prismFlavour) =
       | sameModule topFlavour prismFlavour = NameS
       | otherwise = prismFlavour
 
--- FIXME replace unsafe head/tail
 deepInstances :: Name -> [Name] -> Name -> Name -> DecsQ
 deepInstances top intermediate name tpe = do
-  current <- deepPrismsInstance (conT top) (conT tpe) body
-  sub <- subInstances top newIntermediate tpe
+  current <- deepPrismsInstance (conT top) (conT tpe) (normalB body)
+  sub <- subInstances top (name : intermediate) tpe
   return (current : sub)
   where
-    newIntermediate = name : intermediate
-    ri = prismName top <$> newIntermediate
-    body = normalB $ foldr (\a z -> appE (appE [|(.)|] a) z) (head ri) (tail ri)
+    compose = appE . appE [|(.)|] . prismName top
+    body = foldr compose (prismName top name) intermediate
 
 deepInstancesIfEligible :: Name -> [Name] -> Ctor -> DecsQ
 deepInstancesIfEligible top intermediate (Ctor name [ConT tpe]) = do
@@ -127,12 +125,8 @@ deepPrisms' :: Name -> DecsQ
 deepPrisms' =
   errorInstances <=< dataType
 
-fixPrismNames :: Dec -> Q Dec
-fixPrismNames = return
-
 deepPrisms :: Name -> DecsQ
 deepPrisms name = do
   prisms <- makeClassyPrisms name
-  prisms' <- traverse fixPrismNames prisms
   err <- deepPrisms' name
-  return $ prisms' ++ err
+  return $ prisms ++ err
