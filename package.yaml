@@ -46,6 +46,7 @@ dependencies:
 - unix
 - template-haskell
 - th-abstraction
+- exceptions
 
 default-extensions:
 - AutoDeriveTypeable

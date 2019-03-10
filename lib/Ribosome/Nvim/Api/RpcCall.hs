@@ -2,7 +2,6 @@
 
 module Ribosome.Nvim.Api.RpcCall where
 
-import Control.Lens (makeClassyPrisms)
 import Data.Either.Combinators (mapLeft)
 import Data.MessagePack (Object)
 import Neovim (Neovim)
@@ -10,7 +9,7 @@ import Neovim.Exceptions (NeovimException)
 import Neovim.Plugin.Classes (FunctionName)
 import Neovim.RPC.FunctionCall (scall)
 
-import Ribosome.Data.DeepError (deepError)
+import Ribosome.Data.Deep (deepPrisms)
 import Ribosome.Error.Report.Class (ReportError(..))
 import Ribosome.Msgpack.Decode (MsgpackDecode(..))
 import Ribosome.Msgpack.Util (Err)
@@ -33,7 +32,7 @@ data RpcError =
   Nvim NeovimException
   deriving Show
 
-deepError ''RpcError
+deepPrisms ''RpcError
 
 class Rpc c a where
   call :: c -> Neovim e (Either RpcError a)

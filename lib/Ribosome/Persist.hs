@@ -6,9 +6,7 @@ module Ribosome.Persist(
   persistLoad,
 ) where
 
-import qualified Control.Lens as Lens (review)
 import Control.Monad (unless)
-import Control.Monad.Error.Class (MonadError(throwError))
 import Control.Monad.IO.Class (MonadIO, liftIO)
 import Control.Monad.IO.Unlift (MonadUnliftIO)
 import Data.Aeson (FromJSON, ToJSON, eitherDecode, encode)
@@ -21,13 +19,13 @@ import UnliftIO.Exception (tryIO)
 
 import Ribosome.Config.Setting (setting)
 import qualified Ribosome.Config.Settings as S (persistenceDir)
+import Ribosome.Control.Monad.DeepError (MonadDeepError(throwHoist))
 import Ribosome.Control.Monad.Error (recoveryFor)
 import Ribosome.Control.Monad.Ribo
-import Ribosome.Data.DeepError (MonadDeepError(throwHoist))
-import Ribosome.Data.PersistError (AsPersistError, _PersistError, PersistError)
+import Ribosome.Data.PersistError (PersistError)
 import qualified Ribosome.Data.PersistError as PersistError (PersistError(..))
-import Ribosome.Data.Setting (SettingError)
-import Ribosome.Nvim.Api.RpcCall (AsRpcError, RpcError)
+import Ribosome.Data.SettingError (SettingError)
+import Ribosome.Nvim.Api.RpcCall (RpcError)
 
 defaultPersistencePath :: MonadIO m => m FilePath
 defaultPersistencePath =

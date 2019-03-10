@@ -5,11 +5,11 @@ module Ribosome.Nvim.Api.GenerateIO where
 import Language.Haskell.TH
 import Language.Haskell.TH.Syntax
 
+import Ribosome.Control.Monad.DeepError (MonadDeepError, hoistEither)
 import Ribosome.Control.Monad.Ribo (Nvim(call))
 import Ribosome.Msgpack.Decode (MsgpackDecode)
 import Ribosome.Nvim.Api.Generate (FunctionData(FunctionData), generateFromApi)
 import Ribosome.Nvim.Api.RpcCall (RpcError)
-import Ribosome.Data.DeepError (MonadDeepError, hoistEither)
 
 rpcModule :: Module
 rpcModule =

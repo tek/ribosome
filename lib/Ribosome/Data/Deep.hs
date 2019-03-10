@@ -1,16 +1,11 @@
 {-# LANGUAGE CPP #-}
 {-# LANGUAGE TemplateHaskell #-}
 
-module Ribosome.Data.DeepError where
+module Ribosome.Data.Deep where
 
-import Control.Applicative (liftA2)
 import Control.Lens (Prism', makeClassyPrisms)
 import qualified Control.Lens as Lens (preview, review)
 import Control.Monad (join, (<=<))
-import Control.Monad.Error.Class (MonadError(throwError, catchError))
-import Data.Foldable (fold)
-import Data.List (intersperse)
-import Data.Maybe (fromMaybe)
 import Language.Haskell.TH
 import Language.Haskell.TH.Datatype (
   ConstructorInfo(constructorName, constructorFields),
@@ -19,35 +14,16 @@ import Language.Haskell.TH.Datatype (
   )
 import Language.Haskell.TH.Syntax (ModName(..), Name(Name), NameFlavour(NameQ, NameS, NameG), OccName(..))
 
-import Ribosome.Unsafe (unsafeLog)
-
-class DeepError e e' where
+class Deep e e' where
   prism :: Prism' e e'
 
-class (MonadError e m, DeepError e e') => MonadDeepError e e' m where
-  throwHoist :: e' -> m a
-
-instance (MonadError e m, DeepError e e') => MonadDeepError e e' m where
-  throwHoist =
-    throwError . hoist
-
-hoist :: DeepError e e' => e' -> e
+hoist :: Deep e e' => e' -> e
 hoist =
   Lens.review prism
 
-retrieve :: DeepError e e' => e -> Maybe e'
+retrieve :: Deep e e' => e -> Maybe e'
 retrieve =
   Lens.preview prism
-
-catchAt :: (MonadError e m, DeepError e e') => (e' -> m a) -> m a -> m a
-catchAt handle ma =
-  catchError ma f
-  where
-    f e = maybe (throwError e) handle (retrieve e)
-
-hoistEither :: MonadDeepError e e' m => Either e' a -> m a
-hoistEither =
-  either throwHoist return
 
 data Ctor =
   Ctor {
@@ -77,23 +53,23 @@ dataType name = do
 
 mkHoist :: TypeQ -> TypeQ -> BodyQ -> DecQ
 mkHoist _ _ body = do
-  (VarE prismName) <- [|prism|]
-  funD prismName [clause [] body []]
+  (VarE name) <- [|prism|]
+  funD name [clause [] body []]
 
-deepErrorInstance :: TypeQ -> TypeQ -> BodyQ -> DecQ
-deepErrorInstance top local body =
-  instanceD (cxt []) (appT (appT [t|DeepError|] top) local) [mkHoist top local body]
+deepPrismsInstance :: TypeQ -> TypeQ -> BodyQ -> DecQ
+deepPrismsInstance top local body =
+  instanceD (cxt []) (appT (appT [t|Deep|] top) local) [mkHoist top local body]
 
 idInstance :: Name -> DecQ
 idInstance name =
-  deepErrorInstance nt nt body
+  deepPrismsInstance nt nt body
   where
     nt = conT name
     body = normalB [|id|]
 
 eligibleForDeepError :: Name -> Q Bool
 eligibleForDeepError tpe = do
-  (ConT name) <- [t|DeepError|]
+  (ConT name) <- [t|Deep|]
   isInstance name [ConT tpe, ConT tpe]
 
 subInstances :: Name -> [Name] -> Name -> DecsQ
@@ -102,10 +78,10 @@ subInstances top intermediate local = do
   join <$> traverse (deepInstancesIfEligible top intermediate) subCons
 
 modName :: NameFlavour -> Maybe ModName
-modName (NameQ mod) =
-  Just mod
-modName (NameG _ _ mod) =
-  Just mod
+modName (NameQ mod') =
+  Just mod'
+modName (NameG _ _ mod') =
+  Just mod'
 modName _ =
   Nothing
 
@@ -126,7 +102,7 @@ prismName (Name _ topFlavour) (Name (OccName n) prismFlavour) =
 -- FIXME replace unsafe head/tail
 deepInstances :: Name -> [Name] -> Name -> Name -> DecsQ
 deepInstances top intermediate name tpe = do
-  current <- deepErrorInstance (conT top) (conT tpe) body
+  current <- deepPrismsInstance (conT top) (conT tpe) body
   sub <- subInstances top newIntermediate tpe
   return (current : sub)
   where
@@ -147,16 +123,16 @@ errorInstances (DT name cons) = do
   deepInsts <- traverse (deepInstancesIfEligible name []) cons
   return (idInst : join deepInsts)
 
-deepError' :: Name -> DecsQ
-deepError' =
+deepPrisms' :: Name -> DecsQ
+deepPrisms' =
   errorInstances <=< dataType
 
 fixPrismNames :: Dec -> Q Dec
 fixPrismNames = return
 
-deepError :: Name -> DecsQ
-deepError name = do
+deepPrisms :: Name -> DecsQ
+deepPrisms name = do
   prisms <- makeClassyPrisms name
   prisms' <- traverse fixPrismNames prisms
-  err <- deepError' name
+  err <- deepPrisms' name
   return $ prisms' ++ err

@@ -6,13 +6,14 @@ import Control.Concurrent.STM.TVar (modifyTVar)
 import Control.Lens (Lens')
 import qualified Control.Lens as Lens (over, set, view)
 import Control.Monad (join, (<=<))
+import Control.Monad.Catch (MonadThrow)
 import Control.Monad.Error.Class (MonadError(..))
 import Control.Monad.IO.Class (MonadIO, liftIO)
 import Control.Monad.IO.Unlift (MonadUnliftIO(..), UnliftIO(..), withUnliftIO)
 import Control.Monad.Reader.Class (MonadReader, ask, asks)
-import Control.Monad.State.Class (MonadState(put, get))
+import Control.Monad.State.Class (MonadState(put, get), gets, modify)
 import Control.Monad.Trans.Class (MonadTrans, lift)
-import Control.Monad.Trans.Except (ExceptT, runExceptT, withExceptT)
+import Control.Monad.Trans.Except (ExceptT(ExceptT), runExceptT, withExceptT)
 import Control.Monad.Trans.Reader (ReaderT(ReaderT), runReaderT)
 import Data.Either (fromRight)
 import Data.Either.Combinators (mapLeft)
@@ -20,8 +21,9 @@ import Data.Functor (void)
 import Neovim (Neovim)
 import UnliftIO.STM (TVar, atomically, readTVarIO)
 
+import Ribosome.Control.Monad.DeepError (MonadDeepError(throwHoist))
 import Ribosome.Control.Ribosome (Ribosome(Ribosome), RibosomeInternal, RibosomeState)
-import qualified Ribosome.Control.Ribosome as Ribosome (_errors, errors)
+import qualified Ribosome.Control.Ribosome as Ribosome (_errors, errors, name, state)
 import qualified Ribosome.Control.Ribosome as RibosomeState (internal, public)
 import Ribosome.Data.Errors (Errors)
 import Ribosome.Nvim.Api.RpcCall (Rpc, RpcError)
@@ -45,7 +47,7 @@ ribLocal lens (RiboConcState n ig ip g p) =
 
 newtype Ribo s m a =
   Ribo { unRibo :: ReaderT (RiboConcState s) m a }
-  deriving (Functor, Applicative, Monad, MonadIO)
+  deriving (Functor, Applicative, Monad, MonadIO, MonadThrow)
 
 instance MonadIO m => MonadState s (Ribo s m) where
   get = do
@@ -81,16 +83,18 @@ acall c = fromRight () <$> call c
 writeTv :: Lens' (RibosomeState s) s' -> TVar (RibosomeState s) -> s' -> IO ()
 writeTv l t = void . atomically . modifyTVar t . Lens.set l
 
+readTv :: Lens' (RibosomeState s) s' -> TVar (RibosomeState s) -> IO s'
+readTv l t = Lens.view l <$> readTVarIO t
+
 ribId :: MonadReader (Ribosome s) m => m (RiboConcState s)
 ribId = do
   Ribosome n tv <- ask
-  return $ RiboConcState n (read' RibosomeState.internal tv) (writeTv int tv) (read' pub tv) (writeTv pub tv)
+  return $ RiboConcState n (readTv RibosomeState.internal tv) (writeTv int tv) (readTv pub tv) (writeTv pub tv)
   where
     int :: Lens' (RibosomeState s) RibosomeInternal
     int = RibosomeState.internal
     pub :: Lens' (RibosomeState s) s
     pub = RibosomeState.public
-    read' l t = Lens.view l <$> readTVarIO t
 
 runRib :: MonadReader (Ribosome s) m => Ribo s m a -> m a
 runRib ma = do
@@ -104,8 +108,13 @@ local lens ma = do
 
 type RiboE s e m = Ribo s (ExceptT e m)
 
+unliftRibo :: (m a -> n b) -> Ribo s m a -> Ribo s n b
+unliftRibo f ma =
+  Ribo $ ReaderT (f . runReaderT (unRibo ma))
+
 riboE :: Ribo s m (Either e a) -> RiboE s e m a
-riboE = undefined
+riboE =
+  unliftRibo ExceptT
 
 runRiboE ::
   MonadReader (Ribosome s) m =>
@@ -177,8 +186,19 @@ instance MonadIO m => MonadRibo (Ribo s m) where
 instance MonadRibo m => MonadRibo (ExceptT e m) where
   pluginName = lift pluginName
   pluginInternal = lift pluginInternal
-
   pluginInternalPut = lift . pluginInternalPut
+
+instance MonadRibo (ConcNvimS e) where
+  pluginName =
+    asks $ Lens.view Ribosome.name
+
+  pluginInternal = do
+    tv <- asks $ Lens.view Ribosome.state
+    Lens.view RibosomeState.internal <$> readTVarIO tv
+
+  pluginInternalPut i = do
+    tv <- asks $ Lens.view Ribosome.state
+    atomically $ modifyTVar tv $ Lens.set RibosomeState.internal i
 
 getErrors :: MonadRibo m => m Errors
 getErrors =
@@ -190,3 +210,14 @@ inspectErrors = (<$> getErrors)
 modifyErrors :: MonadRibo m => (Errors -> Errors) -> m ()
 modifyErrors =
   pluginModifyInternal Ribosome.errors
+
+prepend :: MonadState s m => Lens' s [a] -> a -> m ()
+prepend lens a =
+  modify $ Lens.over lens (a:)
+
+inspectHeadE :: (MonadState s m, MonadDeepError e e' m) => e' -> Lens' s [a] -> m a
+inspectHeadE err lens = do
+  as <- gets $ Lens.view lens
+  case as of
+    (a : _) -> return a
+    _ -> throwHoist err

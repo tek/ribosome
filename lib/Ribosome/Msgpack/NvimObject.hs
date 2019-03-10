@@ -6,11 +6,11 @@ module Ribosome.Msgpack.NvimObject(
 import Control.DeepSeq (NFData)
 import GHC.Generics (Generic)
 import Neovim (NvimObject(..))
-import Ribosome.Msgpack.Encode (MsgpackEncode(..))
 import Ribosome.Msgpack.Decode (MsgpackDecode(..))
+import Ribosome.Msgpack.Encode (MsgpackEncode(..))
 
 newtype NO a =
-  NO a
+  NO { unNO :: a }
   deriving (Eq, Show, Generic, NFData)
 
 instance (MsgpackEncode a, MsgpackDecode a, NFData a) => NvimObject (NO a) where

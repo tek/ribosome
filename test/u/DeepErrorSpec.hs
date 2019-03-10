@@ -5,13 +5,11 @@ module DeepErrorSpec(
   htf_thisModulesTests,
 ) where
 
-import Control.Monad.Error.Class (MonadError)
-import Control.Monad.Trans.Except (ExceptT, runExceptT)
-import Data.Foldable (traverse_)
-import Language.Haskell.TH
+import Control.Monad.Trans.Except (runExceptT)
 import Test.Framework
 
-import Ribosome.Data.DeepError
+import Ribosome.Control.Monad.DeepError (MonadDeepError(throwHoist))
+import Ribosome.Data.Deep (deepPrisms)
 
 newtype Err1 =
   Err1 Int
@@ -27,7 +25,7 @@ data Err =
   ErrC1 Err2
   deriving (Eq, Show)
 
-deepError ''Err
+deepPrisms ''Err
 
 newtype MiddleOther =
   MiddleOther Int
@@ -39,7 +37,7 @@ data MiddleErr =
   MiddleErrOther MiddleOther
   deriving (Eq, Show)
 
-deepError ''MiddleErr
+deepPrisms ''MiddleErr
 
 newtype MainOther =
   MainOther Int
@@ -51,18 +49,13 @@ data MainErr =
   MainErrOther MainOther
   deriving (Eq, Show)
 
-deepError ''MainErr
-
-$(return [])
+deepPrisms ''MainErr
 
 throwDeep :: MonadDeepError e Err m => m ()
 throwDeep =
   throwHoist (ErrC (Err1 5))
 
-ex :: ExceptT MainErr IO ()
-ex = throwDeep
-
 test_hoist :: IO ()
 test_hoist = do
-  a <- runExceptT ex
+  a <- runExceptT throwDeep
   assertEqual (Left (MainErrC (MiddleErrC (ErrC (Err1 5))))) a
