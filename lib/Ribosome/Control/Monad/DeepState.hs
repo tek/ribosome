@@ -9,7 +9,13 @@ import Ribosome.Data.DeepLenses (DeepLenses(deepLens))
 class (MonadState s m, DeepLenses s s') => MonadDeepState s s' m where
   get :: m s'
   put :: s' -> m ()
+  state :: (s' -> m (a, s')) -> m a
 
 instance (MonadState s m, DeepLenses s s') => MonadDeepState s s' m where
   get = Lens.view deepLens <$> MS.get
   put = MS.modify . Lens.set deepLens
+  state f = do
+    s' <- get
+    ~(a, s'') <- f s'
+    put s''
+    return a
