@@ -29,8 +29,11 @@ newtype MiddleOther =
   MiddleOther Int
   deriving (Eq, Show)
 
-newtype MiddleS =
-  MiddleSC { _middleBot :: Bot }
+data MiddleS =
+  MiddleSC {
+    _middleBot :: Bot,
+    _middleS2 :: S2
+    }
   deriving (Eq, Show)
 
 deepLenses ''MiddleS
@@ -48,5 +51,5 @@ stateDeep = do
 
 test_lens :: IO ()
 test_lens = do
-  a <- execStateT stateDeep (MainSC (MiddleSC (BotC (S1 5))))
-  assertEqual (MainSC (MiddleSC (BotC (S1 8)))) a
+  a <- execStateT stateDeep (MainSC (MiddleSC (BotC (S1 5)) (S2 1)))
+  assertEqual (MainSC (MiddleSC (BotC (S1 8)) (S2 1))) a

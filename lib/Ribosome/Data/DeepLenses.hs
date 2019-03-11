@@ -2,9 +2,9 @@
 
 module Ribosome.Data.DeepLenses where
 
-import Control.Applicative (liftA2)
 import Control.Lens (Lens', makeClassy)
-import Control.Monad (join, (<=<))
+import Control.Monad (join)
+import Data.List (zipWith)
 import Language.Haskell.TH
 import Language.Haskell.TH.Datatype (
   ConstructorInfo(ConstructorInfo),
@@ -22,18 +22,14 @@ data Field =
     fieldName :: Name,
     fieldType :: Type
   }
-
-data SubError =
-  SubError {
-    seCtor :: Name,
-    seWrapped :: Name
-  }
+  deriving Show
 
 data DT =
   DT {
     dtName :: Name,
     dtFields :: [Field]
   }
+  deriving Show
 
 dataType :: Name -> Q DT
 dataType name = do
@@ -41,7 +37,7 @@ dataType name = do
   return $ DT (datatypeName info) (fields $ datatypeCons info)
   where
     fields [ConstructorInfo _ _ _ types _ (RecordConstructor names)] =
-      liftA2 Field names types
+      zipWith Field names types
     fields _ =
       []
 
@@ -54,8 +50,8 @@ deepLensesInstance :: TypeQ -> TypeQ -> BodyQ -> DecQ
 deepLensesInstance top local body =
   instanceD (cxt []) (appT (appT [t|DeepLenses|] top) local) [mkHoist top local body]
 
-idInstance :: Name -> DecQ
-idInstance name =
+idLenses :: Name -> DecQ
+idLenses name =
   deepLensesInstance nt nt body
   where
     nt = conT name
@@ -65,11 +61,6 @@ eligibleForDeepError :: Name -> Q Bool
 eligibleForDeepError tpe = do
   (ConT name) <- [t|DeepLenses|]
   isInstance name [ConT tpe, ConT tpe]
-
-subInstances :: Name -> [Name] -> Name -> DecsQ
-subInstances top intermediate local = do
-  (DT _ subCons) <- dataType local
-  join <$> traverse (deepInstancesIfEligible top intermediate) subCons
 
 modName :: NameFlavour -> Maybe ModName
 modName (NameQ mod') =
@@ -96,34 +87,35 @@ lensName (Name _ topFlavour) (Name (OccName n) lensFlavour) =
       | sameModule topFlavour lensFlavour = NameS
       | otherwise = lensFlavour
 
-deepInstances :: Name -> [Name] -> Name -> Name -> DecsQ
-deepInstances top intermediate name tpe = do
+fieldLenses :: Name -> [Name] -> Field -> DecsQ
+fieldLenses top intermediate (Field name (ConT tpe)) = do
   current <- deepLensesInstance (conT top) (conT tpe) (normalB body)
-  sub <- subInstances top (name : intermediate) tpe
+  sub <- dataLensesIfEligible top (name : intermediate) tpe
   return (current : sub)
   where
     compose = appE . appE [|(.)|] . lensName top
-    body = foldr compose (lensName top name) intermediate
-
-deepInstancesIfEligible :: Name -> [Name] -> Field -> DecsQ
-deepInstancesIfEligible top intermediate (Field name (ConT tpe)) = do
-  eligible <- eligibleForDeepError tpe
-  if eligible then deepInstances top intermediate name tpe else return []
-deepInstancesIfEligible _ _ _ =
+    body = foldr compose (lensName top name) (reverse intermediate)
+fieldLenses _ _ _ =
   return []
 
-errorInstances :: DT -> DecsQ
-errorInstances (DT name fields) = do
-  idInst <- idInstance name
-  deepInsts <- traverse (deepInstancesIfEligible name []) fields
-  return (idInst : join deepInsts)
+dataLenses :: Name -> [Name] -> Name -> DecsQ
+dataLenses top intermediate local = do
+  (DT _ fields) <- dataType local
+  join <$> traverse (fieldLenses top intermediate) fields
 
-deepLenses' :: Name -> DecsQ
-deepLenses' =
-  errorInstances <=< dataType
+dataLensesIfEligible :: Name -> [Name] -> Name -> DecsQ
+dataLensesIfEligible top intermediate local = do
+  eligible <- eligibleForDeepError local
+  if eligible then dataLenses top intermediate local else return []
+
+lensesForMainData :: Name -> DecsQ
+lensesForMainData name = do
+  idL <- idLenses name
+  fields <- dataLenses name [] name
+  return (idL : fields)
 
 deepLenses :: Name -> DecsQ
 deepLenses name = do
   lenses <- makeClassy name
-  err <- deepLenses' name
+  err <- lensesForMainData name
   return $ lenses ++ err
