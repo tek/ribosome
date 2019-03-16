@@ -2,11 +2,11 @@
 
 module Ribosome.Data.SettingError where
 
+import Data.DeepPrisms (deepPrisms)
 import Data.Text.Prettyprint.Doc (Doc)
 import Data.Text.Prettyprint.Doc.Render.Terminal (AnsiStyle)
 import System.Log (Priority(NOTICE))
 
-import Ribosome.Data.DeepPrisms (deepPrisms)
 import Ribosome.Data.ErrorReport (ErrorReport(..))
 import Ribosome.Error.Report.Class (ReportError(..))
 

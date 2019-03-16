@@ -1,5 +1,6 @@
 module Ribosome.Error.Report where
 
+import Control.Monad.DeepError (MonadDeepError)
 import Control.Monad.Error.Class (MonadError)
 import Control.Monad.IO.Class (MonadIO, liftIO)
 import Control.Monad.Reader.Class (MonadReader)
@@ -12,7 +13,6 @@ import Data.Text.Prettyprint.Doc.Render.Terminal (putDoc)
 import System.Log.Logger (logM)
 
 import Ribosome.Api.Echo (echom)
-import Ribosome.Control.Monad.DeepError (MonadDeepError)
 import Ribosome.Control.Monad.Ribo (MonadRibo, Nvim, RiboE, runRiboE)
 import qualified Ribosome.Control.Monad.Ribo as Ribo (getErrors, modifyErrors, pluginName)
 import Ribosome.Control.Ribosome (Ribosome(..))

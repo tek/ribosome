@@ -1,5 +1,6 @@
 resolver: lts-12.26
 packages:
 - .
+- ../cornea
 extra-deps:
 - pretty-terminal-0.1.0.0

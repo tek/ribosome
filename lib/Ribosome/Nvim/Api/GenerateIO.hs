@@ -2,10 +2,10 @@
 
 module Ribosome.Nvim.Api.GenerateIO where
 
+import Control.Monad.DeepError (MonadDeepError, hoistEither)
 import Language.Haskell.TH
 import Language.Haskell.TH.Syntax
 
-import Ribosome.Control.Monad.DeepError (MonadDeepError, hoistEither)
 import Ribosome.Control.Monad.Ribo (Nvim(call))
 import Ribosome.Msgpack.Decode (MsgpackDecode)
 import Ribosome.Nvim.Api.Generate (FunctionData(FunctionData), generateFromApi)

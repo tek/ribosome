@@ -7,11 +7,13 @@ import Control.Lens (Lens')
 import qualified Control.Lens as Lens (over, set, view)
 import Control.Monad (join, (<=<))
 import Control.Monad.Catch (MonadThrow)
+import Control.Monad.DeepError (MonadDeepError(throwHoist))
+import Control.Monad.DeepState (MonadDeepState, gets, modify)
 import Control.Monad.Error.Class (MonadError(..))
 import Control.Monad.IO.Class (MonadIO, liftIO)
 import Control.Monad.IO.Unlift (MonadUnliftIO(..), UnliftIO(..), withUnliftIO)
 import Control.Monad.Reader.Class (MonadReader, ask, asks)
-import Control.Monad.State.Class (MonadState(put, get), gets, modify)
+import Control.Monad.State.Class (MonadState(put, get))
 import Control.Monad.Trans.Class (MonadTrans, lift)
 import Control.Monad.Trans.Except (ExceptT(ExceptT), runExceptT, withExceptT)
 import Control.Monad.Trans.Reader (ReaderT(ReaderT), runReaderT)
@@ -21,7 +23,6 @@ import Data.Functor (void)
 import Neovim (Neovim)
 import UnliftIO.STM (TVar, atomically, readTVarIO)
 
-import Ribosome.Control.Monad.DeepError (MonadDeepError(throwHoist))
 import Ribosome.Control.Ribosome (Ribosome(Ribosome), RibosomeInternal, RibosomeState)
 import qualified Ribosome.Control.Ribosome as Ribosome (_errors, errors, name, state)
 import qualified Ribosome.Control.Ribosome as RibosomeState (internal, public)
@@ -116,6 +117,10 @@ riboE :: Ribo s m (Either e a) -> RiboE s e m a
 riboE =
   unliftRibo ExceptT
 
+liftRibo :: Functor m => Ribo s m a -> RiboE s e m a
+liftRibo =
+  riboE . fmap Right
+
 runRiboE ::
   MonadReader (Ribosome s) m =>
   RiboE s e m a ->
@@ -124,7 +129,7 @@ runRiboE ma = do
   rib0 <- ribId
   runExceptT $ (`runReaderT` rib0) . unRibo $ ma
 
-unliftRiboE :: (ExceptT e m a -> ExceptT e' m b) -> RiboE s e m a -> RiboE s e' m b
+unliftRiboE :: (ExceptT e m a -> ExceptT e' n b) -> RiboE s e m a -> RiboE s e' n b
 unliftRiboE f ma =
   Ribo $ ReaderT (f . runReaderT (unRibo ma))
 
@@ -211,11 +216,11 @@ modifyErrors :: MonadRibo m => (Errors -> Errors) -> m ()
 modifyErrors =
   pluginModifyInternal Ribosome.errors
 
-prepend :: MonadState s m => Lens' s [a] -> a -> m ()
+prepend :: MonadDeepState s s' m => Lens' s' [a] -> a -> m ()
 prepend lens a =
   modify $ Lens.over lens (a:)
 
-inspectHeadE :: (MonadState s m, MonadDeepError e e' m) => e' -> Lens' s [a] -> m a
+inspectHeadE :: (MonadDeepState s s' m, MonadDeepError e e' m) => e' -> Lens' s' [a] -> m a
 inspectHeadE err lens = do
   as <- gets $ Lens.view lens
   case as of

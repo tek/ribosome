@@ -47,7 +47,7 @@ dependencies:
 - template-haskell
 - th-abstraction
 - exceptions
-- mmorph
+- cornea
 
 default-extensions:
 - AutoDeriveTypeable

@@ -12,3 +12,6 @@ instance ReportError [Char] where
 instance ReportError [[Char]] where
   errorReport (msg:extra) = ErrorReport msg (msg:extra) NOTICE
   errorReport [] = ErrorReport "empty error" ["empty error"] DEBUG
+
+instance ReportError () where
+  errorReport _ = ErrorReport "" [] DEBUG

@@ -7,6 +7,7 @@ module Ribosome.Persist(
 ) where
 
 import Control.Monad (unless)
+import Control.Monad.DeepError (MonadDeepError(throwHoist))
 import Control.Monad.IO.Class (MonadIO, liftIO)
 import Control.Monad.IO.Unlift (MonadUnliftIO)
 import Data.Aeson (FromJSON, ToJSON, eitherDecode, encode)
@@ -19,7 +20,6 @@ import UnliftIO.Exception (tryIO)
 
 import Ribosome.Config.Setting (setting)
 import qualified Ribosome.Config.Settings as S (persistenceDir)
-import Ribosome.Control.Monad.DeepError (MonadDeepError(throwHoist))
 import Ribosome.Control.Monad.Error (recoveryFor)
 import Ribosome.Control.Monad.Ribo
 import Ribosome.Data.PersistError (PersistError)

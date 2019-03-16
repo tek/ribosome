@@ -2,6 +2,7 @@
 
 module Ribosome.Nvim.Api.RpcCall where
 
+import Data.DeepPrisms (deepPrisms)
 import Data.Either.Combinators (mapLeft)
 import Data.MessagePack (Object)
 import Neovim (Neovim)
@@ -9,7 +10,6 @@ import Neovim.Exceptions (NeovimException)
 import Neovim.Plugin.Classes (FunctionName)
 import Neovim.RPC.FunctionCall (scall)
 
-import Ribosome.Data.DeepPrisms (deepPrisms)
 import Ribosome.Error.Report.Class (ReportError(..))
 import Ribosome.Msgpack.Decode (MsgpackDecode(..))
 import Ribosome.Msgpack.Util (Err)

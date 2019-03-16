@@ -4,7 +4,8 @@ module Ribosome.Api.Echo(
   escapeQuotes,
 ) where
 
-import Ribosome.Control.Monad.DeepError (MonadDeepError)
+import Control.Monad.DeepError (MonadDeepError)
+
 import Ribosome.Control.Monad.Ribo (MonadRibo, Nvim, pluginName)
 import Ribosome.Data.String (escapeQuotes)
 import Ribosome.Nvim.Api.IO (vimCommand)

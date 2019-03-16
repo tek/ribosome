@@ -4,8 +4,6 @@ module Main where
 
 import Test.Framework
 import Test.Framework.BlackBoxTest ()
-import {-@ HTF_TESTS @-} DeepErrorSpec
-import {-@ HTF_TESTS @-} DeepStateSpec
 import {-@ HTF_TESTS @-} LocalSpec
 import {-@ HTF_TESTS @-} MsgpackSpec
 import {-@ HTF_TESTS @-} ScratchSpec
