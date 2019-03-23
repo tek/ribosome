@@ -105,6 +105,7 @@ instance (Ord k, MsgpackDecode k, MsgpackDecode v) => MsgpackDecode (Map k v) wh
 
 instance MsgpackDecode Int where
   fromMsgpack (ObjectInt i) = Right $ fromIntegral i
+  fromMsgpack (ObjectUInt i) = Right $ fromIntegral i
   fromMsgpack o = Util.illegalType "Int" o
 
 instance {-# OVERLAPPING #-} MsgpackDecode String where
