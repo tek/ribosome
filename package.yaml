@@ -37,6 +37,7 @@ dependencies:
 - MissingH
 - aeson
 - bytestring
+- transformers-base
 - transformers
 - safe
 - either
@@ -48,6 +49,7 @@ dependencies:
 - th-abstraction
 - exceptions
 - cornea
+- monad-control
 
 default-extensions:
 - AutoDeriveTypeable

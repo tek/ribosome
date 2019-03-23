@@ -5,8 +5,9 @@ module Ribosome.Control.Monad.Ribo where
 import Control.Concurrent.STM.TVar (modifyTVar)
 import Control.Lens (Lens')
 import qualified Control.Lens as Lens (over, set, view)
-import Control.Monad (join, (<=<))
-import Control.Monad.Catch (MonadThrow)
+import Control.Monad (join, liftM, (<=<))
+import Control.Monad.Base (MonadBase(..), liftBaseDefault)
+import Control.Monad.Catch (MonadCatch, MonadMask, MonadThrow)
 import Control.Monad.DeepError (MonadDeepError(throwHoist))
 import Control.Monad.DeepState (MonadDeepState, gets, modify)
 import Control.Monad.Error.Class (MonadError(..))
@@ -15,12 +16,20 @@ import Control.Monad.IO.Unlift (MonadUnliftIO(..), UnliftIO(..), withUnliftIO)
 import Control.Monad.Reader.Class (MonadReader, ask, asks)
 import Control.Monad.State.Class (MonadState(put, get))
 import Control.Monad.Trans.Class (MonadTrans, lift)
+import Control.Monad.Trans.Control (
+  ComposeSt,
+  MonadBaseControl(..),
+  MonadTransControl(..),
+  defaultLiftBaseWith,
+  defaultRestoreM,
+  )
 import Control.Monad.Trans.Except (ExceptT(ExceptT), runExceptT, withExceptT)
 import Control.Monad.Trans.Reader (ReaderT(ReaderT), runReaderT)
+import Control.Monad.Trans.Resource (runResourceT)
 import Data.Either (fromRight)
 import Data.Either.Combinators (mapLeft)
 import Data.Functor (void)
-import Neovim (Neovim)
+import Neovim.Context.Internal (Config, Neovim(..))
 import UnliftIO.STM (TVar, atomically, readTVarIO)
 
 import Ribosome.Control.Ribosome (Ribosome(Ribosome), RibosomeInternal, RibosomeState)
@@ -30,7 +39,19 @@ import Ribosome.Data.Errors (Errors)
 import Ribosome.Nvim.Api.RpcCall (Rpc, RpcError)
 import qualified Ribosome.Nvim.Api.RpcCall as Rpc (Rpc(..))
 
-type ConcNvimS s = Neovim (Ribosome s)
+type ConcNvimS e = Neovim (Ribosome e)
+
+instance MonadBase IO (ConcNvimS e) where
+  liftBase = liftIO
+
+instance MonadBaseControl IO (ConcNvimS e) where
+  type StM (ConcNvimS e) a = a
+  liftBaseWith f =
+    Neovim (lift $ ReaderT $ \r -> f (peel r))
+    where
+      peel r ma =
+        runReaderT (runResourceT (unNeovim ma)) r
+  restoreM = return
 
 -- FIXME change get/put to get/modify to avoid racing
 data RiboConcState s =
@@ -48,7 +69,7 @@ ribLocal lens (RiboConcState n ig ip g p) =
 
 newtype Ribo s m a =
   Ribo { unRibo :: ReaderT (RiboConcState s) m a }
-  deriving (Functor, Applicative, Monad, MonadIO, MonadThrow)
+  deriving (Functor, Applicative, Monad, MonadIO, MonadThrow, MonadCatch, MonadMask)
 
 instance MonadIO m => MonadState s (Ribo s m) where
   get = do
@@ -77,6 +98,24 @@ instance MonadError e m => MonadError e (Ribo s m) where
   throwError e = Ribo $ lift $ throwError e
   catchError ma f =
     Ribo $ ReaderT (\r -> catchError (runReaderT (unRibo ma) r) ((`runReaderT` r) . unRibo . f))
+
+instance (MonadBase b m) => MonadBase b (Ribo s m) where
+  liftBase = liftBaseDefault
+
+instance MonadTransControl (Ribo s) where
+    type StT (Ribo s) a = a
+    liftWith f =
+      Ribo $ ReaderT $ \r -> f $ \t -> runReaderT (unRibo t) r
+    restoreT = Ribo . restoreT
+    {-# INLINABLE liftWith #-}
+    {-# INLINABLE restoreT #-}
+
+instance (MonadBaseControl b m) => MonadBaseControl b (Ribo s m) where
+    type StM (Ribo s m) a = ComposeSt (Ribo s) m a
+    liftBaseWith = defaultLiftBaseWith
+    restoreM = defaultRestoreM
+    {-# INLINABLE liftBaseWith #-}
+    {-# INLINABLE restoreM #-}
 
 acall :: (Monad m, Nvim m, Rpc c ()) => c -> m ()
 acall c = fromRight () <$> call c

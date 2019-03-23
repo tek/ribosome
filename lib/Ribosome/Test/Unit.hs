@@ -1,12 +1,4 @@
-module Ribosome.Test.Unit(
-  unitSpec,
-  tempDir,
-  tempFile,
-  uPrefix,
-  fixture,
-  unitSpecR,
-  unitSpecE,
-) where
+module Ribosome.Test.Unit where
 
 import Control.Monad.IO.Class (MonadIO)
 import Neovim (Neovim)
