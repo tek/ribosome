@@ -1,5 +1,6 @@
 module Ribosome.Error.Report where
 
+import Control.Monad ((<=<))
 import Control.Monad.DeepError (MonadDeepError)
 import Control.Monad.Error.Class (MonadError)
 import Control.Monad.IO.Class (MonadIO, liftIO)
@@ -78,6 +79,16 @@ reportErrorOr_ ::
 reportErrorOr_ name =
   reportErrorOr name . const
 
+reportError' ::
+  (MonadRibo m, Nvim m, MonadIO m, ReportError e) =>
+  String ->
+  Either e a ->
+  m ()
+reportError' _ (Right _) =
+  return ()
+reportError' componentName (Left e) =
+  void $ runExceptT @RpcError $ reportError componentName e
+
 printAllErrors :: (MonadError RpcError m, MonadRibo m, Nvim m, MonadIO m) => m ()
 printAllErrors = do
   errors <- Ribo.getErrors
@@ -88,8 +99,5 @@ runRiboReport ::
   String ->
   RiboE s e' m () ->
   m ()
-runRiboReport componentName ma = do
-  result <- runRiboE ma
-  case result of
-    Right _ -> return ()
-    Left e -> void $ runExceptT @RpcError $ reportError componentName e
+runRiboReport componentName =
+  reportError' componentName <=< runRiboE
