@@ -1,14 +1,4 @@
-module Ribosome.Test.Embed(
-  defaultTestConfig,
-  defaultTestConfigWith,
-  TestConfig (..),
-  Vars(..),
-  unsafeEmbeddedSpec,
-  setVars,
-  setupPluginEnv,
-  quitNvim,
-  unsafeEmbeddedSpecR,
-) where
+module Ribosome.Test.Embed where
 
 import Control.Monad.IO.Class (liftIO)
 import Control.Monad.Reader (runReaderT)
@@ -73,7 +63,7 @@ data TestConfig =
   }
 
 instance Default TestConfig where
-  def = TestConfig "ribosome" "test/f/fixtures/rtp" "test/f/temp/log" 5 def def (Vars [])
+  def = TestConfig "ribosome" "test/f/fixtures/rtp" "test/f/temp/log" 10 def def (Vars [])
 
 defaultTestConfigWith :: String -> Vars -> TestConfig
 defaultTestConfigWith name = TestConfig name "test/f/fixtures/rtp" "test/f/temp/log" 5 def def
