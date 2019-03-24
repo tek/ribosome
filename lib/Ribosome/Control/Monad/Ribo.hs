@@ -1,3 +1,4 @@
+{-# OPTIONS_GHC -fno-warn-orphans #-}
 {-# LANGUAGE UndecidableInstances #-}
 
 module Ribosome.Control.Monad.Ribo where
@@ -5,7 +6,7 @@ module Ribosome.Control.Monad.Ribo where
 import Control.Concurrent.STM.TVar (modifyTVar)
 import Control.Lens (Lens')
 import qualified Control.Lens as Lens (over, set, view)
-import Control.Monad (join, liftM, (<=<))
+import Control.Monad (join, (<=<))
 import Control.Monad.Base (MonadBase(..), liftBaseDefault)
 import Control.Monad.Catch (MonadCatch, MonadMask, MonadThrow)
 import Control.Monad.DeepError (MonadDeepError(throwHoist))
@@ -29,7 +30,7 @@ import Control.Monad.Trans.Resource (runResourceT)
 import Data.Either (fromRight)
 import Data.Either.Combinators (mapLeft)
 import Data.Functor (void)
-import Neovim.Context.Internal (Config, Neovim(..))
+import Neovim.Context.Internal (Neovim(..))
 import UnliftIO.STM (TVar, atomically, readTVarIO)
 
 import Ribosome.Control.Ribosome (Ribosome(Ribosome), RibosomeInternal, RibosomeState)

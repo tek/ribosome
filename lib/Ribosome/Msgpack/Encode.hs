@@ -10,21 +10,21 @@ import Data.Map.Strict (Map)
 import qualified Data.Map.Strict as Map (fromList, toList)
 import Data.MessagePack (Object(..))
 import GHC.Generics (
-  Generic,
-  Rep,
-  (:*:)(..),
-  M1(..),
-  D1,
   C1,
-  S1,
-  K1(..),
-  Selector,
   Constructor,
-  selName,
-  from,
+  D1,
+  Generic,
+  K1(..),
+  M1(..),
+  Rep,
+  S1,
+  Selector,
   conIsRecord,
+  from,
+  selName,
+  (:*:)(..),
   )
-import qualified Ribosome.Msgpack.Util as Util (string, assembleMap)
+import qualified Ribosome.Msgpack.Util as Util (assembleMap, string)
 
 class MsgpackEncode a where
   toMsgpack :: a -> Object
@@ -82,3 +82,6 @@ instance MsgpackEncode a => MsgpackEncode (Maybe a) where
 
 instance MsgpackEncode Bool where
   toMsgpack = ObjectBool
+
+instance MsgpackEncode () where
+  toMsgpack _ = ObjectNil

@@ -3,14 +3,11 @@ module Ribosome.Test.Exists(
 ) where
 
 import Control.Monad.IO.Class (MonadIO)
-import Data.Char (toUpper)
-import Neovim
+import Data.MessagePack (Object(ObjectInt))
+import Neovim (Neovim, toObject, vim_call_function)
 
+import Ribosome.Data.String (capitalize)
 import Ribosome.Data.Time (epochSeconds, sleep)
-
-capitalize :: String -> String
-capitalize [] = []
-capitalize (head' : tail') = toUpper head' : tail'
 
 retry :: MonadIO f => Double -> Int -> f a -> (a -> f (Either String b)) -> f b
 retry interval timeout thunk check = do

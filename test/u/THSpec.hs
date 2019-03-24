@@ -1,3 +1,4 @@
+{-# OPTIONS_GHC -fno-warn-orphans #-}
 {-# OPTIONS_GHC -F -pgmF htfpp #-}
 {-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE NoOverloadedStrings #-}
@@ -6,25 +7,44 @@ module THSpec(
   htf_thisModulesTests,
 ) where
 
--- import Language.Haskell.TH (pprint, runQ)
+import Control.Monad.Trans.Class (lift)
+import Data.Foldable (traverse_)
+import Language.Haskell.TH
+import Neovim (Plugin(..))
 import Test.Framework
 
--- import Prelude
+import Ribosome.Control.Monad.Ribo (ConcNvimS, Ribo, runRib)
+import Ribosome.Control.Ribosome (Ribosome, newRibosome)
+import Ribosome.Msgpack.Decode (MsgpackDecode)
+import Ribosome.Msgpack.Encode (MsgpackEncode)
+import Ribosome.Plugin
+import Ribosome.Plugin.TH
 
--- import Ribosome.Nvim.Api.GenerateData
--- import Ribosome.Nvim.Api.GenerateIO
+newtype Par =
+  Par Int
+  deriving (Eq, Show, MsgpackDecode, MsgpackEncode)
 
--- test_io :: IO ()
--- test_io = do
---   expr <- runQ generateIO
---   -- expr <- runQ $ genIO fun
---   -- putStrLn $ show expr
---   putStrLn $ pprint expr
---   return ()
+handler :: Monad m => Par -> m ()
+handler =
+  undefined
 
--- test_data :: IO ()
--- test_data = do
---   expr <- runQ generateData
---   -- putStrLn $ show expr
---   putStrLn $ pprint expr
---   return ()
+type R = Ribo Int (ConcNvimS Int)
+
+instance RpcHandler String (Ribosome Int) R where
+  native = lift . runRib
+
+handleError :: String -> R ()
+handleError _ =
+  return ()
+
+$(return [])
+
+plugin' :: IO (Plugin (Ribosome Int))
+plugin' = do
+  ribo <- newRibosome "test" 1
+  return $ nvimPlugin @String @(Ribosome Int) @R ribo [$(rpcHandlerDef 'handler)] handleError
+
+test_plug :: IO ()
+test_plug = do
+  _ <- plugin'
+  traverse_ putStrLn $ lines $(stringE . pprint =<< rpcHandlerDef 'handler)

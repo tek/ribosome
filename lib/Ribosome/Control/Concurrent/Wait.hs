@@ -1,6 +1,5 @@
 module Ribosome.Control.Concurrent.Wait where
 
-import Control.Monad.IO.Class (MonadIO, liftIO)
 import Control.Monad.IO.Unlift (MonadUnliftIO)
 import Data.Default (Default(def))
 import UnliftIO.Exception (tryAny)
@@ -25,7 +24,7 @@ waitIO (Retry maxRetry interval) thunk cond =
       case result of
         Just a -> return $ Just a
         Nothing -> do
-          sleep 0.1
+          sleep interval
           wait (count - 1)
     check (Right a) = do
       ok <- cond a
