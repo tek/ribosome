@@ -6,6 +6,7 @@ module Ribosome.Msgpack.Encode(
 ) where
 
 import Data.Bifunctor (bimap)
+import Data.Int (Int64)
 import Data.Map.Strict (Map)
 import qualified Data.Map.Strict as Map (fromList, toList)
 import Data.MessagePack (Object(..))
@@ -71,6 +72,9 @@ instance (Ord k, MsgpackEncode k, MsgpackEncode v) => MsgpackEncode (Map k v) wh
 instance MsgpackEncode Int where
   toMsgpack = ObjectInt . fromIntegral
 
+instance MsgpackEncode Int64 where
+  toMsgpack = ObjectInt . fromIntegral
+
 instance {-# OVERLAPPING #-} MsgpackEncode String where
   toMsgpack = Util.string
 
@@ -85,3 +89,9 @@ instance MsgpackEncode Bool where
 
 instance MsgpackEncode () where
   toMsgpack _ = ObjectNil
+
+instance MsgpackEncode Object where
+  toMsgpack = id
+
+instance (MsgpackEncode a, MsgpackEncode b) => MsgpackEncode (a, b) where
+  toMsgpack (a, b) = ObjectArray [toMsgpack a, toMsgpack b]

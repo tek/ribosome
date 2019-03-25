@@ -3,7 +3,9 @@
 module Ribosome.Nvim.Api.Generate where
 
 import Control.Monad (join)
+import Data.Bifunctor (first)
 import Data.Char (toUpper)
+import Data.Int (Int64)
 import Data.Map (Map)
 import qualified Data.Map as Map (lookup)
 import Data.Maybe (fromMaybe)
@@ -12,6 +14,7 @@ import Neovim.API.Parser (
   NeovimAPI(functions),
   NeovimFunction(NeovimFunction),
   NeovimType(NestedType, SimpleType, Void),
+  customTypes,
   parseAPI,
   )
 import Neovim.API.TH (defaultAPITypeToHaskellTypeMap)
@@ -55,8 +58,10 @@ functionData nvimTypes (NeovimFunction name parameters _ async _) = do
     prefix i n = "arg" ++ show i ++ "_" ++ n
     prefixedNames = zipWith prefix [0 :: Int ..] (snd <$> parameters)
 
-generateFromApi :: (FunctionData -> Q [Dec]) -> Q [Dec]
-generateFromApi f = do
+generateFromApi :: (FunctionData -> Q [Dec]) -> (Name -> Int64 -> DecsQ) -> Q [Dec]
+generateFromApi handleFunction handleExtType = do
   api <- either (fail . show) return =<< runIO parseAPI
   funcs <- traverse (functionData defaultAPITypeToHaskellTypeMap) (functions api)
-  join <$> traverse f funcs
+  funcDecs <- traverse handleFunction funcs
+  tpeDecs <- traverse (uncurry handleExtType) $ first mkName <$> customTypes api
+  return $ join (funcDecs ++ tpeDecs)

@@ -68,7 +68,6 @@ data ArgType =
   OtherType
   deriving (Eq, Ord, Show, Read)
 
-
 classifyArgType :: Type -> Q ArgType
 classifyArgType t = do
   set <- genStringTypesSet
@@ -88,70 +87,51 @@ classifyArgType t = do
 
 functionImplementation :: Name -> Q ([ArgType], Exp)
 functionImplementation functionName = do
-    fInfo <- reify functionName
-    nargs <- mapM classifyArgType $ case fInfo of
-#if __GLASGOW_HASKELL__ < 800
-            VarI _ functionType _ _ ->
-#else
-            VarI _ functionType _ ->
-#endif
-                determineNumberOfArguments functionType
-
-            x ->
-                error $ "Value given to function is (likely) not the name of a function.\n" <> show x
-
-    e <- topLevelCase nargs
-    return (nargs, e)
-
+  fInfo <- reify functionName
+  nargs <- mapM classifyArgType $ case fInfo of
+    VarI _ functionType _ ->
+      determineNumberOfArguments functionType
+    x ->
+      error $ "Value given to function is (likely) not the name of a function.\n" <> show x
+  e <- topLevelCase nargs
+  return (nargs, e)
   where
     determineNumberOfArguments :: Type -> [Type]
     determineNumberOfArguments ft = case ft of
-        ForallT _ _ t -> determineNumberOfArguments t
-        AppT (AppT ArrowT t) r -> t : determineNumberOfArguments r
-        _ -> []
+      ForallT _ _ t -> determineNumberOfArguments t
+      AppT (AppT ArrowT t) r -> t : determineNumberOfArguments r
+      _ -> []
     -- \args -> case args of ...
     topLevelCase :: [ArgType] -> Q Exp
     topLevelCase ts = do
-        let n = length ts
-            minLength = length [ () | Optional _ <- reverse ts ]
-        args <- newName "args"
-        lamE [varP args] (caseE (varE args)
-            (zipWith matchingCase [n,n-1..] [0..minLength] ++ [errorCase]))
-
+      let
+        n = length ts
+        minLength = length [ () | Optional _ <- reverse ts ]
+      args <- newName "args"
+      lamE [varP args] (caseE (varE args) (zipWith matchingCase [n,n-1..] [0..minLength] ++ [errorCase]))
     -- _ -> err "Wrong number of arguments"
     errorCase :: Q Match
     errorCase = match wildP
-        (normalB [|throw . ErrorMessage . pretty $ "Wrong number of arguments for function: "
-                        ++ $(litE (StringL (nameBase functionName))) |]) []
-
+      (normalB [|throw . ErrorMessage . pretty $ "Wrong number of arguments for function: " ++
+        $(litE (StringL (nameBase functionName))) |]) []
     -- [x,y] -> case pure add <*> fromObject x <*> fromObject y of ...
     matchingCase :: Int -> Int -> Q Match
     matchingCase n x = do
-        vars <- mapM (\_ -> Just <$> newName "x") [1..n]
-        let optVars = replicate x (Nothing :: Maybe Name)
-        match ((listP . map varP . catMaybes) vars)
-              (normalB
-                (caseE
-                    (foldl genArgumentCast [|pure $(varE functionName)|]
-                        (zip (vars ++ optVars) (repeat [|(<*>)|])))
-                  [successfulEvaluation, failedEvaluation]))
-              []
-
+      vars <- mapM (\_ -> Just <$> newName "x") [1..n]
+      let optVars = replicate x (Nothing :: Maybe Name)
+      match ((listP . map varP . catMaybes) vars) (
+        normalB (caseE (foldl genArgumentCast [|pure $(varE functionName)|] (zip (vars ++ optVars) (repeat [|(<*>)|])))
+                [successfulEvaluation, failedEvaluation])) []
     genArgumentCast :: Q Exp -> (Maybe Name, Q Exp) -> Q Exp
     genArgumentCast e = \case
-        (Just v,op) ->
-            infixE (Just e) op (Just [|fromMsgpack $(varE v)|])
-        (Nothing, op) ->
-            infixE (Just e) op (Just [|pure Nothing|])
-
+      (Just v,op) ->
+        infixE (Just e) op (Just [|fromMsgpack $(varE v)|])
+      (Nothing, op) ->
+        infixE (Just e) op (Just [|pure Nothing|])
     successfulEvaluation :: Q Match
     successfulEvaluation = newName "action" >>= \action ->
-        match (conP (mkName "Right") [varP action])
-              (normalB [|toMsgpack <$> $(varE action)|])
-              []
+      match (conP (mkName "Right") [varP action]) (normalB [|toMsgpack <$> $(varE action)|]) []
     failedEvaluation :: Q Match
     failedEvaluation = newName "e" >>= \e ->
-        match (conP (mkName "Left") [varP e])
-              (normalB [|throw . ErrorMessage $ ($(varE e) :: Doc AnsiStyle)|])
-              []
+      match (conP (mkName "Left") [varP e]) (normalB [|throw . ErrorMessage $ ($(varE e) :: Doc AnsiStyle)|]) []
 

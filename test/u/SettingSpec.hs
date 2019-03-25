@@ -5,6 +5,7 @@ module SettingSpec(
   htf_thisModulesTests,
 ) where
 
+import Control.Monad.DeepError (catchAt)
 import Data.DeepPrisms (deepPrisms)
 import Data.Default (def)
 import Data.Functor (void)
@@ -14,8 +15,9 @@ import Ribosome.Config.Setting (setting, updateSetting)
 import Ribosome.Control.Monad.Ribo (ConcNvimS, Ribo, RiboE, riboE2ribo)
 import Ribosome.Data.Setting (Setting(Setting))
 import Ribosome.Data.SettingError (SettingError)
+import Ribosome.Error.Report.Class (ReportError(..))
 import Ribosome.Nvim.Api.RpcCall (RpcError)
-import Ribosome.Test.Unit (unitSpecE, unitSpecR)
+import Ribosome.Test.Unit (unitSpec)
 import Test ()
 
 data SettingSpecError =
@@ -23,6 +25,9 @@ data SettingSpecError =
   |
   Rpc RpcError
   deriving Show
+
+instance ReportError SettingSpecError where
+  errorReport = undefined
 
 deepPrisms ''SettingSpecError
 
@@ -37,16 +42,18 @@ settingSuccessSpec = do
 
 test_settingSuccess :: IO ()
 test_settingSuccess =
-  unitSpecE def () settingSuccessSpec
+  unitSpec def () settingSuccessSpec
 
-settingFailSpec :: Ribo s (ConcNvimS s) ()
+settingFailSpec :: RiboE s SettingSpecError (ConcNvimS s) ()
 settingFailSpec = do
-  ea <- riboE2ribo result
+  ea <- catchAt catch $ Right <$> result
   void $ gassertLeft ea
   where
     result :: RiboE s SettingSpecError (ConcNvimS s) Int
     result = setting sett
+    catch :: SettingError -> RiboE s SettingSpecError (ConcNvimS s) (Either SettingError Int)
+    catch = return . Left
 
 test_settingFail :: IO ()
 test_settingFail =
-  unitSpecR def () settingFailSpec
+  unitSpec def () settingFailSpec

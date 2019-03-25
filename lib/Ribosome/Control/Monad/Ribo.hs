@@ -31,6 +31,7 @@ import Data.Either (fromRight)
 import Data.Either.Combinators (mapLeft)
 import Data.Functor (void)
 import Neovim.Context.Internal (Neovim(..))
+import Ribosome.Plugin (RpcHandler(..))
 import UnliftIO.STM (TVar, atomically, readTVarIO)
 
 import Ribosome.Control.Ribosome (Ribosome(Ribosome), RibosomeInternal, RibosomeState)
@@ -72,6 +73,8 @@ newtype Ribo s m a =
   Ribo { unRibo :: ReaderT (RiboConcState s) m a }
   deriving (Functor, Applicative, Monad, MonadIO, MonadThrow, MonadCatch, MonadMask)
 
+type RiboE s e m = Ribo s (ExceptT e m)
+
 instance MonadIO m => MonadState s (Ribo s m) where
   get = do
     RiboConcState{..} <- Ribo ask
@@ -91,6 +94,10 @@ class Nvim m where
 
 instance Nvim (Neovim e) where
   call = Rpc.call
+
+class (Nvim m, MonadDeepError e RpcError m) => NvimE e m where
+
+instance (Nvim m, MonadDeepError e RpcError m) => NvimE e m where
 
 instance (MonadTrans t, Nvim m, Monad m) => Nvim (t m) where
   call = lift . call
@@ -117,6 +124,9 @@ instance (MonadBaseControl b m) => MonadBaseControl b (Ribo s m) where
     restoreM = defaultRestoreM
     {-# INLINABLE liftBaseWith #-}
     {-# INLINABLE restoreM #-}
+
+instance RpcHandler e (Ribosome s) (RiboE s e (ConcNvimS s)) where
+  native = runRib
 
 acall :: (Monad m, Nvim m, Rpc c ()) => c -> m ()
 acall c = fromRight () <$> call c
@@ -146,8 +156,6 @@ local :: Monad m => Lens' s s' -> Ribo s' m a -> Ribo s m a
 local lens ma = do
   r <- Ribo ask
   Ribo . lift . runReaderT (unRibo ma) $ ribLocal lens r
-
-type RiboE s e m = Ribo s (ExceptT e m)
 
 unliftRibo :: (m a -> n b) -> Ribo s m a -> Ribo s n b
 unliftRibo f ma =
@@ -201,7 +209,7 @@ riboInternal :: (MonadReader (RiboConcState s) m, MonadIO m) => m RibosomeIntern
 riboInternal =
   liftIO =<< asks rsaInternalGet
 
-class Monad m => MonadRibo m where
+class (MonadIO m, Nvim m) => MonadRibo m where
   pluginName :: m String
   pluginInternal :: m RibosomeInternal
   pluginInternalPut :: RibosomeInternal -> m ()
@@ -217,7 +225,7 @@ pluginModifyInternal l f = do
   cur <- pluginInternal
   pluginInternalPut $ Lens.over l f cur
 
-instance MonadIO m => MonadRibo (Ribo s m) where
+instance (MonadIO m, Nvim m) => MonadRibo (Ribo s m) where
   pluginName =
     Ribo (asks rsaName)
 
@@ -256,7 +264,7 @@ modifyErrors :: MonadRibo m => (Errors -> Errors) -> m ()
 modifyErrors =
   pluginModifyInternal Ribosome.errors
 
-prepend :: MonadDeepState s s' m => Lens' s' [a] -> a -> m ()
+prepend :: ∀s' s m a. MonadDeepState s s' m => Lens' s' [a] -> a -> m ()
 prepend lens a =
   modify $ Lens.over lens (a:)
 

@@ -2,7 +2,7 @@ module Ribosome.Data.Scratch(
   Scratch(..),
 ) where
 
-import Neovim (Buffer, Window, Tabpage)
+import Ribosome.Nvim.Api.Data (Buffer, Tabpage, Window)
 
 data Scratch =
   Scratch {

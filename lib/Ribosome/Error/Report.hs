@@ -95,6 +95,7 @@ printAllErrors = do
   liftIO $ putDoc (pretty errors <> line)
 
 runRiboReport ::
+  ∀ e' e s m.
   (MonadReader (Ribosome s) m, MonadRibo m, Nvim m, MonadIO m, ReportError e') =>
   String ->
   RiboE s e' m () ->

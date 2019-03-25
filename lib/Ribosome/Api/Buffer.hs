@@ -1,52 +1,45 @@
-module Ribosome.Api.Buffer (
-  edit,
-  buflisted,
-  setBufferContent,
-  bufferContent,
-  currentBufferContent,
-  setCurrentBufferContent,
-) where
+module Ribosome.Api.Buffer  where
 
-import Neovim (
-  Buffer,
-  Neovim,
-  NvimObject(..),
-  Object,
-  buffer_get_lines',
-  buffer_get_number',
-  buffer_set_lines',
-  toObject,
-  vim_call_function',
-  vim_command',
-  vim_get_current_buffer',
+import Data.MessagePack (Object)
+
+import Ribosome.Control.Monad.Ribo (NvimE)
+import Ribosome.Msgpack.Encode (toMsgpack)
+import Ribosome.Nvim.Api.Data (Buffer)
+import Ribosome.Nvim.Api.IO (
+  bufferGetLines,
+  bufferGetNumber,
+  bufferSetLines,
+  vimCallFunction,
+  vimCommand,
+  vimGetCurrentBuffer,
   )
 
-edit :: FilePath -> Neovim e ()
-edit path = vim_command' $ "silent! edit " ++ path
+edit :: NvimE e m => FilePath -> m ()
+edit path = vimCommand $ "silent! edit " ++ path
 
-nvimCallBool :: String -> [Object] -> Neovim e Bool
-nvimCallBool fun args =
-  vim_call_function' fun args >>= fromObject'
+nvimCallBool :: NvimE e m => String -> [Object] -> m Bool
+nvimCallBool =
+  vimCallFunction
 
-buflisted :: Buffer -> Neovim e Bool
+buflisted :: NvimE e m => Buffer -> m Bool
 buflisted buf = do
-  num <- buffer_get_number' buf
-  nvimCallBool "buflisted" [toObject num]
+  (num :: Int) <- bufferGetNumber buf
+  nvimCallBool "buflisted" [toMsgpack num]
 
-bufferContent :: Buffer -> Neovim e [String]
+bufferContent :: NvimE e m => Buffer -> m [String]
 bufferContent buffer =
-  buffer_get_lines' buffer 0 (-1) False
+  bufferGetLines buffer 0 (-1) False
 
-currentBufferContent :: Neovim e [String]
+currentBufferContent :: NvimE e m => m [String]
 currentBufferContent = do
-  buffer <- vim_get_current_buffer'
+  buffer <- vimGetCurrentBuffer
   bufferContent buffer
 
-setBufferContent :: Buffer -> [String] -> Neovim e ()
+setBufferContent :: NvimE e m => Buffer -> [String] -> m ()
 setBufferContent buffer =
-  buffer_set_lines' buffer 0 (-1) False
+  bufferSetLines buffer 0 (-1) False
 
-setCurrentBufferContent :: [String] -> Neovim e ()
+setCurrentBufferContent :: NvimE e m => [String] -> m ()
 setCurrentBufferContent content = do
-  buffer <- vim_get_current_buffer'
+  buffer <- vimGetCurrentBuffer
   setBufferContent buffer content

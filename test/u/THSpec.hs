@@ -7,7 +7,9 @@ module THSpec(
   htf_thisModulesTests,
 ) where
 
+import Control.Monad.Error.Class (MonadError)
 import Control.Monad.Trans.Class (lift)
+import Control.Monad.Trans.Except (ExceptT)
 import Data.Foldable (traverse_)
 import Language.Haskell.TH
 import Neovim (Plugin(..))
@@ -17,6 +19,7 @@ import Ribosome.Control.Monad.Ribo (ConcNvimS, Ribo, runRib)
 import Ribosome.Control.Ribosome (Ribosome, newRibosome)
 import Ribosome.Msgpack.Decode (MsgpackDecode)
 import Ribosome.Msgpack.Encode (MsgpackEncode)
+import Ribosome.Nvim.Api.GenerateData
 import Ribosome.Plugin
 import Ribosome.Plugin.TH
 
@@ -47,4 +50,4 @@ plugin' = do
 test_plug :: IO ()
 test_plug = do
   _ <- plugin'
-  traverse_ putStrLn $ lines $(stringE . pprint =<< rpcHandlerDef 'handler)
+  traverse_ putStrLn $ lines $(stringE . pprint =<< generateData)

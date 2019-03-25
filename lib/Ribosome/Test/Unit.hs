@@ -5,35 +5,29 @@ import Neovim (Neovim)
 import System.FilePath (takeDirectory, takeFileName, (</>))
 import UnliftIO.Exception (throwString)
 
-import Ribosome.Control.Monad.Ribo (ConcNvimS, Ribo, RiboE, riboE2ribo)
-import Ribosome.Test.Embed (TestConfig(..), setupPluginEnv, unsafeEmbeddedSpec, unsafeEmbeddedSpecR)
+import Ribosome.Control.Monad.Ribo (ConcNvimS, NvimE, Ribo, RiboE, riboE2ribo)
+import Ribosome.Control.Ribosome (Ribosome)
+import Ribosome.Error.Report.Class (ReportError)
+import Ribosome.Plugin (RpcHandler(native))
+import Ribosome.Test.Embed (Runner, TestConfig(..), setupPluginEnv, unsafeEmbeddedSpecR)
 import qualified Ribosome.Test.File as F (fixture, tempDir)
 
 uPrefix :: String
 uPrefix = "u"
 
-uSpec :: TestConfig -> Neovim env () -> Neovim env ()
+uSpec :: (MonadIO m, NvimE e m) => Runner m
 uSpec conf spec = do
   setupPluginEnv conf
   spec
 
-unitSpec :: TestConfig -> e -> Neovim e () -> IO ()
+unitSpec ::
+  (RpcHandler e (Ribosome env) m, ReportError e, MonadIO m, NvimE e' m) =>
+  TestConfig ->
+  env ->
+  m () ->
+  IO ()
 unitSpec =
-  unsafeEmbeddedSpec uSpec
-
-unitSpecR :: TestConfig -> s -> Ribo s (ConcNvimS s) () -> IO ()
-unitSpecR =
   unsafeEmbeddedSpecR uSpec
-
-unitSpecE :: Show e => TestConfig -> s -> RiboE s e (ConcNvimS s) () -> IO ()
-unitSpecE conf s spec =
-  unitSpecR conf s wrapped
-  where
-    wrapped = do
-      result <- riboE2ribo spec
-      case result of
-        Right _ -> return ()
-        Left e -> throwString $ "unitSpecE failed with Left: " ++ show e
 
 tempDir :: FilePath -> Neovim e FilePath
 tempDir = F.tempDir uPrefix

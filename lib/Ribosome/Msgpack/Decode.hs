@@ -1,9 +1,8 @@
 {-# LANGUAGE TypeOperators #-}
 
-module Ribosome.Msgpack.Decode(
-  MsgpackDecode(..),
-) where
+module Ribosome.Msgpack.Decode where
 
+import Control.Monad.DeepError (MonadDeepError, hoistEitherWith)
 import Data.ByteString.Internal (unpackChars)
 import Data.Map.Strict (Map, (!?))
 import qualified Data.Map.Strict as Map (fromList, toList)
@@ -24,6 +23,7 @@ import GHC.Generics (
   (:*:)(..),
   )
 
+import Ribosome.Msgpack.Error (DecodeError(DecodeError))
 import Ribosome.Msgpack.Util (Err)
 import qualified Ribosome.Msgpack.Util as Util (illegalType, invalid, missingRecordKey, string)
 
@@ -128,3 +128,7 @@ instance MsgpackDecode Bool where
 
 instance MsgpackDecode () where
   fromMsgpack _ = Right ()
+
+fromMsgpack' :: (MonadDeepError e DecodeError m, MsgpackDecode a) => Object -> m a
+fromMsgpack' =
+  hoistEitherWith DecodeError . fromMsgpack

@@ -1,80 +1,82 @@
 module Ribosome.Scratch where
 
-import Neovim (
-  Buffer,
-  Neovim,
-  Tabpage,
-  Window,
-  buffer_set_name',
-  buffer_set_option',
-  toObject,
-  vim_command',
-  vim_get_current_tabpage',
-  vim_get_current_window',
-  window_get_buffer',
-  window_set_option',
-  )
 import Ribosome.Api.Buffer (setBufferContent)
+import Ribosome.Control.Monad.Ribo (NvimE)
 import Ribosome.Data.Scratch (Scratch(Scratch))
 import Ribosome.Data.ScratchOptions (ScratchOptions(ScratchOptions))
+import Ribosome.Msgpack.Encode (toMsgpack)
+import Ribosome.Nvim.Api.Data (
+  Buffer,
+  Tabpage,
+  Window,
+  )
+import Ribosome.Nvim.Api.IO (
+  bufferSetName,
+  bufferSetOption,
+  vimCommand,
+  vimGetCurrentTabpage,
+  vimGetCurrentWindow,
+  windowGetBuffer,
+  windowSetOption,
+  )
 
-createScratchTab :: Neovim e Tabpage
+createScratchTab :: NvimE e m => m Tabpage
 createScratchTab = do
-  vim_command' "tabnew"
-  vim_get_current_tabpage'
+  () <- vimCommand "tabnew"
+  vimGetCurrentTabpage
 
-createScratchWindow :: Bool -> Bool -> Maybe Int -> Neovim e Window
+createScratchWindow :: NvimE e m => Bool -> Bool -> Maybe Int -> m Window
 createScratchWindow vertical wrap size = do
-  vim_command' $ prefix ++ cmd
-  win <- vim_get_current_window'
-  window_set_option' win "wrap" (toObject wrap)
+  () <- vimCommand $ prefix ++ cmd
+  win <- vimGetCurrentWindow
+  () <- windowSetOption win "wrap" (toMsgpack wrap)
   return win
   where
     cmd = if vertical then "vnew" else "new"
     prefix = maybe "" show size
 
-createScratchUiInTab :: Neovim e (Window, Maybe Tabpage)
+createScratchUiInTab :: NvimE e m => m (Window, Maybe Tabpage)
 createScratchUiInTab = do
   tab <- createScratchTab
-  win <- vim_get_current_window'
+  win <- vimGetCurrentWindow
   return (win, Just tab)
 
-createScratchUiInWindow :: Bool -> Bool -> Maybe Int -> Neovim e (Window, Maybe Tabpage)
+createScratchUiInWindow :: NvimE e m => Bool -> Bool -> Maybe Int -> m (Window, Maybe Tabpage)
 createScratchUiInWindow vertical wrap size = do
   win <- createScratchWindow vertical wrap size
   return (win, Nothing)
 
-createScratchUi :: Bool -> Bool -> Bool -> Maybe Int -> Neovim e (Window, Maybe Tabpage)
+createScratchUi :: NvimE e m => Bool -> Bool -> Bool -> Maybe Int -> m (Window, Maybe Tabpage)
 createScratchUi True _ _ _ =
   createScratchUiInTab
 createScratchUi False vertical wrap size =
   createScratchUiInWindow vertical wrap size
 
-configureScratchBuffer :: Buffer -> String -> Neovim e ()
+configureScratchBuffer :: NvimE e m => Buffer -> String -> m ()
 configureScratchBuffer buffer name = do
-  buffer_set_option' buffer "buftype" (toObject ("nofile" :: String))
-  buffer_set_option' buffer "bufhidden" (toObject ("wipe" :: String))
-  buffer_set_name' buffer name
+  () <- bufferSetOption buffer "buftype" (toMsgpack ("nofile" :: String))
+  () <- bufferSetOption buffer "bufhidden" (toMsgpack ("wipe" :: String))
+  bufferSetName buffer name
 
-setupScratchBuffer :: Window -> String -> Neovim e Buffer
+setupScratchBuffer :: NvimE e m => Window -> String -> m Buffer
 setupScratchBuffer window name = do
-  buffer <- window_get_buffer' window
+  buffer <- windowGetBuffer window
   configureScratchBuffer buffer name
   return buffer
 
-createScratch :: ScratchOptions -> Neovim e Scratch
+createScratch :: NvimE e m => ScratchOptions -> m Scratch
 createScratch (ScratchOptions useTab vertical size wrap name) = do
   (window, tab) <- createScratchUi useTab vertical wrap size
   buffer <- setupScratchBuffer window name
   return (Scratch buffer window tab)
 
-setScratchContent :: Scratch -> [String] -> Neovim e ()
+setScratchContent :: NvimE e m => Scratch -> [String] -> m ()
 setScratchContent (Scratch buffer _ _) lines' = do
-  buffer_set_option' buffer "modifiable" (toObject True)
+  () <- bufferSetOption buffer "modifiable" (toMsgpack True)
   setBufferContent buffer lines'
-  buffer_set_option' buffer "modifiable" (toObject False)
+  bufferSetOption buffer "modifiable" (toMsgpack False)
 
-showInScratch :: [String] -> ScratchOptions -> Neovim e Scratch
+showInScratch :: NvimE e m => [String] -> ScratchOptions -> m Scratch
 showInScratch lines' options = do
   scratch <- createScratch options
   setScratchContent scratch lines'

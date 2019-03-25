@@ -1,4 +1,7 @@
-module Ribosome.Plugin where
+module Ribosome.Plugin (
+  module Ribosome.Plugin,
+  rpcHandlerDef,
+) where
 
 import Control.Monad ((<=<))
 import Control.Monad.Trans.Class (lift)
@@ -13,13 +16,13 @@ import Neovim.Plugin.Classes (
   )
 import Neovim.Plugin.Internal (ExportedFunctionality(..), Plugin(..))
 
-import Ribosome.Plugin.TH (RpcFunction(RpcFunction))
+import Ribosome.Plugin.TH (RpcFunction(RpcFunction), rpcHandlerDef)
 
-class RpcHandler e env m where
+class RpcHandler e env m | m -> e env where
   native :: m a -> ExceptT e (Neovim env) a
 
-instance RpcHandler e env (Neovim env) where
-  native = lift
+instance RpcHandler e env (ExceptT e (Neovim env)) where
+  native = id
 
 class RpcErrorHandler e m where
 

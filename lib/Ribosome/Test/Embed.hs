@@ -1,7 +1,10 @@
 module Ribosome.Test.Embed where
 
+import Control.Monad.DeepError (MonadDeepError)
+import Control.Monad.IO.Class (MonadIO)
 import Control.Monad.IO.Class (liftIO)
 import Control.Monad.Reader (runReaderT)
+import Control.Monad.Trans.Except (runExceptT)
 import Control.Monad.Trans.Resource (runResourceT)
 import Data.Default (Default(def))
 import Data.Foldable (traverse_)
@@ -43,11 +46,15 @@ import UnliftIO.Exception (bracket, tryAny)
 import UnliftIO.STM (atomically, putTMVar)
 
 import Ribosome.Api.Option (rtpCat)
-import Ribosome.Control.Monad.Ribo (ConcNvimS, Ribo, runRib)
+import Ribosome.Control.Monad.Ribo (ConcNvimS, Nvim, NvimE, Ribo, runRib)
 import Ribosome.Control.Ribosome (Ribosome(Ribosome), newRibosomeTVar)
 import Ribosome.Data.Time (sleep, sleepW)
+import Ribosome.Error.Report.Class (ReportError)
+import Ribosome.Nvim.Api.IO (vimSetVar)
+import Ribosome.Nvim.Api.RpcCall (RpcError)
+import Ribosome.Plugin (RpcHandler(native))
 
-type Runner env = TestConfig -> Neovim env () -> Neovim env ()
+type Runner m = TestConfig -> m () -> m ()
 
 newtype Vars = Vars [(String, Object)]
 
@@ -71,11 +78,14 @@ defaultTestConfigWith name = TestConfig name "test/f/fixtures/rtp" "test/f/temp/
 defaultTestConfig :: String -> TestConfig
 defaultTestConfig name = defaultTestConfigWith name (Vars [])
 
-setVars :: Vars -> Neovim e ()
+setVars :: ∀ m e. (Nvim m, MonadDeepError e RpcError m) => Vars -> m ()
 setVars (Vars vars) =
-  traverse_ (uncurry vim_set_var') vars
+  traverse_ set vars
+  where
+    set :: (String, Object) -> m ()
+    set = uncurry vimSetVar
 
-setupPluginEnv :: TestConfig -> Neovim e ()
+setupPluginEnv :: (MonadIO m, NvimE e m) => TestConfig -> m ()
 setupPluginEnv (TestConfig _ rtp _ _ _ _ vars) = do
   absRtp <- liftIO $ makeAbsolute rtp
   rtpCat absRtp
@@ -109,9 +119,9 @@ startHandlers prc TestConfig{..} nvimConf = do
     run runner stream = async . void $ runner (stream prc) emptyConf
     emptyConf = nvimConf { Internal.pluginSettings = Nothing }
 
-runNeovimThunk :: Internal.Config e -> Neovim e a -> IO ()
+runNeovimThunk :: Internal.Config e -> Neovim e a -> IO a
 runNeovimThunk cfg (Internal.Neovim thunk) =
-  void $ runReaderT (runResourceT thunk) cfg
+  runReaderT (runResourceT thunk) cfg
 
 type NvimProc = Process Handle Handle ()
 
@@ -146,30 +156,59 @@ shutdownNvim _ prc stopEventHandlers = do
   killProcess prc
   -- quitNvim testCfg prc
 
-runTest :: TestConfig -> Internal.Config s -> Neovim s () -> IO () -> IO ()
+runTest ::
+  (RpcHandler e env m, ReportError e) =>
+  TestConfig ->
+  Internal.Config env ->
+  m () ->
+  IO () ->
+  IO ()
 runTest TestConfig{..} testCfg thunk _ = do
-  result <- race (sleepW tcTimeout) (runNeovimThunk testCfg thunk)
+  result <- race (sleepW tcTimeout) (runNeovimThunk testCfg (runExceptT $ native thunk))
   case result of
-    Right _ -> return ()
+    Right (Right _) -> return ()
     Left _ -> fail $ "test exceeded timeout of " ++ show tcTimeout ++ " seconds"
 
-runEmbeddedNvim :: TestConfig -> s -> Neovim s () -> NvimProc -> IO ()
+runEmbeddedNvim ::
+  (RpcHandler e env m, ReportError e) =>
+  TestConfig ->
+  env ->
+  m () ->
+  NvimProc ->
+  IO ()
 runEmbeddedNvim conf ribo thunk prc = do
   nvimConf <- Internal.newConfig (pure Nothing) newRPCConfig
   let testCfg = Internal.retypeConfig ribo nvimConf
   bracket (startHandlers prc conf nvimConf) (shutdownNvim testCfg prc) (runTest conf testCfg thunk)
 
-runEmbedded :: TestConfig -> s -> Neovim s () -> IO ()
+runEmbedded ::
+  (RpcHandler e env m, ReportError e) =>
+  TestConfig ->
+  env ->
+  m () ->
+  IO ()
 runEmbedded conf ribo thunk = do
   let pc = testNvimProcessConfig conf
   withProcess pc $ runEmbeddedNvim conf ribo thunk
 
-unsafeEmbeddedSpec :: Runner s -> TestConfig -> s -> Neovim s () -> IO ()
+unsafeEmbeddedSpec ::
+  (RpcHandler e env m, ReportError e) =>
+  Runner m ->
+  TestConfig ->
+  env ->
+  m () ->
+  IO ()
 unsafeEmbeddedSpec runner conf s spec =
   runEmbedded conf s $ runner conf spec
 
-unsafeEmbeddedSpecR :: Runner (Ribosome s) -> TestConfig -> s -> Ribo s (ConcNvimS s) () -> IO ()
-unsafeEmbeddedSpecR runner conf s spec = do
-  tv <- newRibosomeTVar s
+unsafeEmbeddedSpecR ::
+  (RpcHandler e (Ribosome env) m, ReportError e) =>
+  Runner m ->
+  TestConfig ->
+  env ->
+  m () ->
+  IO ()
+unsafeEmbeddedSpecR runner conf env spec = do
+  tv <- newRibosomeTVar env
   let ribo = Ribosome (tcPluginName conf) tv
-  unsafeEmbeddedSpec runner conf ribo (runRib spec)
+  unsafeEmbeddedSpec runner conf ribo spec

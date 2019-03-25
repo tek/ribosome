@@ -48,4 +48,4 @@ genIO (FunctionData _ name async names types) = do
 
 generateIO :: Q [Dec]
 generateIO =
-  generateFromApi genIO
+  generateFromApi genIO (const . const . return $ [])
