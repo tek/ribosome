@@ -4,6 +4,7 @@ module Ribosome.Msgpack.Decode where
 
 import Control.Monad.DeepError (MonadDeepError, hoistEitherWith)
 import Data.ByteString.Internal (unpackChars)
+import Data.Int (Int64)
 import Data.Map.Strict (Map, (!?))
 import qualified Data.Map.Strict as Map (fromList, toList)
 import Data.MessagePack (Object(..))
@@ -103,10 +104,16 @@ instance (Ord k, MsgpackDecode k, MsgpackDecode v) => MsgpackDecode (Map k v) wh
         return (k1, v1)
   fromMsgpack o = Util.illegalType "Map" o
 
+msgpackIntegral :: Integral a => Object -> Either Err a
+msgpackIntegral (ObjectInt i) = Right $ fromIntegral i
+msgpackIntegral (ObjectUInt i) = Right $ fromIntegral i
+msgpackIntegral o = Util.illegalType "Integral" o
+
 instance MsgpackDecode Int where
-  fromMsgpack (ObjectInt i) = Right $ fromIntegral i
-  fromMsgpack (ObjectUInt i) = Right $ fromIntegral i
-  fromMsgpack o = Util.illegalType "Int" o
+  fromMsgpack = msgpackIntegral
+
+instance MsgpackDecode Int64 where
+  fromMsgpack = msgpackIntegral
 
 instance {-# OVERLAPPING #-} MsgpackDecode String where
   fromMsgpack (ObjectString os) = Right $ unpackChars os
@@ -128,6 +135,17 @@ instance MsgpackDecode Bool where
 
 instance MsgpackDecode () where
   fromMsgpack _ = Right ()
+
+instance MsgpackDecode Object where
+  fromMsgpack = Right
+
+instance (MsgpackDecode a, MsgpackDecode b) => MsgpackDecode (a, b) where
+  fromMsgpack (ObjectArray [a, b]) =
+    (,) <$> fromMsgpack a <*> fromMsgpack b
+  fromMsgpack o@(ObjectArray _) =
+    Util.invalid "invalid array length for pair" o
+  fromMsgpack o =
+    Util.illegalType "pair" o
 
 fromMsgpack' :: (MonadDeepError e DecodeError m, MsgpackDecode a) => Object -> m a
 fromMsgpack' =

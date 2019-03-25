@@ -22,14 +22,14 @@ import Ribosome.Nvim.Api.IO (
 
 createScratchTab :: NvimE e m => m Tabpage
 createScratchTab = do
-  () <- vimCommand "tabnew"
+  vimCommand "tabnew"
   vimGetCurrentTabpage
 
 createScratchWindow :: NvimE e m => Bool -> Bool -> Maybe Int -> m Window
 createScratchWindow vertical wrap size = do
-  () <- vimCommand $ prefix ++ cmd
+  vimCommand $ prefix ++ cmd
   win <- vimGetCurrentWindow
-  () <- windowSetOption win "wrap" (toMsgpack wrap)
+  windowSetOption win "wrap" (toMsgpack wrap)
   return win
   where
     cmd = if vertical then "vnew" else "new"
@@ -54,8 +54,8 @@ createScratchUi False vertical wrap size =
 
 configureScratchBuffer :: NvimE e m => Buffer -> String -> m ()
 configureScratchBuffer buffer name = do
-  () <- bufferSetOption buffer "buftype" (toMsgpack ("nofile" :: String))
-  () <- bufferSetOption buffer "bufhidden" (toMsgpack ("wipe" :: String))
+  bufferSetOption buffer "buftype" (toMsgpack ("nofile" :: String))
+  bufferSetOption buffer "bufhidden" (toMsgpack ("wipe" :: String))
   bufferSetName buffer name
 
 setupScratchBuffer :: NvimE e m => Window -> String -> m Buffer
@@ -72,7 +72,7 @@ createScratch (ScratchOptions useTab vertical size wrap name) = do
 
 setScratchContent :: NvimE e m => Scratch -> [String] -> m ()
 setScratchContent (Scratch buffer _ _) lines' = do
-  () <- bufferSetOption buffer "modifiable" (toMsgpack True)
+  bufferSetOption buffer "modifiable" (toMsgpack True)
   setBufferContent buffer lines'
   bufferSetOption buffer "modifiable" (toMsgpack False)
 

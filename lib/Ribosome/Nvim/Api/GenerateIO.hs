@@ -2,34 +2,56 @@
 
 module Ribosome.Nvim.Api.GenerateIO where
 
+import Control.Monad ((<=<))
 import Control.Monad.DeepError (MonadDeepError, hoistEither)
+import Data.Maybe (maybeToList)
 import Language.Haskell.TH
 import Language.Haskell.TH.Syntax
+import Neovim.API.Parser (NeovimType(NestedType, SimpleType, Void))
 
 import Ribosome.Control.Monad.Ribo (Nvim(call))
 import Ribosome.Msgpack.Decode (MsgpackDecode)
-import Ribosome.Nvim.Api.Generate (FunctionData(FunctionData), generateFromApi)
+import Ribosome.Nvim.Api.Generate (FunctionData(FunctionData), generateFromApi, haskellType)
 import Ribosome.Nvim.Api.RpcCall (RpcError)
 
 rpcModule :: Module
 rpcModule =
   Module (mkPkgName "Ribosome.Nvim.Api") (mkModName "Data")
 
-ioSig :: Name -> [Type] -> Q Dec
-ioSig name types = do
-  nvimConstraint <- [t|Nvim $(vtq "m")|]
-  decodeConstraint <- [t|MsgpackDecode $(vtq "a")|]
-  monadErrorConstraint <- [t|MonadDeepError $(vtq "e") RpcError $(vtq "m")|]
-  let
-    returnType = AppT (vt "m") (vt "a")
-    params = foldr (AppT . AppT ArrowT) returnType types
-    constraints = [nvimConstraint, decodeConstraint, monadErrorConstraint]
-  sigD name $ return (ForallT [] constraints params)
-  where
-    vt = VarT . mkName
-    vtq = varT . mkName
+msgpackDecodeConstraint :: NeovimType -> Q (Maybe Type)
+msgpackDecodeConstraint (SimpleType "Object") =
+  Just <$> [t|MsgpackDecode $(varT $ mkName "a")|]
+msgpackDecodeConstraint _ =
+  return Nothing
 
-ioBody :: Name -> Bool -> [Name] -> Q Dec
+newT :: String -> TypeQ
+newT =
+  varT <=< newName
+
+ioReturnType :: NeovimType -> Q Type
+ioReturnType (SimpleType "Object") =
+  return (VarT $ mkName "a")
+ioReturnType a =
+  haskellType a
+
+analyzeReturnType :: NeovimType -> Q (Type, Maybe Type)
+analyzeReturnType tpe = do
+  rt <- ioReturnType tpe
+  constraint <- msgpackDecodeConstraint tpe
+  return (rt, constraint)
+
+ioSig :: Name -> [Type] -> NeovimType -> DecQ
+ioSig name types returnType = do
+  mType <- newT "m"
+  nvimConstraint <- [t|Nvim $(pure mType)|]
+  (returnType, decodeConstraint) <- analyzeReturnType returnType
+  monadErrorConstraint <- [t|MonadDeepError $(newT "e") RpcError $(pure mType)|]
+  let
+    params = foldr (AppT . AppT ArrowT) (AppT mType returnType) types
+    constraints = [nvimConstraint, monadErrorConstraint] ++ maybeToList decodeConstraint
+  sigD name $ return (ForallT [] constraints params)
+
+ioBody :: Name -> Bool -> [Name] -> DecQ
 ioBody name _ names =
   funD name [clause (varP <$> names) (normalB body) []]
   where
@@ -41,8 +63,8 @@ ioBody name _ names =
     body = doE [bindS callPat callExp, noBindS checkExp]
 
 genIO :: FunctionData -> Q [Dec]
-genIO (FunctionData _ name async names types) = do
-  sig <- ioSig name types
+genIO (FunctionData _ name async names types returnType) = do
+  sig <- ioSig name types returnType
   body <- ioBody name async names
   return [sig, body]
 

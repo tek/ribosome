@@ -28,16 +28,20 @@ camelcase =
     folder a (True, []) = (False, [a])
     folder a (False, z) = (False, a : z)
 
-apiTypeToHaskellType :: Map String (Q Type) -> NeovimType -> Q Type
-apiTypeToHaskellType typeMap at =
+haskellTypes :: Map String TypeQ
+haskellTypes =
+  defaultAPITypeToHaskellTypeMap
+
+haskellType :: NeovimType -> Q Type
+haskellType at =
   case at of
     Void -> [t|()|]
     NestedType t Nothing ->
-      appT listT $ apiTypeToHaskellType typeMap t
+      appT listT $ haskellType t
     NestedType t (Just n) ->
-      foldl appT (tupleT n) . replicate n $ apiTypeToHaskellType typeMap t
+      foldl appT (tupleT n) . replicate n $ haskellType t
     SimpleType t ->
-      fromMaybe (conT . mkName $ t) $ Map.lookup t typeMap
+      fromMaybe (conT . mkName $ t) $ Map.lookup t haskellTypes
 
 data FunctionData =
   FunctionData {
@@ -45,15 +49,16 @@ data FunctionData =
     ccName :: Name,
     async :: Bool,
     names :: [Name],
-    types :: [Type]
+    types :: [Type],
+    returnType :: NeovimType
     }
   deriving (Eq, Show)
 
 functionData :: Map String (Q Type) -> NeovimFunction -> Q FunctionData
-functionData nvimTypes (NeovimFunction name parameters _ async _) = do
+functionData nvimTypes (NeovimFunction name parameters _ async returnType) = do
   names <- traverse newName prefixedNames
-  types <- traverse (apiTypeToHaskellType nvimTypes) (fst <$> parameters)
-  return (FunctionData name (mkName . camelcase $ name) async names types)
+  types <- traverse haskellType (fst <$> parameters)
+  return (FunctionData name (mkName . camelcase $ name) async names types returnType)
   where
     prefix i n = "arg" ++ show i ++ "_" ++ n
     prefixedNames = zipWith prefix [0 :: Int ..] (snd <$> parameters)

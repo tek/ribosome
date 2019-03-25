@@ -29,7 +29,7 @@ dataBody apiName name async params =
     syncCtor = if async then [|AsyncRpcCall|] else [|SyncRpcCall|]
 
 genCallData :: FunctionData -> DecsQ
-genCallData (FunctionData apiName name async names types) = do
+genCallData (FunctionData apiName name async names types _) = do
   sig <- dataSig types name async
   body <- dataBody apiName name async names
   return [sig, body]

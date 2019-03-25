@@ -20,6 +20,7 @@ import Ribosome.Control.Ribosome (Ribosome, newRibosome)
 import Ribosome.Msgpack.Decode (MsgpackDecode)
 import Ribosome.Msgpack.Encode (MsgpackEncode)
 import Ribosome.Nvim.Api.GenerateData
+import Ribosome.Nvim.Api.GenerateIO
 import Ribosome.Plugin
 import Ribosome.Plugin.TH
 
@@ -50,4 +51,5 @@ plugin' = do
 test_plug :: IO ()
 test_plug = do
   _ <- plugin'
-  traverse_ putStrLn $ lines $(stringE . pprint =<< generateData)
+  return ()
+  -- traverse_ putStrLn $ lines $(stringE . pprint =<< generateIO)

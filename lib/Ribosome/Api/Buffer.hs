@@ -23,7 +23,7 @@ nvimCallBool =
 
 buflisted :: NvimE e m => Buffer -> m Bool
 buflisted buf = do
-  (num :: Int) <- bufferGetNumber buf
+  num <- bufferGetNumber buf
   nvimCallBool "buflisted" [toMsgpack num]
 
 bufferContent :: NvimE e m => Buffer -> m [String]
@@ -31,9 +31,8 @@ bufferContent buffer =
   bufferGetLines buffer 0 (-1) False
 
 currentBufferContent :: NvimE e m => m [String]
-currentBufferContent = do
-  buffer <- vimGetCurrentBuffer
-  bufferContent buffer
+currentBufferContent =
+  bufferContent =<< vimGetCurrentBuffer
 
 setBufferContent :: NvimE e m => Buffer -> [String] -> m ()
 setBufferContent buffer =
