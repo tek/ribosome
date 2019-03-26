@@ -54,8 +54,8 @@ data FunctionData =
     }
   deriving (Eq, Show)
 
-functionData :: Map String (Q Type) -> NeovimFunction -> Q FunctionData
-functionData nvimTypes (NeovimFunction name parameters _ async returnType) = do
+functionData :: NeovimFunction -> Q FunctionData
+functionData (NeovimFunction name parameters _ async returnType) = do
   names <- traverse newName prefixedNames
   types <- traverse haskellType (fst <$> parameters)
   return (FunctionData name (mkName . camelcase $ name) async names types returnType)
@@ -66,7 +66,7 @@ functionData nvimTypes (NeovimFunction name parameters _ async returnType) = do
 generateFromApi :: (FunctionData -> Q [Dec]) -> (Name -> Int64 -> DecsQ) -> Q [Dec]
 generateFromApi handleFunction handleExtType = do
   api <- either (fail . show) return =<< runIO parseAPI
-  funcs <- traverse (functionData defaultAPITypeToHaskellTypeMap) (functions api)
+  funcs <- traverse functionData (functions api)
   funcDecs <- traverse handleFunction funcs
   tpeDecs <- traverse (uncurry handleExtType) $ first mkName <$> customTypes api
   return $ join (funcDecs ++ tpeDecs)

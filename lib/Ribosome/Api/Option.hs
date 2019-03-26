@@ -1,33 +1,23 @@
-module Ribosome.Api.Option(
-  optionCat,
-  rtpCat,
-  optionList,
-  option,
-  optionString,
-) where
+module Ribosome.Api.Option where
 
-import Control.Monad ((>=>))
 import Data.List.Split (splitOn)
-import Neovim (Neovim, NvimObject, fromObject', toObject, vim_get_option', vim_set_option')
 
 import Ribosome.Control.Monad.Ribo (NvimE)
+import Ribosome.Msgpack.Encode (toMsgpack)
 import Ribosome.Nvim.Api.IO (vimGetOption, vimSetOption)
 
 optionCat :: NvimE e m => String -> String -> m ()
 optionCat name extra = do
   current <- vimGetOption name
-  vimSetOption name $ toObject $ current ++ "," ++ extra
+  vimSetOption name $ toMsgpack $ current ++ "," ++ extra
 
 rtpCat :: NvimE e m => String -> m ()
 rtpCat = optionCat "runtimepath"
 
-option :: NvimObject a => String -> Neovim e a
-option = vim_get_option' >=> fromObject'
+optionString :: NvimE e m => String -> m String
+optionString = vimGetOption
 
-optionString :: String -> Neovim e String
-optionString = option
-
-optionList :: String -> Neovim e [String]
+optionList :: NvimE e m => String -> m [String]
 optionList name = do
-  s <- option name
+  s <- vimGetOption name
   return $ splitOn "," s

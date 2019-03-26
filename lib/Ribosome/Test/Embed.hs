@@ -11,7 +11,7 @@ import Data.Foldable (traverse_)
 import Data.Functor (void)
 import Data.Maybe (fromMaybe)
 import GHC.IO.Handle (Handle)
-import Neovim (Neovim, Object, vim_command, vim_set_var')
+import Neovim (Neovim, Object, vim_command)
 import qualified Neovim.Context.Internal as Internal (
   Config,
   Neovim(Neovim),
@@ -46,7 +46,7 @@ import UnliftIO.Exception (bracket, tryAny)
 import UnliftIO.STM (atomically, putTMVar)
 
 import Ribosome.Api.Option (rtpCat)
-import Ribosome.Control.Monad.Ribo (ConcNvimS, Nvim, NvimE, Ribo, runRib)
+import Ribosome.Control.Monad.Ribo (Nvim, NvimE)
 import Ribosome.Control.Ribosome (Ribosome(Ribosome), newRibosomeTVar)
 import Ribosome.Data.Time (sleep, sleepW)
 import Ribosome.Error.Report.Class (ReportError)
@@ -167,7 +167,7 @@ runTest TestConfig{..} testCfg thunk _ = do
   result <- race (sleepW tcTimeout) (runNeovimThunk testCfg (runExceptT $ native thunk))
   case result of
     Right (Right _) -> return ()
-    Left _ -> fail $ "test exceeded timeout of " ++ show tcTimeout ++ " seconds"
+    _ -> fail $ "test exceeded timeout of " ++ show tcTimeout ++ " seconds"
 
 runEmbeddedNvim ::
   (RpcHandler e env m, ReportError e) =>

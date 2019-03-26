@@ -12,7 +12,7 @@ import Data.Functor (void)
 import Test.Framework
 
 import Ribosome.Config.Setting (setting, updateSetting)
-import Ribosome.Control.Monad.Ribo (ConcNvimS, Ribo, RiboE, riboE2ribo)
+import Ribosome.Control.Monad.Ribo (ConcNvimS, RiboE)
 import Ribosome.Data.Setting (Setting(Setting))
 import Ribosome.Data.SettingError (SettingError)
 import Ribosome.Error.Report.Class (ReportError(..))

@@ -7,7 +7,7 @@ import Control.Monad.DeepError (MonadDeepError, hoistEither)
 import Data.Maybe (maybeToList)
 import Language.Haskell.TH
 import Language.Haskell.TH.Syntax
-import Neovim.API.Parser (NeovimType(NestedType, SimpleType, Void))
+import Neovim.API.Parser (NeovimType(SimpleType))
 
 import Ribosome.Control.Monad.Ribo (Nvim(call))
 import Ribosome.Msgpack.Decode (MsgpackDecode)
@@ -44,10 +44,10 @@ ioSig :: Name -> [Type] -> NeovimType -> DecQ
 ioSig name types returnType = do
   mType <- newT "m"
   nvimConstraint <- [t|Nvim $(pure mType)|]
-  (returnType, decodeConstraint) <- analyzeReturnType returnType
+  (retType, decodeConstraint) <- analyzeReturnType returnType
   monadErrorConstraint <- [t|MonadDeepError $(newT "e") RpcError $(pure mType)|]
   let
-    params = foldr (AppT . AppT ArrowT) (AppT mType returnType) types
+    params = foldr (AppT . AppT ArrowT) (AppT mType retType) types
     constraints = [nvimConstraint, monadErrorConstraint] ++ maybeToList decodeConstraint
   sigD name $ return (ForallT [] constraints params)
 

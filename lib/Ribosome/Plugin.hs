@@ -4,7 +4,6 @@ module Ribosome.Plugin (
 ) where
 
 import Control.Monad ((<=<))
-import Control.Monad.Trans.Class (lift)
 import Control.Monad.Trans.Except (ExceptT, runExceptT)
 import Data.ByteString.UTF8 (fromString)
 import qualified Data.Map as Map ()

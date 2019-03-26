@@ -3,12 +3,11 @@ module Ribosome.Test.Unit where
 import Control.Monad.IO.Class (MonadIO)
 import Neovim (Neovim)
 import System.FilePath (takeDirectory, takeFileName, (</>))
-import UnliftIO.Exception (throwString)
 
-import Ribosome.Control.Monad.Ribo (ConcNvimS, NvimE, Ribo, RiboE, riboE2ribo)
+import Ribosome.Control.Monad.Ribo (NvimE)
 import Ribosome.Control.Ribosome (Ribosome)
 import Ribosome.Error.Report.Class (ReportError)
-import Ribosome.Plugin (RpcHandler(native))
+import Ribosome.Plugin (RpcHandler)
 import Ribosome.Test.Embed (Runner, TestConfig(..), setupPluginEnv, unsafeEmbeddedSpecR)
 import qualified Ribosome.Test.File as F (fixture, tempDir)
 
