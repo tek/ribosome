@@ -50,6 +50,7 @@ dependencies:
 - exceptions
 - cornea
 - monad-control
+- lifted-base
 
 default-extensions:
 - AutoDeriveTypeable

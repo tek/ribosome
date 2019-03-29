@@ -1,8 +1,9 @@
 module Ribosome.Control.Concurrent.Wait where
 
-import Control.Monad.IO.Unlift (MonadUnliftIO)
+import Control.Exception.Lifted (SomeException(..), try)
+import Control.Monad.IO.Class (MonadIO)
+import Control.Monad.Trans.Control (MonadBaseControl)
 import Data.Default (Default(def))
-import UnliftIO.Exception (tryAny)
 
 import Ribosome.Data.Time (sleep)
 
@@ -13,24 +14,25 @@ data Retry =
 instance Default Retry where
   def = Retry 30 0.1
 
-waitIO :: MonadUnliftIO m => Retry -> m a -> (a -> m Bool) -> m (Maybe a)
+waitIO :: (MonadIO m, MonadBaseControl IO m) => Retry -> m a -> (a -> m Bool) -> m (Either String a)
 waitIO (Retry maxRetry interval) thunk cond =
-  wait maxRetry
+  wait maxRetry (Left "initial")
   where
-    wait 0 = return Nothing
-    wait count = do
-      ea <- tryAny thunk
+    wait 0 reason = return reason
+    wait count _ = do
+      ea <- try thunk
       result <- check ea
       case result of
-        Just a -> return $ Just a
-        Nothing -> do
+        Right a -> return $ Right a
+        Left reason -> do
           sleep interval
-          wait (count - 1)
+          wait (count - 1) (Left reason)
     check (Right a) = do
       ok <- cond a
-      return $ if ok then Just a else Nothing
-    check _ = return Nothing
+      return $ if ok then Right a else Left "condition unmet"
+    check (Left (SomeException _)) =
+      return $ Left "exception"
 
-waitIODef :: MonadUnliftIO m => m a -> (a -> m Bool) -> m (Maybe a)
+waitIODef :: (MonadIO m, MonadBaseControl IO m) => m a -> (a -> m Bool) -> m (Either String a)
 waitIODef =
   waitIO def
