@@ -1,8 +1,7 @@
 module Ribosome.Test.Embed where
 
 import Control.Monad.DeepError (MonadDeepError)
-import Control.Monad.IO.Class (MonadIO)
-import Control.Monad.IO.Class (liftIO)
+import Control.Monad.IO.Class (MonadIO, liftIO)
 import Control.Monad.Reader (runReaderT)
 import Control.Monad.Trans.Except (runExceptT)
 import Control.Monad.Trans.Resource (runResourceT)
@@ -48,8 +47,9 @@ import UnliftIO.STM (atomically, putTMVar)
 import Ribosome.Api.Option (rtpCat)
 import Ribosome.Control.Monad.Ribo (Nvim, NvimE)
 import Ribosome.Control.Ribosome (Ribosome(Ribosome), newRibosomeTVar)
+import qualified Ribosome.Data.ErrorReport as ErrorReport (ErrorReport(..))
 import Ribosome.Data.Time (sleep, sleepW)
-import Ribosome.Error.Report.Class (ReportError)
+import Ribosome.Error.Report.Class (ReportError(errorReport))
 import Ribosome.Nvim.Api.IO (vimSetVar)
 import Ribosome.Nvim.Api.RpcCall (RpcError)
 import Ribosome.Plugin (RpcHandler(native))
@@ -167,7 +167,8 @@ runTest TestConfig{..} testCfg thunk _ = do
   result <- race (sleepW tcTimeout) (runNeovimThunk testCfg (runExceptT $ native thunk))
   case result of
     Right (Right _) -> return ()
-    _ -> fail $ "test exceeded timeout of " ++ show tcTimeout ++ " seconds"
+    Right (Left e) -> fail . unlines . ErrorReport._log . errorReport $ e
+    Left _ -> fail $ "test exceeded timeout of " ++ show tcTimeout ++ " seconds"
 
 runEmbeddedNvim ::
   (RpcHandler e env m, ReportError e) =>
