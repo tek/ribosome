@@ -9,15 +9,16 @@ module Ribosome.Msgpack.Util(
 
 import Data.Bifunctor (first)
 import Data.ByteString.Internal (packChars)
+import qualified Data.ByteString.UTF8 as ByteString (fromString)
 import qualified Data.Map.Strict as Map (fromList)
 import Data.MessagePack (Object(..))
-import Data.Text.Prettyprint.Doc (Doc, (<+>), viaShow, pretty)
+import Data.Text.Prettyprint.Doc (Doc, pretty, viaShow, (<+>))
 import Data.Text.Prettyprint.Doc.Render.Terminal (AnsiStyle)
 
 type Err = Doc AnsiStyle
 
 string :: String -> Object
-string = ObjectString . packChars
+string = ObjectString . ByteString.fromString
 
 assembleMap :: [(String, Object)] -> Object
 assembleMap = ObjectMap . Map.fromList . (fmap . first) string

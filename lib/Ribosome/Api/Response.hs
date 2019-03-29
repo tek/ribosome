@@ -6,7 +6,7 @@ module Ribosome.Api.Response(
 )
 where
 
-import Data.ByteString.UTF8
+import Data.ByteString.UTF8 (toString)
 import Neovim
 
 nvimFatal :: Either NeovimException a -> Neovim env a

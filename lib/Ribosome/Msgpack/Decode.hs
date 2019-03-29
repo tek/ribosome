@@ -4,6 +4,7 @@ module Ribosome.Msgpack.Decode where
 
 import Control.Monad.DeepError (MonadDeepError, hoistEitherWith)
 import Data.ByteString.Internal (unpackChars)
+import qualified Data.ByteString.UTF8 as ByteString (toString)
 import Data.Int (Int64)
 import Data.Map.Strict (Map, (!?))
 import qualified Data.Map.Strict as Map (fromList, toList)
@@ -116,7 +117,7 @@ instance MsgpackDecode Int64 where
   fromMsgpack = msgpackIntegral
 
 instance {-# OVERLAPPING #-} MsgpackDecode String where
-  fromMsgpack (ObjectString os) = Right $ unpackChars os
+  fromMsgpack (ObjectString os) = Right $ ByteString.toString os
   fromMsgpack o = Util.illegalType "String" o
 
 instance {-# OVERLAPPABLE #-} MsgpackDecode a => MsgpackDecode [a] where
