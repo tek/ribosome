@@ -1,5 +1,7 @@
 module Ribosome.Scratch where
 
+import Data.Default (Default(def))
+
 import Ribosome.Api.Buffer (setBufferContent)
 import Ribosome.Control.Monad.Ribo (NvimE)
 import Ribosome.Data.Scratch (Scratch(Scratch))
@@ -81,3 +83,17 @@ showInScratch lines' options = do
   scratch <- createScratch options
   setScratchContent scratch lines'
   return scratch
+
+showInScratchDef :: NvimE e m => [String] -> m Scratch
+showInScratchDef lines' =
+  showInScratch lines' def
+
+showInScratchOrCreate :: NvimE e m => Maybe Scratch -> [String] -> ScratchOptions -> m Scratch
+showInScratchOrCreate (Just scratch) lines' _ =
+  scratch <$ setScratchContent scratch lines'
+showInScratchOrCreate Nothing lines' options =
+  showInScratch lines' options
+
+showInScratchOrCreateDef :: NvimE e m => Maybe Scratch -> [String] -> m Scratch
+showInScratchOrCreateDef scratch lines' =
+  showInScratchOrCreate scratch lines' def
