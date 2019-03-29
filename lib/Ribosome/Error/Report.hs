@@ -45,17 +45,31 @@ logErrorReport (ErrorReport user logMsgs prio) = do
   liftIO $ traverse_ (logM name prio) logMsgs
   echom user
 
+processErrorReport ::
+  (MonadDeepError e RpcError m, MonadRibo m, Nvim m, MonadIO m) =>
+  String ->
+  ErrorReport ->
+  m ()
+processErrorReport name report = do
+  storeError name report
+  logErrorReport report
+
+processErrorReport' ::
+  (MonadRibo m, Nvim m, MonadIO m) =>
+  String ->
+  ErrorReport ->
+  m ()
+processErrorReport' name =
+  void . runExceptT @RpcError . processErrorReport name
+
 reportErrorWith ::
   (MonadDeepError e RpcError m, MonadRibo m, Nvim m, MonadIO m) =>
   String ->
   (a -> ErrorReport) ->
   a ->
   m ()
-reportErrorWith name cons err = do
-  storeError name report
-  logErrorReport report
-  where
-    report = cons err
+reportErrorWith name cons err =
+  processErrorReport name (cons err)
 
 reportError :: (MonadDeepError e RpcError m, MonadRibo m, Nvim m, MonadIO m, ReportError a) => String -> a -> m ()
 reportError name =
