@@ -3,7 +3,6 @@
 module Ribosome.Msgpack.Decode where
 
 import Control.Monad.DeepError (MonadDeepError, hoistEitherWith)
-import Data.ByteString.Internal (unpackChars)
 import qualified Data.ByteString.UTF8 as ByteString (toString)
 import Data.Int (Int64)
 import Data.Map.Strict (Map, (!?))

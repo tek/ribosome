@@ -1,7 +1,7 @@
-name: ribosome
+name: ribosome-test
 version: 0.2.2.0
-synopsis: api extensions for nvim-hs
-description: Please see the README on GitHub at <https://github.com/tek/proteome-hs>
+synopsis: test helpers for ribosome
+description: Please see the README on GitHub at <https://github.com/tek/ribosome-hs>
 github: "tek/ribosome-hs"
 license: OtherLicense
 license-file: LICENSE
@@ -12,46 +12,27 @@ category: Neovim
 build-type: Simple
 
 dependencies:
+- HTF
 - base >= 4.7 && < 5
 - chiasma
-- unliftio
-- unliftio-core
-- nvim-hs
-- utf8-string
-- split
-- time
-- containers
-- filepath
-- resourcet
-- mtl
-- deepseq
-- messagepack
-- text
-- pretty-terminal
-- ansi-terminal
-- hslogger
-- directory
-- process
-- stm
-- lens
+- cornea
 - data-default
-- MissingH
-- aeson
-- bytestring
-- transformers-base
+- directory
+- exceptions
+- filepath
+- free
+- messagepack
+- mtl
+- nvim-hs
+- process
+- resourcet
+- ribosome
+- text
 - transformers
-- safe
-- either
-- prettyprinter
-- prettyprinter-ansi-terminal
 - typed-process
 - unix
-- template-haskell
-- th-abstraction
-- exceptions
-- cornea
-- monad-control
-- lifted-base
+- unliftio
+- unliftio-core
 
 default-extensions:
 - AutoDeriveTypeable
@@ -97,25 +78,3 @@ default-extensions:
 
 library:
   source-dirs: lib
-
-tests:
-  ribosome-unit:
-    main: SpecMain.hs
-    source-dirs: test/u
-    ghc-options:
-    - -threaded
-    - -rtsopts
-    - -with-rtsopts=-N
-    dependencies:
-    - ribosome
-    - HTF
-  ribosome-functional:
-    main: SpecMain.hs
-    source-dirs: test/f
-    ghc-options:
-    - -threaded
-    - -rtsopts
-    - -with-rtsopts=-N
-    dependencies:
-    - ribosome
-    - HTF
