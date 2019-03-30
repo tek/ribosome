@@ -1,14 +1,6 @@
-module Ribosome.Msgpack.Util(
-  Err,
-  string,
-  assembleMap,
-  invalid,
-  missingRecordKey,
-  illegalType,
-) where
+module Ribosome.Msgpack.Util where
 
 import Data.Bifunctor (first)
-import Data.ByteString.Internal (packChars)
 import qualified Data.ByteString.UTF8 as ByteString (fromString)
 import qualified Data.Map.Strict as Map (fromList)
 import Data.MessagePack (Object(..))
