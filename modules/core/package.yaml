@@ -1,4 +1,4 @@
-name: ribosome-root
+name: ribosome
 version: 0.2.2.0
 synopsis: api extensions for nvim-hs
 description: Please see the README on GitHub at <https://github.com/tek/ribosome-hs>
@@ -12,46 +12,47 @@ category: Neovim
 build-type: Simple
 
 dependencies:
-- base >= 4.7 && < 5
-- chiasma
-- unliftio
-- unliftio-core
-- nvim-hs
-- utf8-string
-- split
-- time
-- containers
-- filepath
-- resourcet
-- mtl
-- deepseq
-- messagepack
-- text
-- pretty-terminal
-- ansi-terminal
-- hslogger
-- directory
-- process
-- stm
-- lens
-- data-default
 - MissingH
 - aeson
+- ansi-terminal
+- base >= 4.7 && < 5
 - bytestring
-- transformers-base
-- transformers
-- safe
+- chiasma
+- composition-extra
+- containers
+- cornea
+- data-default
+- deepseq
+- directory
 - either
+- exceptions
+- filepath
+- hslogger
+- lens
+- lifted-base
+- messagepack
+- monad-control
+- mtl
+- nvim-hs
+- pretty-terminal
 - prettyprinter
 - prettyprinter-ansi-terminal
+- process
+- resourcet
+- safe
+- split
+- stm
+- template-haskell
+- text
+- th-abstraction
+- time
+- transformers
+- transformers-base
 - typed-process
 - unix
-- template-haskell
-- th-abstraction
-- exceptions
-- cornea
-- monad-control
-- lifted-base
+- unliftio
+- unliftio-core
+- utf8-string
 
 default-extensions:
 - AutoDeriveTypeable
@@ -95,15 +96,5 @@ default-extensions:
 - UnicodeSyntax
 - ViewPatterns
 
-tests:
-  ribosome-unit:
-    main: SpecMain.hs
-    source-dirs: test/u
-    ghc-options:
-    - -threaded
-    - -rtsopts
-    - -with-rtsopts=-N
-    dependencies:
-    - ribosome
-    - ribosome-test
-    - HTF
+library:
+  source-dirs: lib

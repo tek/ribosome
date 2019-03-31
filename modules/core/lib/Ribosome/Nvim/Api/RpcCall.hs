@@ -5,11 +5,15 @@ module Ribosome.Nvim.Api.RpcCall where
 import Data.DeepPrisms (deepPrisms)
 import Data.Either.Combinators (mapLeft)
 import Data.MessagePack (Object)
+import Data.Text.Prettyprint.Doc (defaultLayoutOptions, layoutPretty)
+import Data.Text.Prettyprint.Doc.Render.String (renderString)
 import Neovim (Neovim)
 import Neovim.Exceptions (NeovimException)
 import Neovim.Plugin.Classes (FunctionName)
 import Neovim.RPC.FunctionCall (scall)
+import System.Log.Logger (Priority(ERROR))
 
+import Ribosome.Data.ErrorReport (ErrorReport(ErrorReport))
 import Ribosome.Error.Report.Class (ReportError(..))
 import Ribosome.Msgpack.Decode (MsgpackDecode(..))
 import Ribosome.Msgpack.Util (Err)
@@ -46,7 +50,9 @@ instance MsgpackDecode a => Rpc SyncRpcCall a where
     either (Left . Nvim) (mapLeft Decode . fromMsgpack) <$> scall name args
 
 instance ReportError RpcError where
-  errorReport (Decode _) =
-    undefined
-  errorReport (Nvim _)  =
-    undefined
+  errorReport (Decode err) =
+    ErrorReport "error decoding neovim response" ["RpcError.Decode:", rendered] ERROR
+    where
+      rendered = renderString $ layoutPretty defaultLayoutOptions err
+  errorReport (Nvim exc)  =
+    ErrorReport "error in request to neovim" ["RpcError.Nvim:", show exc] ERROR

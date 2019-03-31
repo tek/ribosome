@@ -1,7 +1,8 @@
 resolver: lts-12.26
 packages:
-- .
+- modules/core
 - modules/test
+- .
 - ../cornea
 - ../chiasma
 extra-deps:

@@ -6,6 +6,7 @@ module Ribosome.Msgpack.Encode(
 ) where
 
 import Data.Bifunctor (bimap)
+import Data.ByteString (ByteString)
 import Data.Int (Int64)
 import Data.Map.Strict (Map)
 import qualified Data.Map.Strict as Map (fromList, toList)
@@ -92,6 +93,9 @@ instance MsgpackEncode () where
 
 instance MsgpackEncode Object where
   toMsgpack = id
+
+instance MsgpackEncode ByteString where
+  toMsgpack = ObjectString
 
 instance (MsgpackEncode a, MsgpackEncode b) => MsgpackEncode (a, b) where
   toMsgpack (a, b) = ObjectArray [toMsgpack a, toMsgpack b]

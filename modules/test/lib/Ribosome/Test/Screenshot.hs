@@ -15,6 +15,7 @@ import Test.Framework.AssertM (AssertM(..))
 
 import Ribosome.Control.Monad.Ribo (MonadRibo, Nvim)
 import Ribosome.Test.Orphans ()
+import Ribosome.Orphans ()
 import Ribosome.Test.Unit (fixture)
 import Ribosome.Tmux.Run (runTmux)
 

@@ -74,6 +74,7 @@ newtype Ribo s m a =
   deriving (Functor, Applicative, Monad, MonadIO, MonadThrow, MonadCatch, MonadMask)
 
 type RiboE s e m = Ribo s (ExceptT e m)
+type RiboN s e a = RiboE s e (ConcNvimS s) a
 
 instance MonadIO m => MonadState s (Ribo s m) where
   get = do

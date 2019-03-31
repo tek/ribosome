@@ -18,7 +18,6 @@ import Ribosome.Data.SettingError (SettingError)
 import Ribosome.Error.Report.Class (ReportError(..))
 import Ribosome.Nvim.Api.RpcCall (RpcError)
 import Ribosome.Test.Unit (unitSpec)
-import Test ()
 
 data SettingSpecError =
   Sett SettingError

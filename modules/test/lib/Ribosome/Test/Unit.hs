@@ -1,6 +1,7 @@
 module Ribosome.Test.Unit where
 
 import Control.Monad.IO.Class (MonadIO)
+import Data.Default (def)
 import Neovim (Neovim)
 import System.FilePath (takeDirectory, takeFileName, (</>))
 
@@ -29,10 +30,18 @@ unitSpec ::
 unitSpec =
   unsafeEmbeddedSpecR uSpec
 
-tempDir :: FilePath -> Neovim e FilePath
+unitSpecDef ::
+  (RpcHandler e (Ribosome env) m, ReportError e, MonadIO m, NvimE e' m) =>
+  env ->
+  m () ->
+  IO ()
+unitSpecDef =
+  unitSpec def
+
+tempDir :: MonadIO m => FilePath -> m FilePath
 tempDir = F.tempDir uPrefix
 
-tempFile :: FilePath -> Neovim e FilePath
+tempFile :: MonadIO m => FilePath -> m FilePath
 tempFile file = do
   absDir <- tempDir $ takeDirectory file
   return $ absDir </> takeFileName file

@@ -1,9 +1,4 @@
-module Ribosome.Data.Time(
-  epochSeconds,
-  usleep,
-  sleep,
-  sleepW,
-) where
+module Ribosome.System.Time where
 
 import Control.Concurrent (threadDelay)
 import Control.Monad.IO.Class (MonadIO, liftIO)

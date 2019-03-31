@@ -19,9 +19,9 @@ import qualified Ribosome.Control.Monad.Ribo as Ribo (getErrors, modifyErrors, p
 import Ribosome.Control.Ribosome (Ribosome(..))
 import Ribosome.Data.ErrorReport (ErrorReport(ErrorReport))
 import Ribosome.Data.Errors (ComponentName(ComponentName), Error(Error), Errors(Errors))
-import Ribosome.Data.Time (epochSeconds)
 import Ribosome.Error.Report.Class (ReportError(..))
 import Ribosome.Nvim.Api.RpcCall (RpcError)
+import Ribosome.System.Time (epochSeconds)
 
 storeError' :: Int -> String -> ErrorReport -> Errors -> Errors
 storeError' time name report (Errors errors) =

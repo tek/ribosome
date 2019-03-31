@@ -8,19 +8,19 @@ module Ribosome.Api.Exists(
 import Control.Monad.IO.Class (MonadIO)
 import Data.Default (Default(def))
 import Data.Either (isRight)
-import Data.Text.Prettyprint.Doc ((<+>), viaShow, prettyList)
+import Data.Text.Prettyprint.Doc (prettyList, viaShow, (<+>))
 import Neovim (
+  AnsiStyle,
+  Doc,
   Neovim,
   NvimObject,
   Object(ObjectInt),
-  Doc,
-  AnsiStyle,
-  toObject,
   fromObject,
+  toObject,
   vim_call_function',
   )
 
-import Ribosome.Data.Time (epochSeconds, sleep)
+import Ribosome.System.Time (epochSeconds, sleep)
 
 data Retry =
   Retry Int Double

@@ -5,7 +5,7 @@ import Control.Monad.IO.Class (MonadIO)
 import Control.Monad.Trans.Control (MonadBaseControl)
 import Data.Default (Default(def))
 
-import Ribosome.Data.Time (sleep)
+import Ribosome.System.Time (sleep)
 
 data Retry =
   Retry Int Double

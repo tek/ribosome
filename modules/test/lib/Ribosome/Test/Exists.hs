@@ -7,7 +7,7 @@ import Data.MessagePack (Object(ObjectInt))
 import Neovim (Neovim, toObject, vim_call_function)
 
 import Ribosome.Data.String (capitalize)
-import Ribosome.Data.Time (epochSeconds, sleep)
+import Ribosome.System.Time (epochSeconds, sleep)
 
 retry :: MonadIO f => Double -> Int -> f a -> (a -> f (Either String b)) -> f b
 retry interval timeout thunk check = do

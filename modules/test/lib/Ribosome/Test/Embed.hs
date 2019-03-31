@@ -48,11 +48,11 @@ import Ribosome.Api.Option (rtpCat)
 import Ribosome.Control.Monad.Ribo (Nvim, NvimE)
 import Ribosome.Control.Ribosome (Ribosome(Ribosome), newRibosomeTVar)
 import qualified Ribosome.Data.ErrorReport as ErrorReport (ErrorReport(..))
-import Ribosome.Data.Time (sleep, sleepW)
 import Ribosome.Error.Report.Class (ReportError(errorReport))
 import Ribosome.Nvim.Api.IO (vimSetVar)
 import Ribosome.Nvim.Api.RpcCall (RpcError)
 import Ribosome.Plugin (RpcHandler(native))
+import Ribosome.System.Time (sleep, sleepW)
 
 type Runner m = TestConfig -> m () -> m ()
 
@@ -73,7 +73,8 @@ instance Default TestConfig where
   def = TestConfig "ribosome" "test/f/fixtures/rtp" "test/f/temp/log" 10 def def (Vars [])
 
 defaultTestConfigWith :: String -> Vars -> TestConfig
-defaultTestConfigWith name = TestConfig name "test/f/fixtures/rtp" "test/f/temp/log" 5 def def
+defaultTestConfigWith name vars =
+  def { tcPluginName = name, tcVariables = vars }
 
 defaultTestConfig :: String -> TestConfig
 defaultTestConfig name = defaultTestConfigWith name (Vars [])
