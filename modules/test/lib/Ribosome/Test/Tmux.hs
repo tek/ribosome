@@ -149,3 +149,12 @@ tmuxGuiSpec conf specThunk =
   Chiasma.tmuxGuiSpec run
   where
     run api = guiSpec conf api def (withTmux specThunk api)
+
+tmuxGuiSpecDef ::
+  DeepPrisms e RpcError =>
+  ReportError e =>
+  Default s =>
+  RiboN s e () ->
+  IO ()
+tmuxGuiSpecDef =
+  tmuxGuiSpec def
