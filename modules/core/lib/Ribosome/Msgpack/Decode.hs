@@ -4,10 +4,12 @@ module Ribosome.Msgpack.Decode where
 
 import Control.Monad.DeepError (MonadDeepError, hoistEitherWith)
 import qualified Data.ByteString.UTF8 as ByteString (toString)
+import Data.Either.Combinators (mapLeft)
 import Data.Int (Int64)
 import Data.Map.Strict (Map, (!?))
 import qualified Data.Map.Strict as Map (fromList, toList)
 import Data.MessagePack (Object(..))
+import Data.Text.Prettyprint.Doc (pretty)
 import GHC.Generics (
   C1,
   Constructor,
@@ -23,6 +25,7 @@ import GHC.Generics (
   to,
   (:*:)(..),
   )
+import Text.Read (readEither)
 
 import Ribosome.Msgpack.Error (DecodeError(DecodeError))
 import Ribosome.Msgpack.Util (Err)
@@ -104,9 +107,10 @@ instance (Ord k, MsgpackDecode k, MsgpackDecode v) => MsgpackDecode (Map k v) wh
         return (k1, v1)
   fromMsgpack o = Util.illegalType "Map" o
 
-msgpackIntegral :: Integral a => Object -> Either Err a
+msgpackIntegral :: (Integral a, Read a) => Object -> Either Err a
 msgpackIntegral (ObjectInt i) = Right $ fromIntegral i
 msgpackIntegral (ObjectUInt i) = Right $ fromIntegral i
+msgpackIntegral (ObjectString s) = mapLeft pretty . readEither . ByteString.toString $ s
 msgpackIntegral o = Util.illegalType "Integral" o
 
 instance MsgpackDecode Int where
