@@ -1,7 +1,5 @@
 module Ribosome.Api.Syntax where
 
-import Control.Monad ((<=<))
-import Control.Monad.IO.Class (MonadIO, liftIO)
 import Data.Functor.Syntax ((<$$>))
 import Data.Map (Map)
 import qualified Data.Map as Map (toList)

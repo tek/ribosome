@@ -6,7 +6,6 @@ module SyntaxSpec(
 ) where
 
 import Chiasma.Data.TmuxError (TmuxError)
-import Control.Monad.IO.Class (liftIO)
 import Data.DeepPrisms (deepPrisms)
 import Test.Framework
 
@@ -14,14 +13,11 @@ import Ribosome.Api.Buffer (setCurrentBufferContent)
 import Ribosome.Api.Syntax (executeSyntax)
 import Ribosome.Control.Monad.Ribo (RiboN)
 import Ribosome.Data.Syntax (
-  Highlight(Highlight),
   Syntax(Syntax),
-  SyntaxItemDetail(Keyword),
   syntaxHighlight,
   syntaxMatch,
   )
 import Ribosome.Error.Report.Class (ReportError(..))
-import Ribosome.Nvim.Api.IO (vimCommand, vimCommandOutput)
 import Ribosome.Nvim.Api.RpcCall (RpcError)
 import Ribosome.System.Time (sleep)
 import Ribosome.Test.Embed (defaultTestConfig)
@@ -47,7 +43,7 @@ syntax =
 syntaxSpec :: RiboN () SyntaxSpecError ()
 syntaxSpec = do
   setCurrentBufferContent ["function :: String -> Int", "function _ = 5"]
-  executeSyntax syntax
+  _ <- executeSyntax syntax
   sleep 0.5
   assertScreenshot "syntax" False 0
 

@@ -40,10 +40,10 @@ nvimPlugin :: RpcHandler e env m => env -> [[RpcDef m]] -> (e -> m ()) -> Plugin
 nvimPlugin env fs errorHandler =
   Plugin env (wrap <$> join fs)
   where
-    wrap (RpcDef (RpcFunction sync) name rpcHandler) =
-      EF (Function (F (fromString name)) sync, executeRpcHandler errorHandler rpcHandler)
-    wrap (RpcDef (RpcCommand options) name rpcHandler) =
-      EF (Command (F (fromString name)) options, executeRpcHandler errorHandler rpcHandler)
+    wrap (RpcDef (RpcFunction sync') name' rpcHandler') =
+      EF (Function (F (fromString name')) sync', executeRpcHandler errorHandler rpcHandler')
+    wrap (RpcDef (RpcCommand options) name' rpcHandler') =
+      EF (Command (F (fromString name')) options, executeRpcHandler errorHandler rpcHandler')
 
 executeRpcHandler ::
   ∀ e env m.
@@ -52,8 +52,8 @@ executeRpcHandler ::
   ([Object] -> m Object) ->
   [Object] ->
   Neovim env Object
-executeRpcHandler errorHandler rpcHandler =
-  either handleError return <=< runExceptT . native . rpcHandler
+executeRpcHandler errorHandler rpcHandler' =
+  either handleError return <=< runExceptT . native . rpcHandler'
   where
     handleError e = do
       _ <- runExceptT $ native @e $ errorHandler e

@@ -2,7 +2,6 @@ module Ribosome.Test.Unit where
 
 import Control.Monad.IO.Class (MonadIO)
 import Data.Default (def)
-import Neovim (Neovim)
 import System.FilePath (takeDirectory, takeFileName, (</>))
 
 import Ribosome.Control.Monad.Ribo (NvimE)

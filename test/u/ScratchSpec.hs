@@ -4,13 +4,11 @@ module ScratchSpec(
   htf_thisModulesTests
 ) where
 
-import Control.Monad.IO.Class (liftIO)
-import Data.Default (def)
 import Neovim (Neovim)
 import Test.Framework
 
 import Ribosome.Api.Buffer (currentBufferContent)
-import Ribosome.Control.Monad.Ribo (ConcNvimS, RiboE)
+import Ribosome.Control.Monad.Ribo (RiboE)
 import Ribosome.Control.Ribosome (Ribosome)
 import Ribosome.Data.ScratchOptions (ScratchOptions(ScratchOptions))
 import Ribosome.Nvim.Api.RpcCall (RpcError)

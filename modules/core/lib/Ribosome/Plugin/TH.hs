@@ -1,5 +1,5 @@
+{-# OPTIONS_GHC -fno-warn-orphans #-}
 {-# LANGUAGE TemplateHaskell #-}
-{-# LANGUAGE CPP #-}
 
 module Ribosome.Plugin.TH where
 
@@ -7,12 +7,9 @@ import Control.Exception (throw)
 import Control.Monad (replicateM)
 import Data.ByteString (ByteString)
 import qualified Data.ByteString.UTF8 as ByteString (fromString)
-import Data.Data (Data)
 import Data.Functor ((<&>))
-import Data.Functor.Syntax ((<$$>))
-import Data.Maybe (catMaybes, fromMaybe, maybeToList)
+import Data.Maybe (fromMaybe, maybeToList)
 import Data.MessagePack (Object(ObjectString))
-import qualified Data.Set as Set (fromList, member)
 import Data.Text (Text)
 import Data.Text.Prettyprint.Doc (Doc, Pretty(..))
 import Data.Text.Prettyprint.Doc.Render.Terminal (AnsiStyle)
@@ -20,7 +17,6 @@ import Language.Haskell.TH
 import Language.Haskell.TH.Syntax (Lift(..))
 import Neovim.Exceptions (NeovimException(ErrorMessage))
 import Neovim.Plugin.Classes (
-  CommandArguments(..),
   CommandOption(..),
   CommandOptions,
   RangeSpecification(..),
@@ -88,7 +84,7 @@ unfoldFunctionParams (ForallT _ _ t) =
   unfoldFunctionParams t
 unfoldFunctionParams (AppT (AppT ArrowT t) r) =
   t : unfoldFunctionParams r
-unfoldFunctionParams a = []
+unfoldFunctionParams _ = []
 
 functionParamTypes :: Name -> Q [Type]
 functionParamTypes name =
@@ -101,9 +97,9 @@ data CmdParams =
   |
   OnlyPrims Int
   |
-  OnlyData Type
+  OnlyData
   |
-  DataPlus Type Int
+  DataPlus Int
   deriving (Eq, Show)
 
 errorCase :: Name -> Q Match
@@ -122,8 +118,8 @@ successfulEvaluation = do
   action <- newName "action"
   match (conP (mkName "Right") [varP action]) (normalB [|toMsgpack <$> $(varE action)|]) []
 
-dispatchCase :: Name -> PatQ -> ExpQ -> Q Match
-dispatchCase handlerName params dispatch =
+dispatchCase :: PatQ -> ExpQ -> Q Match
+dispatchCase params dispatch =
   match params (normalB (caseE dispatch resultCases)) []
   where
     resultCases = [successfulEvaluation, failedEvaluation]
@@ -136,7 +132,7 @@ decodedCallSequence handlerName =
 
 argsCase :: Name -> PatQ -> [Name] -> Q Match
 argsCase handlerName params paramNames =
-  dispatchCase handlerName params dispatch
+  dispatchCase params dispatch
   where
     dispatch = decodedCallSequence handlerName vars
     vars = varE <$> paramNames
@@ -145,10 +141,10 @@ cmdArgsCase :: Name -> [Name] -> Q Match
 cmdArgsCase handlerName paramNames =
   argsCase handlerName (listParamsPattern (mkName "_" : paramNames)) paramNames
 
-rpcLambda :: Name -> Q Match -> ExpQ
-rpcLambda name match = do
+rpcLambda :: Q Match -> ExpQ
+rpcLambda match' = do
   args <- newName "args"
-  lamE [varP args] (caseE (varE args) [match])
+  lamE [varP args] (caseE (varE args) [match'])
 
 listParamsPattern :: [Name] -> PatQ
 listParamsPattern =
@@ -168,7 +164,7 @@ functionImplementation :: Name -> ExpQ
 functionImplementation name = do
   paramTypes <- functionParamTypes name
   paramNames <- lambdaNames (length paramTypes)
-  rpcLambda name (argsCase name (listParamsPattern paramNames) paramNames)
+  rpcLambda (argsCase name (listParamsPattern paramNames) paramNames)
 
 joinMsgpackStrings :: [Object] -> Either Err Object
 joinMsgpackStrings args =
@@ -180,21 +176,21 @@ dataDispatch handlerName paramNames restName =
   where
     prims = decodedCallSequence handlerName vars
     vars = varE <$> paramNames
-    decodedRest = [|fromMsgpack =<< joinMsgpackStrings rest|]
+    decodedRest = [|fromMsgpack =<< joinMsgpackStrings $(varE restName)|]
 
 commandImplementation :: CmdParams -> Name -> ExpQ
 commandImplementation ZeroParams name =
-  rpcLambda name (cmdArgsCase name [])
+  rpcLambda (cmdArgsCase name [])
 commandImplementation (OnlyPrims paramCount) name = do
   paramNames <- lambdaNames paramCount
-  rpcLambda name (cmdArgsCase name paramNames)
-commandImplementation (DataPlus tpe paramCount) name = do
+  rpcLambda (cmdArgsCase name paramNames)
+commandImplementation (DataPlus paramCount) name = do
   paramNames <- lambdaNames paramCount
   restName <- newName "rest"
-  rpcLambda name (dispatchCase name (unconsParamsPattern paramNames restName) (dataDispatch name paramNames restName))
-commandImplementation (OnlyData tpe) name = do
+  rpcLambda (dispatchCase (unconsParamsPattern paramNames restName) (dataDispatch name paramNames restName))
+commandImplementation OnlyData name = do
   restName <- newName "rest"
-  rpcLambda name (dispatchCase name (unconsParamsPattern [] restName) (dataDispatch name [] restName))
+  rpcLambda (dispatchCase (unconsParamsPattern [] restName) (dataDispatch name [] restName))
 
 analyzeCmdParams :: (Type -> Bool) -> [Type] -> CmdParams
 analyzeCmdParams isPrim =
@@ -202,12 +198,12 @@ analyzeCmdParams isPrim =
   where
     check [a] | isPrim a =
       OnlyPrims 1
-    check [a] =
-      OnlyData a
+    check [_] =
+      OnlyData
     check (a : rest) | isPrim a =
       OnlyPrims (length rest + 1)
-    check (a : rest) =
-      DataPlus a (length rest)
+    check (_ : rest) =
+      DataPlus (length rest)
     check [] =
       ZeroParams
 
