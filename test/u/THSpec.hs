@@ -13,6 +13,7 @@ module THSpec(
 -- import Data.Foldable (traverse_)
 -- import Language.Haskell.TH
 -- import Neovim (Plugin(..))
+-- import Neovim.Plugin.Classes
 import Test.Framework
 
 -- import Ribosome.Control.Monad.Ribo (ConcNvimS, Ribo, runRib)
@@ -28,7 +29,7 @@ import Test.Framework
 --   Par Int
 --   deriving (Eq, Show, MsgpackDecode, MsgpackEncode)
 
--- handler :: Monad m => Par -> m ()
+-- handler :: Monad m => Int -> String -> Par -> m ()
 -- handler =
 --   undefined
 
@@ -46,10 +47,8 @@ import Test.Framework
 -- plugin' :: IO (Plugin (Ribosome Int))
 -- plugin' = do
 --   ribo <- newRibosome "test" 1
---   return $ nvimPlugin @String @(Ribosome Int) @R ribo [$(rpcHandlerDef 'handler)] handleError
+--   return $ nvimPlugin @String @(Ribosome Int) @R ribo [$(rpcHandler (cmd []) 'handler)] handleError
 
 -- test_plug :: IO ()
--- test_plug = do
---   _ <- plugin'
---   return ()
---   -- traverse_ putStrLn $ lines $(stringE . pprint =<< generateIO)
+-- test_plug =
+--   traverse_ putStrLn $ lines $(stringE . pprint =<< rpcHandler (cmd []) 'handler)

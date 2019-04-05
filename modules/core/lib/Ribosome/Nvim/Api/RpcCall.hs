@@ -9,7 +9,7 @@ import Data.Text.Prettyprint.Doc (defaultLayoutOptions, layoutPretty)
 import Data.Text.Prettyprint.Doc.Render.String (renderString)
 import Neovim (Neovim)
 import Neovim.Exceptions (NeovimException)
-import Neovim.Plugin.Classes (FunctionName(F))
+import Neovim.Plugin.Classes (FunctionName)
 import Neovim.RPC.FunctionCall (scall)
 import System.Log.Logger (Priority(ERROR))
 
