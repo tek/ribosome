@@ -1,6 +1,4 @@
-module Ribosome.Data.Scratch(
-  Scratch(..),
-) where
+module Ribosome.Data.Scratch where
 
 import Ribosome.Nvim.Api.Data (Buffer, Tabpage, Window)
 

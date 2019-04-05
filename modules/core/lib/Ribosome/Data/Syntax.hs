@@ -4,34 +4,57 @@ import Data.Default (Default(def))
 import Data.Map (Map)
 import qualified Data.Map.Strict as Map (fromList)
 
-data SyntaxItem =
+data SyntaxItemDetail =
   Keyword {
     kwGroup :: String,
     kwKeyword :: String,
-    kwOptions :: [String],
-    kwKeywords :: [String],
-    kwParams :: Map String String
-    }
+    kwOptions :: [String]
+  }
   |
   Match {
     matchGroup :: String,
-    matchPattern :: String,
-    kwOptions :: [String],
-    kwParams :: Map String String
-    }
+    matchPattern :: String
+  }
   |
   Region {
-    regionGroup :: String
-    }
+    regionGroup :: String,
+    regionStart :: String,
+    regionEnd :: String,
+    regionSkip :: Maybe String
+  }
+  |
+  Verbatim {
+    verbatimCommand :: String
+  }
   deriving (Eq, Show)
+
+data SyntaxItem =
+  SyntaxItem {
+    siDetail :: SyntaxItemDetail,
+    siOptions :: [String],
+    siParams :: Map String String
+  }
+  deriving (Eq, Show)
+
+syntaxItem :: SyntaxItemDetail -> SyntaxItem
+syntaxItem detail =
+  SyntaxItem detail def def
 
 syntaxKeyword :: String -> String -> SyntaxItem
 syntaxKeyword group keyword =
-  Keyword group keyword def def def
+  syntaxItem $ Keyword group keyword def
 
 syntaxMatch :: String -> String -> SyntaxItem
 syntaxMatch group pat =
-  Match group pat def def
+  syntaxItem $ Match group pat
+
+syntaxRegion :: String -> String -> String -> Maybe String -> SyntaxItem
+syntaxRegion group start end skip =
+  syntaxItem $ Region group start end skip
+
+syntaxVerbatim :: String -> SyntaxItem
+syntaxVerbatim =
+  syntaxItem . Verbatim
 
 data Highlight =
   Highlight {
