@@ -13,7 +13,7 @@ import Control.Lens (makeClassy)
 import Data.Default (Default)
 import Data.Map (Map)
 import qualified Data.Map as Map (toList)
-import Data.Text.Prettyprint.Doc (Doc, Pretty(..), align, vsep, line, (<+>), (<>))
+import Data.Text.Prettyprint.Doc (Doc, Pretty(..), align, line, vsep, (<+>), (<>))
 import Prelude hiding (error)
 
 import Ribosome.Data.ErrorReport (ErrorReport(ErrorReport))
@@ -49,4 +49,4 @@ prettyComponentErrors (ComponentName name) errors' =
 
 instance Pretty Errors where
   pretty (Errors errors') =
-    pretty ("Errors:" :: String) <> vsep (uncurry prettyComponentErrors <$> Map.toList errors')
+    vsep (uncurry prettyComponentErrors <$> Map.toList errors')
