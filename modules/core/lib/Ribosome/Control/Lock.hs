@@ -13,7 +13,7 @@ import UnliftIO.STM (TMVar, atomically, newTMVarIO, tryPutTMVar, tryTakeTMVar)
 import Ribosome.Control.Monad.Ribo
 import Ribosome.Control.Ribosome (Locks)
 import qualified Ribosome.Control.Ribosome as Ribosome (locks)
-import qualified Ribosome.Log as Log (debugR)
+import qualified Ribosome.Log as Log (debug)
 
 getLocks :: (MonadRibo m, MonadIO m) => m Locks
 getLocks =
@@ -42,7 +42,7 @@ lockOrSkip key thunk = do
   currentState <- atomically $ tryTakeTMVar currentLock
   case currentState of
     Just _ -> do
-      Log.debugR $ "locking MVar `" ++ key ++ "`"
+      Log.debug $ "locking MVar `" ++ key ++ "`"
       finally thunk $ atomically $ tryPutTMVar currentLock ()
-      Log.debugR $ "unlocking MVar `" ++ key ++ "`"
+      Log.debug $ "unlocking MVar `" ++ key ++ "`"
     Nothing -> return ()
