@@ -1,5 +1,6 @@
 module Ribosome.Test.Embed where
 
+import Control.Concurrent (forkIO)
 import Control.Monad.DeepError (MonadDeepError)
 import Control.Monad.IO.Class (MonadIO, liftIO)
 import Control.Monad.Reader (runReaderT)
@@ -11,15 +12,22 @@ import Data.Functor (void)
 import Data.Maybe (fromMaybe)
 import GHC.IO.Handle (Handle)
 import Neovim (Neovim, Object, vim_command)
+import Neovim.Config (NeovimConfig)
 import qualified Neovim.Context.Internal as Internal (
-  Config,
+  Config(customConfig),
   Neovim(Neovim),
+  StateTransition(Failure, InitSuccess, Quit),
   globalFunctionMap,
   mkFunctionMap,
   newConfig,
   pluginSettings,
   retypeConfig,
+  transitionTo,
   )
+import Neovim.Main (finishDyre)
+import Neovim.Plugin (Plugin, startPluginThreads)
+import Neovim.Plugin.Internal (NeovimPlugin, wrapPlugin)
+import Neovim.Plugin.Startup (StartupConfig(..))
 import Neovim.RPC.Common (RPCConfig, newRPCConfig)
 import Neovim.RPC.EventHandler (runEventHandler)
 import Neovim.RPC.SocketReader (runSocketReader)
@@ -42,6 +50,7 @@ import System.Process.Typed (
   )
 import UnliftIO.Async (async, cancel, race)
 import UnliftIO.Exception (bracket, tryAny)
+import UnliftIO.MVar (MVar, putMVar, tryPutMVar)
 import UnliftIO.STM (atomically, putTMVar)
 
 import Ribosome.Api.Option (rtpCat)
@@ -109,16 +118,20 @@ testNvimProcessConfig TestConfig {..} =
     args = fromMaybe defaultArgs tcCmdline
     defaultArgs = ["--embed", "-n", "-u", "NONE", "-i", "NONE"]
 
-startHandlers :: NvimProc -> TestConfig -> Internal.Config RPCConfig -> IO (IO ())
-startHandlers prc TestConfig{..} nvimConf = do
-  socketReader <- run runSocketReader getStdout
-  eventHandler <- run runEventHandler getStdin
+startHandlers :: Handle -> Handle -> TestConfig -> Internal.Config RPCConfig -> IO (IO ())
+startHandlers stdoutHandle stdinHandle TestConfig{..} nvimConf = do
+  socketReader <- run runSocketReader stdoutHandle
+  eventHandler <- run runEventHandler stdinHandle
   atomically $ putTMVar (Internal.globalFunctionMap nvimConf) (Internal.mkFunctionMap [])
   let stopEventHandlers = traverse_ cancel [socketReader, eventHandler]
   return stopEventHandlers
   where
-    run runner stream = async . void $ runner (stream prc) emptyConf
+    run runner hand = async . void $ runner hand emptyConf
     emptyConf = nvimConf { Internal.pluginSettings = Nothing }
+
+startStdioHandlers :: NvimProc -> TestConfig -> Internal.Config RPCConfig -> IO (IO ())
+startStdioHandlers prc =
+  startHandlers (getStdout prc) (getStdin prc)
 
 runNeovimThunk :: Internal.Config e -> Neovim e a -> IO a
 runNeovimThunk cfg (Internal.Neovim thunk) =
@@ -158,13 +171,13 @@ shutdownNvim _ prc stopEventHandlers = do
   -- quitNvim testCfg prc
 
 runTest ::
-  (RpcHandler e env m, ReportError e) =>
+  RpcHandler e env m =>
+  ReportError e =>
   TestConfig ->
   Internal.Config env ->
   m () ->
-  IO () ->
   IO ()
-runTest TestConfig{..} testCfg thunk _ = do
+runTest TestConfig{..} testCfg thunk = do
   result <- race (sleepW tcTimeout) (runNeovimThunk testCfg (runExceptT $ native thunk))
   case result of
     Right (Right _) -> return ()
@@ -172,7 +185,8 @@ runTest TestConfig{..} testCfg thunk _ = do
     Left _ -> fail $ "test exceeded timeout of " ++ show tcTimeout ++ " seconds"
 
 runEmbeddedNvim ::
-  (RpcHandler e env m, ReportError e) =>
+  RpcHandler e env m =>
+  ReportError e =>
   TestConfig ->
   env ->
   m () ->
@@ -181,10 +195,11 @@ runEmbeddedNvim ::
 runEmbeddedNvim conf ribo thunk prc = do
   nvimConf <- Internal.newConfig (pure Nothing) newRPCConfig
   let testCfg = Internal.retypeConfig ribo nvimConf
-  bracket (startHandlers prc conf nvimConf) (shutdownNvim testCfg prc) (runTest conf testCfg thunk)
+  bracket (startStdioHandlers prc conf nvimConf) (shutdownNvim testCfg prc) (const $ runTest conf testCfg thunk)
 
 runEmbedded ::
-  (RpcHandler e env m, ReportError e) =>
+  RpcHandler e env m =>
+  ReportError e =>
   TestConfig ->
   env ->
   m () ->
@@ -194,7 +209,8 @@ runEmbedded conf ribo thunk = do
   withProcess pc $ runEmbeddedNvim conf ribo thunk
 
 unsafeEmbeddedSpec ::
-  (RpcHandler e env m, ReportError e) =>
+  RpcHandler e env m =>
+  ReportError e =>
   Runner m ->
   TestConfig ->
   env ->
@@ -204,7 +220,8 @@ unsafeEmbeddedSpec runner conf s spec =
   runEmbedded conf s $ runner conf spec
 
 unsafeEmbeddedSpecR ::
-  (RpcHandler e (Ribosome env) m, ReportError e) =>
+  RpcHandler e (Ribosome env) m =>
+  ReportError e =>
   Runner m ->
   TestConfig ->
   env ->
@@ -214,3 +231,52 @@ unsafeEmbeddedSpecR runner conf env spec = do
   tv <- newRibosomeTVar env
   let ribo = Ribosome (tcPluginName conf) tv
   unsafeEmbeddedSpec runner conf ribo spec
+
+runPlugin ::
+  Handle ->
+  Handle ->
+  [Neovim (StartupConfig NeovimConfig) NeovimPlugin] ->
+  Internal.Config c ->
+  IO (MVar Internal.StateTransition)
+runPlugin evHandlerHandle sockreaderHandle plugins baseConf = do
+  rpcConf <- newRPCConfig
+  let conf = Internal.retypeConfig rpcConf baseConf
+  ehTid <- async $ runEventHandler evHandlerHandle conf { Internal.pluginSettings = Nothing }
+  srTid <- async $ runSocketReader sockreaderHandle conf
+  let startupConf = Internal.retypeConfig (StartupConfig Nothing []) conf
+  void $ forkIO $ startPluginThreads startupConf plugins >>= \case
+    Left e -> do
+      putMVar (Internal.transitionTo conf) $ Internal.Failure e
+      finishDyre [ehTid, srTid] conf
+    Right (funMapEntries, pluginTids) -> do
+      atomically $ putTMVar (Internal.globalFunctionMap conf) (Internal.mkFunctionMap funMapEntries)
+      putMVar (Internal.transitionTo conf) Internal.InitSuccess
+      finishDyre (srTid:ehTid:pluginTids) conf
+  return (Internal.transitionTo conf)
+
+runEmbeddedWithPlugin ::
+  RpcHandler e () m =>
+  ReportError e =>
+  TestConfig ->
+  Plugin env ->
+  m () ->
+  IO ()
+runEmbeddedWithPlugin conf plugin thunk =
+  withProcess (testNvimProcessConfig conf) run
+  where
+    run prc = do
+      nvimConf <- Internal.newConfig (pure Nothing) (pure ())
+      bracket (acquire prc nvimConf) release (const $ runTest conf nvimConf thunk)
+    acquire prc conf =
+      runPlugin (getStdin prc) (getStdout prc) [wrapPlugin plugin] conf <* sleep 0.5
+    release transitions =
+      tryPutMVar transitions Internal.Quit *> sleep 0.5
+
+integrationSpecDef ::
+  RpcHandler e () m =>
+  ReportError e =>
+  Plugin env ->
+  m () ->
+  IO ()
+integrationSpecDef =
+  runEmbeddedWithPlugin def

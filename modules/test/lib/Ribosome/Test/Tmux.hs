@@ -38,21 +38,14 @@ import Ribosome.Control.Ribosome (Ribosome(Ribosome), newRibosomeTVar)
 import Ribosome.Error.Report.Class (ReportError)
 import Ribosome.Nvim.Api.RpcCall (RpcError)
 import Ribosome.Plugin (RpcHandler)
-import Ribosome.Test.Embed (Runner, TestConfig(..), runTest)
+import Ribosome.Test.Embed (Runner, TestConfig(..), runTest, startHandlers)
 import Ribosome.Test.Orphans ()
 import Ribosome.Test.Unit (tempDir, uSpec)
 
-startHandlers :: FilePath -> TestConfig -> Internal.Config RPCConfig -> IO (IO ())
-startHandlers socket TestConfig{..} nvimConf = do
+startSocketHandlers :: FilePath -> TestConfig -> Internal.Config RPCConfig -> IO (IO ())
+startSocketHandlers socket testConfig nvimConf = do
   handle <- createHandle (UnixSocket socket)
-  socketReader <- run runSocketReader handle
-  eventHandler <- run runEventHandler handle
-  atomically $ putTMVar (Internal.globalFunctionMap nvimConf) (Internal.mkFunctionMap [])
-  let stopEventHandlers = traverse_ cancel [socketReader, eventHandler]
-  return stopEventHandlers
-  where
-    run runner hand = async . void $ runner hand emptyConf
-    emptyConf = nvimConf { Internal.pluginSettings = Nothing }
+  startHandlers handle handle testConfig nvimConf
 
 runTmuxNvim ::
   (RpcHandler e env m, ReportError e) =>
@@ -64,7 +57,7 @@ runTmuxNvim ::
 runTmuxNvim conf ribo specThunk socket = do
   nvimConf <- Internal.newConfig (pure Nothing) newRPCConfig
   let testCfg = Internal.retypeConfig ribo nvimConf
-  bracket (startHandlers socket conf nvimConf) id (runTest conf testCfg specThunk)
+  bracket (startSocketHandlers socket conf nvimConf) id (const $ runTest conf testCfg specThunk)
 
 externalNvimCmdline :: FilePath -> String
 externalNvimCmdline socket =

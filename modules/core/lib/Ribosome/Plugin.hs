@@ -34,8 +34,6 @@ class RpcHandler e env m | m -> e env where
 instance RpcHandler e env (ExceptT e (Neovim env)) where
   native = id
 
-class RpcErrorHandler e m where
-
 nvimPlugin :: RpcHandler e env m => env -> [[RpcDef m]] -> (e -> m ()) -> Plugin env
 nvimPlugin env fs errorHandler =
   Plugin env (wrap <$> join fs)

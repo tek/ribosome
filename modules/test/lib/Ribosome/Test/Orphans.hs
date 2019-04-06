@@ -25,6 +25,12 @@ instance AssertM (Ribo s (ConcNvimS s)) where
   genericSubAssert l msg ma =
     withRunInIO (\f -> genericSubAssert l msg (f ma))
 
+instance AssertM (ExceptT e (Neovim s)) where
+  genericAssertFailure__ l = liftIO . genericAssertFailure__ l
+
+  genericSubAssert l msg =
+    ExceptT . genericSubAssert l msg . runExceptT
+
 instance AssertM (Ribo s (ExceptT e (ConcNvimS s))) where
   genericAssertFailure__ l = liftIO . genericAssertFailure__ l
 

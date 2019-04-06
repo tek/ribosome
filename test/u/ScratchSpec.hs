@@ -20,7 +20,7 @@ target = ["line 1", "line 2"]
 
 scratchSpec :: RiboE () RpcError (Neovim (Ribosome ())) ()
 scratchSpec = do
-  _ <- showInScratch target (ScratchOptions False True (Just 0) False [] "buffi")
+  _ <- showInScratch target (ScratchOptions False True False True (Just 0) [] "buffi")
   content <- currentBufferContent
   gassertEqual target content
 
