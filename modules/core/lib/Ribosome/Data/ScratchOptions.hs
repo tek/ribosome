@@ -8,17 +8,22 @@ data ScratchOptions =
   ScratchOptions {
     tab :: Bool,
     vertical :: Bool,
-    size :: Maybe Int,
     wrap :: Bool,
+    focus :: Bool,
+    size :: Maybe Int,
     syntax :: [Syntax],
     name :: String
   }
 
 defaultScratchOptions :: String -> ScratchOptions
-defaultScratchOptions = ScratchOptions False False Nothing False []
+defaultScratchOptions = ScratchOptions False False False False Nothing []
 
 instance Default ScratchOptions where
   def = defaultScratchOptions "scratch"
+
+scratchFocus :: ScratchOptions -> ScratchOptions
+scratchFocus so =
+  so { focus = True }
 
 scratchSyntax :: [Syntax] -> ScratchOptions -> ScratchOptions
 scratchSyntax syn so =

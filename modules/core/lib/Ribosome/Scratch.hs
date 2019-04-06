@@ -1,5 +1,6 @@
 module Ribosome.Scratch where
 
+import Control.Monad (unless)
 import Data.Default (Default(def))
 import Data.Foldable (traverse_)
 
@@ -20,6 +21,7 @@ import Ribosome.Nvim.Api.IO (
   vimCommand,
   vimGetCurrentTabpage,
   vimGetCurrentWindow,
+  vimSetCurrentWindow,
   windowGetBuffer,
   windowSetOption,
   )
@@ -45,16 +47,18 @@ createScratchUiInTab = do
   win <- vimGetCurrentWindow
   return (win, Just tab)
 
-createScratchUiInWindow :: NvimE e m => Bool -> Bool -> Maybe Int -> m (Window, Maybe Tabpage)
-createScratchUiInWindow vertical wrap size = do
+createScratchUiInWindow :: NvimE e m => Bool -> Bool -> Bool -> Maybe Int -> m (Window, Maybe Tabpage)
+createScratchUiInWindow vertical wrap focus size = do
+  previous <- vimGetCurrentWindow
   win <- createScratchWindow vertical wrap size
+  unless focus $ vimSetCurrentWindow previous
   return (win, Nothing)
 
-createScratchUi :: NvimE e m => Bool -> Bool -> Bool -> Maybe Int -> m (Window, Maybe Tabpage)
-createScratchUi True _ _ _ =
+createScratchUi :: NvimE e m => Bool -> Bool -> Bool -> Bool -> Maybe Int -> m (Window, Maybe Tabpage)
+createScratchUi True _ _ _ _ =
   createScratchUiInTab
-createScratchUi False vertical wrap size =
-  createScratchUiInWindow vertical wrap size
+createScratchUi False vertical wrap focus size =
+  createScratchUiInWindow vertical wrap focus size
 
 configureScratchBuffer :: NvimE e m => Buffer -> String -> m ()
 configureScratchBuffer buffer name = do
@@ -69,8 +73,8 @@ setupScratchBuffer window name = do
   return buffer
 
 createScratch :: NvimE e m => ScratchOptions -> m Scratch
-createScratch (ScratchOptions useTab vertical size wrap syntax name) = do
-  (window, tab) <- createScratchUi useTab vertical wrap size
+createScratch (ScratchOptions useTab vertical wrap focus size syntax name) = do
+  (window, tab) <- createScratchUi useTab vertical wrap focus size
   buffer <- setupScratchBuffer window name
   traverse_ (executeWindowSyntax window) syntax
   return (Scratch buffer window tab)
