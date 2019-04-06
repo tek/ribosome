@@ -1,8 +1,10 @@
 module Ribosome.Scratch where
 
 import Data.Default (Default(def))
+import Data.Foldable (traverse_)
 
 import Ribosome.Api.Buffer (setBufferContent)
+import Ribosome.Api.Syntax (executeWindowSyntax)
 import Ribosome.Control.Monad.Ribo (NvimE)
 import Ribosome.Data.Scratch (Scratch(Scratch))
 import Ribosome.Data.ScratchOptions (ScratchOptions(ScratchOptions))
@@ -67,9 +69,10 @@ setupScratchBuffer window name = do
   return buffer
 
 createScratch :: NvimE e m => ScratchOptions -> m Scratch
-createScratch (ScratchOptions useTab vertical size wrap name) = do
+createScratch (ScratchOptions useTab vertical size wrap syntax name) = do
   (window, tab) <- createScratchUi useTab vertical wrap size
   buffer <- setupScratchBuffer window name
+  traverse_ (executeWindowSyntax window) syntax
   return (Scratch buffer window tab)
 
 setScratchContent :: NvimE e m => Scratch -> [String] -> m ()
