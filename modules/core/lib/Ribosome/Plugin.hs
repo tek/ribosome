@@ -9,7 +9,7 @@ import Control.Monad (join, (<=<))
 import Control.Monad.Trans.Except (ExceptT, runExceptT)
 import Data.ByteString.UTF8 (fromString)
 import qualified Data.Map as Map ()
-import Data.MessagePack (Object)
+import Data.MessagePack (Object(ObjectNil))
 import Neovim.Context (Neovim)
 import Neovim.Plugin.Classes (
   CommandOption,
@@ -57,7 +57,7 @@ executeRpcHandler errorHandler rpcHandler' =
   where
     handleError e = do
       _ <- runExceptT $ native @e $ errorHandler e
-      fail "fatal error in rpc handler"
+      return ObjectNil
 
 cmd :: [CommandOption] -> RpcHandlerConfig -> RpcHandlerConfig
 cmd opts conf =
