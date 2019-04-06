@@ -1,8 +1,7 @@
-module Ribosome.Api.Path(
-  nvimCwd,
-) where
+module Ribosome.Api.Path where
 
-import Neovim (Neovim, vim_call_function', fromObject')
+import Ribosome.Control.Monad.Ribo (NvimE)
+import Ribosome.Nvim.Api.IO (vimCallFunction)
 
-nvimCwd :: Neovim e FilePath
-nvimCwd = vim_call_function' "getcwd" [] >>= fromObject'
+nvimCwd :: NvimE e m => m FilePath
+nvimCwd = vimCallFunction "getcwd" []
