@@ -4,13 +4,13 @@
 module Ribosome.Plugin.TH where
 
 import Control.Exception (throw)
-import Control.Monad (replicateM)
-import Data.ByteString (ByteString)
-import qualified Data.ByteString.UTF8 as ByteString (fromString)
+import Control.Monad (replicateM, (<=<))
+import Data.Aeson (FromJSON, eitherDecodeStrict)
+import qualified Data.ByteString as ByteString (intercalate)
+import Data.Either.Combinators (mapLeft)
 import Data.Functor ((<&>))
 import Data.Maybe (fromMaybe, maybeToList)
-import Data.MessagePack (Object(ObjectString))
-import Data.Text (Text)
+import Data.MessagePack (Object)
 import Data.Text.Prettyprint.Doc (Doc, Pretty(..))
 import Data.Text.Prettyprint.Doc.Render.Terminal (AnsiStyle)
 import Language.Haskell.TH
@@ -106,7 +106,7 @@ errorCase :: Name -> Q Match
 errorCase name =
   match wildP (normalB [|throw . ErrorMessage . pretty $ errMsg ++ $(litE (StringL (nameBase name))) |]) []
   where
-    errMsg = "Wrong number of arguments for function: " :: String
+    errMsg = "Wrong number of arguments for rpc handler: " :: String
 
 failedEvaluation :: Q Match
 failedEvaluation = do
@@ -141,10 +141,18 @@ cmdArgsCase :: Name -> [Name] -> Q Match
 cmdArgsCase handlerName paramNames =
   argsCase handlerName (listParamsPattern (mkName "_" : paramNames)) paramNames
 
-rpcLambda :: Q Match -> ExpQ
-rpcLambda match' = do
+rpcLambda :: Q Match -> Maybe (Q Match) -> ExpQ
+rpcLambda matchingArgsCase errorCase' = do
   args <- newName "args"
-  lamE [varP args] (caseE (varE args) [match'])
+  lamE [varP args] (caseE (varE args) (matchingArgsCase : maybeToList errorCase'))
+
+rpcLambdaWithErrorCase :: Name -> Q Match -> ExpQ
+rpcLambdaWithErrorCase funcName matchingArgsCase =
+  rpcLambda matchingArgsCase $ Just (errorCase funcName)
+
+rpcLambdaWithoutErrorCase :: Q Match -> ExpQ
+rpcLambdaWithoutErrorCase matchingArgsCase =
+  rpcLambda matchingArgsCase Nothing
 
 listParamsPattern :: [Name] -> PatQ
 listParamsPattern =
@@ -164,11 +172,11 @@ functionImplementation :: Name -> ExpQ
 functionImplementation name = do
   paramTypes <- functionParamTypes name
   paramNames <- lambdaNames (length paramTypes)
-  rpcLambda (argsCase name (listParamsPattern paramNames) paramNames)
+  rpcLambdaWithErrorCase name (argsCase name (listParamsPattern paramNames) paramNames)
 
-joinMsgpackStrings :: [Object] -> Either Err Object
-joinMsgpackStrings args =
-  ObjectString . ByteString.fromString . unwords <$> traverse fromMsgpack args
+decodeJson :: FromJSON a => [Object] -> Either Err a
+decodeJson =
+  mapLeft pretty . eitherDecodeStrict . ByteString.intercalate " " <=< traverse fromMsgpack
 
 dataDispatch :: Name -> [Name] -> Name -> ExpQ
 dataDispatch handlerName paramNames restName =
@@ -176,42 +184,50 @@ dataDispatch handlerName paramNames restName =
   where
     prims = decodedCallSequence handlerName vars
     vars = varE <$> paramNames
-    decodedRest = [|fromMsgpack =<< joinMsgpackStrings $(varE restName)|]
+    decodedRest = [|decodeJson $(varE restName)|]
+
+dataArgCommand :: Name -> [Name] -> ExpQ
+dataArgCommand name paramNames = do
+  restName <- newName "rest"
+  mkLambda (dispatchCase (unconsParamsPattern paramNames restName) (dataDispatch name paramNames restName))
+  where
+    mkLambda = if null paramNames then rpcLambdaWithoutErrorCase else rpcLambdaWithErrorCase name
 
 commandImplementation :: CmdParams -> Name -> ExpQ
 commandImplementation ZeroParams name =
-  rpcLambda (cmdArgsCase name [])
+  rpcLambdaWithErrorCase name (cmdArgsCase name [])
 commandImplementation (OnlyPrims paramCount) name = do
   paramNames <- lambdaNames paramCount
-  rpcLambda (cmdArgsCase name paramNames)
+  rpcLambdaWithErrorCase name (cmdArgsCase name paramNames)
 commandImplementation (DataPlus paramCount) name = do
   paramNames <- lambdaNames paramCount
-  restName <- newName "rest"
-  rpcLambda (dispatchCase (unconsParamsPattern paramNames restName) (dataDispatch name paramNames restName))
-commandImplementation OnlyData name = do
-  restName <- newName "rest"
-  rpcLambda (dispatchCase (unconsParamsPattern [] restName) (dataDispatch name [] restName))
+  dataArgCommand name paramNames
+commandImplementation OnlyData name =
+  dataArgCommand name []
 
-analyzeCmdParams :: (Type -> Bool) -> [Type] -> CmdParams
-analyzeCmdParams isPrim =
+isJsonDecodable :: Type -> Q Bool
+isJsonDecodable (ConT name) = do
+  (ConT jsonClass) <- [t|FromJSON|]
+  isInstance jsonClass [ConT name]
+isJsonDecodable _ =
+  return False
+
+analyzeCmdParams :: [Type] -> Q CmdParams
+analyzeCmdParams =
   check . reverse
   where
-    check [a] | isPrim a =
-      OnlyPrims 1
-    check [_] =
-      OnlyData
-    check (a : rest) | isPrim a =
-      OnlyPrims (length rest + 1)
-    check (_ : rest) =
-      DataPlus (length rest)
+    check [a] = do
+      isD <- isJsonDecodable a
+      return $ if isD then OnlyData else OnlyPrims 1
+    check (a : rest) = do
+      isD <- isJsonDecodable a
+      return $ if isD then DataPlus (length rest) else OnlyPrims (length rest + 1)
     check [] =
-      ZeroParams
+      return ZeroParams
 
 cmdParams :: Name -> Q CmdParams
-cmdParams name = do
-  prims <- sequence [[t|String|], [t|ByteString|], [t|Text|], [t|Int|]]
-  params <- functionParamTypes name
-  return $ analyzeCmdParams (`elem` prims) params
+cmdParams =
+  analyzeCmdParams <=< functionParamTypes
 
 cmdNargs :: CmdParams -> CommandOption
 cmdNargs ZeroParams =
@@ -230,8 +246,8 @@ rpcCommand :: String -> Name -> [CommandOption] -> ExpQ
 rpcCommand name funcName opts = do
   params <- cmdParams funcName
   fun <- commandImplementation params funcName
-  let nargs1 = cmdNargs params
-  [|RpcDef (RpcCommand $ mkCommandOptions (nargs1 : opts)) $((litE (StringL name))) $(return fun)|]
+  let nargs = cmdNargs params
+  [|RpcDef (RpcCommand $ mkCommandOptions (nargs : opts)) $((litE (StringL name))) $(return fun)|]
 
 rpcHandler :: (RpcHandlerConfig -> RpcHandlerConfig) -> Name -> ExpQ
 rpcHandler confTrans =
