@@ -12,6 +12,7 @@ import qualified Data.Map as Map ()
 import Data.MessagePack (Object(ObjectNil))
 import Neovim.Context (Neovim)
 import Neovim.Plugin.Classes (
+  AutocmdOptions,
   CommandOption,
   FunctionName(..),
   FunctionalityDescription(..),
@@ -21,7 +22,7 @@ import Neovim.Plugin.Internal (ExportedFunctionality(..), Plugin(..))
 
 import Ribosome.Plugin.TH (
   RpcDef(RpcDef),
-  RpcDefDetail(RpcFunction, RpcCommand),
+  RpcDefDetail(..),
   RpcHandlerConfig(..),
   rhcCmd,
   rpcHandler,
@@ -38,10 +39,14 @@ nvimPlugin :: RpcHandler e env m => env -> [[RpcDef m]] -> (e -> m ()) -> Plugin
 nvimPlugin env fs errorHandler =
   Plugin env (wrap <$> join fs)
   where
-    wrap (RpcDef (RpcFunction sync') name' rpcHandler') =
-      EF (Function (F (fromString name')) sync', executeRpcHandler errorHandler rpcHandler')
-    wrap (RpcDef (RpcCommand options) name' rpcHandler') =
-      EF (Command (F (fromString name')) options, executeRpcHandler errorHandler rpcHandler')
+    wrap (RpcDef detail name' rpcHandler') =
+      EF (wrapDetail detail (F (fromString name')), executeRpcHandler errorHandler rpcHandler')
+    wrapDetail (RpcFunction sync') name' =
+      Function name' sync'
+    wrapDetail (RpcCommand options) name' =
+      Command name' options
+    wrapDetail (RpcAutocmd event options) name' =
+      Autocmd (fromString event) name' options
 
 executeRpcHandler ::
   ∀ e env m.
@@ -68,3 +73,11 @@ sync conf =
 name :: String -> RpcHandlerConfig -> RpcHandlerConfig
 name n conf =
   conf { rhcName = Just n }
+
+autocmd :: String -> RpcHandlerConfig -> RpcHandlerConfig
+autocmd event conf =
+  conf { rhcAutocmd = Just event }
+
+autocmdOptions :: AutocmdOptions -> RpcHandlerConfig -> RpcHandlerConfig
+autocmdOptions options conf =
+  conf { rhcAutocmdOptions = Just options }

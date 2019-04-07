@@ -52,6 +52,7 @@ dependencies:
 - cornea
 - monad-control
 - lifted-base
+- composition-extra
 
 default-extensions:
 - AutoDeriveTypeable

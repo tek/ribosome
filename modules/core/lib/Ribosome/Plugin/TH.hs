@@ -7,6 +7,7 @@ import Control.Exception (throw)
 import Control.Monad (replicateM, (<=<))
 import Data.Aeson (FromJSON, eitherDecodeStrict)
 import qualified Data.ByteString as ByteString (intercalate)
+import Data.Default (def)
 import Data.Either.Combinators (mapLeft)
 import Data.Functor ((<&>))
 import Data.Maybe (fromMaybe, maybeToList)
@@ -17,6 +18,7 @@ import Language.Haskell.TH
 import Language.Haskell.TH.Syntax (Lift(..))
 import Neovim.Exceptions (NeovimException(ErrorMessage))
 import Neovim.Plugin.Classes (
+  AutocmdOptions(AutocmdOptions),
   CommandOption(..),
   CommandOptions,
   RangeSpecification(..),
@@ -33,18 +35,25 @@ data RpcHandlerConfig =
   RpcHandlerConfig {
     rhcSync :: Synchronous,
     rhcName :: Maybe String,
-    rhcCmd :: Maybe [CommandOption]
+    rhcCmd :: Maybe [CommandOption],
+    rhcAutocmd :: Maybe String,
+    rhcAutocmdOptions :: Maybe AutocmdOptions
   }
   deriving (Eq, Show)
 
 defaultRpcHandlerConfig :: RpcHandlerConfig
 defaultRpcHandlerConfig =
-  RpcHandlerConfig Async Nothing Nothing
+  RpcHandlerConfig Async Nothing Nothing Nothing Nothing
 
 data RpcDefDetail =
   RpcFunction { rfSync :: Synchronous }
   |
   RpcCommand { rcOptions :: CommandOptions }
+  |
+  RpcAutocmd {
+    raEvent :: String,
+    raOptions :: AutocmdOptions
+    }
 
 data RpcDef m =
   RpcDef {
@@ -78,6 +87,10 @@ instance Lift CommandOption where
     [|CmdCount a|]
   lift CmdBang =
     [|CmdBang|]
+
+instance Lift AutocmdOptions where
+  lift (AutocmdOptions p n g) =
+    [|AutocmdOptions p n g|]
 
 unfoldFunctionParams :: Type -> [Type]
 unfoldFunctionParams (ForallT _ _ t) =
@@ -249,16 +262,26 @@ rpcCommand name funcName opts = do
   let nargs = cmdNargs params
   [|RpcDef (RpcCommand $ mkCommandOptions (nargs : opts)) $((litE (StringL name))) $(return fun)|]
 
+rpcAutocmd :: String -> Name -> Maybe AutocmdOptions -> String -> ExpQ
+rpcAutocmd name funcName options event = do
+  fun <- functionImplementation funcName
+  [|RpcDef (RpcAutocmd event (fromMaybe def options)) $((litE (StringL name))) $(return fun)|]
+
+vimName :: Name -> Maybe String -> String
+vimName funcName =
+  capitalize . fromMaybe (nameBase funcName)
+
 rpcHandler :: (RpcHandlerConfig -> RpcHandlerConfig) -> Name -> ExpQ
 rpcHandler confTrans =
   handler (confTrans defaultRpcHandlerConfig)
   where
-    handler (RpcHandlerConfig sync name cmd) funcName = do
-      rpcFun <- rpcFunction vimName sync funcName
-      rpcCmd <- traverse (rpcCommand vimName funcName) cmd
-      listE $ return <$> rpcFun : maybeToList rpcCmd
+    handler (RpcHandlerConfig sync name cmd autocmd auOptions) funcName = do
+      rpcFun <- rpcFunction vimName' sync funcName
+      rpcCmd <- traverse (rpcCommand vimName' funcName) cmd
+      rpcAu <- traverse (rpcAutocmd vimName' funcName auOptions) autocmd
+      listE $ return <$> rpcFun : maybeToList rpcCmd ++ maybeToList rpcAu
       where
-        vimName = capitalize . fromMaybe (nameBase funcName) $ name
+        vimName' = vimName funcName name
 
 rpcHandlerDef :: Name -> ExpQ
 rpcHandlerDef =
