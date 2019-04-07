@@ -43,11 +43,11 @@ import qualified Ribosome.Nvim.Api.RpcCall as Rpc (Rpc(..))
 
 type ConcNvimS e = Neovim (Ribosome e)
 
-instance MonadBase IO (ConcNvimS e) where
+instance MonadBase IO (Neovim e) where
   liftBase = liftIO
 
-instance MonadBaseControl IO (ConcNvimS e) where
-  type StM (ConcNvimS e) a = a
+instance MonadBaseControl IO (Neovim e) where
+  type StM (Neovim e) a = a
   liftBaseWith f =
     Neovim (lift $ ReaderT $ \r -> f (peel r))
     where
