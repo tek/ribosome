@@ -33,6 +33,7 @@ dependencies:
 - unix
 - unliftio
 - unliftio-core
+- monad-control
 
 default-extensions:
 - AutoDeriveTypeable
