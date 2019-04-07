@@ -8,7 +8,9 @@ module Ribosome.Plugin (
 import Control.Monad (join, (<=<))
 import Control.Monad.Trans.Except (ExceptT, runExceptT)
 import Data.ByteString.UTF8 (fromString)
+import Data.Default (def)
 import qualified Data.Map as Map ()
+import Data.Maybe (fromMaybe)
 import Data.MessagePack (Object(ObjectNil))
 import Neovim.Context (Neovim)
 import Neovim.Plugin.Classes (
@@ -45,8 +47,8 @@ nvimPlugin env fs errorHandler =
       Function name' sync'
     wrapDetail (RpcCommand options) name' =
       Command name' options
-    wrapDetail (RpcAutocmd event options) name' =
-      Autocmd (fromString event) name' options
+    wrapDetail (RpcAutocmd event sync options) name' =
+      Autocmd (fromString event) name' sync options
 
 executeRpcHandler ::
   ∀ e env m.

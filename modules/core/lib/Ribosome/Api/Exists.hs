@@ -1,9 +1,4 @@
-module Ribosome.Api.Exists(
-  retry,
-  waitForFunction,
-  vimDoesExist,
-  function,
-) where
+module Ribosome.Api.Exists where
 
 import Control.Monad.IO.Class (MonadIO)
 import Data.Default (Default(def))
@@ -17,9 +12,10 @@ import Neovim (
   Object(ObjectInt),
   fromObject,
   toObject,
-  vim_call_function',
   )
 
+import Ribosome.Control.Monad.Ribo (NvimE)
+import Ribosome.Nvim.Api.IO (vimCallFunction)
 import Ribosome.System.Time (epochSeconds, sleep)
 
 data Retry =
@@ -29,7 +25,12 @@ data Retry =
 instance Default Retry where
   def = Retry 3 0.1
 
-retry :: MonadIO f => f a -> (a -> f (Either c b)) -> Retry -> f (Either c b)
+retry ::
+  MonadIO f =>
+  f a ->
+  (a -> f (Either c b)) ->
+  Retry ->
+  f (Either c b)
 retry thunk check (Retry timeout interval) = do
   start <- epochSeconds
   step start
@@ -47,11 +48,14 @@ retry thunk check (Retry timeout interval) = do
         step start
       else return $ Left e
 
-waitFor :: NvimObject b =>
-  Neovim e Object ->
-  (Object -> Neovim e (Either (Doc AnsiStyle) b)) ->
+waitFor ::
+  NvimE e m =>
+  MonadIO m =>
+  NvimObject b =>
+  m Object ->
+  (Object -> m (Either (Doc AnsiStyle) b)) ->
   Retry ->
-  Neovim e (Either (Doc AnsiStyle) b)
+  m (Either (Doc AnsiStyle) b)
 waitFor thunk check' =
   retry thunk check
   where
@@ -64,19 +68,33 @@ existsResult :: Object -> Either (Doc AnsiStyle) ()
 existsResult (ObjectInt 1) = Right ()
 existsResult a = Left $ prettyList "weird return type " <+> viaShow a
 
-vimExists :: String -> Neovim e Object
+vimExists ::
+  NvimE e m =>
+  String ->
+  m Object
 vimExists entity =
-  vim_call_function' "exists" [toObject entity]
+  vimCallFunction "exists" [toObject entity]
 
-vimDoesExist :: String -> Neovim e Bool
+vimDoesExist ::
+  NvimE e m =>
+  String ->
+  m Bool
 vimDoesExist entity =
   fmap (isRight . existsResult) (vimExists entity)
 
-function :: String -> Neovim e Bool
+function ::
+  NvimE e m =>
+  String ->
+  m Bool
 function name =
   vimDoesExist ("*" ++ name)
 
-waitForFunction :: String -> Retry -> Neovim e (Either (Doc AnsiStyle) ())
+waitForFunction ::
+  NvimE e m =>
+  MonadIO m =>
+  String ->
+  Retry ->
+  m (Either (Doc AnsiStyle) ())
 waitForFunction name =
   waitFor thunk (return . existsResult)
   where

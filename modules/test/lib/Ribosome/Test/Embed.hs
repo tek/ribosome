@@ -11,7 +11,8 @@ import Data.Foldable (traverse_)
 import Data.Functor (void)
 import Data.Maybe (fromMaybe)
 import GHC.IO.Handle (Handle)
-import Neovim (Neovim, Object, vim_command)
+import Neovim (Neovim, Object)
+import Neovim.API.String (vim_command)
 import Neovim.Config (NeovimConfig)
 import qualified Neovim.Context.Internal as Internal (
   Config,
@@ -24,10 +25,9 @@ import qualified Neovim.Context.Internal as Internal (
   retypeConfig,
   transitionTo,
   )
-import Neovim.Main (finishDyre)
+import Neovim.Main (standalone)
 import Neovim.Plugin (Plugin, startPluginThreads)
 import Neovim.Plugin.Internal (NeovimPlugin, wrapPlugin)
-import Neovim.Plugin.Startup (StartupConfig(..))
 import Neovim.RPC.Common (RPCConfig, newRPCConfig)
 import Neovim.RPC.EventHandler (runEventHandler)
 import Neovim.RPC.SocketReader (runSocketReader)
@@ -235,7 +235,7 @@ unsafeEmbeddedSpecR runner conf env spec = do
 runPlugin ::
   Handle ->
   Handle ->
-  [Neovim (StartupConfig NeovimConfig) NeovimPlugin] ->
+  [Neovim () NeovimPlugin] ->
   Internal.Config c ->
   IO (MVar Internal.StateTransition)
 runPlugin evHandlerHandle sockreaderHandle plugins baseConf = do
@@ -243,15 +243,14 @@ runPlugin evHandlerHandle sockreaderHandle plugins baseConf = do
   let conf = Internal.retypeConfig rpcConf baseConf
   ehTid <- async $ runEventHandler evHandlerHandle conf { Internal.pluginSettings = Nothing }
   srTid <- async $ runSocketReader sockreaderHandle conf
-  let startupConf = Internal.retypeConfig (StartupConfig Nothing []) conf
-  void $ forkIO $ startPluginThreads startupConf plugins >>= \case
+  void $ forkIO $ startPluginThreads (Internal.retypeConfig () baseConf) plugins >>= \case
     Left e -> do
       putMVar (Internal.transitionTo conf) $ Internal.Failure e
-      finishDyre [ehTid, srTid] conf
+      standalone [ehTid, srTid] conf
     Right (funMapEntries, pluginTids) -> do
       atomically $ putTMVar (Internal.globalFunctionMap conf) (Internal.mkFunctionMap funMapEntries)
       putMVar (Internal.transitionTo conf) Internal.InitSuccess
-      finishDyre (srTid:ehTid:pluginTids) conf
+      standalone (srTid:ehTid:pluginTids) conf
   return (Internal.transitionTo conf)
 
 runEmbeddedWithPlugin ::

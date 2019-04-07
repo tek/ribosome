@@ -52,6 +52,7 @@ data RpcDefDetail =
   |
   RpcAutocmd {
     raEvent :: String,
+    raSync :: Synchronous,
     raOptions :: AutocmdOptions
     }
 
@@ -262,10 +263,10 @@ rpcCommand name funcName opts = do
   let nargs = cmdNargs params
   [|RpcDef (RpcCommand $ mkCommandOptions (nargs : opts)) $((litE (StringL name))) $(return fun)|]
 
-rpcAutocmd :: String -> Name -> Maybe AutocmdOptions -> String -> ExpQ
-rpcAutocmd name funcName options event = do
+rpcAutocmd :: String -> Name -> Synchronous -> Maybe AutocmdOptions -> String -> ExpQ
+rpcAutocmd name funcName sync options event = do
   fun <- functionImplementation funcName
-  [|RpcDef (RpcAutocmd event (fromMaybe def options)) $((litE (StringL name))) $(return fun)|]
+  [|RpcDef (RpcAutocmd event sync (fromMaybe def options)) $((litE (StringL name))) $(return fun)|]
 
 vimName :: Name -> Maybe String -> String
 vimName funcName =
@@ -278,7 +279,7 @@ rpcHandler confTrans =
     handler (RpcHandlerConfig sync name cmd autocmd auOptions) funcName = do
       rpcFun <- rpcFunction vimName' sync funcName
       rpcCmd <- traverse (rpcCommand vimName' funcName) cmd
-      rpcAu <- traverse (rpcAutocmd vimName' funcName auOptions) autocmd
+      rpcAu <- traverse (rpcAutocmd vimName' funcName sync auOptions) autocmd
       listE $ return <$> rpcFun : maybeToList rpcCmd ++ maybeToList rpcAu
       where
         vimName' = vimName funcName name

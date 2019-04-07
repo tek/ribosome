@@ -5,6 +5,7 @@ packages:
 - .
 - ../cornea
 - ../chiasma
+- ../nvim-hs
 extra-deps:
 - pretty-terminal-0.1.0.0
 - posix-pty-0.2.1.1

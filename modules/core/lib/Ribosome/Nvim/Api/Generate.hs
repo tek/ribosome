@@ -7,8 +7,9 @@ import Data.Bifunctor (first)
 import Data.Char (toUpper)
 import Data.Int (Int64)
 import Data.Map (Map)
-import qualified Data.Map as Map (lookup)
+import qualified Data.Map as Map (fromList, lookup)
 import Data.Maybe (fromMaybe)
+import Data.MessagePack (Object)
 import Language.Haskell.TH
 import Neovim.API.Parser (
   NeovimAPI(functions),
@@ -17,7 +18,7 @@ import Neovim.API.Parser (
   customTypes,
   parseAPI,
   )
-import Neovim.API.TH (defaultAPITypeToHaskellTypeMap)
+import Neovim.API.TH (bytestringVectorTypeMap)
 
 camelcase :: String -> String
 camelcase =
@@ -30,7 +31,15 @@ camelcase =
 
 haskellTypes :: Map String TypeQ
 haskellTypes =
-  defaultAPITypeToHaskellTypeMap
+  Map.fromList [
+    ("Boolean", [t|Bool|]),
+    ("Integer", [t|Int64|]),
+    ("Float", [t|Double|]),
+    ("String", [t|String|]),
+    ("Array", [t|[Object]|]),
+    ("Dictionary", [t|Map String Object|]),
+    ("void", [t|()|])
+    ]
 
 haskellType :: NeovimType -> Q Type
 haskellType at =
