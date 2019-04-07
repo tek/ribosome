@@ -14,7 +14,7 @@ import GHC.IO.Handle (Handle)
 import Neovim (Neovim, Object, vim_command)
 import Neovim.Config (NeovimConfig)
 import qualified Neovim.Context.Internal as Internal (
-  Config(customConfig),
+  Config,
   Neovim(Neovim),
   StateTransition(Failure, InitSuccess, Quit),
   globalFunctionMap,
@@ -267,8 +267,8 @@ runEmbeddedWithPlugin conf plugin thunk =
     run prc = do
       nvimConf <- Internal.newConfig (pure Nothing) (pure ())
       bracket (acquire prc nvimConf) release (const $ runTest conf nvimConf thunk)
-    acquire prc conf =
-      runPlugin (getStdin prc) (getStdout prc) [wrapPlugin plugin] conf <* sleep 0.5
+    acquire prc nvimConf =
+      runPlugin (getStdin prc) (getStdout prc) [wrapPlugin plugin] nvimConf <* sleep 0.5
     release transitions =
       tryPutMVar transitions Internal.Quit *> sleep 0.5
 

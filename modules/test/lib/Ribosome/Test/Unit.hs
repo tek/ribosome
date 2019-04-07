@@ -1,7 +1,4 @@
-module Ribosome.Test.Unit (
-  module Ribosome.Test.Orphans,
-  module Ribosome.Test.Unit,
-) where
+module Ribosome.Test.Unit  where
 
 import Control.Monad.IO.Class (MonadIO)
 import Data.Default (def)

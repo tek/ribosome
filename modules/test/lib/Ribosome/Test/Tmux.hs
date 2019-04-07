@@ -9,30 +9,18 @@ import qualified Chiasma.Test.Tmux as Chiasma (tmuxGuiSpec)
 import Control.Monad.Trans.Except (runExceptT)
 import Data.DeepPrisms (DeepPrisms)
 import Data.Default (Default(def))
-import Data.Foldable (traverse_)
 import Data.Functor (void)
-import qualified Neovim.Context.Internal as Internal (
-  Config,
-  globalFunctionMap,
-  mkFunctionMap,
-  newConfig,
-  pluginSettings,
-  retypeConfig,
-  )
+import qualified Neovim.Context.Internal as Internal (Config, newConfig, retypeConfig)
 import Neovim.RPC.Common (RPCConfig, SocketType(UnixSocket), createHandle, newRPCConfig)
-import Neovim.RPC.EventHandler (runEventHandler)
-import Neovim.RPC.SocketReader (runSocketReader)
 import System.FilePath ((</>))
 import UnliftIO (throwString)
-import UnliftIO.Async (async, cancel)
 import UnliftIO.Directory (doesPathExist)
 import UnliftIO.Exception (bracket)
-import UnliftIO.STM (atomically, putTMVar)
 import UnliftIO.Temporary (withTempDirectory)
 
 import Ribosome.Config.Setting (updateSetting)
 import Ribosome.Config.Settings (tmuxSocket)
-import Ribosome.Control.Concurrent.Wait (waitIODef)
+import Ribosome.Control.Concurrent.Wait (waitIOPredDef)
 import Ribosome.Control.Monad.Ribo (RiboN)
 import Ribosome.Control.Ribosome (Ribosome(Ribosome), newRibosomeTVar)
 import Ribosome.Error.Report.Class (ReportError)
@@ -73,7 +61,7 @@ runGui ::
   IO ()
 runGui api temp conf ribo specThunk = do
   void $ runExceptT @TmuxError $ runTmux api $ sendKeys (PaneId 0) [externalNvimCmdline socket]
-  _ <- waitIODef (pure socket) doesPathExist
+  _ <- waitIOPredDef (pure socket) doesPathExist
   runTmuxNvim conf ribo specThunk socket
   where
     socket = temp </> "nvim-socket"
