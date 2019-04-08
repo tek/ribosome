@@ -13,7 +13,6 @@ import Data.Maybe (fromMaybe)
 import GHC.IO.Handle (Handle)
 import Neovim (Neovim, Object)
 import Neovim.API.String (vim_command)
-import Neovim.Config (NeovimConfig)
 import qualified Neovim.Context.Internal as Internal (
   Config,
   Neovim(Neovim),

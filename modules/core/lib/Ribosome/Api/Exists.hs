@@ -7,7 +7,6 @@ import Data.Text.Prettyprint.Doc (prettyList, viaShow, (<+>))
 import Neovim (
   AnsiStyle,
   Doc,
-  Neovim,
   NvimObject,
   Object(ObjectInt),
   fromObject,

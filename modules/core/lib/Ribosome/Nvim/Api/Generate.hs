@@ -18,7 +18,6 @@ import Neovim.API.Parser (
   customTypes,
   parseAPI,
   )
-import Neovim.API.TH (bytestringVectorTypeMap)
 
 camelcase :: String -> String
 camelcase =

@@ -3,7 +3,6 @@
 module Ribosome.Nvim.Api.IO where
 
 import Data.MessagePack (Object)
-import Prelude
 
 import Ribosome.Nvim.Api.Data (Buffer, Tabpage, Window)
 import qualified Ribosome.Nvim.Api.Data as RpcData
