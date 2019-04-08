@@ -120,6 +120,10 @@ instance MsgpackDecode Int where
 instance MsgpackDecode Int64 where
   fromMsgpack = msgpackIntegral
 
+instance MsgpackDecode Float where
+  fromMsgpack (ObjectFloat a) = Right a
+  fromMsgpack o = Util.illegalType "Float" o
+
 instance {-# OVERLAPPING #-} MsgpackDecode String where
   fromMsgpack (ObjectString os) = Right $ ByteString.toString os
   fromMsgpack o = Util.illegalType "String" o
