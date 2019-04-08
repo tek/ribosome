@@ -48,10 +48,8 @@ createScratchUiInTab = do
   return (win, Just tab)
 
 createScratchUiInWindow :: NvimE e m => Bool -> Bool -> Bool -> Maybe Int -> m (Window, Maybe Tabpage)
-createScratchUiInWindow vertical wrap focus size = do
-  previous <- vimGetCurrentWindow
+createScratchUiInWindow vertical wrap _ size = do
   win <- createScratchWindow vertical wrap size
-  unless focus $ vimSetCurrentWindow previous
   return (win, Nothing)
 
 createScratchUi :: NvimE e m => Bool -> Bool -> Bool -> Bool -> Maybe Int -> m (Window, Maybe Tabpage)
@@ -74,9 +72,11 @@ setupScratchBuffer window name = do
 
 createScratch :: NvimE e m => ScratchOptions -> m Scratch
 createScratch (ScratchOptions useTab vertical wrap focus size syntax name) = do
+  previous <- vimGetCurrentWindow
   (window, tab) <- createScratchUi useTab vertical wrap focus size
   buffer <- setupScratchBuffer window name
   traverse_ (executeWindowSyntax window) syntax
+  unless (focus || useTab) $ vimSetCurrentWindow previous
   return (Scratch buffer window tab)
 
 setScratchContent :: NvimE e m => Scratch -> [String] -> m ()
