@@ -1,5 +1,6 @@
 module Ribosome.Api.Buffer  where
 
+import Control.Monad (when)
 import Data.MessagePack (Object)
 
 import Ribosome.Control.Monad.Ribo (NvimE)
@@ -8,6 +9,7 @@ import Ribosome.Nvim.Api.Data (Buffer)
 import Ribosome.Nvim.Api.IO (
   bufferGetLines,
   bufferGetNumber,
+  bufferIsValid,
   bufferSetLines,
   vimCallFunction,
   vimCommand,
@@ -38,7 +40,30 @@ setBufferContent :: NvimE e m => Buffer -> [String] -> m ()
 setBufferContent buffer =
   bufferSetLines buffer 0 (-1) False
 
-setCurrentBufferContent :: NvimE e m => [String] -> m ()
+setCurrentBufferContent ::
+  NvimE e m =>
+  [String] ->
+  m ()
 setCurrentBufferContent content = do
   buffer <- vimGetCurrentBuffer
   setBufferContent buffer content
+
+closeBuffer ::
+  NvimE e m =>
+  Buffer ->
+  m ()
+closeBuffer buffer = do
+  valid <- bufferIsValid buffer
+  when valid $ do
+    number <- bufferGetNumber buffer
+    vimCommand ("silent! bdelete! " ++ show number)
+
+wipeBuffer ::
+  NvimE e m =>
+  Buffer ->
+  m ()
+wipeBuffer buffer = do
+  valid <- bufferIsValid buffer
+  when valid $ do
+    number <- bufferGetNumber buffer
+    vimCommand ("silent! bwipeout! " ++ show number)
