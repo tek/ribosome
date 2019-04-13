@@ -11,6 +11,7 @@ import Ribosome.Api.Buffer (currentBufferContent)
 import Ribosome.Control.Monad.Ribo (RiboE)
 import Ribosome.Control.Ribosome (Ribosome)
 import Ribosome.Data.ScratchOptions (ScratchOptions(ScratchOptions))
+import Ribosome.Nvim.Api.IO (vimCommand)
 import Ribosome.Nvim.Api.RpcCall (RpcError)
 import Ribosome.Scratch (showInScratch)
 import Ribosome.Test.Unit (unitSpecDef)
@@ -20,9 +21,10 @@ target = ["line 1", "line 2"]
 
 scratchSpec :: RiboE () RpcError (Neovim (Ribosome ())) ()
 scratchSpec = do
-  _ <- showInScratch target (ScratchOptions False True False True (Just 0) [] "buffi")
+  _ <- showInScratch target (ScratchOptions False True False True (Just 0) [] [] "buffi")
   content <- currentBufferContent
   gassertEqual target content
+  vimCommand "bdelete"
 
 test_scratch :: IO ()
 test_scratch =

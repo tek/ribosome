@@ -1,20 +1,24 @@
 module Ribosome.Scratch where
 
+import Control.Lens (Lens')
+import qualified Control.Lens as Lens (at, set)
 import Control.Monad (unless)
 import Data.Default (Default(def))
 import Data.Foldable (traverse_)
 
-import Ribosome.Api.Buffer (setBufferContent)
+import Ribosome.Api.Buffer (setBufferContent, wipeBuffer)
 import Ribosome.Api.Syntax (executeWindowSyntax)
-import Ribosome.Control.Monad.Ribo (NvimE)
+import Ribosome.Api.Tabpage (closeTabpage)
+import Ribosome.Api.Window (closeWindow)
+import Ribosome.Control.Monad.Ribo (MonadRibo, NvimE, pluginInternalL, pluginModifyInternal)
+import Ribosome.Control.Ribosome (RibosomeInternal)
+import qualified Ribosome.Control.Ribosome as Ribosome (scratch)
 import Ribosome.Data.Scratch (Scratch(Scratch))
 import Ribosome.Data.ScratchOptions (ScratchOptions(ScratchOptions))
+import qualified Ribosome.Data.ScratchOptions as ScratchOptions (ScratchOptions(name))
+import Ribosome.Mapping (activateBufferMapping)
 import Ribosome.Msgpack.Encode (toMsgpack)
-import Ribosome.Nvim.Api.Data (
-  Buffer,
-  Tabpage,
-  Window,
-  )
+import Ribosome.Nvim.Api.Data (Buffer, Tabpage, Window)
 import Ribosome.Nvim.Api.IO (
   bufferSetName,
   bufferSetOption,
@@ -23,6 +27,7 @@ import Ribosome.Nvim.Api.IO (
   vimGetCurrentWindow,
   vimSetCurrentWindow,
   windowGetBuffer,
+  windowIsValid,
   windowSetOption,
   )
 
@@ -52,11 +57,11 @@ createScratchUiInWindow vertical wrap _ size = do
   win <- createScratchWindow vertical wrap size
   return (win, Nothing)
 
-createScratchUi :: NvimE e m => Bool -> Bool -> Bool -> Bool -> Maybe Int -> m (Window, Maybe Tabpage)
-createScratchUi True _ _ _ _ =
-  createScratchUiInTab
-createScratchUi False vertical wrap focus size =
+createScratchUi :: NvimE e m => ScratchOptions -> m (Window, Maybe Tabpage)
+createScratchUi (ScratchOptions False vertical wrap focus size _ _ _) =
   createScratchUiInWindow vertical wrap focus size
+createScratchUi _ =
+  createScratchUiInTab
 
 configureScratchBuffer :: NvimE e m => Buffer -> String -> m ()
 configureScratchBuffer buffer name = do
@@ -70,37 +75,98 @@ setupScratchBuffer window name = do
   configureScratchBuffer buffer name
   return buffer
 
-createScratch :: NvimE e m => ScratchOptions -> m Scratch
-createScratch (ScratchOptions useTab vertical wrap focus size syntax name) = do
-  previous <- vimGetCurrentWindow
-  (window, tab) <- createScratchUi useTab vertical wrap focus size
+scratchLens :: String -> Lens' RibosomeInternal (Maybe Scratch)
+scratchLens name =
+  Ribosome.scratch . Lens.at name
+
+setupScratchIn ::
+  MonadRibo m =>
+  NvimE e m =>
+  Window ->
+  Window ->
+  Maybe Tabpage ->
+  ScratchOptions ->
+  m Scratch
+setupScratchIn previous window tab (ScratchOptions useTab _ _ focus _ syntax mappings name) = do
   buffer <- setupScratchBuffer window name
   traverse_ (executeWindowSyntax window) syntax
+  traverse_ (activateBufferMapping buffer) mappings
   unless (focus || useTab) $ vimSetCurrentWindow previous
-  return (Scratch buffer window tab)
+  let scratch = Scratch name buffer window tab
+  pluginModifyInternal $ Lens.set (scratchLens name) (Just scratch)
+  return scratch
+
+createScratch ::
+  MonadRibo m =>
+  NvimE e m =>
+  ScratchOptions ->
+  m Scratch
+createScratch options = do
+  previous <- vimGetCurrentWindow
+  (window, tab) <- createScratchUi options
+  setupScratchIn previous window tab options
+
+updateScratch ::
+  MonadRibo m =>
+  NvimE e m =>
+  Scratch ->
+  ScratchOptions ->
+  m Scratch
+updateScratch (Scratch _ _ oldWindow oldTab) options = do
+  previous <- vimGetCurrentWindow
+  winValid <- windowIsValid oldWindow
+  (window, tab) <- if winValid then return (oldWindow, oldTab) else createScratchUi options
+  setupScratchIn previous window tab options
+
+lookupScratch ::
+  MonadRibo m =>
+  String ->
+  m (Maybe Scratch)
+lookupScratch name =
+  pluginInternalL (scratchLens name)
+
+ensureScratch ::
+  MonadRibo m =>
+  NvimE e m =>
+  ScratchOptions ->
+  m Scratch
+ensureScratch options = do
+  f <- maybe createScratch updateScratch <$> lookupScratch (ScratchOptions.name options)
+  f options
 
 setScratchContent :: NvimE e m => Scratch -> [String] -> m ()
-setScratchContent (Scratch buffer _ _) lines' = do
+setScratchContent (Scratch _ buffer _ _) lines' = do
   bufferSetOption buffer "modifiable" (toMsgpack True)
   setBufferContent buffer lines'
   bufferSetOption buffer "modifiable" (toMsgpack False)
 
-showInScratch :: NvimE e m => [String] -> ScratchOptions -> m Scratch
+showInScratch ::
+  MonadRibo m =>
+  NvimE e m =>
+  [String] ->
+  ScratchOptions ->
+  m Scratch
 showInScratch lines' options = do
-  scratch <- createScratch options
+  scratch <- ensureScratch options
   setScratchContent scratch lines'
   return scratch
 
-showInScratchDef :: NvimE e m => [String] -> m Scratch
+showInScratchDef ::
+  MonadRibo m =>
+  NvimE e m =>
+  [String] ->
+  m Scratch
 showInScratchDef lines' =
   showInScratch lines' def
 
-showInScratchOrCreate :: NvimE e m => Maybe Scratch -> [String] -> ScratchOptions -> m Scratch
-showInScratchOrCreate (Just scratch) lines' _ =
-  scratch <$ setScratchContent scratch lines'
-showInScratchOrCreate Nothing lines' options =
-  showInScratch lines' options
-
-showInScratchOrCreateDef :: NvimE e m => Maybe Scratch -> [String] -> m Scratch
-showInScratchOrCreateDef scratch lines' =
-  showInScratchOrCreate scratch lines' def
+killScratch ::
+  MonadRibo m =>
+  NvimE e m =>
+  String ->
+  m ()
+killScratch name = do
+  maybe (return ()) kill =<< lookupScratch name
+  pluginModifyInternal $ Lens.set (scratchLens name) Nothing
+  where
+    kill (Scratch _ buffer window tab) =
+      traverse_ closeTabpage tab *> closeWindow window *> wipeBuffer buffer
