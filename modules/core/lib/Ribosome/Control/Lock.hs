@@ -24,7 +24,7 @@ inspectLocks = (<$> getLocks)
 
 modifyLocks :: MonadRibo m => (Locks -> Locks) -> m ()
 modifyLocks =
-  pluginModifyInternal Ribosome.locks
+  pluginModifyInternalL Ribosome.locks
 
 getOrCreateLock :: (MonadRibo m, MonadIO m) => String -> m (TMVar ())
 getOrCreateLock key = do

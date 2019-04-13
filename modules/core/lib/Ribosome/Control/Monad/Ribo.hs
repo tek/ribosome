@@ -221,10 +221,13 @@ pluginInternals = (<$> pluginInternal)
 pluginInternalL :: MonadRibo m => Lens' RibosomeInternal a -> m a
 pluginInternalL = pluginInternals . Lens.view
 
-pluginModifyInternal :: MonadRibo m => Lens' RibosomeInternal a -> (a -> a) -> m ()
-pluginModifyInternal l f = do
-  cur <- pluginInternal
-  pluginInternalPut $ Lens.over l f cur
+pluginModifyInternal :: MonadRibo m => (RibosomeInternal -> RibosomeInternal) -> m ()
+pluginModifyInternal f =
+  pluginInternalPut . f =<< pluginInternal
+
+pluginModifyInternalL :: MonadRibo m => Lens' RibosomeInternal a -> (a -> a) -> m ()
+pluginModifyInternalL l f =
+  pluginModifyInternal $ Lens.over l f
 
 instance (MonadIO m, Nvim m) => MonadRibo (Ribo s m) where
   pluginName =
@@ -263,7 +266,7 @@ inspectErrors = (<$> getErrors)
 
 modifyErrors :: MonadRibo m => (Errors -> Errors) -> m ()
 modifyErrors =
-  pluginModifyInternal Ribosome.errors
+  pluginModifyInternalL Ribosome.errors
 
 prepend :: ∀s' s m a. MonadDeepState s s' m => Lens' s' [a] -> a -> m ()
 prepend lens a =
