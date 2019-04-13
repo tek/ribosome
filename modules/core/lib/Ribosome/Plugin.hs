@@ -7,6 +7,7 @@ module Ribosome.Plugin (
 ) where
 
 import Control.Monad (join, (<=<))
+import Control.Monad.DeepError (MonadDeepError)
 import Control.Monad.Trans.Except (ExceptT, runExceptT)
 import Data.ByteString.UTF8 (fromString)
 import qualified Data.Map as Map ()
@@ -21,6 +22,9 @@ import Neovim.Plugin.Classes (
   )
 import Neovim.Plugin.Internal (ExportedFunctionality(..), Plugin(..))
 
+import Ribosome.Data.Mapping (MappingError)
+import Ribosome.Data.String (capitalize)
+import Ribosome.Plugin.Mapping (MappingHandler, handleMappingRequest)
 import Ribosome.Plugin.TH (
   RpcDef(RpcDef),
   RpcDefDetail(..),
@@ -36,9 +40,25 @@ class RpcHandler e env m | m -> e env where
 instance RpcHandler e env (ExceptT e (Neovim env)) where
   native = id
 
-nvimPlugin :: RpcHandler e env m => env -> [[RpcDef m]] -> (e -> m ()) -> Plugin env
-nvimPlugin env fs errorHandler =
-  Plugin env (wrap <$> join fs)
+mappingHandlerRpc ::
+  MonadDeepError e MappingError m =>
+  String ->
+  [MappingHandler m] ->
+  RpcDef m
+mappingHandlerRpc pluginName mappings =
+  RpcDef (RpcFunction Async) (capitalize pluginName ++ "Mapping") (handleMappingRequest mappings)
+
+nvimPlugin ::
+  MonadDeepError e MappingError m =>
+  RpcHandler e env m =>
+  String ->
+  env ->
+  [[RpcDef m]] ->
+  [MappingHandler m] ->
+  (e -> m ()) ->
+  Plugin env
+nvimPlugin pluginName env fs mappings errorHandler =
+  Plugin env (wrap (mappingHandlerRpc pluginName mappings) : (wrap <$> join fs))
   where
     wrap (RpcDef detail name' rpcHandler') =
       EF (wrapDetail detail (F (fromString name')), executeRpcHandler errorHandler rpcHandler')

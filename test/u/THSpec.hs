@@ -14,9 +14,10 @@ import Data.Foldable (traverse_)
 import GHC.Generics (Generic)
 import Language.Haskell.TH
 import Neovim (Plugin(..))
+import Ribosome.Data.Mapping (MappingError)
 import Test.Framework
 
-import Ribosome.Control.Monad.Ribo (ConcNvimS, Ribo, runRib)
+import Ribosome.Control.Monad.Ribo (ConcNvimS, RiboE, runRib)
 import Ribosome.Control.Ribosome (Ribosome, newRibosome)
 import Ribosome.Msgpack.Decode (MsgpackDecode)
 import Ribosome.Msgpack.Encode (MsgpackEncode)
@@ -33,12 +34,9 @@ handler :: Monad m => Int -> String -> Par -> m ()
 handler =
   undefined
 
-type R = Ribo Int (ConcNvimS Int)
+type R = RiboE Int MappingError (ConcNvimS Int)
 
-instance RpcHandler String (Ribosome Int) R where
-  native = lift . runRib
-
-handleError :: String -> R ()
+handleError :: MappingError -> R ()
 handleError _ =
   return ()
 
@@ -47,9 +45,10 @@ $(return [])
 plugin' :: IO (Plugin (Ribosome Int))
 plugin' = do
   ribo <- newRibosome "test" 1
-  return $ nvimPlugin @String @(Ribosome Int) @R ribo [$(rpcHandler (cmd []) 'handler)] handleError
+  return $ nvimPlugin "test" ribo [$(rpcHandler (cmd []) 'handler)] [] handleError
 
 test_plug :: IO ()
 test_plug = do
   _ <- plugin'
-  traverse_ putStrLn $ lines $(stringE . pprint =<< rpcHandler (cmd []) 'handler)
+  return ()
+  -- traverse_ putStrLn $ lines $(stringE . pprint =<< rpcHandler (cmd []) 'handler)

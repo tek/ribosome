@@ -6,14 +6,13 @@ module AutocmdSpec(
 ) where
 
 import Control.Monad.Trans.Except (ExceptT)
-import Neovim (
-  Neovim,
-  Plugin(..),
-  )
+import Data.DeepPrisms (deepPrisms)
+import Neovim (Neovim, Plugin(..))
 import Test.Framework
 
 import Ribosome.Control.Monad.Ribo (ConcNvimS, MonadRibo, NvimE, RiboE)
 import Ribosome.Control.Ribosome (Ribosome, newRibosome)
+import Ribosome.Data.Mapping (MappingError)
 import Ribosome.Msgpack.Encode (MsgpackEncode(toMsgpack))
 import Ribosome.Nvim.Api.IO (vimCommand, vimGetVar, vimSetVar)
 import Ribosome.Nvim.Api.RpcCall (RpcError)
@@ -22,6 +21,13 @@ import Ribosome.Plugin (autocmd, nvimPlugin, rpcHandler)
 import Ribosome.Test.Await (await)
 import Ribosome.Test.Embed (integrationSpecDef)
 import Ribosome.Test.Orphans ()
+
+data AutocmdTestError =
+  Rpc RpcError
+  |
+  Mapp MappingError
+
+deepPrisms ''AutocmdTestError
 
 varName :: String
 varName =
@@ -40,14 +46,14 @@ testAuto =
 
 $(return [])
 
-handleError :: RpcError -> RiboE () RpcError (ConcNvimS ()) ()
+handleError :: AutocmdTestError -> RiboE () AutocmdTestError (ConcNvimS ()) ()
 handleError _ =
   return ()
 
 autocmdPlugin :: IO (Plugin (Ribosome ()))
 autocmdPlugin = do
   env <- newRibosome "test" ()
-  return $ nvimPlugin env funcs handleError
+  return $ nvimPlugin "test" env funcs [] handleError
   where
     funcs = [$(rpcHandler (autocmd "BufWritePre") 'testAuto)]
 
