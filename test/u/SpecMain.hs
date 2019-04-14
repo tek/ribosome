@@ -12,6 +12,7 @@ import {-@ HTF_TESTS @-} ScratchSpec
 import {-@ HTF_TESTS @-} SettingSpec
 import {-@ HTF_TESTS @-} SyntaxSpec
 import {-@ HTF_TESTS @-} THSpec
+import {-@ HTF_TESTS @-} WatcherSpec
 
 main :: IO ()
 main = htfMain htf_importedTests

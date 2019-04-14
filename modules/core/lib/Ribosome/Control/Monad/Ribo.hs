@@ -12,6 +12,7 @@ import Control.Monad.Catch (MonadCatch, MonadMask, MonadThrow)
 import Control.Monad.DeepError (MonadDeepError(throwHoist))
 import Control.Monad.DeepState (MonadDeepState, gets, modify)
 import Control.Monad.Error.Class (MonadError(..))
+import Control.Monad.Fail (MonadFail)
 import Control.Monad.IO.Class (MonadIO, liftIO)
 import Control.Monad.IO.Unlift (MonadUnliftIO(..), UnliftIO(..), withUnliftIO)
 import Control.Monad.Reader.Class (MonadReader, ask, asks)
@@ -30,7 +31,7 @@ import Control.Monad.Trans.Resource (runResourceT)
 import Data.Either.Combinators (mapLeft)
 import Data.Functor (void)
 import Neovim.Context.Internal (Neovim(..))
-import Ribosome.Plugin (RpcHandler(..))
+import Ribosome.Plugin.RpcHandler (RpcHandler(..))
 import UnliftIO.STM (TVar)
 
 import Ribosome.Control.Ribosome (Ribosome(Ribosome), RibosomeInternal, RibosomeState)
@@ -70,7 +71,7 @@ ribLocal lens (RiboConcState n ig ip g p) =
 
 newtype Ribo s m a =
   Ribo { unRibo :: ReaderT (RiboConcState s) m a }
-  deriving (Functor, Applicative, Monad, MonadIO, MonadThrow, MonadCatch, MonadMask)
+  deriving (Functor, Applicative, Monad, MonadIO, MonadThrow, MonadCatch, MonadMask, MonadFail)
 
 type RiboE s e m = Ribo s (ExceptT e m)
 type RiboN s e a = RiboE s e (ConcNvimS s) a

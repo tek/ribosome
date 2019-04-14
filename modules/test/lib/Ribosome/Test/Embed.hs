@@ -59,7 +59,7 @@ import qualified Ribosome.Data.ErrorReport as ErrorReport (ErrorReport(..))
 import Ribosome.Error.Report.Class (ReportError(errorReport))
 import Ribosome.Nvim.Api.IO (vimSetVar)
 import Ribosome.Nvim.Api.RpcCall (RpcError)
-import Ribosome.Plugin (RpcHandler(native))
+import Ribosome.Plugin.RpcHandler (RpcHandler(native))
 import Ribosome.System.Time (sleep, sleepW)
 
 type Runner m = TestConfig -> m () -> m ()
