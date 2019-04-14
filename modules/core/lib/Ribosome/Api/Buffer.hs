@@ -1,9 +1,12 @@
 module Ribosome.Api.Buffer where
 
 import Control.Monad (when)
+import Data.Bifunctor (second)
 import Data.MessagePack (Object)
+import System.FilePath ((</>))
 
 import Ribosome.Api.Atomic (atomicAs)
+import Ribosome.Api.Path (nvimCwd)
 import Ribosome.Control.Monad.Ribo (NvimE)
 import Ribosome.Msgpack.Encode (toMsgpack)
 import Ribosome.Msgpack.Error (DecodeError)
@@ -88,7 +91,14 @@ bufferForFile ::
   NvimE e m =>
   Text ->
   m (Maybe Buffer)
-bufferForFile target =
-  fmap fst . find sameBuffer <$> buffersAndNames
+bufferForFile target = do
+  cwd <- nvimCwd
+  fmap fst . find sameBuffer . fmap (second (toText . absolute cwd . toString)) <$> buffersAndNames
   where
     sameBuffer (_, name) = name == target
+    absolute dir ('.' : '/' : rest) =
+      dir </> rest
+    absolute _ p@('/' : _) =
+      p
+    absolute dir path =
+      dir </> path
