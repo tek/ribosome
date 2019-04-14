@@ -28,11 +28,18 @@ currentCursor ::
 currentCursor =
   cursor =<< nvimGetCurrentWin
 
+windowLine ::
+  NvimE e m =>
+  Window ->
+  m Int
+windowLine window =
+  fst <$> cursor window
+
 currentLine ::
   NvimE e m =>
   m Int
 currentLine =
-  fst <$> (cursor =<< nvimGetCurrentWin)
+  windowLine =<< nvimGetCurrentWin
 
 setCursor ::
   NvimE e m =>
@@ -42,3 +49,11 @@ setCursor ::
   m ()
 setCursor window line col =
   nvimWinSetCursor window (line + 1, col)
+
+setLine ::
+  NvimE e m =>
+  Window ->
+  Int ->
+  m ()
+setLine window line =
+  setCursor window line 0
