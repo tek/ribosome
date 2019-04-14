@@ -15,21 +15,16 @@ import Ribosome.Control.Ribosome (Ribosome, newRibosome)
 import Ribosome.Data.Mapping (Mapping(Mapping), MappingError, MappingIdent(MappingIdent))
 import Ribosome.Data.ScratchOptions (ScratchOptions(ScratchOptions))
 import Ribosome.Msgpack.Encode (MsgpackEncode(toMsgpack))
+import Ribosome.Msgpack.Error (DecodeError)
 import Ribosome.Nvim.Api.IO (nvimFeedkeys, vimCallFunction, vimGetVar, vimSetVar)
 import Ribosome.Nvim.Api.RpcCall (RpcError)
-import Ribosome.Plugin (nvimPlugin, rpcHandlerDef)
+import Ribosome.Plugin (riboPlugin, rpcHandlerDef)
 import Ribosome.Plugin.Mapping (MappingHandler, mappingHandler)
 import Ribosome.Scratch (showInScratch)
 import Ribosome.Test.Await (await)
 import Ribosome.Test.Embed (integrationSpecDef)
 import Ribosome.Test.Orphans ()
-
-data MappingTestError =
-  Rpc RpcError
-  |
-  Mapp MappingError
-
-deepPrisms ''MappingTestError
+import TestError (handleTestError)
 
 target :: [Text]
 target = ["line 1", "line 2"]
@@ -46,21 +41,21 @@ mapHandler :: NvimE e m => MappingHandler m
 mapHandler =
   mappingHandler "go" go
 
-setupMappingScratch :: MonadRibo m => NvimE e m => m ()
+setupMappingScratch ::
+  MonadDeepError e DecodeError m =>
+  MonadRibo m =>
+  NvimE e m =>
+  m ()
 setupMappingScratch = do
   _ <- showInScratch target (ScratchOptions False True False True (Just 0) [] [mapping] "buffi")
   return ()
 
 $(return [])
 
-handleError :: MappingTestError -> RiboN () MappingTestError ()
-handleError _ =
-  return ()
-
 mappingPlugin :: IO (Plugin (Ribosome ()))
 mappingPlugin = do
   env <- newRibosome "mapping" ()
-  return $ nvimPlugin "mapping" env funcs [mapHandler] handleError
+  return $ riboPlugin "mapping" env funcs [mapHandler] handleTestError Map.empty
   where
     funcs = [$(rpcHandlerDef 'setupMappingScratch)]
 

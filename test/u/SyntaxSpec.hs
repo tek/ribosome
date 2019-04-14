@@ -18,14 +18,14 @@ import Ribosome.Data.Syntax (
   syntaxMatch,
   )
 import Ribosome.Error.Report.Class (ReportError(..))
-import Ribosome.Nvim.Api.RpcCall (RpcError)
 import Ribosome.System.Time (sleep)
 import Ribosome.Test.Embed (defaultTestConfig)
 import Ribosome.Test.Screenshot (assertScreenshot)
 import Ribosome.Test.Tmux (tmuxGuiSpec)
+import TestError (TestError)
 
 data SyntaxSpecError =
-  Rpc RpcError
+  Test TestError
   |
   Tmux TmuxError
 

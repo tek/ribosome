@@ -20,6 +20,7 @@ import Ribosome.Control.Ribosome (Ribosome, newRibosome)
 import Ribosome.Msgpack.Decode (MsgpackDecode)
 import Ribosome.Msgpack.Encode (MsgpackEncode)
 import Ribosome.Plugin
+import TestError (handleTestError)
 
 data Par =
   Par {
@@ -34,16 +35,12 @@ handler =
 
 type R = RiboE Int MappingError (ConcNvimS Int)
 
-handleError :: MappingError -> R ()
-handleError _ =
-  return ()
-
 $(return [])
 
 plugin' :: IO (Plugin (Ribosome Int))
 plugin' = do
   ribo <- newRibosome ("test" :: Text) 1
-  return $ nvimPlugin "test" ribo [$(rpcHandler (cmd []) 'handler)] [] handleError
+  return $ nvimPlugin "test" ribo [$(rpcHandler (cmd []) 'handler)] handleTestError
 
 test_plug :: IO ()
 test_plug = do
