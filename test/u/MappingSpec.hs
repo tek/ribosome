@@ -5,6 +5,7 @@ module MappingSpec (htf_thisModulesTests) where
 
 import Control.Monad.Trans.Except (ExceptT)
 import Data.DeepPrisms (deepPrisms)
+import qualified Data.Map as Map (empty)
 import Neovim (Neovim, Plugin(..))
 import Test.Framework
 

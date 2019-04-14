@@ -6,7 +6,7 @@ module Ribosome.Control.Lock(
 import qualified Control.Lens as Lens (at, view)
 import Control.Monad.IO.Class (MonadIO)
 import Control.Monad.IO.Unlift (MonadUnliftIO)
-import qualified Data.Map.Strict as Map (insert)
+import qualified Data.Map as Map (insert)
 import UnliftIO (finally)
 import UnliftIO.STM (TMVar, newTMVarIO, tryPutTMVar, tryTakeTMVar)
 

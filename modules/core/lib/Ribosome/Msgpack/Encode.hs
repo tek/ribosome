@@ -6,8 +6,8 @@ module Ribosome.Msgpack.Encode where
 import Data.Bifunctor (bimap)
 import Data.ByteString (ByteString)
 import Data.Int (Int64)
-import Data.Map.Strict (Map)
-import qualified Data.Map.Strict as Map (fromList, toList)
+import Data.Map (Map)
+import qualified Data.Map as Map (fromList, toList)
 import Data.MessagePack (Object(..))
 import GHC.Generics (
   C1,
