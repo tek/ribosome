@@ -4,15 +4,15 @@ module Ribosome.Test.File(
   fixture,
 ) where
 
-import Control.Monad.IO.Class (liftIO, MonadIO)
+import Control.Monad.IO.Class (MonadIO, liftIO)
 import System.Directory (canonicalizePath, createDirectoryIfMissing, removePathForcibly)
 import System.FilePath ((</>))
 
-testDir :: String -> IO FilePath
-testDir prefix = canonicalizePath $ "test" </> prefix
+testDir :: Text -> IO FilePath
+testDir prefix = canonicalizePath $ "test" </> (toString prefix)
 
 -- raises exception if cwd is not the package root so we don't damage anything
-tempDirIO :: String -> FilePath -> IO FilePath
+tempDirIO :: Text -> FilePath -> IO FilePath
 tempDirIO prefix path = do
   base <- testDir prefix
   let dir = base </> "temp"
@@ -22,11 +22,11 @@ tempDirIO prefix path = do
   createDirectoryIfMissing True absPath
   return absPath
 
-tempDir :: MonadIO m => String -> FilePath -> m FilePath
+tempDir :: MonadIO m => Text -> FilePath -> m FilePath
 tempDir prefix path =
   liftIO $ tempDirIO prefix path
 
-fixture :: MonadIO m => String -> FilePath -> m FilePath
+fixture :: MonadIO m => Text -> FilePath -> m FilePath
 fixture prefix path = do
   base <- liftIO $ testDir prefix
   return $ base </> "fixtures" </> path

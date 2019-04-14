@@ -8,13 +8,12 @@ module Ribosome.Data.ErrorReport(
 ) where
 
 import Control.Lens (makeClassy)
-import Prelude hiding (log)
 import System.Log (Priority)
 
 data ErrorReport =
   ErrorReport {
-    _user :: String,
-    _log :: [String],
+    _user :: Text,
+    _log :: [Text],
     _priority :: Priority
   }
   deriving (Eq, Show)

@@ -12,7 +12,7 @@ import Data.Functor (void)
 import Data.Maybe (fromMaybe)
 import GHC.IO.Handle (Handle)
 import Neovim (Neovim, Object)
-import Neovim.API.String (vim_command)
+import Neovim.API.Text (vim_command)
 import qualified Neovim.Context.Internal as Internal (
   Config,
   Neovim(Neovim),
@@ -49,8 +49,8 @@ import System.Process.Typed (
   )
 import UnliftIO.Async (async, cancel, race)
 import UnliftIO.Exception (bracket, tryAny)
-import UnliftIO.MVar (MVar, putMVar, tryPutMVar)
-import UnliftIO.STM (atomically, putTMVar)
+import UnliftIO.MVar (MVar)
+import UnliftIO.STM (putTMVar)
 
 import Ribosome.Api.Option (rtpCat)
 import Ribosome.Control.Monad.Ribo (Nvim, NvimE)
@@ -64,40 +64,40 @@ import Ribosome.System.Time (sleep, sleepW)
 
 type Runner m = TestConfig -> m () -> m ()
 
-newtype Vars = Vars [(String, Object)]
+newtype Vars = Vars [(Text, Object)]
 
 data TestConfig =
   TestConfig {
-    tcPluginName :: String,
-    tcExtraRtp :: String,
+    tcPluginName :: Text,
+    tcExtraRtp :: Text,
     tcLogPath :: FilePath,
     tcTimeout :: Word,
-    tcCmdline :: Maybe [String],
-    tcCmdArgs :: [String],
+    tcCmdline :: Maybe [Text],
+    tcCmdArgs :: [Text],
     tcVariables :: Vars
   }
 
 instance Default TestConfig where
   def = TestConfig "ribosome" "test/f/fixtures/rtp" "test/f/temp/log" 10 def def (Vars [])
 
-defaultTestConfigWith :: String -> Vars -> TestConfig
+defaultTestConfigWith :: Text -> Vars -> TestConfig
 defaultTestConfigWith name vars =
   def { tcPluginName = name, tcVariables = vars }
 
-defaultTestConfig :: String -> TestConfig
+defaultTestConfig :: Text -> TestConfig
 defaultTestConfig name = defaultTestConfigWith name (Vars [])
 
 setVars :: ∀ m e. (Nvim m, MonadDeepError e RpcError m) => Vars -> m ()
 setVars (Vars vars) =
   traverse_ set vars
   where
-    set :: (String, Object) -> m ()
+    set :: (Text, Object) -> m ()
     set = uncurry vimSetVar
 
 setupPluginEnv :: (MonadIO m, NvimE e m) => TestConfig -> m ()
 setupPluginEnv (TestConfig _ rtp _ _ _ _ vars) = do
-  absRtp <- liftIO $ makeAbsolute rtp
-  rtpCat absRtp
+  absRtp <- liftIO $ makeAbsolute (toString rtp)
+  rtpCat (toText absRtp)
   setVars vars
 
 killPid :: Integral a => a -> IO ()
@@ -112,7 +112,7 @@ killProcess prc = do
 
 testNvimProcessConfig :: TestConfig -> ProcessConfig Handle Handle ()
 testNvimProcessConfig TestConfig {..} =
-  setStdin createPipe $ setStdout createPipe $ proc "nvim" $ args ++ tcCmdArgs
+  setStdin createPipe . setStdout createPipe . proc "nvim" . (fmap toString) $ args <> tcCmdArgs
   where
     args = fromMaybe defaultArgs tcCmdline
     defaultArgs = ["--embed", "-n", "-u", "NONE", "-i", "NONE"]
@@ -180,8 +180,8 @@ runTest TestConfig{..} testCfg thunk = do
   result <- race (sleepW tcTimeout) (runNeovimThunk testCfg (runExceptT $ native thunk))
   case result of
     Right (Right _) -> return ()
-    Right (Left e) -> fail . unlines . ErrorReport._log . errorReport $ e
-    Left _ -> fail $ "test exceeded timeout of " ++ show tcTimeout ++ " seconds"
+    Right (Left e) -> fail . toString . unlines . ErrorReport._log . errorReport $ e
+    Left _ -> fail $ "test exceeded timeout of " <> show tcTimeout <> " seconds"
 
 runEmbeddedNvim ::
   RpcHandler e env m =>

@@ -1,9 +1,7 @@
 {-# LANGUAGE DefaultSignatures #-}
 {-# LANGUAGE TypeOperators #-}
 
-module Ribosome.Msgpack.Encode(
-  MsgpackEncode(..),
-) where
+module Ribosome.Msgpack.Encode where
 
 import Data.Bifunctor (bimap)
 import Data.ByteString (ByteString)
@@ -26,7 +24,7 @@ import GHC.Generics (
   selName,
   (:*:)(..),
   )
-import qualified Ribosome.Msgpack.Util as Util (assembleMap, string)
+import qualified Ribosome.Msgpack.Util as Util (assembleMap, string, text)
 
 class MsgpackEncode a where
   toMsgpack :: a -> Object
@@ -57,8 +55,8 @@ instance (Constructor c, MsgpackEncodeProd f) => GMsgpackEncode (C1 c f) where
       f = if conIsRecord c then Util.assembleMap . msgpackEncodeRecord else prodOrNewtype
 
 instance (MsgpackEncodeProd f, MsgpackEncodeProd g) => MsgpackEncodeProd (f :*: g) where
-  msgpackEncodeRecord (f :*: g) = msgpackEncodeRecord f ++ msgpackEncodeRecord g
-  msgpackEncodeProd (f :*: g) = msgpackEncodeProd f ++ msgpackEncodeProd g
+  msgpackEncodeRecord (f :*: g) = msgpackEncodeRecord f <> msgpackEncodeRecord g
+  msgpackEncodeProd (f :*: g) = msgpackEncodeProd f <> msgpackEncodeProd g
 
 instance (Selector s, GMsgpackEncode f) => MsgpackEncodeProd (S1 s f) where
   msgpackEncodeRecord s@(M1 f) = [(selName s, gMsgpackEncode f)]
@@ -81,6 +79,9 @@ instance {-# OVERLAPPING #-} MsgpackEncode String where
 
 instance {-# OVERLAPPABLE #-} MsgpackEncode a => MsgpackEncode [a] where
   toMsgpack = ObjectArray . fmap toMsgpack
+
+instance MsgpackEncode Text where
+  toMsgpack = Util.text
 
 instance MsgpackEncode a => MsgpackEncode (Maybe a) where
   toMsgpack = maybe ObjectNil toMsgpack

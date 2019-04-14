@@ -11,8 +11,8 @@ import Control.Monad.DeepError (MonadDeepError(throwHoist))
 import Control.Monad.IO.Class (MonadIO, liftIO)
 import Control.Monad.IO.Unlift (MonadUnliftIO)
 import Data.Aeson (FromJSON, ToJSON, eitherDecode, encode)
-import Data.ByteString.Lazy (ByteString)
 import qualified Data.ByteString.Lazy as B (readFile, writeFile)
+import qualified Data.ByteString.Lazy as LazyByteString (ByteString)
 import System.Directory (XdgDirectory(XdgCache), createDirectoryIfMissing, getXdgDirectory)
 import System.FilePath (takeDirectory, (</>))
 import UnliftIO.Directory (doesFileExist)
@@ -38,7 +38,7 @@ persistencePath ::
 persistencePath path = do
   base <- defaultPersistencePath `recoveryFor` setting S.persistenceDir
   name <- pluginName
-  return $ base </> name </> path
+  return $ base </> (toString name) </> path
 
 persistenceFile ::
   (MonadRibo m, Nvim m, MonadIO m, MonadDeepError e RpcError m, MonadDeepError e SettingError m) =>
@@ -47,7 +47,7 @@ persistenceFile ::
 persistenceFile path = do
   file <- persistencePath path
   liftIO $ createDirectoryIfMissing True (takeDirectory file)
-  return $ file ++ ".json"
+  return $ file <> ".json"
 
 persistStore ::
   (MonadRibo m, Nvim m, MonadIO m, MonadDeepError e RpcError m, MonadDeepError e SettingError m) =>
@@ -70,7 +70,7 @@ ensureExistence file = do
 safeReadFile ::
   (MonadUnliftIO m, MonadDeepError e RpcError m, MonadDeepError e SettingError m, MonadDeepError e PersistError m) =>
   FilePath ->
-  m ByteString
+  m LazyByteString.ByteString
 safeReadFile file =
   either err return =<< (tryIO . liftIO . B.readFile $ file)
   where
@@ -79,7 +79,7 @@ safeReadFile file =
 decodeError ::
   (MonadDeepError e RpcError m, MonadDeepError e SettingError m, MonadDeepError e PersistError m) =>
   FilePath ->
-  String ->
+  Text ->
   m a
 decodeError = curry $ throwHoist . uncurry PersistError.Decode
 
@@ -92,4 +92,4 @@ persistLoad path = do
   file <- persistenceFile path
   ensureExistence file
   json <- safeReadFile file
-  either (decodeError path) return . eitherDecode $ json
+  either (decodeError path) return . mapLeft toText . eitherDecode $ json

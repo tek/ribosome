@@ -1,19 +1,11 @@
 {-# LANGUAGE TemplateHaskell #-}
 
-module Ribosome.Config.Setting(
-  setting,
-  updateSetting,
-  settingVariableName,
-  settingOr,
-  settingMaybe,
-) where
+module Ribosome.Config.Setting where
 
 import Control.Monad.DeepError (MonadDeepError(throwHoist), catchAt)
 import Control.Monad.IO.Class (MonadIO)
 import Control.Monad.Trans.Except (runExceptT)
 import Data.DeepPrisms (deepPrisms)
-import Data.Either (fromRight)
-import Data.Either.Combinators (rightToMaybe)
 
 import Ribosome.Control.Monad.Ribo (MonadRibo, Nvim, pluginName)
 import Ribosome.Data.Setting (Setting(Setting))
@@ -28,12 +20,12 @@ import qualified Ribosome.Nvim.Api.RpcCall as RpcError (RpcError(..))
 settingVariableName ::
   (MonadRibo m) =>
   Setting a ->
-  m String
+  m Text
 settingVariableName (Setting settingName False _) =
   return settingName
 settingVariableName (Setting settingName True _) = do
   name <- pluginName
-  return $ name ++ "_" ++ settingName
+  return $ name <> "_" <> settingName
 
 settingRaw :: (MonadRibo m, Nvim m, MsgpackDecode a, MonadDeepError e RpcError m) => Setting a -> m a
 settingRaw s =

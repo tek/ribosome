@@ -48,7 +48,7 @@ ioSig name types returnType = do
   monadErrorConstraint <- [t|MonadDeepError $(newT "e") RpcError $(pure mType)|]
   let
     params = foldr (AppT . AppT ArrowT) (AppT mType retType) types
-    constraints = [nvimConstraint, monadErrorConstraint] ++ maybeToList decodeConstraint
+    constraints = [nvimConstraint, monadErrorConstraint] <> maybeToList decodeConstraint
   sigD name $ return (ForallT [] constraints params)
 
 ioBody :: Name -> Bool -> [Name] -> DecQ
@@ -59,7 +59,7 @@ ioBody name _ names =
     callPat = varP responseName
     callExp = appE [|call|] args
     checkExp = appE [|hoistEither|] (varE responseName)
-    args = foldl appE (varE $ mkName $ "RpcData." ++ show name) (varE <$> names)
+    args = foldl appE (varE $ mkName $ "RpcData." <> show name) (varE <$> names)
     body = doE [bindS callPat callExp, noBindS checkExp]
 
 genIO :: FunctionData -> Q [Dec]

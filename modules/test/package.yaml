@@ -13,7 +13,7 @@ build-type: Simple
 
 dependencies:
 - HTF
-- base >= 4.7 && < 5
+- base-noprelude >= 4.7 && < 5
 - chiasma
 - cornea
 - data-default
@@ -25,6 +25,7 @@ dependencies:
 - mtl
 - nvim-hs
 - process
+- relude
 - resourcet
 - ribosome
 - text

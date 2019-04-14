@@ -9,14 +9,14 @@ import Ribosome.Error.Report.Class (ReportError(..))
 import System.Log (Priority(NOTICE, ERROR))
 
 newtype MappingIdent =
-  MappingIdent String
+  MappingIdent Text
   deriving (Eq, Show)
 
 data Mapping =
   Mapping {
     mappingIdent :: MappingIdent,
-    mappingLhs :: String,
-    mappingMode :: String,
+    mappingLhs :: Text,
+    mappingMode :: Text,
     mappingRemap :: Bool,
     mappingBuffer :: Bool
   }
@@ -32,6 +32,6 @@ deepPrisms ''MappingError
 
 instance ReportError MappingError where
   errorReport (NoSuchMapping (MappingIdent ident)) =
-    ErrorReport ("no mapping defined for `" ++ ident ++"`") ["no such mapping: " ++ ident] NOTICE
+    ErrorReport ("no mapping defined for `" <> ident <>"`") ["no such mapping: " <> ident] NOTICE
   errorReport (InvalidArgs args) =
     ErrorReport "internal error while executing mapping" ["invalid mapping args:", show args] ERROR

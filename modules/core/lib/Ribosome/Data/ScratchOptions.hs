@@ -14,10 +14,10 @@ data ScratchOptions =
     size :: Maybe Int,
     syntax :: [Syntax],
     mappings :: [Mapping],
-    name :: String
+    name :: Text
   }
 
-defaultScratchOptions :: String -> ScratchOptions
+defaultScratchOptions :: Text -> ScratchOptions
 defaultScratchOptions = ScratchOptions False False False False Nothing [] []
 
 instance Default ScratchOptions where

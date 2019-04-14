@@ -27,12 +27,11 @@ import Control.Monad.Trans.Control (
 import Control.Monad.Trans.Except (ExceptT(ExceptT), runExceptT, withExceptT)
 import Control.Monad.Trans.Reader (ReaderT(ReaderT), runReaderT)
 import Control.Monad.Trans.Resource (runResourceT)
-import Data.Either (fromRight)
 import Data.Either.Combinators (mapLeft)
 import Data.Functor (void)
 import Neovim.Context.Internal (Neovim(..))
 import Ribosome.Plugin (RpcHandler(..))
-import UnliftIO.STM (TVar, atomically, readTVarIO)
+import UnliftIO.STM (TVar)
 
 import Ribosome.Control.Ribosome (Ribosome(Ribosome), RibosomeInternal, RibosomeState)
 import qualified Ribosome.Control.Ribosome as Ribosome (_errors, errors, name, state)
@@ -58,7 +57,7 @@ instance MonadBaseControl IO (Neovim e) where
 -- FIXME change get/put to get/modify to avoid racing
 data RiboConcState s =
   RiboConcState {
-    rsaName :: String,
+    rsaName :: Text,
     rsaInternalGet :: IO RibosomeInternal,
     rsaInternalPut :: RibosomeInternal -> IO (),
     rsaGet :: IO s,
@@ -211,7 +210,7 @@ riboInternal =
   liftIO =<< asks rsaInternalGet
 
 class (MonadIO m, Nvim m) => MonadRibo m where
-  pluginName :: m String
+  pluginName :: m Text
   pluginInternal :: m RibosomeInternal
   pluginInternalPut :: RibosomeInternal -> m ()
 

@@ -8,18 +8,18 @@ import Data.Default (def)
 import Data.Functor.Syntax ((<$$>))
 import Data.Map.Strict (Map)
 import qualified Data.Map.Strict as Map (empty)
-import UnliftIO.STM (TMVar, TVar, newTVarIO)
+import UnliftIO.STM (TMVar, TVar)
 
 import Ribosome.Data.Errors (Errors)
 import Ribosome.Data.Scratch (Scratch)
 
-type Locks = Map String (TMVar ())
+type Locks = Map Text (TMVar ())
 
 data RibosomeInternal =
   RibosomeInternal {
     _locks :: Locks,
     _errors :: Errors,
-    _scratch :: Map String Scratch
+    _scratch :: Map Text Scratch
   }
 
 makeClassy ''RibosomeInternal
@@ -34,7 +34,7 @@ makeClassy ''RibosomeState
 
 data Ribosome s =
   Ribosome {
-    _name :: String,
+    _name :: Text,
     _state :: TVar (RibosomeState s)
   }
 makeClassy ''Ribosome
@@ -43,6 +43,6 @@ newRibosomeTVar :: MonadIO m => s -> m (TVar (RibosomeState s))
 newRibosomeTVar s =
   newTVarIO (RibosomeState (RibosomeInternal Map.empty def Map.empty) s)
 
-newRibosome :: MonadIO m => String -> s -> m (Ribosome s)
+newRibosome :: MonadIO m => Text -> s -> m (Ribosome s)
 newRibosome name' =
   Ribosome name' <$$> newRibosomeTVar

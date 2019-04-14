@@ -26,9 +26,9 @@ import GHC.Generics (
   to,
   (:*:)(..),
   )
-import Text.Read (readEither)
 
-import Ribosome.Msgpack.Error (DecodeError(DecodeError))
+import Ribosome.Msgpack.Error (DecodeError)
+import qualified Ribosome.Msgpack.Error as DecodeError (DecodeError(Failed))
 import Ribosome.Msgpack.Util (Err)
 import qualified Ribosome.Msgpack.Util as Util (illegalType, invalid, missingRecordKey, string)
 
@@ -126,11 +126,15 @@ instance MsgpackDecode Float where
 
 instance {-# OVERLAPPING #-} MsgpackDecode String where
   fromMsgpack (ObjectString os) = Right $ ByteString.toString os
-  fromMsgpack o = Util.illegalType "String" o
+  fromMsgpack o = Util.illegalType "Text" o
 
 instance {-# OVERLAPPABLE #-} MsgpackDecode a => MsgpackDecode [a] where
   fromMsgpack (ObjectArray oa) = traverse fromMsgpack oa
   fromMsgpack o = Util.illegalType "List" o
+
+instance MsgpackDecode Text where
+  fromMsgpack (ObjectString os) = Right (decodeUtf8 os)
+  fromMsgpack o = Util.illegalType "Text" o
 
 instance MsgpackDecode ByteString where
   fromMsgpack (ObjectString os) = Right os
@@ -162,4 +166,4 @@ instance (MsgpackDecode a, MsgpackDecode b) => MsgpackDecode (a, b) where
 
 fromMsgpack' :: (MonadDeepError e DecodeError m, MsgpackDecode a) => Object -> m a
 fromMsgpack' =
-  hoistEitherWith DecodeError . fromMsgpack
+  hoistEitherWith DecodeError.Failed . fromMsgpack

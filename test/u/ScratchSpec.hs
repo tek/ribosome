@@ -16,7 +16,7 @@ import Ribosome.Nvim.Api.RpcCall (RpcError)
 import Ribosome.Scratch (showInScratch)
 import Ribosome.Test.Unit (unitSpecDef)
 
-target :: [String]
+target :: [Text]
 target = ["line 1", "line 2"]
 
 scratchSpec :: RiboE () RpcError (Neovim (Ribosome ())) ()

@@ -22,13 +22,13 @@ import Ribosome.Tmux.Run (runTmux)
 screenshot ::
   MonadFree TmuxThunk m =>
   MonadIO m =>
-  String ->
+  Text ->
   Bool ->
   Int ->
   m (Maybe ([Text], [Text]))
 screenshot name record pane = do
   storage <- fixture "screenshots"
-  Chiasma.screenshot record storage name pane
+  Chiasma.screenshot record storage (toString name) pane
 
 assertScreenshot ::
   AssertM m =>
@@ -37,7 +37,7 @@ assertScreenshot ::
   MonadDeepError e TmuxError m =>
   MonadMask m =>
   Nvim m =>
-  String ->
+  Text ->
   Bool ->
   Int ->
   m ()

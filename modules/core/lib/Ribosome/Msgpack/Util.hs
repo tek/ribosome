@@ -12,8 +12,12 @@ type Err = Doc AnsiStyle
 string :: String -> Object
 string = ObjectString . ByteString.fromString
 
+text :: Text -> Object
+text = ObjectString . encodeUtf8
+
 assembleMap :: [(String, Object)] -> Object
-assembleMap = ObjectMap . Map.fromList . (fmap . first) string
+assembleMap =
+  ObjectMap . Map.fromList . (fmap . first) string
 
 invalid :: String -> Object -> Either Err a
 invalid msg obj =
@@ -24,4 +28,5 @@ missingRecordKey key =
   invalid $ "missing record key " ++ key ++ " in ObjectMap"
 
 illegalType :: String -> Object -> Either Err a
-illegalType tpe = invalid $ "illegal type for " ++ tpe
+illegalType tpe =
+  invalid $ "illegal type for " ++ tpe

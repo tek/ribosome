@@ -29,7 +29,7 @@ data AutocmdTestError =
 
 deepPrisms ''AutocmdTestError
 
-varName :: String
+varName :: Text
 varName =
   "result"
 

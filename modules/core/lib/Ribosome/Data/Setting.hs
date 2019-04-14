@@ -2,7 +2,7 @@ module Ribosome.Data.Setting where
 
 data Setting a =
   Setting {
-    name :: String,
+    name :: Text,
     prefix :: Bool,
     fallback :: Maybe a
   }

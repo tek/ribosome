@@ -11,7 +11,6 @@ import Data.Functor (void)
 import qualified Data.Map as Map (alter)
 import Data.Text.Prettyprint.Doc (line, pretty, (<>))
 import Data.Text.Prettyprint.Doc.Render.Terminal (putDoc)
-import System.Log.Logger (logM)
 
 import Ribosome.Api.Echo (echom)
 import Ribosome.Control.Monad.Ribo (MonadRibo, Nvim, RiboE, runRiboE)
@@ -20,10 +19,11 @@ import Ribosome.Control.Ribosome (Ribosome(..))
 import Ribosome.Data.ErrorReport (ErrorReport(ErrorReport))
 import Ribosome.Data.Errors (ComponentName(ComponentName), Error(Error), Errors(Errors))
 import Ribosome.Error.Report.Class (ReportError(..))
+import Ribosome.Log (logAs)
 import Ribosome.Nvim.Api.RpcCall (RpcError)
 import Ribosome.System.Time (epochSeconds)
 
-storeError' :: Int -> String -> ErrorReport -> Errors -> Errors
+storeError' :: Int -> Text -> ErrorReport -> Errors -> Errors
 storeError' time name report (Errors errors) =
   Errors (Map.alter alter (ComponentName name) errors)
   where
@@ -31,7 +31,7 @@ storeError' time name report (Errors errors) =
     alter Nothing = Just [err]
     alter (Just current) = Just (err:current)
 
-storeError :: (MonadRibo m, MonadIO m) => String -> ErrorReport -> m ()
+storeError :: (MonadRibo m, MonadIO m) => Text -> ErrorReport -> m ()
 storeError name e = do
   time <- epochSeconds
   Ribo.modifyErrors $ storeError' time name e
@@ -42,12 +42,12 @@ logErrorReport ::
   m ()
 logErrorReport (ErrorReport user logMsgs prio) = do
   name <- Ribo.pluginName
-  liftIO $ traverse_ (logM name prio) logMsgs
+  liftIO $ traverse_ (logAs prio name) logMsgs
   echom user
 
 processErrorReport ::
   (MonadDeepError e RpcError m, MonadRibo m, Nvim m, MonadIO m) =>
-  String ->
+  Text ->
   ErrorReport ->
   m ()
 processErrorReport name report = do
@@ -56,7 +56,7 @@ processErrorReport name report = do
 
 processErrorReport' ::
   (MonadRibo m, Nvim m, MonadIO m) =>
-  String ->
+  Text ->
   ErrorReport ->
   m ()
 processErrorReport' name =
@@ -64,20 +64,20 @@ processErrorReport' name =
 
 reportErrorWith ::
   (MonadDeepError e RpcError m, MonadRibo m, Nvim m, MonadIO m) =>
-  String ->
+  Text ->
   (a -> ErrorReport) ->
   a ->
   m ()
 reportErrorWith name cons err =
   processErrorReport name (cons err)
 
-reportError :: (MonadDeepError e RpcError m, MonadRibo m, Nvim m, MonadIO m, ReportError a) => String -> a -> m ()
+reportError :: (MonadDeepError e RpcError m, MonadRibo m, Nvim m, MonadIO m, ReportError a) => Text -> a -> m ()
 reportError name =
   reportErrorWith name errorReport
 
 reportErrorOr ::
   (MonadError RpcError m, MonadRibo m, Nvim m, MonadIO m, ReportError e) =>
-  String ->
+  Text ->
   (a -> m ()) ->
   Either e a ->
   m ()
@@ -86,7 +86,7 @@ reportErrorOr name =
 
 reportErrorOr_ ::
   (MonadError RpcError m, MonadRibo m, Nvim m, MonadIO m, ReportError e) =>
-  String ->
+  Text ->
   m () ->
   Either e a ->
   m ()
@@ -95,7 +95,7 @@ reportErrorOr_ name =
 
 reportError' ::
   (MonadRibo m, Nvim m, MonadIO m, ReportError e) =>
-  String ->
+  Text ->
   Either e a ->
   m ()
 reportError' _ (Right _) =
@@ -111,7 +111,7 @@ printAllErrors = do
 runRiboReport ::
   ∀ e s m.
   (MonadReader (Ribosome s) m, MonadRibo m, Nvim m, MonadIO m, ReportError e) =>
-  String ->
+  Text ->
   RiboE s e m () ->
   m ()
 runRiboReport componentName =

@@ -1,27 +1,22 @@
-module Ribosome.Internal.NvimObject(
-  deriveString,
-  extractObject,
-  extractObjectOr,
-) where
+module Ribosome.Internal.NvimObject where
 
-import qualified Data.ByteString.UTF8 as UTF8 (fromString)
 import Data.Map.Strict (Map, (!?))
-import Data.Text.Prettyprint.Doc ((<+>), pretty)
-import Neovim (Object(ObjectString), Doc, AnsiStyle, fromObject, NvimObject)
+import Data.Text.Prettyprint.Doc (pretty, (<+>))
+import Neovim (AnsiStyle, Doc, NvimObject, Object(ObjectString), fromObject)
 
-deriveString :: (String -> a) -> Object -> Either (Doc AnsiStyle) a
-deriveString cons o = fmap cons (fromObject o :: Either (Doc AnsiStyle) String)
+deriveString :: (Text -> a) -> Object -> Either (Doc AnsiStyle) a
+deriveString cons o = fmap cons (fromObject o :: Either (Doc AnsiStyle) Text)
 
-objectKeyMissing :: String -> Maybe Object -> Either (Doc AnsiStyle) Object
+objectKeyMissing :: Text -> Maybe Object -> Either (Doc AnsiStyle) Object
 objectKeyMissing _ (Just o) = Right o
-objectKeyMissing key Nothing = Left (pretty ("missing key in nvim data:" :: String) <+> pretty key)
+objectKeyMissing key Nothing = Left (pretty ("missing key in nvim data:" :: Text) <+> pretty key)
 
-extractObject :: NvimObject o => String -> Map Object Object -> Either (Doc AnsiStyle) o
+extractObject :: NvimObject o => Text -> Map Object Object -> Either (Doc AnsiStyle) o
 extractObject key data' = do
-  value <- objectKeyMissing key $ data' !? (ObjectString . UTF8.fromString) key
+  value <- objectKeyMissing key $ data' !? (ObjectString . encodeUtf8) key
   fromObject value
 
-extractObjectOr :: NvimObject o => String -> o -> Map Object Object -> o
+extractObjectOr :: NvimObject o => Text -> o -> Map Object Object -> o
 extractObjectOr key default' data' =
   case extractObject key data' of
     Right a -> a

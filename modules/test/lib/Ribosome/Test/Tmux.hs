@@ -47,9 +47,9 @@ runTmuxNvim conf ribo specThunk socket = do
   let testCfg = Internal.retypeConfig ribo nvimConf
   bracket (startSocketHandlers socket conf nvimConf) id (const $ runTest conf testCfg specThunk)
 
-externalNvimCmdline :: FilePath -> String
+externalNvimCmdline :: FilePath -> Text
 externalNvimCmdline socket =
-  "nvim --listen " ++ socket ++ " -n -u NONE -i NONE"
+  "nvim --listen " <> (toText socket) <> " -n -u NONE -i NONE"
 
 runGui ::
   (RpcHandler e env m, ReportError e) =>
@@ -60,7 +60,7 @@ runGui ::
   m () ->
   IO ()
 runGui api temp conf ribo specThunk = do
-  void $ runExceptT @TmuxError $ runTmux api $ sendKeys (PaneId 0) [externalNvimCmdline socket]
+  void $ runExceptT @TmuxError $ runTmux api $ sendKeys (PaneId 0) [toString $ externalNvimCmdline socket]
   _ <- waitIOPredDef (pure socket) doesPathExist
   runTmuxNvim conf ribo specThunk socket
   where

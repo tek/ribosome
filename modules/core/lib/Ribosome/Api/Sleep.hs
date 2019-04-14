@@ -8,11 +8,11 @@ nvimSleep ::
   Int ->
   m ()
 nvimSleep interval =
-  vimCommand $ "sleep " ++ show interval
+  vimCommand $ "sleep " <> show interval
 
 nvimMSleep ::
   NvimE e m =>
   Int ->
   m ()
 nvimMSleep interval =
-  vimCommand $ "sleep " ++ show interval ++ "m"
+  vimCommand $ "sleep " <> show interval <> "m"

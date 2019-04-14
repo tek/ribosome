@@ -15,7 +15,7 @@ dependencies:
 - MissingH
 - aeson
 - ansi-terminal
-- base >= 4.7 && < 5
+- base-noprelude >= 4.7 && < 5
 - bytestring
 - chiasma
 - composition-extra
@@ -38,6 +38,7 @@ dependencies:
 - prettyprinter
 - prettyprinter-ansi-terminal
 - process
+- relude
 - resourcet
 - safe
 - split

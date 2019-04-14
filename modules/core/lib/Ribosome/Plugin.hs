@@ -9,7 +9,6 @@ module Ribosome.Plugin (
 import Control.Monad (join, (<=<))
 import Control.Monad.DeepError (MonadDeepError)
 import Control.Monad.Trans.Except (ExceptT, runExceptT)
-import Data.ByteString.UTF8 (fromString)
 import qualified Data.Map as Map ()
 import Data.MessagePack (Object(ObjectNil))
 import Neovim.Context (Neovim)
@@ -23,7 +22,7 @@ import Neovim.Plugin.Classes (
 import Neovim.Plugin.Internal (ExportedFunctionality(..), Plugin(..))
 
 import Ribosome.Data.Mapping (MappingError)
-import Ribosome.Data.String (capitalize)
+import Ribosome.Data.Text (capitalize)
 import Ribosome.Plugin.Mapping (MappingHandler, handleMappingRequest)
 import Ribosome.Plugin.TH (
   RpcDef(RpcDef),
@@ -42,16 +41,16 @@ instance RpcHandler e env (ExceptT e (Neovim env)) where
 
 mappingHandlerRpc ::
   MonadDeepError e MappingError m =>
-  String ->
+  Text ->
   [MappingHandler m] ->
   RpcDef m
 mappingHandlerRpc pluginName mappings =
-  RpcDef (RpcFunction Async) (capitalize pluginName ++ "Mapping") (handleMappingRequest mappings)
+  RpcDef (RpcFunction Async) (capitalize pluginName <> "Mapping") (handleMappingRequest mappings)
 
 nvimPlugin ::
   MonadDeepError e MappingError m =>
   RpcHandler e env m =>
-  String ->
+  Text ->
   env ->
   [[RpcDef m]] ->
   [MappingHandler m] ->
@@ -61,13 +60,13 @@ nvimPlugin pluginName env fs mappings errorHandler =
   Plugin env (wrap (mappingHandlerRpc pluginName mappings) : (wrap <$> join fs))
   where
     wrap (RpcDef detail name' rpcHandler') =
-      EF (wrapDetail detail (F (fromString name')), executeRpcHandler errorHandler rpcHandler')
+      EF (wrapDetail detail (F (encodeUtf8 name')), executeRpcHandler errorHandler rpcHandler')
     wrapDetail (RpcFunction sync') name' =
       Function name' sync'
     wrapDetail (RpcCommand options) name' =
       Command name' options
     wrapDetail (RpcAutocmd event sync' options) name' =
-      Autocmd (fromString event) name' sync' options
+      Autocmd (encodeUtf8 event) name' sync' options
 
 executeRpcHandler ::
   ∀ e env m.
@@ -91,11 +90,11 @@ sync :: RpcHandlerConfig -> RpcHandlerConfig
 sync conf =
   conf { rhcSync = Sync }
 
-name :: String -> RpcHandlerConfig -> RpcHandlerConfig
+name :: Text -> RpcHandlerConfig -> RpcHandlerConfig
 name n conf =
   conf { rhcName = Just n }
 
-autocmd :: String -> RpcHandlerConfig -> RpcHandlerConfig
+autocmd :: Text -> RpcHandlerConfig -> RpcHandlerConfig
 autocmd event conf =
   conf { rhcAutocmd = Just event }
 

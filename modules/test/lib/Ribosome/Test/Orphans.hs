@@ -4,7 +4,6 @@ module Ribosome.Test.Orphans where
 
 import Control.Monad.IO.Class (liftIO)
 import Control.Monad.IO.Unlift (withRunInIO)
-import Control.Monad.Trans.Except
 import Control.Monad.Trans.Reader (ReaderT(ReaderT), runReaderT)
 import Neovim (Neovim)
 import Test.Framework.AssertM (AssertM(..))

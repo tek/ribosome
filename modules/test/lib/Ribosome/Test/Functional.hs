@@ -14,13 +14,13 @@ module Ribosome.Test.Functional where
 -- import Ribosome.Test.Exists (waitForPlugin)
 -- import qualified Ribosome.Test.File as F (fixture, tempDir)
 
--- jobstart :: MonadIO f => String -> f String
+-- jobstart :: MonadIO f => Text -> f Text
 -- jobstart cmd = do
 --   dir <- liftIO getCurrentDirectory
---   return $ "call jobstart('" ++ cmd ++ "', { 'rpc': v:true, 'cwd': '" ++ dir ++ "' })"
+--   return $ "call jobstart('" <> cmd <> "', { 'rpc': v:true, 'cwd': '" <> dir <> "' })"
 
 -- logFile :: TestConfig -> IO FilePath
--- logFile TestConfig{..} = makeAbsolute $ tcLogPath ++ "-spec"
+-- logFile TestConfig{..} = makeAbsolute $ tcLogPath <> "-spec"
 
 -- startPlugin :: TestConfig -> Neovim env ()
 -- startPlugin tc@TestConfig{..} = do
@@ -29,14 +29,14 @@ module Ribosome.Test.Functional where
 --   liftIO $ createDirectoryIfMissing True (takeDirectory absLogPath)
 --   liftIO $ removePathForcibly absLogFile
 --   setupPluginEnv tc
---   cmd <- jobstart $ "stack run -- -l " ++ absLogFile ++ " -v INFO"
+--   cmd <- jobstart $ "stack run -- -l " <> absLogFile <> " -v INFO"
 --   vim_command' cmd
 --   waitForPlugin tcPluginName 0.1 3
 
 -- fSpec :: TestConfig -> Neovim env () -> Neovim env ()
 -- fSpec conf spec = startPlugin conf >> spec
 
--- showLog' :: String -> IO ()
+-- showLog' :: Text -> IO ()
 -- showLog' output = do
 --   putStrLn ""
 --   setSGR [SetColor Foreground Dull Green]
@@ -59,7 +59,7 @@ module Ribosome.Test.Functional where
 -- functionalSpec conf spec =
 --   finally (unsafeEmbeddedSpec fSpec conf () spec) (showLog conf)
 
--- fPrefix :: String
+-- fPrefix :: Text
 -- fPrefix = "f"
 
 -- tempDir :: FilePath -> Neovim e FilePath

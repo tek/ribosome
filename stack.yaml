@@ -7,6 +7,7 @@ packages:
 - ../chiasma
 - ../nvim-hs
 extra-deps:
+- base-noprelude-4.11.1.0
 - pretty-terminal-0.1.0.0
 - posix-pty-0.2.1.1
 # - cornea-0.1.0.0

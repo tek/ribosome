@@ -12,8 +12,8 @@ import Data.Map.Strict (Map)
 import qualified Data.Map.Strict as Map (fromList)
 import Data.MessagePack (Object(..))
 import Data.Text (Text)
-import Data.Text.Prettyprint.Doc (Doc, layoutPretty, defaultLayoutOptions)
-import Data.Text.Prettyprint.Doc.Render.Terminal (renderStrict, AnsiStyle)
+import Data.Text.Prettyprint.Doc (Doc, defaultLayoutOptions, layoutPretty)
+import Data.Text.Prettyprint.Doc.Render.Terminal (AnsiStyle, renderStrict)
 import GHC.Generics (Generic)
 import Test.Framework
 
@@ -22,19 +22,19 @@ import Ribosome.Msgpack.Encode (MsgpackEncode(..))
 import qualified Ribosome.Msgpack.Util as Util (string)
 
 newtype NT =
-  NT String
+  NT Text
   deriving (Eq, Show, Generic, MsgpackEncode, MsgpackDecode)
 
 data Blob =
   Blob {
     key4 :: [[Int]],
-    key5 :: Map Int String,
+    key5 :: Map Int Text,
     key6 :: NT
   }
   deriving (Eq, Show, Generic, MsgpackEncode, MsgpackDecode)
 
 data Prod =
-  Prod String Int
+  Prod Text Int
   deriving (Eq, Show, Generic, MsgpackEncode, MsgpackDecode)
 
 data Dat =

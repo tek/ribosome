@@ -5,13 +5,20 @@ module Ribosome.Test.Exists(
 import Control.Monad.IO.Class (MonadIO)
 import Data.MessagePack (Object(ObjectInt))
 import Neovim (Neovim, toObject)
-import Neovim.API.String (vim_call_function)
+import Neovim.API.Text (vim_call_function)
 import UnliftIO.Exception (tryAny)
 
-import Ribosome.Data.String (capitalize)
+import Ribosome.Data.Text (capitalize)
 import Ribosome.System.Time (epochSeconds, sleep)
 
-retry :: MonadIO f => Double -> Int -> f a -> (a -> f (Either String b)) -> f b
+retry ::
+  MonadIO m =>
+  MonadFail m =>
+  Double ->
+  Int ->
+  m a ->
+  (a -> m (Either Text b)) ->
+  m b
 retry interval timeout thunk check = do
   start <- epochSeconds
   step start
@@ -27,14 +34,14 @@ retry interval timeout thunk check = do
       then do
         sleep interval
         step start
-      else fail e
+      else fail (toString e)
 
-waitForPlugin :: String -> Double -> Int -> Neovim env ()
+waitForPlugin :: Text -> Double -> Int -> Neovim env ()
 waitForPlugin name interval timeout =
   retry interval timeout thunk check
   where
-    thunk = tryAny $ vim_call_function "exists" [toObject $ "*" ++ capitalize name ++ "Poll"]
+    thunk = tryAny $ vim_call_function "exists" $ fromList [toObject $ "*" <> capitalize name <> "Poll"]
     check (Right (ObjectInt 1)) = return $ Right ()
-    check (Right a) = return $ Left $ errormsg ++ "weird return type " ++ show a
-    check (Left e) = return $ Left $ errormsg ++ show e
-    errormsg = "plugin didn't start within " ++ show timeout ++ " seconds: "
+    check (Right a) = return $ Left $ errormsg <> "weird return type " <> show a
+    check (Left e) = return $ Left $ errormsg <> show e
+    errormsg = "plugin didn't start within " <> show timeout <> " seconds: "

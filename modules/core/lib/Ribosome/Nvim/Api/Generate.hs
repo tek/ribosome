@@ -32,11 +32,11 @@ haskellTypes :: Map String TypeQ
 haskellTypes =
   Map.fromList [
     ("Boolean", [t|Bool|]),
-    ("Integer", [t|Int64|]),
+    ("Integer", [t|Int|]),
     ("Float", [t|Double|]),
-    ("String", [t|String|]),
+    ("String", [t|Text|]),
     ("Array", [t|[Object]|]),
-    ("Dictionary", [t|Map String Object|]),
+    ("Dictionary", [t|Map Text Object|]),
     ("void", [t|()|])
     ]
 
@@ -68,7 +68,7 @@ functionData (NeovimFunction name parameters _ async returnType) = do
   types <- traverse haskellType (fst <$> parameters)
   return (FunctionData name (mkName . camelcase $ name) async names types returnType)
   where
-    prefix i n = "arg" ++ show i ++ "_" ++ n
+    prefix i n = "arg" <> show i <> "_" <> n
     prefixedNames = zipWith prefix [0 :: Int ..] (snd <$> parameters)
 
 generateFromApi :: (FunctionData -> Q [Dec]) -> (Name -> Int64 -> DecsQ) -> Q [Dec]
@@ -77,4 +77,4 @@ generateFromApi handleFunction handleExtType = do
   funcs <- traverse functionData (functions api)
   funcDecs <- traverse handleFunction funcs
   tpeDecs <- traverse (uncurry handleExtType) $ first mkName <$> customTypes api
-  return $ join (funcDecs ++ tpeDecs)
+  return $ join (funcDecs <> tpeDecs)

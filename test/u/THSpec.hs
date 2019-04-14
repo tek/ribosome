@@ -1,23 +1,21 @@
 {-# OPTIONS_GHC -fno-warn-orphans #-}
 {-# OPTIONS_GHC -F -pgmF htfpp #-}
 {-# LANGUAGE TemplateHaskell #-}
-{-# LANGUAGE NoOverloadedStrings #-}
 {-# LANGUAGE DeriveAnyClass #-}
 
 module THSpec(
   htf_thisModulesTests,
 ) where
 
-import Control.Monad.Trans.Class (lift)
 import Data.Aeson (FromJSON)
-import Data.Foldable (traverse_)
+-- import Data.Foldable (traverse_)
 import GHC.Generics (Generic)
-import Language.Haskell.TH
+-- import Language.Haskell.TH
 import Neovim (Plugin(..))
 import Ribosome.Data.Mapping (MappingError)
 import Test.Framework
 
-import Ribosome.Control.Monad.Ribo (ConcNvimS, RiboE, runRib)
+import Ribosome.Control.Monad.Ribo (ConcNvimS, RiboE)
 import Ribosome.Control.Ribosome (Ribosome, newRibosome)
 import Ribosome.Msgpack.Decode (MsgpackDecode)
 import Ribosome.Msgpack.Encode (MsgpackEncode)
@@ -30,7 +28,7 @@ data Par =
   }
   deriving (Eq, Show, Generic, MsgpackDecode, MsgpackEncode, FromJSON)
 
-handler :: Monad m => Int -> String -> Par -> m ()
+handler :: Monad m => Int -> Text -> Par -> m ()
 handler =
   undefined
 
@@ -44,7 +42,7 @@ $(return [])
 
 plugin' :: IO (Plugin (Ribosome Int))
 plugin' = do
-  ribo <- newRibosome "test" 1
+  ribo <- newRibosome ("test" :: Text) 1
   return $ nvimPlugin "test" ribo [$(rpcHandler (cmd []) 'handler)] [] handleError
 
 test_plug :: IO ()

@@ -14,6 +14,7 @@ await ::
   Show e =>
   MonadError e m =>
   MonadIO m =>
+  MonadFail m =>
   MonadBaseControl IO m =>
   AssertM m =>
   (a -> m b) ->
@@ -27,11 +28,12 @@ await assertion acquire = do
     check' (Right a) = Right <$> assertion a
     check' (Left e) = return (Left e)
     failure (Thrown e) = throw e
-    failure e = fail $ "await failed with " ++ show e
+    failure e = fail $ "await failed with " <> show e
 
 await' ::
   ∀ a b m.
   MonadIO m =>
+  MonadFail m =>
   MonadBaseControl IO m =>
   AssertM (ExceptT () m) =>
   (a -> m b) ->

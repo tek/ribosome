@@ -12,7 +12,7 @@ import Ribosome.Test.Embed (Runner, TestConfig(..), setupPluginEnv, unsafeEmbedd
 import qualified Ribosome.Test.File as F (fixture, tempDir)
 import Ribosome.Test.Orphans ()
 
-uPrefix :: String
+uPrefix :: Text
 uPrefix = "u"
 
 uSpec :: (MonadIO m, NvimE e m) => Runner m

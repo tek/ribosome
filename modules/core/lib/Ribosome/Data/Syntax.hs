@@ -6,33 +6,33 @@ import qualified Data.Map.Strict as Map (fromList)
 
 data SyntaxItemDetail =
   Keyword {
-    kwGroup :: String,
-    kwKeyword :: String,
-    kwOptions :: [String]
+    kwGroup :: Text,
+    kwKeyword :: Text,
+    kwOptions :: [Text]
   }
   |
   Match {
-    matchGroup :: String,
-    matchPattern :: String
+    matchGroup :: Text,
+    matchPattern :: Text
   }
   |
   Region {
-    regionGroup :: String,
-    regionStart :: String,
-    regionEnd :: String,
-    regionSkip :: Maybe String
+    regionGroup :: Text,
+    regionStart :: Text,
+    regionEnd :: Text,
+    regionSkip :: Maybe Text
   }
   |
   Verbatim {
-    verbatimCommand :: String
+    verbatimCommand :: Text
   }
   deriving (Eq, Show)
 
 data SyntaxItem =
   SyntaxItem {
     siDetail :: SyntaxItemDetail,
-    siOptions :: [String],
-    siParams :: Map String String
+    siOptions :: [Text],
+    siParams :: Map Text Text
   }
   deriving (Eq, Show)
 
@@ -40,37 +40,37 @@ syntaxItem :: SyntaxItemDetail -> SyntaxItem
 syntaxItem detail =
   SyntaxItem detail def def
 
-syntaxKeyword :: String -> String -> SyntaxItem
-syntaxKeyword group keyword =
-  syntaxItem $ Keyword group keyword def
+syntaxKeyword :: Text -> Text -> SyntaxItem
+syntaxKeyword group' keyword =
+  syntaxItem $ Keyword group' keyword def
 
-syntaxMatch :: String -> String -> SyntaxItem
-syntaxMatch group pat =
-  syntaxItem $ Match group pat
+syntaxMatch :: Text -> Text -> SyntaxItem
+syntaxMatch group' pat =
+  syntaxItem $ Match group' pat
 
-syntaxRegion :: String -> String -> String -> Maybe String -> SyntaxItem
-syntaxRegion group start end skip =
-  syntaxItem $ Region group start end skip
+syntaxRegion :: Text -> Text -> Text -> Maybe Text -> SyntaxItem
+syntaxRegion group' start end skip =
+  syntaxItem $ Region group' start end skip
 
-syntaxVerbatim :: String -> SyntaxItem
+syntaxVerbatim :: Text -> SyntaxItem
 syntaxVerbatim =
   syntaxItem . Verbatim
 
 data Highlight =
   Highlight {
-    hiGroup :: String,
-    hiValues :: Map String String
+    hiGroup :: Text,
+    hiValues :: Map Text Text
   }
   deriving (Eq, Show)
 
-syntaxHighlight :: String -> [(String, String)] -> Highlight
-syntaxHighlight group =
-  Highlight group . Map.fromList
+syntaxHighlight :: Text -> [(Text, Text)] -> Highlight
+syntaxHighlight group' =
+  Highlight group' . Map.fromList
 
 data HiLink =
   HiLink {
-    hlGroup :: String,
-    hlTarget :: String
+    hlGroup :: Text,
+    hlTarget :: Text
   }
   deriving (Eq, Show)
 

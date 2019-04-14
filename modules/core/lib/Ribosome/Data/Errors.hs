@@ -19,7 +19,7 @@ import Prelude hiding (error)
 import Ribosome.Data.ErrorReport (ErrorReport(ErrorReport))
 
 newtype ComponentName =
-  ComponentName String
+  ComponentName Text
   deriving (Eq, Ord, Show)
 
 data Error =

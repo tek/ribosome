@@ -6,7 +6,7 @@ module Ribosome.File(
 
 import Control.Monad.IO.Class (MonadIO, liftIO)
 import Data.String.Utils (replace)
-import System.Directory (getHomeDirectory, canonicalizePath)
+import System.Directory (canonicalizePath, getHomeDirectory)
 
 canonicalPathWithHome :: FilePath -> FilePath -> FilePath
 canonicalPathWithHome = replace "~"

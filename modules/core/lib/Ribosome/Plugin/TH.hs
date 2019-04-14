@@ -12,6 +12,7 @@ import Data.Either.Combinators (mapLeft)
 import Data.Functor ((<&>))
 import Data.Maybe (fromMaybe, maybeToList)
 import Data.MessagePack (Object)
+import qualified Data.Text as Text (unpack)
 import Data.Text.Prettyprint.Doc (Doc, Pretty(..))
 import Data.Text.Prettyprint.Doc.Render.Terminal (AnsiStyle)
 import Language.Haskell.TH
@@ -34,9 +35,9 @@ import Ribosome.Msgpack.Util (Err)
 data RpcHandlerConfig =
   RpcHandlerConfig {
     rhcSync :: Synchronous,
-    rhcName :: Maybe String,
+    rhcName :: Maybe Text,
     rhcCmd :: Maybe [CommandOption],
-    rhcAutocmd :: Maybe String,
+    rhcAutocmd :: Maybe Text,
     rhcAutocmdOptions :: Maybe AutocmdOptions
   }
   deriving (Eq, Show)
@@ -51,7 +52,7 @@ data RpcDefDetail =
   RpcCommand { rcOptions :: CommandOptions }
   |
   RpcAutocmd {
-    raEvent :: String,
+    raEvent :: Text,
     raSync :: Synchronous,
     raOptions :: AutocmdOptions
     }
@@ -59,7 +60,7 @@ data RpcDefDetail =
 data RpcDef m =
   RpcDef {
     rdDetail :: RpcDefDetail,
-    rdName :: String,
+    rdName :: Text,
     rdHandler :: [Object] -> m Object
   }
 
@@ -104,7 +105,7 @@ functionParamTypes :: Name -> Q [Type]
 functionParamTypes name =
   reify name <&> \case
     (VarI _ functionType _) -> unfoldFunctionParams functionType
-    _ -> error $ "rpc handler `" ++ show name ++ "` is not a function"
+    _ -> fail $ "rpc handler `" <> show name <> "` is not a function"
 
 data CmdParams =
   ZeroParams
@@ -279,10 +280,10 @@ rpcHandler confTrans =
     handler (RpcHandlerConfig sync name cmd autocmd auOptions) funcName = do
       rpcFun <- rpcFunction vimName' sync funcName
       rpcCmd <- traverse (rpcCommand vimName' funcName) cmd
-      rpcAu <- traverse (rpcAutocmd vimName' funcName sync auOptions) autocmd
-      listE $ return <$> rpcFun : maybeToList rpcCmd ++ maybeToList rpcAu
+      rpcAu <- traverse (rpcAutocmd vimName' funcName sync auOptions) (Text.unpack <$> autocmd)
+      listE $ return <$> rpcFun : maybeToList rpcCmd <> maybeToList rpcAu
       where
-        vimName' = vimName funcName name
+        vimName' = vimName funcName (Text.unpack <$> name)
 
 rpcHandlerDef :: Name -> ExpQ
 rpcHandlerDef =

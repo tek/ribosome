@@ -5,6 +5,7 @@ import Control.Monad.IO.Class (MonadIO)
 import Control.Monad.Trans.Control (MonadBaseControl)
 import Data.Default (Default(def))
 import Data.Functor ((<&>))
+import qualified Text.Show
 
 import Ribosome.System.Time (sleep)
 
@@ -20,15 +21,15 @@ instance Default Retry where
 data WaitError =
   NotStarted
   |
-  ConditionUnmet String
+  ConditionUnmet Text
   |
   ∀ e. Exception e => Thrown e
 
-instance Show WaitError where
+instance Text.Show.Show WaitError where
   show NotStarted =
     "NotStarted"
   show (ConditionUnmet reason) =
-    "ConditionUnmet(" ++ reason ++ ")"
+    toString $ "ConditionUnmet(" <> reason <> ")"
   show (Thrown _) =
     "Thrown"
 
@@ -40,7 +41,7 @@ waitIO ::
   MonadBaseControl IO m =>
   Retry ->
   m a ->
-  (a -> m (Either String b)) ->
+  (a -> m (Either Text b)) ->
   m (Either WaitError b)
 waitIO (Retry maxRetry interval) thunk cond =
   wait maxRetry (Left NotStarted)
@@ -71,7 +72,7 @@ waitIODef ::
   MonadIO m =>
   MonadBaseControl IO m =>
   m a ->
-  (a -> m (Either String b)) ->
+  (a -> m (Either Text b)) ->
   m (Either WaitError b)
 waitIODef =
   waitIO def

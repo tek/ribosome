@@ -5,7 +5,6 @@ module MappingSpec (htf_thisModulesTests) where
 
 import Control.Monad.Trans.Except (ExceptT)
 import Data.DeepPrisms (deepPrisms)
-import Data.MessagePack (Object(ObjectNil, ObjectString))
 import Neovim (Neovim, Plugin(..))
 import Test.Framework
 
@@ -14,17 +13,15 @@ import Ribosome.Control.Monad.Ribo (MonadRibo, NvimE, RiboN)
 import Ribosome.Control.Ribosome (Ribosome, newRibosome)
 import Ribosome.Data.Mapping (Mapping(Mapping), MappingError, MappingIdent(MappingIdent))
 import Ribosome.Data.ScratchOptions (ScratchOptions(ScratchOptions))
-import qualified Ribosome.Log as Log
 import Ribosome.Msgpack.Encode (MsgpackEncode(toMsgpack))
-import Ribosome.Nvim.Api.IO (nvimFeedkeys, vimCallFunction, vimCommandOutput, vimGetVar, vimSetVar)
+import Ribosome.Nvim.Api.IO (nvimFeedkeys, vimCallFunction, vimGetVar, vimSetVar)
 import Ribosome.Nvim.Api.RpcCall (RpcError)
 import Ribosome.Plugin (nvimPlugin, rpcHandlerDef)
 import Ribosome.Plugin.Mapping (MappingHandler, mappingHandler)
 import Ribosome.Scratch (showInScratch)
-import Ribosome.System.Time (sleep)
 import Ribosome.Test.Await (await)
 import Ribosome.Test.Embed (integrationSpecDef)
-import Ribosome.Test.Unit (unitSpecDef)
+import Ribosome.Test.Orphans ()
 
 data MappingTestError =
   Rpc RpcError
@@ -33,7 +30,7 @@ data MappingTestError =
 
 deepPrisms ''MappingTestError
 
-target :: [String]
+target :: [Text]
 target = ["line 1", "line 2"]
 
 go :: NvimE e m => m ()

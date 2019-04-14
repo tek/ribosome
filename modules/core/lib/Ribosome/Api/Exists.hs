@@ -69,32 +69,32 @@ existsResult a = Left $ prettyList "weird return type " <+> viaShow a
 
 vimExists ::
   NvimE e m =>
-  String ->
+  Text ->
   m Object
 vimExists entity =
   vimCallFunction "exists" [toObject entity]
 
 vimDoesExist ::
   NvimE e m =>
-  String ->
+  Text ->
   m Bool
 vimDoesExist entity =
   fmap (isRight . existsResult) (vimExists entity)
 
 function ::
   NvimE e m =>
-  String ->
+  Text ->
   m Bool
 function name =
-  vimDoesExist ("*" ++ name)
+  vimDoesExist ("*" <> name)
 
 waitForFunction ::
   NvimE e m =>
   MonadIO m =>
-  String ->
+  Text ->
   Retry ->
   m (Either (Doc AnsiStyle) ())
 waitForFunction name =
   waitFor thunk (return . existsResult)
   where
-    thunk = vimExists ("*" ++ name)
+    thunk = vimExists ("*" <> name)

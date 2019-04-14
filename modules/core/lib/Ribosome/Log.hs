@@ -6,7 +6,7 @@ import qualified Data.ByteString.UTF8 as ByteString (toString)
 import Data.Foldable (traverse_)
 import Data.Text (Text)
 import qualified Data.Text as Text (unpack)
-import Neovim.Log (debugM, errorM, infoM)
+import System.Log.Logger (Priority(DEBUG, ERROR, INFO), logM)
 
 import Ribosome.Control.Monad.Ribo (MonadRibo, pluginName)
 
@@ -29,55 +29,55 @@ instance Loggable Text where
 logAs ::
   Loggable a =>
   MonadIO m =>
-  (String -> String -> IO ()) ->
-  String ->
+  Priority ->
+  Text ->
   a ->
   m ()
-logAs logger name = liftIO . traverse_ (logger name) . logLines
+logAs prio name = liftIO . traverse_ (logM (toString name) prio) . logLines
 
 debugAs ::
   Loggable a =>
   MonadIO m =>
-  String ->
+  Text ->
   a ->
   m ()
 debugAs =
-  logAs debugM
+  logAs DEBUG
 
 infoAs ::
   Loggable a =>
   MonadIO m =>
-  String ->
+  Text ->
   a ->
   m ()
 infoAs =
-  logAs infoM
+  logAs INFO
 
 errAs ::
   Loggable a =>
   MonadIO m =>
-  String ->
+  Text ->
   a ->
   m ()
 errAs =
-  logAs errorM
+  logAs ERROR
 
 p :: (MonadIO m, Show a) => a -> m ()
 p = liftIO . print
 
-prefixed :: (MonadIO m, Show a) => String -> a -> m ()
-prefixed prefix a = liftIO $ putStrLn $ prefix ++ ": " ++ show a
+prefixed :: (MonadIO m, Show a) => Text -> a -> m ()
+prefixed prefix a = liftIO $ putStrLn $ prefix <> ": " <> show a
 
 logR ::
   Loggable a =>
   MonadRibo m =>
   MonadIO m =>
-  (String -> String -> IO ()) ->
+  Priority ->
   a ->
   m ()
-logR logger message = do
+logR prio message = do
   n <- pluginName
-  logAs logger n message
+  logAs prio n message
 
 debug ::
   Loggable a =>
@@ -86,7 +86,7 @@ debug ::
   a ->
   m ()
 debug =
-  logR debugM
+  logR DEBUG
 
 info ::
   Loggable a =>
@@ -95,7 +95,7 @@ info ::
   a ->
   m ()
 info =
-  logR infoM
+  logR INFO
 
 err ::
   Loggable a =>
@@ -104,4 +104,31 @@ err ::
   a ->
   m ()
 err =
-  logR errorM
+  logR ERROR
+
+debugShow ::
+  Show a =>
+  MonadRibo m =>
+  MonadIO m =>
+  a ->
+  m ()
+debugShow =
+  debug @Text . show
+
+infoShow ::
+  Show a =>
+  MonadRibo m =>
+  MonadIO m =>
+  a ->
+  m ()
+infoShow =
+  info @Text . show
+
+errShow ::
+  Show a =>
+  MonadRibo m =>
+  MonadIO m =>
+  a ->
+  m ()
+errShow =
+  err @Text . show

@@ -9,7 +9,7 @@ data PersistError =
   |
   NoSuchFile FilePath
   |
-  Decode FilePath String
+  Decode FilePath Text
   deriving (Eq, Show)
 
 makeClassyPrisms ''PersistError

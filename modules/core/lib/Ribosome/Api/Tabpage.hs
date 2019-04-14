@@ -14,4 +14,4 @@ closeTabpage tabpage = do
   valid <- tabpageIsValid tabpage
   when valid $ do
     number <- nvimTabpageGetNumber tabpage
-    vimCommand ("silent! tabclose! " ++ show number)
+    vimCommand ("silent! tabclose! " <> show number)
