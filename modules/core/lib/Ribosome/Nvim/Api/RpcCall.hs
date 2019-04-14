@@ -6,7 +6,7 @@ import Data.DeepPrisms (deepPrisms)
 import Data.Either.Combinators (mapLeft)
 import Data.MessagePack (Object)
 import Data.Text.Prettyprint.Doc (defaultLayoutOptions, layoutPretty)
-import Data.Text.Prettyprint.Doc.Render.String (renderString)
+import Data.Text.Prettyprint.Doc.Render.Text (renderStrict)
 import Neovim (Neovim)
 import Neovim.Exceptions (NeovimException)
 import Neovim.Plugin.Classes (FunctionName)
@@ -19,21 +19,26 @@ import Ribosome.Msgpack.Decode (MsgpackDecode(..))
 import Ribosome.Msgpack.Util (Err)
 
 data RpcCall =
-  RpcCall FunctionName [Object]
+  RpcCall {
+    rpcCallName :: FunctionName,
+    rpcCallArgs :: [Object]
+  }
   deriving (Eq, Show)
 
 newtype AsyncRpcCall =
-  AsyncRpcCall RpcCall
+  AsyncRpcCall { asyncRpcCall :: RpcCall }
   deriving (Eq, Show)
 
 newtype SyncRpcCall =
-  SyncRpcCall RpcCall
+  SyncRpcCall { syncRpcCall :: RpcCall }
   deriving (Eq, Show)
 
 data RpcError =
   Decode Err
   |
   Nvim NeovimException
+  |
+  Atomic Text
   deriving Show
 
 deepPrisms ''RpcError
@@ -53,6 +58,8 @@ instance ReportError RpcError where
   errorReport (Decode err) =
     ErrorReport "error decoding neovim response" ["RpcError.Decode:", rendered] ERROR
     where
-      rendered = renderString $ layoutPretty defaultLayoutOptions err
+      rendered = renderStrict $ layoutPretty defaultLayoutOptions err
   errorReport (Nvim exc)  =
     ErrorReport "error in request to neovim" ["RpcError.Nvim:", show exc] ERROR
+  errorReport (Atomic msg)  =
+    ErrorReport "error in request to neovim" ["RpcError.Atomic:", msg] ERROR
