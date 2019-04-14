@@ -14,6 +14,7 @@ import Ribosome.Control.Monad.Ribo (MonadRibo, NvimE, pluginInternalL, pluginMod
 import Ribosome.Control.Ribosome (RibosomeInternal)
 import qualified Ribosome.Control.Ribosome as Ribosome (scratch)
 import Ribosome.Data.Scratch (Scratch(Scratch))
+import qualified Ribosome.Data.Scratch as Scratch (Scratch(scratchPrevious, scratchWindow))
 import Ribosome.Data.ScratchOptions (ScratchOptions(ScratchOptions))
 import qualified Ribosome.Data.ScratchOptions as ScratchOptions (ScratchOptions(name))
 import Ribosome.Mapping (activateBufferMapping)
@@ -190,6 +191,11 @@ scratchPreviousWindow ::
   Text ->
   m (Maybe Window)
 scratchPreviousWindow =
-  fmap win <$$> lookupScratch
-  where
-    win (Scratch _ _ _ previous _) = previous
+  fmap Scratch.scratchPrevious <$$> lookupScratch
+
+scratchWindow ::
+  MonadRibo m =>
+  Text ->
+  m (Maybe Window)
+scratchWindow =
+  fmap Scratch.scratchWindow <$$> lookupScratch
