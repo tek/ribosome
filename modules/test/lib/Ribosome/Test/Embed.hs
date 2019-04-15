@@ -32,6 +32,7 @@ import Neovim.RPC.EventHandler (runEventHandler)
 import Neovim.RPC.SocketReader (runSocketReader)
 import System.Directory (makeAbsolute)
 import System.Exit (ExitCode)
+import System.Log.Logger (Priority(ERROR), setLevel, updateGlobalLogger)
 import qualified System.Posix.Signals as Signal (killProcess, signalProcess)
 import System.Process (getPid)
 import System.Process.Typed (
@@ -238,6 +239,7 @@ runPlugin ::
   Internal.Config c ->
   IO (MVar Internal.StateTransition)
 runPlugin evHandlerHandle sockreaderHandle plugins baseConf = do
+  updateGlobalLogger "Neovim.Plugin" (setLevel ERROR)
   rpcConf <- newRPCConfig
   let conf = Internal.retypeConfig rpcConf baseConf
   ehTid <- async $ runEventHandler evHandlerHandle conf { Internal.pluginSettings = Nothing }

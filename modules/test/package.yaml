@@ -21,7 +21,9 @@ dependencies:
 - exceptions
 - filepath
 - free
+- hslogger
 - messagepack
+- monad-control
 - mtl
 - nvim-hs
 - process
@@ -34,7 +36,6 @@ dependencies:
 - unix
 - unliftio
 - unliftio-core
-- monad-control
 
 default-extensions:
 - AutoDeriveTypeable
