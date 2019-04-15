@@ -51,12 +51,15 @@ watcherRpc ::
   MonadRibo m =>
   NvimE e m =>
   Text ->
-  Map Text (m ()) ->
-  RpcDef m
+  Map Text (Object -> m ()) ->
+  [RpcDef m]
 watcherRpc pluginName variables =
-  RpcDef detail (capitalize pluginName <> "VariableChanged") (handleWatcherRequest (watchedVariables variables))
+  rpcDef <$> ["CmdlineLeave", "BufWinEnter"]
   where
-    detail = RpcAutocmd "CmdlineLeave" Async def
+    rpcDef event =
+      RpcDef (detail event) (name event) (handleWatcherRequest (watchedVariables variables))
+    name event = capitalize pluginName <> "VariableChanged" <> event
+    detail event = RpcAutocmd event Async def
 
 compileRpcDef ::
   RpcHandler e env m =>
@@ -94,13 +97,13 @@ riboPlugin ::
   [[RpcDef m]] ->
   [MappingHandler m] ->
   (e -> m ()) ->
-  Map Text (m ()) ->
+  Map Text (Object -> m ()) ->
   Plugin env
 riboPlugin pluginName env rpcDefs mappings errorHandler variables =
   Plugin env ((compileRpcDef errorHandler <$> extra) ++ efs)
   where
     Plugin _ efs = nvimPlugin pluginName env rpcDefs errorHandler
-    extra = [mappingHandlerRpc pluginName mappings, watcherRpc pluginName variables]
+    extra = [mappingHandlerRpc pluginName mappings] ++ watcherRpc pluginName variables
 
 executeRpcHandler ::
   ∀ e env m.

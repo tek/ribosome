@@ -6,6 +6,7 @@ module WatcherSpec(
 
 import Control.Monad.Trans.Except (ExceptT)
 import qualified Data.Map as Map (singleton)
+import Data.MessagePack (Object)
 import Neovim (Neovim, Plugin(..))
 import Test.Framework
 
@@ -22,8 +23,8 @@ import Ribosome.Test.Embed (integrationSpecDef)
 import Ribosome.Test.Orphans ()
 import TestError (RiboT, handleTestError)
 
-changed :: NvimE e m => m ()
-changed =
+changed :: NvimE e m => Object -> m ()
+changed _ =
   setVar "number" =<< (+(1 :: Int)) <$> vimGetVar "number"
 
 varWatcherPlugin :: IO (Plugin (Ribosome ()))

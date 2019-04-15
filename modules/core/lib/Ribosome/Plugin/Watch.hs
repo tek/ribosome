@@ -16,10 +16,10 @@ import Ribosome.Nvim.Api.RpcCall (RpcError)
 data WatchedVariable m =
   WatchedVariable {
     wvName :: Text,
-    wvHandler :: m ()
+    wvHandler :: Object -> m ()
   }
 
-watchedVariables :: Map Text (m ()) -> [WatchedVariable m]
+watchedVariables :: Map Text (Object -> m ()) -> [WatchedVariable m]
 watchedVariables =
   fmap create . Map.toList
   where
@@ -36,7 +36,7 @@ runHandler ::
   m ()
 runHandler (WatchedVariable name handler) new = do
   pluginModifyInternalL (storedVarLens name) (const (Just new))
-  handler
+  handler new
 
 compareVar ::
   MonadRibo m =>
