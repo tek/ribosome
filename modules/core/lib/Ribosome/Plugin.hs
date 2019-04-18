@@ -103,7 +103,7 @@ riboPlugin pluginName env rpcDefs mappings errorHandler variables =
   Plugin env ((compileRpcDef errorHandler <$> extra) ++ efs)
   where
     Plugin _ efs = nvimPlugin pluginName env rpcDefs errorHandler
-    extra = [mappingHandlerRpc pluginName mappings] ++ watcherRpc pluginName variables
+    extra = mappingHandlerRpc pluginName mappings : watcherRpc pluginName variables
 
 executeRpcHandler ::
   ∀ e env m.
