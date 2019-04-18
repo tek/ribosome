@@ -74,6 +74,9 @@ instance MsgpackEncode Int where
 instance MsgpackEncode Int64 where
   toMsgpack = ObjectInt . fromIntegral
 
+instance MsgpackEncode Float where
+  toMsgpack = ObjectFloat
+
 instance {-# OVERLAPPING #-} MsgpackEncode String where
   toMsgpack = Util.string
 
