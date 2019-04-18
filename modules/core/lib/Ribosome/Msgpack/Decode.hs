@@ -122,6 +122,7 @@ instance MsgpackDecode Int64 where
 
 instance MsgpackDecode Float where
   fromMsgpack (ObjectFloat a) = Right a
+  fromMsgpack (ObjectInt a) = Right (fromIntegral a)
   fromMsgpack o = Util.illegalType "Float" o
 
 instance {-# OVERLAPPING #-} MsgpackDecode String where
@@ -164,6 +165,11 @@ instance (MsgpackDecode a, MsgpackDecode b) => MsgpackDecode (a, b) where
   fromMsgpack o =
     Util.illegalType "pair" o
 
-fromMsgpack' :: (MonadDeepError e DecodeError m, MsgpackDecode a) => Object -> m a
+fromMsgpack' ::
+  ∀ a e m.
+  MonadDeepError e DecodeError m =>
+  MsgpackDecode a =>
+  Object ->
+  m a
 fromMsgpack' =
   hoistEitherWith DecodeError.Failed . fromMsgpack
