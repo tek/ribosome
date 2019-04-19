@@ -11,6 +11,7 @@ import Data.Map (Map, (!?))
 import qualified Data.Map as Map (fromList, toList)
 import Data.MessagePack (Object(..))
 import Data.Text.Prettyprint.Doc (pretty)
+import GHC.Float (double2Float)
 import GHC.Generics (
   C1,
   Constructor,
@@ -122,6 +123,7 @@ instance MsgpackDecode Int64 where
 
 instance MsgpackDecode Float where
   fromMsgpack (ObjectFloat a) = Right a
+  fromMsgpack (ObjectDouble a) = Right (double2Float a)
   fromMsgpack (ObjectInt a) = Right (fromIntegral a)
   fromMsgpack o = Util.illegalType "Float" o
 
