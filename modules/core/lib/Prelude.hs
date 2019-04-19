@@ -11,7 +11,7 @@ module Prelude (
 ) where
 
 import Control.Monad.DeepError (MonadDeepError(throwHoist), hoistEither)
-import Control.Monad.DeepState (MonadDeepState, get, gets, getsL, modify, put, setL)
+import Control.Monad.DeepState (MonadDeepState, get, getL, gets, getsL, modify, put, setL)
 import Data.Either.Combinators (mapLeft)
 import Data.Foldable (foldl, traverse_)
 import Data.Functor (void)
