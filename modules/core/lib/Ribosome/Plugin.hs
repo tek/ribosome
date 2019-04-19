@@ -8,13 +8,13 @@ module Ribosome.Plugin (
 
 import Control.Monad (join, (<=<))
 import Control.Monad.DeepError (MonadDeepError)
-import Control.Monad.Trans.Except (ExceptT, runExceptT)
+import Control.Monad.Trans.Except (runExceptT)
 import Data.Default (def)
 import qualified Data.Map as Map ()
 import Data.MessagePack (Object(ObjectNil))
 import Neovim.Context (Neovim)
 import Neovim.Plugin.Classes (
-  AutocmdOptions(acmdGroup),
+  AutocmdOptions(acmdPattern),
   CommandOption,
   FunctionName(..),
   FunctionalityDescription(..),
@@ -24,7 +24,6 @@ import Neovim.Plugin.Internal (ExportedFunctionality(..), Plugin(..))
 
 import Ribosome.Control.Monad.Ribo (MonadRibo, NvimE)
 import Ribosome.Data.Mapping (MappingError)
-import Ribosome.Data.Setting (Setting)
 import Ribosome.Data.Text (capitalize)
 import Ribosome.Plugin.Mapping (MappingHandler, handleMappingRequest)
 import Ribosome.Plugin.RpcHandler (RpcHandler(..))
@@ -54,11 +53,15 @@ watcherRpc ::
   Map Text (Object -> m ()) ->
   [RpcDef m]
 watcherRpc pluginName variables =
-  rpcDef <$> ["CmdlineLeave", "BufWinEnter"]
+  chromatinInit : (rpcDef <$> ["CmdlineLeave", "BufWinEnter", "VimEnter"])
   where
+    chromatinInit = rpcDefFromDetail ((detail "User") { raOptions = def { acmdPattern = toString ciName } }) ciName
+    ciName = "ChromatinInitialized"
     rpcDef event =
-      RpcDef (detail event) (name event) (handleWatcherRequest (watchedVariables variables))
-    name event = capitalize pluginName <> "VariableChanged" <> event
+      rpcDefFromDetail (detail event) event
+    rpcDefFromDetail dt event =
+      RpcDef dt (name' event) (handleWatcherRequest (watchedVariables variables))
+    name' event = capitalize pluginName <> "VariableChanged" <> event
     detail event = RpcAutocmd event Async def
 
 compileRpcDef ::
@@ -69,22 +72,21 @@ compileRpcDef ::
 compileRpcDef errorHandler (RpcDef detail name' rpcHandler') =
   EF (wrapDetail detail (F (encodeUtf8 name')), executeRpcHandler errorHandler rpcHandler')
   where
-    wrapDetail (RpcFunction sync') name' =
-      Function name' sync'
-    wrapDetail (RpcCommand options) name' =
-      Command name' options
-    wrapDetail (RpcAutocmd event sync' options) name' =
-      Autocmd (encodeUtf8 event) name' sync' options
+    wrapDetail (RpcFunction sync') n =
+      Function n sync'
+    wrapDetail (RpcCommand options) n =
+      Command n options
+    wrapDetail (RpcAutocmd event sync' options) n =
+      Autocmd (encodeUtf8 event) n sync' options
 
 nvimPlugin ::
   MonadDeepError e MappingError m =>
   RpcHandler e env m =>
-  Text ->
   env ->
   [[RpcDef m]] ->
   (e -> m ()) ->
   Plugin env
-nvimPlugin pluginName env rpcDefs errorHandler =
+nvimPlugin env rpcDefs errorHandler =
   Plugin env (compileRpcDef errorHandler <$> join rpcDefs)
 
 riboPlugin ::
@@ -102,9 +104,8 @@ riboPlugin ::
 riboPlugin pluginName env rpcDefs mappings errorHandler variables =
   Plugin env ((compileRpcDef errorHandler <$> extra) ++ efs)
   where
-    Plugin _ efs = nvimPlugin pluginName env rpcDefs errorHandler
+    Plugin _ efs = nvimPlugin env rpcDefs errorHandler
     extra = mappingHandlerRpc pluginName mappings : watcherRpc pluginName variables
-
 executeRpcHandler ::
   ∀ e env m.
   RpcHandler e env m =>
