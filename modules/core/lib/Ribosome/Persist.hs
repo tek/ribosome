@@ -10,8 +10,9 @@ import Control.Monad (unless)
 import Control.Monad.DeepError (MonadDeepError(throwHoist))
 import Control.Monad.IO.Class (MonadIO, liftIO)
 import Control.Monad.IO.Unlift (MonadUnliftIO)
-import Data.Aeson (FromJSON, ToJSON, eitherDecode, encode)
-import qualified Data.ByteString.Lazy as B (readFile, writeFile)
+import Data.Aeson (FromJSON, ToJSON, eitherDecodeFileStrict', encodeFile)
+import Data.ByteString (ByteString)
+import qualified Data.ByteString as B (readFile, writeFile)
 import qualified Data.ByteString.Lazy as LazyByteString (ByteString)
 import System.Directory (XdgDirectory(XdgCache), createDirectoryIfMissing, getXdgDirectory)
 import System.FilePath (takeDirectory, (</>))
@@ -57,7 +58,7 @@ persistStore ::
   m ()
 persistStore path a = do
   file <- persistenceFile path
-  liftIO $ B.writeFile file (encode a)
+  liftIO $ encodeFile file a
 
 noSuchFile :: MonadDeepError e PersistError m => FilePath -> m a
 noSuchFile = throwHoist . PersistError.NoSuchFile
@@ -67,15 +68,6 @@ ensureExistence file = do
   exists <- doesFileExist file
   unless exists (noSuchFile file)
 
-safeReadFile ::
-  (MonadUnliftIO m, MonadDeepError e RpcError m, MonadDeepError e SettingError m, MonadDeepError e PersistError m) =>
-  FilePath ->
-  m LazyByteString.ByteString
-safeReadFile file =
-  either err return =<< (tryIO . liftIO . B.readFile $ file)
-  where
-    err _ = throwHoist $ PersistError.FileNotReadable file
-
 decodeError ::
   (MonadDeepError e RpcError m, MonadDeepError e SettingError m, MonadDeepError e PersistError m) =>
   FilePath ->
@@ -83,13 +75,31 @@ decodeError ::
   m a
 decodeError = curry $ throwHoist . uncurry PersistError.Decode
 
+safeDecodeFile ::
+  MonadUnliftIO m =>
+  MonadDeepError e RpcError m =>
+  MonadDeepError e SettingError m =>
+  MonadDeepError e PersistError m =>
+  FromJSON a =>
+  FilePath ->
+  m a
+safeDecodeFile file = do
+  result <- either ioError return =<< (tryIO . liftIO . eitherDecodeFileStrict' $ file)
+  either (decodeError file) return . mapLeft toText $ result
+  where
+    ioError _ = throwHoist $ PersistError.FileNotReadable file
+
 persistLoad ::
-  (MonadRibo m, Nvim m, MonadUnliftIO m, MonadDeepError e RpcError m, MonadDeepError e SettingError m, MonadDeepError e PersistError m) =>
+  MonadRibo m =>
+  Nvim m =>
+  MonadUnliftIO m =>
+  MonadDeepError e RpcError m =>
+  MonadDeepError e SettingError m =>
+  MonadDeepError e PersistError m =>
   FromJSON a =>
   FilePath ->
   m a
 persistLoad path = do
   file <- persistenceFile path
   ensureExistence file
-  json <- safeReadFile file
-  either (decodeError path) return . mapLeft toText . eitherDecode $ json
+  safeDecodeFile file
