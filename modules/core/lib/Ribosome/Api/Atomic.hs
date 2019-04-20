@@ -1,7 +1,6 @@
 module Ribosome.Api.Atomic where
 
 import Data.MessagePack (Object(ObjectNil, ObjectArray, ObjectString))
-import GHC.Generics (Generic)
 import Neovim.Plugin.Classes (FunctionName(F))
 import qualified Ribosome.Nvim.Api.RpcCall as RpcError (RpcError(Atomic))
 

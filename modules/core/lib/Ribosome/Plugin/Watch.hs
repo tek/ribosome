@@ -44,7 +44,7 @@ compareVar ::
   Maybe Object ->
   Object ->
   m ()
-compareVar (WatchedVariable _ handler) (Just old) new | old == new =
+compareVar _ (Just old) new | old == new =
   return ()
 compareVar wv _ new =
   runHandler wv new

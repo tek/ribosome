@@ -11,9 +11,6 @@ import Control.Monad.DeepError (MonadDeepError(throwHoist))
 import Control.Monad.IO.Class (MonadIO, liftIO)
 import Control.Monad.IO.Unlift (MonadUnliftIO)
 import Data.Aeson (FromJSON, ToJSON, eitherDecodeFileStrict', encodeFile)
-import Data.ByteString (ByteString)
-import qualified Data.ByteString as B (readFile, writeFile)
-import qualified Data.ByteString.Lazy as LazyByteString (ByteString)
 import System.Directory (XdgDirectory(XdgCache), createDirectoryIfMissing, getXdgDirectory)
 import System.FilePath (takeDirectory, (</>))
 import UnliftIO.Directory (doesFileExist)
@@ -39,7 +36,7 @@ persistencePath ::
 persistencePath path = do
   base <- defaultPersistencePath `recoveryFor` setting S.persistenceDir
   name <- pluginName
-  return $ base </> (toString name) </> path
+  return $ base </> toString name </> path
 
 persistenceFile ::
   (MonadRibo m, Nvim m, MonadIO m, MonadDeepError e RpcError m, MonadDeepError e SettingError m) =>
