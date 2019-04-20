@@ -81,3 +81,5 @@ default-extensions:
 
 library:
   source-dirs: lib
+  other-modules:
+    - Prelude
