@@ -3,17 +3,17 @@ module Ribosome.Api.Exists where
 import Control.Monad.IO.Class (MonadIO)
 import Data.Default (Default(def))
 import Data.Either (isRight)
-import Data.Text.Prettyprint.Doc (prettyList, viaShow, (<+>))
+import Data.Text.Prettyprint.Doc (viaShow, (<+>))
 import Neovim (
   AnsiStyle,
   Doc,
   NvimObject,
   Object(ObjectInt),
-  fromObject,
-  toObject,
   )
 
 import Ribosome.Control.Monad.Ribo (NvimE)
+import Ribosome.Msgpack.Decode (MsgpackDecode, fromMsgpack)
+import Ribosome.Msgpack.Encode (toMsgpack)
 import Ribosome.Nvim.Api.IO (vimCallFunction)
 import Ribosome.System.Time (epochSeconds, sleep)
 
@@ -59,20 +59,21 @@ waitFor thunk check' =
   retry thunk check
   where
     check result =
-      case fromObject result of
+      case fromMsgpack result of
         Right a -> check' a
         Left e -> return $ Left e
 
 existsResult :: Object -> Either (Doc AnsiStyle) ()
 existsResult (ObjectInt 1) = Right ()
-existsResult a = Left $ prettyList "weird return type " <+> viaShow a
+existsResult a =
+  Left $ "weird return type " <+> viaShow a
 
 vimExists ::
   NvimE e m =>
   Text ->
   m Object
 vimExists entity =
-  vimCallFunction "exists" [toObject entity]
+  vimCallFunction "exists" [toMsgpack entity]
 
 vimDoesExist ::
   NvimE e m =>
@@ -98,3 +99,25 @@ waitForFunction name =
   waitFor thunk (return . existsResult)
   where
     thunk = vimExists ("*" <> name)
+
+waitForFunctionResult ::
+  NvimE e m =>
+  MonadIO m =>
+  Eq a =>
+  Show a =>
+  MsgpackDecode a =>
+  Text ->
+  a ->
+  Retry ->
+  m (Either (Doc AnsiStyle) ())
+waitForFunctionResult name a retry = do
+  waitForFunction name retry
+  waitFor thunk (return . check . fromMsgpack) retry
+  where
+    thunk = vimCallFunction name []
+    check (Right a') | a == a' =
+      Right ()
+    check (Right a') =
+      Left $ "results differ:" <+> show a <+> "/" <+> show a'
+    check (Left e) =
+      Left $ "weird return type: " <+> e
