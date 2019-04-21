@@ -8,6 +8,7 @@ module THSpec(
 ) where
 
 import Data.Aeson (FromJSON)
+import Data.Default (def)
 -- import Data.Foldable (traverse_)
 import GHC.Generics (Generic)
 -- import Language.Haskell.TH
@@ -40,7 +41,7 @@ $(return [])
 plugin' :: IO (Plugin (Ribosome Int))
 plugin' = do
   ribo <- newRibosome ("test" :: Text) 1
-  return $ nvimPlugin "test" ribo [$(rpcHandler (cmd []) 'handler)] handleTestError
+  return $ riboPlugin "test" ribo [$(rpcHandler (cmd []) 'handler)] [] handleTestError def
 
 test_plug :: IO ()
 test_plug = do

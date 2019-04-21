@@ -4,15 +4,14 @@
 module MappingSpec (htf_thisModulesTests) where
 
 import Control.Monad.Trans.Except (ExceptT)
-import Data.DeepPrisms (deepPrisms)
 import qualified Data.Map as Map (empty)
 import Neovim (Neovim, Plugin(..))
 import Test.Framework
 
 import Ribosome.Api.Buffer (currentBufferContent)
-import Ribosome.Control.Monad.Ribo (MonadRibo, NvimE, RiboN)
+import Ribosome.Control.Monad.Ribo (MonadRibo, NvimE)
 import Ribosome.Control.Ribosome (Ribosome, newRibosome)
-import Ribosome.Data.Mapping (Mapping(Mapping), MappingError, MappingIdent(MappingIdent))
+import Ribosome.Data.Mapping (Mapping(Mapping), MappingIdent(MappingIdent))
 import Ribosome.Data.ScratchOptions (ScratchOptions(ScratchOptions))
 import Ribosome.Msgpack.Encode (MsgpackEncode(toMsgpack))
 import Ribosome.Msgpack.Error (DecodeError)

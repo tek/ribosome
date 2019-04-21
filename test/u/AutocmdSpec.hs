@@ -6,6 +6,7 @@ module AutocmdSpec(
 ) where
 
 import Control.Monad.Trans.Except (ExceptT)
+import Data.Default (def)
 import Neovim (Neovim, Plugin(..))
 import Test.Framework
 
@@ -15,7 +16,7 @@ import Ribosome.Msgpack.Encode (MsgpackEncode(toMsgpack))
 import Ribosome.Nvim.Api.IO (vimCommand, vimGetVar, vimSetVar)
 import Ribosome.Nvim.Api.RpcCall (RpcError)
 import Ribosome.Orphans ()
-import Ribosome.Plugin (autocmd, nvimPlugin, rpcHandler)
+import Ribosome.Plugin (autocmd, riboPlugin, rpcHandler)
 import Ribosome.Test.Await (await)
 import Ribosome.Test.Embed (integrationSpecDef)
 import Ribosome.Test.Orphans ()
@@ -41,7 +42,7 @@ $(return [])
 autocmdPlugin :: IO (Plugin (Ribosome ()))
 autocmdPlugin = do
   env <- newRibosome "test" ()
-  return $ nvimPlugin "test" env funcs handleTestError
+  return $ riboPlugin "test" env funcs [] handleTestError def
   where
     funcs = [$(rpcHandler (autocmd "BufWritePre") 'testAuto)]
 
