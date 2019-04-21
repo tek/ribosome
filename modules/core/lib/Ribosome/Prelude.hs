@@ -3,6 +3,8 @@
 module Ribosome.Prelude (
   module Control.Monad.DeepError,
   module Control.Monad.DeepState,
+  module Data.DeepLenses,
+  module Data.DeepPrisms,
   module Data.Foldable,
   module Relude,
   dbg,
@@ -12,8 +14,10 @@ module Ribosome.Prelude (
   (<$$>),
 ) where
 
-import Control.Monad.DeepError (MonadDeepError(throwHoist), hoistEither)
+import Control.Monad.DeepError (MonadDeepError(throwHoist), catchAt, hoistEither)
 import Control.Monad.DeepState (MonadDeepState, get, getL, gets, getsL, modify, modifyL, put, setL)
+import Data.DeepLenses (deepLenses)
+import Data.DeepPrisms (deepPrisms)
 import Data.Either.Combinators (mapLeft)
 import Data.Foldable (foldl, traverse_)
 import Data.Functor (void)
