@@ -6,7 +6,9 @@ module SyntaxSpec(
 ) where
 
 import Chiasma.Data.TmuxError (TmuxError)
+import Chiasma.Test.Tmux (TmuxTestConf(..))
 import Data.DeepPrisms (deepPrisms)
+import Data.Default (def)
 import Test.Framework
 
 import Ribosome.Api.Buffer (setCurrentBufferContent)
@@ -21,7 +23,7 @@ import Ribosome.Error.Report.Class (ReportError(..))
 import Ribosome.System.Time (sleep)
 import Ribosome.Test.Embed (defaultTestConfig)
 import Ribosome.Test.Screenshot (assertScreenshot)
-import Ribosome.Test.Tmux (tmuxGuiSpec)
+import Ribosome.Test.Tmux (tmuxSpec)
 import TestError (TestError)
 
 data SyntaxSpecError =
@@ -49,4 +51,4 @@ syntaxSpec = do
 
 test_syntax :: IO ()
 test_syntax =
-  tmuxGuiSpec (defaultTestConfig "syntax") syntaxSpec
+  tmuxSpec def { ttcWidth = 300, ttcHeight = 51, ttcGui = False } (defaultTestConfig "syntax") syntaxSpec

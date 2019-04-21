@@ -5,7 +5,8 @@ import Chiasma.Data.TmuxError (TmuxError)
 import Chiasma.Data.TmuxId (PaneId(PaneId))
 import Chiasma.Monad.Stream (runTmux)
 import Chiasma.Native.Api (TmuxNative(TmuxNative))
-import qualified Chiasma.Test.Tmux as Chiasma (tmuxGuiSpec)
+import Chiasma.Test.Tmux (TmuxTestConf)
+import qualified Chiasma.Test.Tmux as Chiasma (tmuxGuiSpec, tmuxSpec')
 import Control.Monad.Trans.Except (runExceptT)
 import Data.DeepPrisms (DeepPrisms)
 import Data.Default (Default(def))
@@ -116,6 +117,19 @@ withTmux thunk (TmuxNative (Just socket)) =
   updateSetting tmuxSocket socket *> thunk
 withTmux _ _ =
   throwString "no socket in test tmux"
+
+tmuxSpec ::
+  DeepPrisms e RpcError =>
+  ReportError e =>
+  Default s =>
+  TmuxTestConf ->
+  TestConfig ->
+  RiboN s e () ->
+  IO ()
+tmuxSpec tmuxConf conf specThunk =
+  Chiasma.tmuxSpec' tmuxConf run
+  where
+    run api = guiSpec conf api def (withTmux specThunk api)
 
 tmuxGuiSpec ::
   DeepPrisms e RpcError =>
