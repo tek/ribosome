@@ -71,7 +71,15 @@ reportErrorWith ::
 reportErrorWith name cons err =
   processErrorReport name (cons err)
 
-reportError :: (MonadDeepError e RpcError m, MonadRibo m, Nvim m, MonadIO m, ReportError a) => Text -> a -> m ()
+reportError ::
+  MonadDeepError e RpcError m =>
+  MonadRibo m =>
+  Nvim m =>
+  MonadIO m =>
+  ReportError a =>
+  Text ->
+  a ->
+  m ()
 reportError name =
   reportErrorWith name errorReport
 

@@ -62,6 +62,7 @@ import Ribosome.Nvim.Api.IO (vimSetVar)
 import Ribosome.Nvim.Api.RpcCall (RpcError)
 import Ribosome.Plugin.RpcHandler (RpcHandler(native))
 import Ribosome.System.Time (sleep, sleepW)
+import Ribosome.Test.Orphans ()
 
 type Runner m = TestConfig -> m () -> m ()
 

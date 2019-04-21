@@ -10,18 +10,20 @@ import Ribosome.Api.Buffer (setBufferContent, wipeBuffer)
 import Ribosome.Api.Syntax (executeWindowSyntax)
 import Ribosome.Api.Tabpage (closeTabpage)
 import Ribosome.Api.Window (closeWindow)
-import Ribosome.Control.Monad.Ribo (MonadRibo, NvimE, pluginInternalL, pluginModifyInternal)
+import Ribosome.Control.Monad.Ribo (MonadRibo, NvimE, pluginInternalL, pluginModifyInternal, pluginName)
 import Ribosome.Control.Ribosome (RibosomeInternal)
 import qualified Ribosome.Control.Ribosome as Ribosome (scratch)
 import Ribosome.Data.Scratch (Scratch(Scratch))
 import qualified Ribosome.Data.Scratch as Scratch (Scratch(scratchPrevious, scratchWindow))
 import Ribosome.Data.ScratchOptions (ScratchOptions(ScratchOptions))
 import qualified Ribosome.Data.ScratchOptions as ScratchOptions (ScratchOptions(name))
+import Ribosome.Data.Text (capitalize)
 import Ribosome.Mapping (activateBufferMapping)
 import Ribosome.Msgpack.Encode (toMsgpack)
 import Ribosome.Msgpack.Error (DecodeError)
 import Ribosome.Nvim.Api.Data (Buffer, Tabpage, Window)
 import Ribosome.Nvim.Api.IO (
+  bufferGetNumber,
   bufferSetName,
   bufferSetOption,
   vimCommand,
@@ -97,7 +99,18 @@ setupScratchIn previous window tab (ScratchOptions useTab _ _ focus _ syntax map
   unless (focus || useTab) $ vimSetCurrentWindow previous
   let scratch = Scratch name buffer window previous tab
   pluginModifyInternal $ Lens.set (scratchLens name) (Just scratch)
+  setupDeleteAutocmd scratch
   return scratch
+
+setupDeleteAutocmd ::
+  MonadRibo m =>
+  NvimE e m =>
+  Scratch ->
+  m ()
+setupDeleteAutocmd (Scratch name buffer _ _ _) = do
+  pname <- capitalize <$> pluginName
+  number <- bufferGetNumber buffer
+  vimCommand $ "autocmd BufDelete <buffer=" <> show number <> "> call " <> pname <> "DeleteScratch('" <> name <> "')"
 
 createScratch ::
   MonadDeepError e DecodeError m =>

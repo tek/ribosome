@@ -182,7 +182,10 @@ unliftRiboE :: (ExceptT e m a -> ExceptT e' n b) -> RiboE s e m a -> RiboE s e' 
 unliftRiboE f ma =
   Ribo $ ReaderT (f . runReaderT (unRibo ma))
 
-riboE2ribo :: RiboE s e m a -> Ribo s m (Either e a)
+riboE2ribo ::
+  ∀ e s m a.
+  RiboE s e m a ->
+  Ribo s m (Either e a)
 riboE2ribo ma =
   Ribo $ ReaderT (runExceptT . runReaderT (unRibo ma))
 
