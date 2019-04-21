@@ -28,7 +28,8 @@ data Blob =
   Blob {
     key4 :: [[Int]],
     key5 :: Map Int Text,
-    key6 :: NT
+    key6 :: NT,
+    key7 :: (Int, String)
   }
   deriving (Eq, Show, Generic, MsgpackEncode, MsgpackDecode)
 
@@ -45,7 +46,7 @@ data Dat =
   deriving (Eq, Show, Generic, MsgpackEncode, MsgpackDecode)
 
 dat :: Dat
-dat = Dat (Blob [[1, 2], [3]] (Map.fromList [(1, "1"), (2, "2")]) (NT "nt")) False (Just $ Prod "dat" 27)
+dat = Dat (Blob [[1, 2], [3]] (Map.fromList [(1, "1"), (2, "2")]) (NT "nt") (91, "pair")) False (Just $ Prod "dat" 27)
 
 os :: String -> Object
 os = Util.string
@@ -58,7 +59,8 @@ encodedBlob =
   ObjectMap $ Map.fromList [
     (os "key4", ObjectArray [ObjectArray [i 1, i 2], ObjectArray [i 3]]),
     (os "key5", ObjectMap $ Map.fromList [(i 1, os "1"), (i 2, os "2")]),
-    (os "key6", os "nt")
+    (os "key6", os "nt"),
+    (os "key7", ObjectArray [ObjectInt 91, ObjectString "pair"])
     ]
 
 encoded :: Object
