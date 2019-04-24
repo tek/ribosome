@@ -6,7 +6,7 @@ import Chiasma.Data.TmuxId (PaneId(PaneId))
 import Chiasma.Monad.Stream (runTmux)
 import Chiasma.Native.Api (TmuxNative(TmuxNative))
 import Chiasma.Test.Tmux (TmuxTestConf)
-import qualified Chiasma.Test.Tmux as Chiasma (tmuxGuiSpec, tmuxSpec')
+import qualified Chiasma.Test.Tmux as Chiasma (tmuxGuiSpec, tmuxSpec)
 import Control.Monad.Trans.Except (runExceptT)
 import Data.DeepPrisms (DeepPrisms)
 import Data.Default (Default(def))
@@ -119,29 +119,31 @@ withTmux _ _ =
   throwString "no socket in test tmux"
 
 tmuxSpec ::
+  Show s =>
   DeepPrisms e RpcError =>
   ReportError e =>
   Default s =>
-  TmuxTestConf ->
   TestConfig ->
+  s ->
   RiboN s e () ->
   IO ()
-tmuxSpec tmuxConf conf specThunk =
-  Chiasma.tmuxSpec' tmuxConf run
+tmuxSpec conf env specThunk =
+  Chiasma.tmuxSpec run
   where
-    run api = guiSpec conf api def (withTmux specThunk api)
+    run api = guiSpec conf api env (withTmux specThunk api)
 
 tmuxGuiSpec ::
   DeepPrisms e RpcError =>
   ReportError e =>
   Default s =>
   TestConfig ->
+  s ->
   RiboN s e () ->
   IO ()
-tmuxGuiSpec conf specThunk =
+tmuxGuiSpec conf env specThunk =
   Chiasma.tmuxGuiSpec run
   where
-    run api = guiSpec conf api def (withTmux specThunk api)
+    run api = guiSpec conf api env (withTmux specThunk api)
 
 tmuxGuiSpecDef ::
   DeepPrisms e RpcError =>
@@ -150,4 +152,4 @@ tmuxGuiSpecDef ::
   RiboN s e () ->
   IO ()
 tmuxGuiSpecDef =
-  tmuxGuiSpec def
+  tmuxGuiSpec def def
