@@ -110,7 +110,7 @@ setupDeleteAutocmd ::
 setupDeleteAutocmd (Scratch name buffer _ _ _) = do
   pname <- capitalize <$> pluginName
   number <- bufferGetNumber buffer
-  vimCommand $ "autocmd BufDelete <buffer=" <> show number <> "> call " <> pname <> "DeleteScratch('" <> name <> "')"
+  vimCommand $ "autocmd BufDelete <buffer=" <> show number <> "> silent! call " <> pname <> "DeleteScratch('" <> name <> "')"
 
 createScratch ::
   MonadDeepError e DecodeError m =>
