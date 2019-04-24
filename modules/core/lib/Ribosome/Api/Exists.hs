@@ -110,9 +110,10 @@ waitForFunctionResult ::
   a ->
   Retry ->
   m (Either (Doc AnsiStyle) ())
-waitForFunctionResult name a retry = do
-  waitForFunction name retry
-  waitFor thunk (return . check . fromMsgpack) retry
+waitForFunctionResult name a retry' =
+  waitForFunction name retry' >>= \case
+    Right _ -> waitFor thunk (return . check . fromMsgpack) retry'
+    Left e -> return (Left e)
   where
     thunk = vimCallFunction name []
     check (Right a') | a == a' =
