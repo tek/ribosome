@@ -7,7 +7,7 @@ import Control.Monad.IO.Class (MonadIO)
 import Control.Monad.Trans.Except (runExceptT)
 import Data.DeepPrisms (deepPrisms)
 
-import Ribosome.Control.Monad.Ribo (MonadRibo, Nvim, pluginName)
+import Ribosome.Control.Monad.Ribo (MonadRibo, Nvim, NvimE, pluginName)
 import Ribosome.Data.Setting (Setting(Setting))
 import Ribosome.Data.SettingError (SettingError)
 import qualified Ribosome.Data.SettingError as SettingError (SettingError(..))
@@ -33,7 +33,10 @@ settingRaw s =
 
 setting ::
   ∀ e m a.
-  (Nvim m, MonadRibo m, MonadDeepError e RpcError m, MonadDeepError e SettingError m, MsgpackDecode a) =>
+  NvimE e m =>
+  MonadRibo m =>
+  MonadDeepError e SettingError m =>
+  MsgpackDecode a =>
   Setting a ->
   m a
 setting s@(Setting n _ fallback') =

@@ -62,9 +62,6 @@ errAs ::
 errAs =
   logAs ERROR
 
-p :: (MonadIO m, Show a) => a -> m ()
-p = liftIO . print
-
 prefixed :: (MonadIO m, Show a) => Text -> a -> m ()
 prefixed prefix a = liftIO $ putStrLn $ prefix <> ": " <> show a
 
