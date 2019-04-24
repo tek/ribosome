@@ -66,7 +66,9 @@ import Ribosome.Test.Orphans ()
 
 type Runner m = TestConfig -> m () -> m ()
 
-newtype Vars = Vars [(Text, Object)]
+newtype Vars =
+  Vars [(Text, Object)]
+  deriving (Eq, Show, Semigroup, Monoid, Default)
 
 data TestConfig =
   TestConfig {
