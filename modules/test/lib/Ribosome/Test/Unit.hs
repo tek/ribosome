@@ -3,8 +3,9 @@ module Ribosome.Test.Unit where
 import Control.Monad.IO.Class (MonadIO)
 import Data.Default (def)
 import System.FilePath (takeDirectory, takeFileName, (</>))
+import System.Log.Logger (Priority(DEBUG), setLevel, updateGlobalLogger)
 
-import Ribosome.Control.Monad.Ribo (NvimE)
+import Ribosome.Control.Monad.Ribo (NvimE, RiboN, pluginName)
 import Ribosome.Control.Ribosome (Ribosome)
 import Ribosome.Error.Report.Class (ReportError)
 import Ribosome.Plugin.RpcHandler (RpcHandler)
@@ -54,3 +55,9 @@ tempFile file = do
 
 fixture :: MonadIO m => FilePath -> m FilePath
 fixture = F.fixture uPrefix
+
+withLog :: RiboN s e a -> RiboN s e a
+withLog thunk = do
+  name <- pluginName
+  liftIO $ updateGlobalLogger (toString name) (setLevel DEBUG)
+  thunk
