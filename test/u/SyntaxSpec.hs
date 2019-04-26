@@ -23,7 +23,7 @@ import Ribosome.Error.Report.Class (ReportError(..))
 import Ribosome.System.Time (sleep)
 import Ribosome.Test.Embed (defaultTestConfig)
 import Ribosome.Test.Screenshot (assertScreenshot)
-import Ribosome.Test.Tmux (tmuxSpec)
+import Ribosome.Test.Tmux (tmuxSpec')
 import TestError (TestError)
 
 data SyntaxSpecError =
@@ -51,4 +51,4 @@ syntaxSpec = do
 
 test_syntax :: IO ()
 test_syntax =
-  tmuxSpec def { ttcWidth = 300, ttcHeight = 51, ttcGui = False } (defaultTestConfig "syntax") syntaxSpec
+  tmuxSpec' def { ttcWidth = 300, ttcHeight = 51, ttcGui = False } (defaultTestConfig "syntax") def syntaxSpec

@@ -6,7 +6,7 @@ import Chiasma.Data.TmuxId (PaneId(PaneId))
 import Chiasma.Monad.Stream (runTmux)
 import Chiasma.Native.Api (TmuxNative(TmuxNative))
 import Chiasma.Test.Tmux (TmuxTestConf)
-import qualified Chiasma.Test.Tmux as Chiasma (tmuxGuiSpec, tmuxSpec)
+import qualified Chiasma.Test.Tmux as Chiasma (tmuxGuiSpec, tmuxSpec, tmuxSpec')
 import Control.Monad.Trans.Except (runExceptT)
 import Data.DeepPrisms (DeepPrisms)
 import Data.Default (Default(def))
@@ -23,7 +23,7 @@ import Ribosome.Config.Setting (updateSetting)
 import Ribosome.Config.Settings (tmuxSocket)
 import Ribosome.Control.Concurrent.Wait (waitIOPredDef)
 import Ribosome.Control.Monad.Ribo (RiboN)
-import Ribosome.Control.Ribosome (Ribosome(Ribosome), newRibosomeTVar)
+import Ribosome.Control.Ribosome (Ribosome(Ribosome), newRibosomeTMVar)
 import Ribosome.Error.Report.Class (ReportError)
 import Ribosome.Nvim.Api.RpcCall (RpcError)
 import Ribosome.Plugin.RpcHandler (RpcHandler)
@@ -50,7 +50,7 @@ runTmuxNvim conf ribo specThunk socket = do
 
 externalNvimCmdline :: FilePath -> Text
 externalNvimCmdline socket =
-  "nvim --listen " <> (toText socket) <> " -n -u NONE -i NONE"
+  "nvim --listen " <> toText socket <> " -n -u NONE -i NONE"
 
 runGui ::
   (RpcHandler e env m, ReportError e) =>
@@ -89,7 +89,7 @@ unsafeGuiSpecR ::
   m () ->
   IO ()
 unsafeGuiSpecR api temp runner conf s specThunk = do
-  tv <- newRibosomeTVar s
+  tv <- newRibosomeTMVar s
   let ribo = Ribosome (tcPluginName conf) tv
   unsafeGuiSpec api temp runner conf ribo specThunk
 
@@ -131,6 +131,31 @@ tmuxSpec conf env specThunk =
   Chiasma.tmuxSpec run
   where
     run api = guiSpec conf api env (withTmux specThunk api)
+
+tmuxSpec' ::
+  Show s =>
+  DeepPrisms e RpcError =>
+  ReportError e =>
+  Default s =>
+  TmuxTestConf ->
+  TestConfig ->
+  s ->
+  RiboN s e () ->
+  IO ()
+tmuxSpec' tmuxConf conf env specThunk =
+  Chiasma.tmuxSpec' tmuxConf run
+  where
+    run api = guiSpec conf api env (withTmux specThunk api)
+
+tmuxSpecDef ::
+  Show s =>
+  DeepPrisms e RpcError =>
+  ReportError e =>
+  Default s =>
+  RiboN s e () ->
+  IO ()
+tmuxSpecDef =
+  tmuxSpec def def
 
 tmuxGuiSpec ::
   DeepPrisms e RpcError =>
