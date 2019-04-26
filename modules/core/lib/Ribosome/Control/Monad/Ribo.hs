@@ -3,20 +3,20 @@
 
 module Ribosome.Control.Monad.Ribo where
 
-import Control.Concurrent.STM.TVar (modifyTVar)
+import Control.Concurrent.STM.TMVar (putTMVar, readTMVar, takeTMVar)
 import Control.Lens (Lens')
-import qualified Control.Lens as Lens (over, set, view)
+import qualified Control.Lens as Lens (mapMOf, over, set, view)
 import Control.Monad (join, (<=<))
 import Control.Monad.Base (MonadBase(..), liftBaseDefault)
 import Control.Monad.Catch (MonadCatch, MonadMask, MonadThrow)
 import Control.Monad.DeepError (MonadDeepError(throwHoist))
-import Control.Monad.DeepState (MonadDeepState, gets, modify)
+import Control.Monad.DeepState (MonadDeepState(modifyE))
 import Control.Monad.Error.Class (MonadError(..))
 import Control.Monad.Fail (MonadFail)
 import Control.Monad.IO.Class (MonadIO, liftIO)
 import Control.Monad.IO.Unlift (MonadUnliftIO(..), UnliftIO(..), withUnliftIO)
 import Control.Monad.Reader.Class (MonadReader, ask, asks)
-import Control.Monad.State.Class (MonadState(put, get))
+import qualified Control.Monad.State.Class as MS (MonadState(get), modify)
 import Control.Monad.Trans.Class (MonadTrans, lift)
 import Control.Monad.Trans.Control (
   ComposeSt,
@@ -28,11 +28,13 @@ import Control.Monad.Trans.Control (
 import Control.Monad.Trans.Except (ExceptT(ExceptT), runExceptT, withExceptT)
 import Control.Monad.Trans.Reader (ReaderT(ReaderT), runReaderT)
 import Control.Monad.Trans.Resource (runResourceT)
+import Data.DeepLenses (DeepLenses(deepLens))
+import Data.Either.Combinators (swapEither)
 import Data.Either.Combinators (mapLeft)
 import Data.Functor (void)
 import Neovim.Context.Internal (Neovim(..))
 import Ribosome.Plugin.RpcHandler (RpcHandler(..))
-import UnliftIO.STM (TVar)
+import UnliftIO.STM (TMVar)
 
 import Ribosome.Control.Ribosome (Ribosome(Ribosome), RibosomeInternal, RibosomeState)
 import qualified Ribosome.Control.Ribosome as Ribosome (_errors, errors, name, state)
@@ -55,19 +57,20 @@ instance MonadBaseControl IO (Neovim e) where
         runReaderT (runResourceT (unNeovim ma)) r
   restoreM = return
 
--- FIXME change get/put to get/modify to avoid racing
 data RiboConcState s =
   RiboConcState {
     rsaName :: Text,
     rsaInternalGet :: IO RibosomeInternal,
-    rsaInternalPut :: RibosomeInternal -> IO (),
+    rsaInternalModify :: ∀ e . (RibosomeInternal -> (Either e RibosomeInternal)) -> IO (Maybe e),
     rsaGet :: IO s,
-    rsaPut :: s -> IO ()
+    rsaModify :: ∀ e . (s -> (Either e s)) -> IO (Maybe e)
   }
 
 ribLocal :: Lens' s s' -> RiboConcState s -> RiboConcState s'
-ribLocal lens (RiboConcState n ig ip g p) =
-  RiboConcState n ig ip (Lens.view lens <$> g) (\s' -> g >>= p . Lens.set lens s')
+ribLocal lens (RiboConcState n ig ip g m) =
+  RiboConcState n ig ip (Lens.view lens <$> g) (m . Lens.mapMOf lens)
+  -- where
+  --   modi f =
 
 newtype Ribo s m a =
   Ribo { unRibo :: ReaderT (RiboConcState s) m a }
@@ -76,13 +79,25 @@ newtype Ribo s m a =
 type RiboE s e m = Ribo s (ExceptT e m)
 type RiboN s e = RiboE s e (ConcNvimS s)
 
-instance MonadIO m => MonadState s (Ribo s m) where
+instance (Monad m, MonadIO m, DeepLenses s s') => MonadDeepState s s' (Ribo s m) where
   get = do
     RiboConcState{..} <- Ribo ask
-    liftIO rsaGet
-  put s = do
+    liftIO (Lens.view deepLens <$> rsaGet)
+
+  modifyE f = do
     RiboConcState{..} <- Ribo ask
-    liftIO $ rsaPut s
+    liftIO (rsaModify $ Lens.mapMOf deepLens f)
+
+  put =
+    modify . const
+
+-- instance MonadIO m => MonadState s (Ribo s m) where
+--   get = do
+--     RiboConcState{..} <- Ribo ask
+--     liftIO rsaGet
+--   put s = do
+--     RiboConcState{..} <- Ribo ask
+--     liftIO $ rsaModify (const s)
 
 instance MonadTrans (Ribo s) where
   lift = Ribo . lift
@@ -132,16 +147,23 @@ instance RpcHandler e (Ribosome s) (RiboE s e (ConcNvimS s)) where
 acall :: (Monad m, Nvim m, Rpc c ()) => c -> m ()
 acall c = fromRight () <$> call c
 
-writeTv :: Lens' (RibosomeState s) s' -> TVar (RibosomeState s) -> s' -> IO ()
-writeTv l t = void . atomically . modifyTVar t . Lens.set l
+modifyTv :: Lens' (RibosomeState s) s' -> TMVar (RibosomeState s) -> (s' -> (Either e s')) -> IO (Maybe e)
+modifyTv l t f =
+  atomically g
+  where
+    g = do
+      pre <- takeTMVar t
+      let post = Lens.mapMOf l f pre
+      putTMVar t (fromRight pre post)
+      return . rightToMaybe . swapEither $ post
 
-readTv :: Lens' (RibosomeState s) s' -> TVar (RibosomeState s) -> IO s'
-readTv l t = Lens.view l <$> readTVarIO t
+readTv :: Lens' (RibosomeState s) s' -> TMVar (RibosomeState s) -> IO s'
+readTv l t = Lens.view l <$> atomically (readTMVar t)
 
 ribId :: MonadReader (Ribosome s) m => m (RiboConcState s)
 ribId = do
   Ribosome n tv <- ask
-  return $ RiboConcState n (readTv RibosomeState.internal tv) (writeTv int tv) (readTv pub tv) (writeTv pub tv)
+  return $ RiboConcState n (readTv RibosomeState.internal tv) (modifyTv int tv) (readTv pub tv) (modifyTv pub tv)
   where
     int :: Lens' (RibosomeState s) RibosomeInternal
     int = RibosomeState.internal
@@ -216,7 +238,7 @@ riboInternal =
 class (MonadIO m, Nvim m) => MonadRibo m where
   pluginName :: m Text
   pluginInternal :: m RibosomeInternal
-  pluginInternalPut :: RibosomeInternal -> m ()
+  pluginInternalModifyE :: ∀ e . (RibosomeInternal -> Either e RibosomeInternal) -> m (Maybe e)
 
 pluginInternals :: MonadRibo m => (RibosomeInternal -> a) -> m a
 pluginInternals = (<$> pluginInternal)
@@ -224,29 +246,33 @@ pluginInternals = (<$> pluginInternal)
 pluginInternalL :: MonadRibo m => Lens' RibosomeInternal a -> m a
 pluginInternalL = pluginInternals . Lens.view
 
-pluginModifyInternal :: MonadRibo m => (RibosomeInternal -> RibosomeInternal) -> m ()
-pluginModifyInternal f =
-  pluginInternalPut . f =<< pluginInternal
+pluginInternalPut' :: MonadRibo m => RibosomeInternal -> m ()
+pluginInternalPut' s =
+  pluginInternalModify (const s)
 
-pluginModifyInternalL :: MonadRibo m => Lens' RibosomeInternal a -> (a -> a) -> m ()
-pluginModifyInternalL l f =
-  pluginModifyInternal $ Lens.over l f
+pluginInternalModify :: MonadRibo m => (RibosomeInternal -> RibosomeInternal) -> m ()
+pluginInternalModify =
+  void . pluginInternalModifyE . (Right .)
 
-instance (MonadIO m, Nvim m) => MonadRibo (Ribo s m) where
+pluginInternalModifyL :: MonadRibo m => Lens' RibosomeInternal a -> (a -> a) -> m ()
+pluginInternalModifyL l f =
+  pluginInternalModify $ Lens.over l f
+
+instance (MonadIO m, Nvim m) => MonadRibo (ReaderT (RiboConcState s) m) where
   pluginName =
-    Ribo (asks rsaName)
+    asks rsaName
 
   pluginInternal =
-    liftIO <=< Ribo $ asks rsaInternalGet
+    liftIO =<< asks rsaInternalGet
 
-  pluginInternalPut i = do
-    p <- Ribo $ asks rsaInternalPut
-    liftIO . p $ i
+  pluginInternalModifyE f = do
+    m <- asks rsaInternalModify
+    liftIO . m $ f
 
-instance MonadRibo m => MonadRibo (ExceptT e m) where
+instance (MonadIO (t m), MonadTrans t, MonadRibo m) => MonadRibo (t m) where
   pluginName = lift pluginName
   pluginInternal = lift pluginInternal
-  pluginInternalPut = lift . pluginInternalPut
+  pluginInternalModifyE = lift . pluginInternalModifyE
 
 instance MonadRibo (ConcNvimS e) where
   pluginName =
@@ -254,11 +280,11 @@ instance MonadRibo (ConcNvimS e) where
 
   pluginInternal = do
     tv <- asks $ Lens.view Ribosome.state
-    Lens.view RibosomeState.internal <$> readTVarIO tv
+    Lens.view RibosomeState.internal <$> atomically (readTMVar tv)
 
-  pluginInternalPut i = do
+  pluginInternalModifyE f = do
     tv <- asks $ Lens.view Ribosome.state
-    atomically $ modifyTVar tv $ Lens.set RibosomeState.internal i
+    liftIO $ modifyTv id tv (Lens.mapMOf RibosomeState.internal f)
 
 getErrors :: MonadRibo m => m Errors
 getErrors =
@@ -269,7 +295,7 @@ inspectErrors = (<$> getErrors)
 
 modifyErrors :: MonadRibo m => (Errors -> Errors) -> m ()
 modifyErrors =
-  pluginModifyInternalL Ribosome.errors
+  pluginInternalModifyL Ribosome.errors
 
 prepend :: ∀s' s m a. MonadDeepState s s' m => Lens' s' [a] -> a -> m ()
 prepend lens a =

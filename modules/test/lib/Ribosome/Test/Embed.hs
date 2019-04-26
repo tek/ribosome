@@ -55,7 +55,7 @@ import UnliftIO.STM (putTMVar)
 
 import Ribosome.Api.Option (rtpCat)
 import Ribosome.Control.Monad.Ribo (Nvim, NvimE)
-import Ribosome.Control.Ribosome (Ribosome(Ribosome), newRibosomeTVar)
+import Ribosome.Control.Ribosome (Ribosome(Ribosome), newRibosomeTMVar)
 import qualified Ribosome.Data.ErrorReport as ErrorReport (ErrorReport(..))
 import Ribosome.Error.Report.Class (ReportError(errorReport))
 import Ribosome.Nvim.Api.IO (vimSetVar)
@@ -116,7 +116,7 @@ killProcess prc = do
 
 testNvimProcessConfig :: TestConfig -> ProcessConfig Handle Handle ()
 testNvimProcessConfig TestConfig {..} =
-  setStdin createPipe . setStdout createPipe . proc "nvim" . (fmap toString) $ args <> tcCmdArgs
+  setStdin createPipe . setStdout createPipe . proc "nvim" . fmap toString $ args <> tcCmdArgs
   where
     args = fromMaybe defaultArgs tcCmdline
     defaultArgs = ["--embed", "-n", "-u", "NONE", "-i", "NONE"]
@@ -231,7 +231,7 @@ unsafeEmbeddedSpecR ::
   m () ->
   IO ()
 unsafeEmbeddedSpecR runner conf env spec = do
-  tv <- newRibosomeTVar env
+  tv <- newRibosomeTMVar env
   let ribo = Ribosome (tcPluginName conf) tv
   unsafeEmbeddedSpec runner conf ribo spec
 

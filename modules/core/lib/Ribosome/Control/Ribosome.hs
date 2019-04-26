@@ -10,7 +10,7 @@ import Data.Functor.Syntax ((<$$>))
 import Data.Map (Map)
 import Data.MessagePack (Object)
 import GHC.Generics (Generic)
-import UnliftIO.STM (TMVar, TVar)
+import UnliftIO.STM (TMVar, TMVar, newTMVarIO)
 
 import Ribosome.Data.Errors (Errors)
 import Ribosome.Data.Scratch (Scratch)
@@ -39,14 +39,14 @@ makeClassy ''RibosomeState
 data Ribosome s =
   Ribosome {
     _name :: Text,
-    _state :: TVar (RibosomeState s)
+    _state :: TMVar (RibosomeState s)
   }
 makeClassy ''Ribosome
 
-newRibosomeTVar :: MonadIO m => s -> m (TVar (RibosomeState s))
-newRibosomeTVar s =
-  newTVarIO (RibosomeState def s)
+newRibosomeTMVar :: MonadIO m => s -> m (TMVar (RibosomeState s))
+newRibosomeTMVar s =
+  newTMVarIO (RibosomeState def s)
 
 newRibosome :: MonadIO m => Text -> s -> m (Ribosome s)
 newRibosome name' =
-  Ribosome name' <$$> newRibosomeTVar
+  Ribosome name' <$$> newRibosomeTMVar

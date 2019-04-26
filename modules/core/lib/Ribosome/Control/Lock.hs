@@ -10,7 +10,7 @@ import qualified Data.Map as Map (insert)
 import UnliftIO (finally)
 import UnliftIO.STM (TMVar, newTMVarIO, tryPutTMVar, tryTakeTMVar)
 
-import Ribosome.Control.Monad.Ribo
+import Ribosome.Control.Monad.Ribo (MonadRibo, pluginInternalL, pluginInternalModifyL)
 import Ribosome.Control.Ribosome (Locks)
 import qualified Ribosome.Control.Ribosome as Ribosome (locks)
 import qualified Ribosome.Log as Log (debug)
@@ -24,7 +24,7 @@ inspectLocks = (<$> getLocks)
 
 modifyLocks :: MonadRibo m => (Locks -> Locks) -> m ()
 modifyLocks =
-  pluginModifyInternalL Ribosome.locks
+  pluginInternalModifyL Ribosome.locks
 
 getOrCreateLock :: (MonadRibo m, MonadIO m) => Text -> m (TMVar ())
 getOrCreateLock key = do

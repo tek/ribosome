@@ -13,10 +13,8 @@ import Data.Default (def)
 import GHC.Generics (Generic)
 -- import Language.Haskell.TH
 import Neovim (Plugin(..))
-import Ribosome.Data.Mapping (MappingError)
 import Test.Framework
 
-import Ribosome.Control.Monad.Ribo (ConcNvimS, RiboE)
 import Ribosome.Control.Ribosome (Ribosome, newRibosome)
 import Ribosome.Msgpack.Decode (MsgpackDecode)
 import Ribosome.Msgpack.Encode (MsgpackEncode)
@@ -33,8 +31,6 @@ data Par =
 handler :: Monad m => Int -> Text -> Par -> m ()
 handler =
   undefined
-
-type R = RiboE Int MappingError (ConcNvimS Int)
 
 $(return [])
 

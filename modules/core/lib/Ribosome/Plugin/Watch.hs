@@ -7,7 +7,7 @@ import qualified Data.Map as Map (toList)
 import Data.Map.Strict (Map)
 import Data.MessagePack (Object(ObjectNil))
 
-import Ribosome.Control.Monad.Ribo (MonadRibo, NvimE, pluginInternalL, pluginModifyInternalL)
+import Ribosome.Control.Monad.Ribo (MonadRibo, NvimE, pluginInternalL, pluginInternalModifyL)
 import Ribosome.Control.Ribosome (RibosomeInternal)
 import qualified Ribosome.Control.Ribosome as RibosomeInternal (watchedVariables)
 import Ribosome.Nvim.Api.IO (vimGetVar)
@@ -35,7 +35,7 @@ runHandler ::
   Object ->
   m ()
 runHandler (WatchedVariable name handler) new = do
-  pluginModifyInternalL (storedVarLens name) (const (Just new))
+  pluginInternalModifyL (storedVarLens name) (const (Just new))
   handler new
 
 compareVar ::

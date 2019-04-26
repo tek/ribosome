@@ -10,7 +10,7 @@ import Ribosome.Api.Buffer (setBufferContent, wipeBuffer)
 import Ribosome.Api.Syntax (executeWindowSyntax)
 import Ribosome.Api.Tabpage (closeTabpage)
 import Ribosome.Api.Window (closeWindow)
-import Ribosome.Control.Monad.Ribo (MonadRibo, NvimE, pluginInternalL, pluginModifyInternal, pluginName)
+import Ribosome.Control.Monad.Ribo (MonadRibo, NvimE, pluginInternalL, pluginInternalModify, pluginName)
 import Ribosome.Control.Ribosome (RibosomeInternal)
 import qualified Ribosome.Control.Ribosome as Ribosome (scratch)
 import Ribosome.Data.Scratch (Scratch(Scratch))
@@ -98,7 +98,7 @@ setupScratchIn previous window tab (ScratchOptions useTab _ _ focus _ syntax map
   traverse_ (activateBufferMapping buffer) mappings
   unless (focus || useTab) $ vimSetCurrentWindow previous
   let scratch = Scratch name buffer window previous tab
-  pluginModifyInternal $ Lens.set (scratchLens name) (Just scratch)
+  pluginInternalModify $ Lens.set (scratchLens name) (Just scratch)
   setupDeleteAutocmd scratch
   return scratch
 
@@ -194,7 +194,7 @@ killScratch ::
   m ()
 killScratch name = do
   maybe (return ()) kill =<< lookupScratch name
-  pluginModifyInternal $ Lens.set (scratchLens name) Nothing
+  pluginInternalModify $ Lens.set (scratchLens name) Nothing
   where
     kill (Scratch _ buffer window _ tab) =
       traverse_ closeTabpage tab *> closeWindow window *> wipeBuffer buffer
