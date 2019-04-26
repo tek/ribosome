@@ -85,6 +85,14 @@ debug ::
 debug =
   logR DEBUG
 
+logDebug ::
+  Loggable a =>
+  MonadRibo m =>
+  MonadIO m =>
+  a ->
+  m ()
+logDebug = debug
+
 info ::
   Loggable a =>
   MonadRibo m =>
@@ -94,6 +102,14 @@ info ::
 info =
   logR INFO
 
+logInfo ::
+  Loggable a =>
+  MonadRibo m =>
+  MonadIO m =>
+  a ->
+  m ()
+logInfo = info
+
 err ::
   Loggable a =>
   MonadRibo m =>
@@ -102,6 +118,14 @@ err ::
   m ()
 err =
   logR ERROR
+
+logError ::
+  Loggable a =>
+  MonadRibo m =>
+  MonadIO m =>
+  a ->
+  m ()
+logError = err
 
 debugShow ::
   Show a =>

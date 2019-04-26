@@ -69,8 +69,6 @@ data RiboConcState s =
 ribLocal :: Lens' s s' -> RiboConcState s -> RiboConcState s'
 ribLocal lens (RiboConcState n ig ip g m) =
   RiboConcState n ig ip (Lens.view lens <$> g) (m . Lens.mapMOf lens)
-  -- where
-  --   modi f =
 
 newtype Ribo s m a =
   Ribo { unRibo :: ReaderT (RiboConcState s) m a }
