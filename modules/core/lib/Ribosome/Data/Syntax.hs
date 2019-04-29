@@ -1,3 +1,5 @@
+{-# LANGUAGE DeriveAnyClass #-}
+
 module Ribosome.Data.Syntax where
 
 import Data.Default (Default(def))
@@ -80,4 +82,4 @@ data Syntax =
      syntaxHighlights :: [Highlight],
      syntaxHiLinks :: [HiLink]
   }
-  deriving (Eq, Show)
+  deriving (Eq, Show, Generic, Default)
