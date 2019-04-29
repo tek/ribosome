@@ -11,14 +11,16 @@ data ScratchOptions =
     vertical :: Bool,
     wrap :: Bool,
     focus :: Bool,
+    resize :: Bool,
     size :: Maybe Int,
+    maxSize :: Maybe Int,
     syntax :: [Syntax],
     mappings :: [Mapping],
     name :: Text
   }
 
 defaultScratchOptions :: Text -> ScratchOptions
-defaultScratchOptions = ScratchOptions False False False False Nothing [] []
+defaultScratchOptions = ScratchOptions False False False False True Nothing Nothing [] []
 
 instance Default ScratchOptions where
   def = defaultScratchOptions "scratch"

@@ -16,7 +16,7 @@ import qualified Ribosome.Control.Ribosome as Ribosome (scratch)
 import Ribosome.Data.Scratch (Scratch(Scratch))
 import qualified Ribosome.Data.Scratch as Scratch (Scratch(scratchPrevious, scratchWindow))
 import Ribosome.Data.ScratchOptions (ScratchOptions(ScratchOptions))
-import qualified Ribosome.Data.ScratchOptions as ScratchOptions (ScratchOptions(name))
+import qualified Ribosome.Data.ScratchOptions as ScratchOptions (ScratchOptions(name, resize, maxSize))
 import Ribosome.Data.Text (capitalize)
 import Ribosome.Mapping (activateBufferMapping)
 import Ribosome.Msgpack.Encode (toMsgpack)
@@ -32,6 +32,7 @@ import Ribosome.Nvim.Api.IO (
   vimSetCurrentWindow,
   windowGetBuffer,
   windowIsValid,
+  windowSetHeight,
   windowSetOption,
   )
 
@@ -62,7 +63,7 @@ createScratchUiInWindow vertical wrap _ size = do
   return (win, Nothing)
 
 createScratchUi :: NvimE e m => ScratchOptions -> m (Window, Maybe Tabpage)
-createScratchUi (ScratchOptions False vertical wrap focus size _ _ _) =
+createScratchUi (ScratchOptions False vertical wrap focus _ _ size _ _ _) =
   createScratchUiInWindow vertical wrap focus size
 createScratchUi _ =
   createScratchUiInTab
@@ -92,7 +93,7 @@ setupScratchIn ::
   Maybe Tabpage ->
   ScratchOptions ->
   m Scratch
-setupScratchIn previous window tab (ScratchOptions useTab _ _ focus _ syntax mappings name) = do
+setupScratchIn previous window tab (ScratchOptions useTab _ _ focus _ _ _ syntax mappings name) = do
   buffer <- setupScratchBuffer window name
   traverse_ (executeWindowSyntax window) syntax
   traverse_ (activateBufferMapping buffer) mappings
@@ -156,13 +157,17 @@ ensureScratch options = do
 setScratchContent ::
   Foldable t =>
   NvimE e m =>
+  ScratchOptions ->
   Scratch ->
   t Text ->
   m ()
-setScratchContent (Scratch _ buffer _ _ _) lines' = do
+setScratchContent options (Scratch _ buffer win _ _) lines' = do
   bufferSetOption buffer "modifiable" (toMsgpack True)
   setBufferContent buffer (toList lines')
   bufferSetOption buffer "modifiable" (toMsgpack False)
+  when (ScratchOptions.resize options) (windowSetHeight win size)
+  where
+    size = min (length lines') (fromMaybe 30 (ScratchOptions.maxSize options))
 
 showInScratch ::
   Foldable t =>
@@ -174,7 +179,7 @@ showInScratch ::
   m Scratch
 showInScratch lines' options = do
   scratch <- ensureScratch options
-  setScratchContent scratch lines'
+  setScratchContent options scratch lines'
   return scratch
 
 showInScratchDef ::
