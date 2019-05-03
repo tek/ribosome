@@ -35,7 +35,7 @@ makeScratch ::
   NvimE e m =>
   m ()
 makeScratch =
-  void $ showInScratch target (ScratchOptions False True False True (Just 0) [] [] name)
+  void $ showInScratch target (ScratchOptions False True False True True Nothing (Just 0) [] [] name)
 
 scratchCount ::
   MonadRibo m =>

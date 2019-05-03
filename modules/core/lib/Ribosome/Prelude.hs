@@ -38,7 +38,7 @@ dbgs =
   dbg . show
 
 modify ::
-  ∀ s' s m a .
+  ∀ s' s m .
   MonadDeepState s s' m =>
   (s' -> s') ->
   m ()

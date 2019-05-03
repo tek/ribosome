@@ -12,7 +12,7 @@ import Data.Functor (void)
 import Test.Framework
 
 import Ribosome.Config.Setting (setting, updateSetting)
-import Ribosome.Control.Monad.Ribo (ConcNvimS, RiboE)
+import Ribosome.Control.Monad.Ribo (Ribo)
 import Ribosome.Data.Setting (Setting(Setting))
 import Ribosome.Data.SettingError (SettingError)
 import Ribosome.Error.Report.Class (ReportError(..))
@@ -33,7 +33,7 @@ deepPrisms ''SettingSpecError
 sett :: Setting Int
 sett = Setting "name" True Nothing
 
-settingSuccessSpec :: RiboE s SettingSpecError (ConcNvimS s) ()
+settingSuccessSpec :: Ribo s SettingSpecError ()
 settingSuccessSpec = do
   updateSetting sett 5
   r <- setting sett
@@ -43,14 +43,14 @@ test_settingSuccess :: IO ()
 test_settingSuccess =
   unitSpec def () settingSuccessSpec
 
-settingFailSpec :: RiboE s SettingSpecError (ConcNvimS s) ()
+settingFailSpec :: Ribo s SettingSpecError ()
 settingFailSpec = do
   ea <- catchAt catch $ Right <$> result
   void $ gassertLeft ea
   where
-    result :: RiboE s SettingSpecError (ConcNvimS s) Int
+    result :: Ribo s SettingSpecError Int
     result = setting sett
-    catch :: SettingError -> RiboE s SettingSpecError (ConcNvimS s) (Either SettingError Int)
+    catch :: SettingError -> Ribo s SettingSpecError (Either SettingError Int)
     catch = return . Left
 
 test_settingFail :: IO ()

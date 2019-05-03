@@ -6,7 +6,7 @@ module RiboSpec (htf_thisModulesTests) where
 import Data.Default (def)
 import Test.Framework
 
-import Ribosome.Control.Monad.Ribo (RiboN)
+import Ribosome.Control.Monad.Ribo (Ribo)
 import Ribosome.Test.Unit (unitSpec)
 import TestError (TestError)
 
@@ -16,7 +16,7 @@ newtype RMState =
 
 deepLenses ''RMState
 
-riboModifySpec :: RiboN RMState TestError ()
+riboModifySpec :: Ribo RMState TestError ()
 riboModifySpec = do
   modify modi
   return ()

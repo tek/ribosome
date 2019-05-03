@@ -13,7 +13,7 @@ import Test.Framework
 
 import Ribosome.Api.Buffer (setCurrentBufferContent)
 import Ribosome.Api.Syntax (executeSyntax)
-import Ribosome.Control.Monad.Ribo (RiboN)
+import Ribosome.Control.Monad.Ribo (Ribo)
 import Ribosome.Data.Syntax (
   Syntax(Syntax),
   syntaxHighlight,
@@ -42,7 +42,7 @@ syntax =
   Syntax [syntaxMatch "TestColons" "::"] [syntaxHighlight "TestColons"
     [("cterm", "reverse"), ("ctermfg", "1"), ("gui", "reverse"), ("guifg", "#dc322f")]] []
 
-syntaxSpec :: RiboN () SyntaxSpecError ()
+syntaxSpec :: Ribo () SyntaxSpecError ()
 syntaxSpec = do
   setCurrentBufferContent ["function :: String -> Int", "function _ = 5"]
   _ <- executeSyntax syntax

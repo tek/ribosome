@@ -22,7 +22,7 @@ import UnliftIO.Temporary (withTempDirectory)
 import Ribosome.Config.Setting (updateSetting)
 import Ribosome.Config.Settings (tmuxSocket)
 import Ribosome.Control.Concurrent.Wait (waitIOPredDef)
-import Ribosome.Control.Monad.Ribo (RiboN)
+import Ribosome.Control.Monad.Ribo (Ribo)
 import Ribosome.Control.Ribosome (Ribosome(Ribosome), newRibosomeTMVar)
 import Ribosome.Error.Report.Class (ReportError)
 import Ribosome.Nvim.Api.RpcCall (RpcError)
@@ -99,7 +99,7 @@ guiSpec ::
   TestConfig ->
   TmuxNative ->
   s ->
-  RiboN s e () ->
+  Ribo s e () ->
   IO ()
 guiSpec conf api env specThunk = do
   socketDir <- tempDir "tmux-socket"
@@ -110,9 +110,9 @@ guiSpec conf api env specThunk = do
 
 withTmux ::
   DeepPrisms e RpcError =>
-  RiboN s e () ->
+  Ribo s e () ->
   TmuxNative ->
-  RiboN s e ()
+  Ribo s e ()
 withTmux thunk (TmuxNative (Just socket)) =
   updateSetting tmuxSocket socket *> thunk
 withTmux _ _ =
@@ -125,7 +125,7 @@ tmuxSpec ::
   Default s =>
   TestConfig ->
   s ->
-  RiboN s e () ->
+  Ribo s e () ->
   IO ()
 tmuxSpec conf env specThunk =
   Chiasma.tmuxSpec run
@@ -140,7 +140,7 @@ tmuxSpec' ::
   TmuxTestConf ->
   TestConfig ->
   s ->
-  RiboN s e () ->
+  Ribo s e () ->
   IO ()
 tmuxSpec' tmuxConf conf env specThunk =
   Chiasma.tmuxSpec' tmuxConf run
@@ -152,7 +152,7 @@ tmuxSpecDef ::
   DeepPrisms e RpcError =>
   ReportError e =>
   Default s =>
-  RiboN s e () ->
+  Ribo s e () ->
   IO ()
 tmuxSpecDef =
   tmuxSpec def def
@@ -163,7 +163,7 @@ tmuxGuiSpec ::
   Default s =>
   TestConfig ->
   s ->
-  RiboN s e () ->
+  Ribo s e () ->
   IO ()
 tmuxGuiSpec conf env specThunk =
   Chiasma.tmuxGuiSpec run
@@ -174,7 +174,7 @@ tmuxGuiSpecDef ::
   DeepPrisms e RpcError =>
   ReportError e =>
   Default s =>
-  RiboN s e () ->
+  Ribo s e () ->
   IO ()
 tmuxGuiSpecDef =
   tmuxGuiSpec def def

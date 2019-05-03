@@ -4,7 +4,7 @@ module TestError where
 
 import Data.DeepPrisms (deepPrisms)
 
-import Ribosome.Control.Monad.Ribo (RiboN)
+import Ribosome.Control.Monad.Ribo (Ribo)
 import Ribosome.Data.Mapping (MappingError)
 import Ribosome.Error.Report.Class (ReportError(..))
 import Ribosome.Msgpack.Error (DecodeError)
@@ -25,8 +25,8 @@ instance ReportError TestError where
   errorReport (Decode e) = errorReport e
   errorReport (Mapping e) = errorReport e
 
-handleTestError :: TestError -> RiboN s TestError ()
+handleTestError :: TestError -> Ribo s TestError ()
 handleTestError _ =
   return ()
 
-type RiboT a = RiboN () TestError a
+type RiboT a = Ribo () TestError a

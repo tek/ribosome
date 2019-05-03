@@ -12,7 +12,7 @@ import Data.DeepPrisms (DeepPrisms)
 
 import Ribosome.Config.Setting (settingMaybe)
 import Ribosome.Config.Settings (tmuxSocket)
-import Ribosome.Control.Monad.Ribo (MonadRibo, Nvim, RiboE)
+import Ribosome.Control.Monad.Ribo (MonadRibo, Nvim, Ribo)
 
 runTmux ::
   (MonadIO m, MonadRibo m, MonadDeepError e TmuxError m, MonadMask m, Nvim m) =>
@@ -32,6 +32,5 @@ runTmuxE =
 class RunTmux m where
   runRiboTmux :: TmuxProg m b -> m b
 
-instance (MonadIO m, MonadRibo m, DeepPrisms e TmuxError, MonadMask m, Nvim m) =>
-  RunTmux (RiboE s e m) where
+instance DeepPrisms e TmuxError => RunTmux (Ribo s e) where
     runRiboTmux = runTmux

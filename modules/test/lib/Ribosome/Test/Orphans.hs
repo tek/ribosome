@@ -8,16 +8,9 @@ import Control.Monad.Trans.Reader (ReaderT(ReaderT), runReaderT)
 import Neovim (Neovim)
 import Test.Framework.AssertM (AssertM(..))
 
-import Ribosome.Control.Monad.Ribo (ConcNvimS, Ribo(Ribo, unRibo))
+import Ribosome.Control.Monad.Ribo (RNeovim, Ribo(Ribo, unRibo))
 
 instance AssertM (Neovim e) where
-  genericAssertFailure__ l =
-    liftIO . genericAssertFailure__ l
-
-  genericSubAssert l msg ma =
-    withRunInIO (\f -> genericSubAssert l msg (f ma))
-
-instance AssertM (Ribo s (ConcNvimS s)) where
   genericAssertFailure__ l =
     liftIO . genericAssertFailure__ l
 
@@ -30,8 +23,8 @@ instance AssertM (ExceptT e (Neovim s)) where
   genericSubAssert l msg =
     ExceptT . genericSubAssert l msg . runExceptT
 
-instance AssertM (Ribo s (ExceptT e (ConcNvimS s))) where
+instance AssertM (Ribo s e) where
   genericAssertFailure__ l = liftIO . genericAssertFailure__ l
 
-  genericSubAssert l msg ma =
-    Ribo $ ReaderT $ ExceptT . genericSubAssert l msg . runExceptT . runReaderT (unRibo ma)
+  genericSubAssert l msg =
+    Ribo . ExceptT . genericSubAssert l msg . runExceptT . unRibo
