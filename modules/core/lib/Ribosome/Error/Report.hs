@@ -9,6 +9,7 @@ import Data.Functor (void)
 import qualified Data.Map as Map (alter)
 import Data.Text.Prettyprint.Doc (line, pretty, (<>))
 import Data.Text.Prettyprint.Doc.Render.Terminal (putDoc)
+import System.Log (Priority(NOTICE))
 
 import Ribosome.Api.Echo (echom)
 import Ribosome.Control.Monad.Ribo (MonadRibo, Nvim, NvimE, RNeovim, Ribo, runRibo)
@@ -40,7 +41,7 @@ logErrorReport ::
 logErrorReport (ErrorReport user logMsgs prio) = do
   name <- Ribo.pluginName
   liftIO $ traverse_ (logAs prio name) logMsgs
-  echom user
+  when (prio >= NOTICE) (echom user)
 
 processErrorReport ::
   (MonadRibo m, NvimE e m, MonadIO m) =>
