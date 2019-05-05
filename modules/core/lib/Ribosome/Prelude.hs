@@ -9,6 +9,7 @@ module Ribosome.Prelude (
   module Relude,
   dbg,
   dbgs,
+  dbgm,
   mapLeft,
   modify,
   undefined,
@@ -36,6 +37,12 @@ dbg msg = do
 dbgs :: Monad m => Show a => a -> m ()
 dbgs =
   dbg . show
+
+dbgm :: Monad m => Show a => m a -> m a
+dbgm ma = do
+  a <- ma
+  dbgs a
+  return a
 
 modify ::
   ∀ s' s m .
