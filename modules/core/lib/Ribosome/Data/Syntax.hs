@@ -22,7 +22,9 @@ data SyntaxItemDetail =
     regionGroup :: Text,
     regionStart :: Text,
     regionEnd :: Text,
-    regionSkip :: Maybe Text
+    regionSkip :: Maybe Text,
+    regionStartOffset :: Text,
+    regionEndOffset :: Text
   }
   |
   Verbatim {
@@ -50,9 +52,13 @@ syntaxMatch :: Text -> Text -> SyntaxItem
 syntaxMatch group' pat =
   syntaxItem $ Match group' pat
 
+syntaxRegionOffset :: Text -> Text -> Text -> Maybe Text -> Text -> Text -> SyntaxItem
+syntaxRegionOffset group' start end skip ms me =
+  syntaxItem $ Region group' start end skip ms me
+
 syntaxRegion :: Text -> Text -> Text -> Maybe Text -> SyntaxItem
 syntaxRegion group' start end skip =
-  syntaxItem $ Region group' start end skip
+  syntaxRegionOffset group' start end skip "" ""
 
 syntaxVerbatim :: Text -> SyntaxItem
 syntaxVerbatim =

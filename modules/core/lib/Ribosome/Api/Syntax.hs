@@ -35,19 +35,19 @@ synPattern :: Text -> Text
 synPattern text =
   "/" <> text <> "/"
 
-namedPattern :: Text -> Text -> Text
-namedPattern param text =
-  param <> "=" <> synPattern text
+namedPattern :: Text -> Text -> Text -> Text
+namedPattern param text offset =
+  param <> "=" <> synPattern text <> offset
 
 syntaxItemDetailCmd :: SyntaxItemDetail -> [Text]
 syntaxItemDetailCmd (Keyword group' keyword keywords) =
   ["syntax", "keyword", group', keyword, unwords keywords]
 syntaxItemDetailCmd (Match group' pat) =
   ["syntax", "match", group', synPattern pat]
-syntaxItemDetailCmd (Region group' start end skip) =
-  ["syntax", "region", group', namedPattern "start" start] <> foldMap skipArg skip <> [namedPattern "end" end]
+syntaxItemDetailCmd (Region group' start end skip ms me) =
+  ["syntax", "region", group', namedPattern "start" start ms] <> foldMap skipArg skip <> [namedPattern "end" end me]
   where
-    skipArg a = [namedPattern "skip" a]
+    skipArg a = [namedPattern "skip" a ""]
 syntaxItemDetailCmd (Verbatim cmd) =
   [cmd]
 
