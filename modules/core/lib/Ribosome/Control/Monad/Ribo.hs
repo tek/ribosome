@@ -10,23 +10,22 @@ import Control.Monad.Base (MonadBase(..))
 import Control.Monad.Catch (MonadCatch, MonadMask, MonadThrow)
 import Control.Monad.DeepError (MonadDeepError(throwHoist))
 import Control.Monad.DeepState (MonadDeepState(modifyM))
-import Control.Monad.Error.Class (MonadError(..), liftEither)
+import Control.Monad.Error.Class (MonadError(..))
 import Control.Monad.Fail (MonadFail)
 import Control.Monad.IO.Class (MonadIO, liftIO)
-import Control.Monad.Reader.Class (MonadReader, ask, asks)
-import Control.Monad.Trans.Control (ComposeSt, MonadBaseControl(..), defaultLiftBaseWith, defaultRestoreM)
+import Control.Monad.Reader.Class (MonadReader, asks)
+import Control.Monad.Trans.Control (MonadBaseControl(..))
 import Control.Monad.Trans.Except (ExceptT(ExceptT), runExceptT)
 import Control.Monad.Trans.Free (FreeT)
 import Control.Monad.Trans.Reader (ReaderT(ReaderT), runReaderT)
 import Control.Monad.Trans.Resource (runResourceT)
 import Data.DeepLenses (DeepLenses(deepLens))
 import Data.DeepPrisms (DeepPrisms)
-import Data.Either.Combinators (swapEither)
 import Neovim.Context.Internal (Neovim(..))
 import Ribosome.Plugin.RpcHandler (RpcHandler(..))
 import UnliftIO.STM (TMVar)
 
-import Ribosome.Control.Ribosome (Ribosome(Ribosome), RibosomeInternal, RibosomeState)
+import Ribosome.Control.Ribosome (Ribosome, RibosomeInternal, RibosomeState)
 import qualified Ribosome.Control.Ribosome as Ribosome (_errors, errors, name, state)
 import qualified Ribosome.Control.Ribosome as RibosomeState (internal, public)
 import Ribosome.Data.Errors (Errors)
@@ -209,7 +208,12 @@ prepend :: ∀s' s m a. MonadDeepState s s' m => Lens' s' [a] -> a -> m ()
 prepend lens a =
   modify $ Lens.over lens (a:)
 
-inspectHeadE :: (MonadDeepState s s' m, MonadDeepError e e' m) => e' -> Lens' s' [a] -> m a
+inspectHeadE ::
+  ∀ s' s e e' m a .
+  (MonadDeepState s s' m, MonadDeepError e e' m) =>
+  e' ->
+  Lens' s' [a] ->
+  m a
 inspectHeadE err lens = do
   as <- gets $ Lens.view lens
   case as of

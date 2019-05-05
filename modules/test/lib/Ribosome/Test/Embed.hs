@@ -1,7 +1,6 @@
 module Ribosome.Test.Embed where
 
 import Control.Concurrent (forkIO)
-import Control.Monad.DeepError (MonadDeepError)
 import Control.Monad.IO.Class (MonadIO, liftIO)
 import Control.Monad.Reader (runReaderT)
 import Control.Monad.Trans.Except (runExceptT)
@@ -91,7 +90,7 @@ defaultTestConfigWith name vars =
 defaultTestConfig :: Text -> TestConfig
 defaultTestConfig name = defaultTestConfigWith name (Vars [])
 
-setVars :: ∀ m e. (Nvim m, MonadDeepError e RpcError m) => Vars -> m ()
+setVars :: ∀ m e. NvimE e m => Vars -> m ()
 setVars (Vars vars) =
   traverse_ set vars
   where
