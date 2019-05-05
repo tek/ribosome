@@ -3,12 +3,16 @@ packages:
 - modules/core
 - modules/test
 - .
-- ../cornea
-- ../chiasma
-- ../nvim-hs
+# - ../cornea
+# - ../chiasma
+# - ../nvim-hs
 extra-deps:
 - base-noprelude-4.11.1.0
 - pretty-terminal-0.1.0.0
 - posix-pty-0.2.1.1
-# - cornea-0.1.0.0
-# - chiasma-0.1.0.0
+- github: neovimhaskell/nvim-hs
+  commit: 63e7ef2fc40110e23240a6d0109a8bae2e29c4fa
+- github: tek/cornea
+  commit: 524c1093e7802295bcbfcf2b1ee28b3d8d7ccde2
+- github: tek/chiasma-hs
+  commit: 970bfacabc2fe06754375dcdb932cc4824dcda7b

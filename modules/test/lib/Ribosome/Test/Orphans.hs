@@ -4,11 +4,10 @@ module Ribosome.Test.Orphans where
 
 import Control.Monad.IO.Class (liftIO)
 import Control.Monad.IO.Unlift (withRunInIO)
-import Control.Monad.Trans.Reader (ReaderT(ReaderT), runReaderT)
 import Neovim (Neovim)
 import Test.Framework.AssertM (AssertM(..))
 
-import Ribosome.Control.Monad.Ribo (RNeovim, Ribo(Ribo, unRibo))
+import Ribosome.Control.Monad.Ribo (Ribo(Ribo, unRibo))
 
 instance AssertM (Neovim e) where
   genericAssertFailure__ l =
