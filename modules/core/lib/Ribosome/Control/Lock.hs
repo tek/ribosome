@@ -1,13 +1,10 @@
-module Ribosome.Control.Lock(
-  getOrCreateLock,
-  lockOrSkip,
-) where
+module Ribosome.Control.Lock where
 
+import Control.Exception.Lifted (finally)
 import qualified Control.Lens as Lens (at, view)
 import Control.Monad.IO.Class (MonadIO)
-import Control.Monad.IO.Unlift (MonadUnliftIO)
+import Control.Monad.Trans.Control (MonadBaseControl)
 import qualified Data.Map as Map (insert)
-import UnliftIO (finally)
 import UnliftIO.STM (TMVar, newTMVarIO, tryPutTMVar, tryTakeTMVar)
 
 import Ribosome.Control.Monad.Ribo (MonadRibo, pluginInternalL, pluginInternalModifyL)
@@ -36,7 +33,13 @@ getOrCreateLock key = do
       modifyLocks $ Map.insert key tv
       getOrCreateLock key
 
-lockOrSkip :: (MonadRibo m, MonadIO m, MonadUnliftIO m) => Text -> m () -> m ()
+lockOrSkip ::
+  MonadRibo m =>
+  MonadIO m =>
+  MonadBaseControl IO m =>
+  Text ->
+  m () ->
+  m ()
 lockOrSkip key thunk = do
   currentLock <- getOrCreateLock key
   currentState <- atomically $ tryTakeTMVar currentLock

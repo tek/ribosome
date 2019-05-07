@@ -99,6 +99,7 @@ reportErrorOr_ name =
   reportErrorOr name . const
 
 reportError' ::
+  ∀ e m a .
   (MonadRibo m, Nvim m, MonadIO m, ReportError e) =>
   Text ->
   Either e a ->
