@@ -11,14 +11,12 @@ module Ribosome.Prelude (
   dbgs,
   dbgm,
   mapLeft,
-  modify,
   undefined,
   (<$$>),
 ) where
 
 import Control.Monad.DeepError (MonadDeepError(throwHoist), catchAt, hoistEither)
-import Control.Monad.DeepState (MonadDeepState, get, getL, gets, getsL, modifyL, put, setL)
-import qualified Control.Monad.DeepState as DeepState (modify)
+import Control.Monad.DeepState (MonadDeepState, get, getL, gets, getsL, modify, modifyL, modifyM, modifyM', put, setL)
 import Data.DeepLenses (deepLenses)
 import Data.DeepPrisms (deepPrisms)
 import Data.Either.Combinators (mapLeft)
@@ -43,11 +41,3 @@ dbgm ma = do
   a <- ma
   dbgs a
   return a
-
-modify ::
-  ∀ s' s m .
-  MonadDeepState s s' m =>
-  (s' -> s') ->
-  m ()
-modify =
-  DeepState.modify

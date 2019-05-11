@@ -143,11 +143,22 @@ instance MsgpackDecode ByteString where
   fromMsgpack (ObjectString os) = Right os
   fromMsgpack o = Util.illegalType "ByteString" o
 
+instance MsgpackDecode Char where
+  fromMsgpack o@(ObjectString os) =
+    check . decodeUtf8 $ os
+    where
+      check [c] = Right c
+      check _ = Util.invalid "multiple characters when decoding Char" o
+  fromMsgpack o = Util.illegalType "Char" o
+
 instance MsgpackDecode a => MsgpackDecode (Maybe a) where
   fromMsgpack ObjectNil = Right Nothing
   fromMsgpack o = Just <$> fromMsgpack o
-
   missingKey _ _ = Right Nothing
+
+instance (MsgpackDecode a, MsgpackDecode b) => MsgpackDecode (Either a b) where
+  fromMsgpack o =
+    fromRight (Left <$> fromMsgpack o) (Right <$> fromMsgpack o)
 
 instance MsgpackDecode Bool where
   fromMsgpack (ObjectBool a) = Right a

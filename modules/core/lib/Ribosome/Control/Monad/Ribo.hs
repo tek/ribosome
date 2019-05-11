@@ -8,8 +8,6 @@ import Control.Lens (Lens')
 import qualified Control.Lens as Lens (mapMOf, over, view)
 import Control.Monad.Base (MonadBase(..))
 import Control.Monad.Catch (MonadCatch, MonadMask, MonadThrow)
-import Control.Monad.DeepError (MonadDeepError(throwHoist))
-import Control.Monad.DeepState (MonadDeepState(modifyM))
 import Control.Monad.Error.Class (MonadError(..))
 import Control.Monad.Fail (MonadFail)
 import Control.Monad.IO.Class (MonadIO, liftIO)
@@ -67,14 +65,14 @@ safeModifyTMVarM ::
   MonadBaseControl IO m =>
   (a -> m a) ->
   TMVar a ->
-  m ()
+  m a
 safeModifyTMVarM f tmvar =
   process =<< atomically (takeTMVar tmvar)
   where
     process a =
       onException (restore =<< f a) (restore a)
-    restore =
-      atomically . putTMVar tmvar
+    restore a =
+      a <$ (atomically . putTMVar tmvar $ a)
 
 deriving instance MonadReader (Ribosome s) (Ribo s e)
 
@@ -94,8 +92,8 @@ instance DeepLenses s s' => MonadDeepState s s' (Ribo s e) where
   get =
     Lens.view public <$> (atomically . readTMVar =<< riboStateVar)
 
-  modifyM f =
-    safeModifyTMVarM trans =<< riboStateVar
+  modifyM' f =
+    Lens.view public <$> (safeModifyTMVarM trans =<< riboStateVar)
     where
       trans = Lens.mapMOf public f
 

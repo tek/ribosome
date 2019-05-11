@@ -19,6 +19,7 @@ dependencies:
 - bytestring
 - chiasma
 - composition-extra
+- conduit
 - containers
 - cornea
 - data-default
@@ -46,6 +47,7 @@ dependencies:
 - safe
 - split
 - stm
+- stm-conduit
 - template-haskell
 - text
 - th-abstraction

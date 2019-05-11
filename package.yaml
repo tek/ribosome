@@ -21,6 +21,7 @@ dependencies:
 - composition-extra
 - containers
 - cornea
+- conduit
 - data-default
 - deepseq
 - directory
