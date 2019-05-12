@@ -1,6 +1,7 @@
 module Ribosome.Menu.Simple where
 
 import qualified Control.Lens as Lens (over)
+import Data.Map ((!?))
 import qualified Data.Text as Text (length, take)
 
 import Ribosome.Menu.Data.Menu (Menu(Menu))
@@ -11,6 +12,8 @@ import qualified Ribosome.Menu.Data.MenuItem as MenuItem (MenuItem(text))
 import Ribosome.Menu.Data.MenuUpdate (MenuUpdate(MenuUpdate))
 import Ribosome.Menu.Prompt.Data.Prompt (Prompt(Prompt))
 
+type Mappings m = Map Text (Menu -> Prompt -> m Menu)
+
 updateFilter :: Text -> Prompt -> Menu -> Menu
 updateFilter char (Prompt cursor _ text) (Menu items _ stack) =
   Menu items (filter ((text ==) . prefix . MenuItem.text) items) stack
@@ -18,12 +21,12 @@ updateFilter char (Prompt cursor _ text) (Menu items _ stack) =
     prefix =
       Text.take (Text.length text)
 
-simpleMenu ::
+basicMenu ::
   Monad m =>
   (MenuUpdate -> m Menu) ->
   MenuUpdate ->
   m Menu
-simpleMenu consumer (MenuUpdate event menu) =
+basicMenu consumer (MenuUpdate event menu) =
   consumer . MenuUpdate event . transform event $ menu
   where
     transform (MenuEvent.PromptChange char prompt) =
@@ -34,6 +37,27 @@ simpleMenu consumer (MenuUpdate event menu) =
       Lens.over Menu.items (item :)
     transform MenuEvent.Quit =
       id
+
+mappingConsumer ::
+  Monad m =>
+  Mappings m ->
+  MenuUpdate ->
+  m Menu
+mappingConsumer mappings (MenuUpdate (MenuEvent.Mapping char prompt) menu) =
+  handler menu prompt
+  where
+    handler =
+      fromMaybe (const . return) (mappings !? char)
+mappingConsumer _ (MenuUpdate _ menu) =
+  return menu
+
+simpleMenu ::
+  Monad m =>
+  Mappings m ->
+  MenuUpdate ->
+  m Menu
+simpleMenu =
+  basicMenu . mappingConsumer
 
 renderNvimMenu :: MenuUpdate -> m ()
 renderNvimMenu =

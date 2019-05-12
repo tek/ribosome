@@ -12,7 +12,9 @@ module Ribosome.Prelude (
   dbgs,
   dbgm,
   mapLeft,
+  tuple,
   undefined,
+  unit,
   (<$$>),
 ) where
 
@@ -43,3 +45,17 @@ dbgm ma = do
   a <- ma
   dbgs a
   return a
+
+unit ::
+  Applicative f =>
+  f ()
+unit =
+  pure ()
+
+tuple ::
+  Applicative f =>
+  f a ->
+  f b ->
+  f (a, b)
+tuple fa fb =
+  (,) <$> fa <*> fb
