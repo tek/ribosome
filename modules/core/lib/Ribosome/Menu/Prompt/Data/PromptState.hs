@@ -1,6 +1,6 @@
 {-# LANGUAGE TemplateHaskell #-}
 
-module Ribosome.Menu.Data.PromptState where
+module Ribosome.Menu.Prompt.Data.PromptState where
 
 data PromptState =
   Insert

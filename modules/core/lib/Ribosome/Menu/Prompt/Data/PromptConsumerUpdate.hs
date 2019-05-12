@@ -1,7 +1,7 @@
 module Ribosome.Menu.Prompt.Data.PromptConsumerUpdate where
 
-import Ribosome.Menu.Data.Prompt (Prompt)
-import Ribosome.Menu.Data.PromptEvent (PromptEvent)
+import Ribosome.Menu.Prompt.Data.Prompt (Prompt)
+import Ribosome.Menu.Prompt.Data.PromptEvent (PromptEvent)
 
 data PromptConsumerUpdate =
   PromptConsumerUpdate {

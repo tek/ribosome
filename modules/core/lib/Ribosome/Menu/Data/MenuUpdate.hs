@@ -1,13 +1,12 @@
 module Ribosome.Menu.Data.MenuUpdate where
 
-import Ribosome.Menu.Data.MenuContent (MenuContent)
+import Ribosome.Menu.Data.Menu (Menu)
 import Ribosome.Menu.Data.MenuEvent (MenuEvent)
-import Ribosome.Menu.Data.Prompt (Prompt)
+import Ribosome.Menu.Prompt.Data.Prompt (Prompt)
 
 data MenuUpdate =
   MenuUpdate {
     _event :: MenuEvent,
-    _content :: MenuContent,
-    _prompt :: Prompt
+    _menu :: Menu
   }
   deriving (Eq, Show)

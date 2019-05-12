@@ -7,44 +7,61 @@ import Control.Concurrent.MVar.Lifted (modifyMVar_)
 import Control.Monad.Trans.Control (MonadBaseControl)
 import Test.Framework
 
+import Ribosome.Menu.Data.Menu (Menu(Menu))
 import Ribosome.Menu.Data.MenuConfig (MenuConfig(MenuConfig))
-import Ribosome.Menu.Data.MenuContent (MenuContent(MenuContent))
+import qualified Ribosome.Menu.Data.MenuEvent as MenuEvent (MenuEvent(..))
 import Ribosome.Menu.Data.MenuItem (MenuItem(MenuItem))
 import Ribosome.Menu.Data.MenuUpdate (MenuUpdate(MenuUpdate))
-import Ribosome.Menu.Data.Prompt (Prompt(Prompt))
-import Ribosome.Menu.Data.PromptConfig (PromptConfig(PromptConfig))
-import Ribosome.Menu.Data.PromptEvent (PromptEvent)
-import qualified Ribosome.Menu.Data.PromptEvent as PromptEvent (PromptEvent(..))
-import qualified Ribosome.Menu.Data.PromptState as PromptState (PromptState(..))
-import Ribosome.Menu.Prompt (basicTransition)
+import Ribosome.Menu.Prompt.Data.Prompt (Prompt(Prompt))
+import Ribosome.Menu.Prompt.Data.PromptConfig (PromptConfig(PromptConfig))
+import Ribosome.Menu.Prompt.Data.PromptEvent (PromptEvent)
+import qualified Ribosome.Menu.Prompt.Data.PromptEvent as PromptEvent (PromptEvent(..))
+import qualified Ribosome.Menu.Prompt.Data.PromptState as PromptState (PromptState(..))
+import Ribosome.Menu.Prompt.Run (basicTransition)
 import Ribosome.Menu.Run (runMenu)
 import Ribosome.Menu.Simple (simpleMenu)
 import Ribosome.System.Time (sleep)
+import Ribosome.Test.Tmux (tmuxGuiSpecDef)
+import TestError (RiboT)
 
 promptInput ::
-  Monad m =>
+  MonadIO m =>
   ConduitT () PromptEvent m ()
-promptInput =
+promptInput = do
+  lift $ sleep 0.1
   yieldMany [
-    PromptEvent.Character "w",
+    PromptEvent.Character "i",
     PromptEvent.Character "esc",
-    PromptEvent.Character "j",
-    PromptEvent.Character "a"
+    PromptEvent.Character "k",
+    PromptEvent.Character "a",
+    PromptEvent.Character "2"
     ]
 
 handle ::
   MonadBaseControl IO m =>
   MVar [Prompt] ->
   MenuUpdate ->
-  m ()
-handle var (MenuUpdate _ (MenuContent _) prompt) =
-  modifyMVar_ var $ return . (prompt :)
+  m Menu
+handle prompts (MenuUpdate event menu) =
+  check event
+  where
+    check (MenuEvent.PromptChange _ prompt) =
+      store prompt
+    check (MenuEvent.Mapping _ prompt) =
+      store prompt
+    check _ =
+      return menu
+    store prompt =
+      menu <$ modifyMVar_ prompts (return . (prompt :))
 
 render ::
   MonadIO m =>
+  MonadBaseControl IO m =>
+  MVar [[MenuItem]] ->
   MenuUpdate ->
   m ()
-render (MenuUpdate _ (MenuContent _) _) =
+render varItems (MenuUpdate _ (Menu _ items _)) = do
+  modifyMVar_ varItems (return . (items :))
   sleep 0.01
 
 menuItems ::
@@ -52,23 +69,50 @@ menuItems ::
   ConduitT () MenuItem m ()
 menuItems =
   yieldMany [
-    MenuItem "item1",
-    MenuItem "item2",
-    MenuItem "item3",
-    MenuItem "item4"
+    MenuItem "i1",
+    MenuItem "j1",
+    MenuItem "i2",
+    MenuItem "i3",
+    MenuItem "j2",
+    MenuItem "i4"
     ]
 
-target :: [Prompt]
-target =
-  uncurry one' <$> [(1, PromptState.Insert), (0, PromptState.Normal), (0, PromptState.Normal), (0, PromptState.Insert)]
+promptsTarget :: [Prompt]
+promptsTarget =
+  uncurry one' <$> [
+    (1, PromptState.Insert),
+    (0, PromptState.Normal),
+    (0, PromptState.Normal),
+    (1, PromptState.Insert)
+    ]
   where
-    one' c s = Prompt c s ""
+    one' c s = Prompt c s "i"
 
-test_menu :: IO ()
-test_menu = do
-  var <- newMVar []
-  runMenu (MenuConfig menuItems (simpleMenu (handle var)) render promptConfig) `runReaderT` ()
-  assertEqual target =<< readMVar var
+itemsTarget :: [[MenuItem]]
+itemsTarget =
+  [
+    item <$> ["i2"],
+    item <$> ["i4", "i3", "i2", "i1"]
+    ]
+  where
+    item =
+      MenuItem
+
+test_strictMenu :: IO ()
+test_strictMenu = do
+  prompts <- newMVar []
+  items <- newMVar []
+  runMenu (MenuConfig menuItems (simpleMenu (handle prompts)) (render items) promptConfig) `runReaderT` ()
+  assertEqual itemsTarget =<< take 2 <$> readMVar items
+  assertEqual promptsTarget =<< take 4 . reverse <$> readMVar prompts
   where
     promptConfig =
       PromptConfig promptInput basicTransition (const (return ()))
+
+nvimMenuSpec :: RiboT ()
+nvimMenuSpec =
+  return ()
+
+test_nvimMenu :: IO ()
+test_nvimMenu =
+  tmuxGuiSpecDef nvimMenuSpec

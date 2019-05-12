@@ -1,4 +1,4 @@
-module Ribosome.Menu.Data.Codes where
+module Ribosome.Menu.Prompt.Data.Codes where
 
 import Data.Map (Map)
 import qualified Data.Map as Map (fromList)

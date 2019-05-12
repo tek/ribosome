@@ -1,37 +1,42 @@
 module Ribosome.Menu.Run where
 
-import Conduit (ConduitT, mapC, mapMC, runConduit, sinkNull, transPipe, (.|))
+import Conduit (ConduitT, awaitForever, mapC, mapMC, runConduit, sinkNull, transPipe, yield, (.|))
 import Control.Monad.Trans.Resource (ResourceT, runResourceT)
 import qualified Data.Conduit.Combinators as Conduit (concatMap)
+import Data.Conduit.Lift (evalStateC)
 import Data.Conduit.TMChan (mergeSources)
 import UnliftIO (MonadUnliftIO)
 
+import Ribosome.Menu.Data.Menu (Menu)
 import Ribosome.Menu.Data.MenuConfig (MenuConfig(MenuConfig))
-import Ribosome.Menu.Data.MenuContent (MenuContent(MenuContent))
 import qualified Ribosome.Menu.Data.MenuEvent as MenuEvent (MenuEvent(..))
 import Ribosome.Menu.Data.MenuItem (MenuItem)
 import Ribosome.Menu.Data.MenuUpdate (MenuUpdate(MenuUpdate))
-import Ribosome.Menu.Data.PromptConfig (PromptConfig)
-import qualified Ribosome.Menu.Data.PromptEvent as PromptEvent (PromptEvent(..))
-import Ribosome.Menu.Prompt (promptC)
+import Ribosome.Menu.Prompt.Data.Prompt (Prompt(Prompt))
+import Ribosome.Menu.Prompt.Data.PromptConfig (PromptConfig)
 import Ribosome.Menu.Prompt.Data.PromptConsumerUpdate (PromptConsumerUpdate(PromptConsumerUpdate))
+import qualified Ribosome.Menu.Prompt.Data.PromptEvent as PromptEvent (PromptEvent(..))
+import qualified Ribosome.Menu.Prompt.Data.PromptState as PromptState (PromptState(..))
+import Ribosome.Menu.Prompt.Run (promptC)
 
 updateMenu ::
   Monad m =>
-  (MenuUpdate -> m ()) ->
+  (MenuUpdate -> m Menu) ->
   Either PromptConsumerUpdate MenuItem ->
-  m (Maybe MenuUpdate)
-updateMenu consumer (Left (PromptConsumerUpdate event prompt)) = do
-  consumer update
-  return (Just update)
+  ConduitT (Either PromptConsumerUpdate MenuItem) MenuUpdate (StateT Menu m) ()
+updateMenu consumer input =
+  yield . update =<< (lift . modifyM') (lift . consumer . update)
   where
-    update = MenuUpdate (menuEvent event) (MenuContent []) prompt
-    menuEvent (PromptEvent.Character a) =
-      MenuEvent.Character a
-    menuEvent PromptEvent.EOF =
+    update =
+      MenuUpdate (either promptUpdate MenuEvent.NewItems input)
+    promptUpdate (PromptConsumerUpdate event prompt) =
+      promptEvent event prompt
+    promptEvent (PromptEvent.Character a) prompt@(Prompt _ PromptState.Insert _) =
+      MenuEvent.PromptChange a prompt
+    promptEvent (PromptEvent.Character a) prompt =
+      MenuEvent.Mapping a prompt
+    promptEvent PromptEvent.EOF _ =
       MenuEvent.Quit
-updateMenu _ (Right _) =
-  return Nothing
 
 menuSources ::
   MonadUnliftIO m =>
@@ -57,4 +62,4 @@ runMenu (MenuConfig items handle render promptConfig) =
     loop source =
       source .| transPipe lift pipe
     pipe =
-      mapMC (updateMenu handle) .| Conduit.concatMap maybeToList .| mapMC render .| sinkNull
+      evalStateC def (awaitForever (updateMenu handle)) .| mapMC render .| sinkNull

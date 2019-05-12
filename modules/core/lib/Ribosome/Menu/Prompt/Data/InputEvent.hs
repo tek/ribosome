@@ -1,4 +1,4 @@
-module Ribosome.Menu.Data.InputEvent where
+module Ribosome.Menu.Prompt.Data.InputEvent where
 
 data InputEvent =
   Character Text

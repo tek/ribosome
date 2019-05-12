@@ -1,4 +1,4 @@
-module Ribosome.Menu.Data.CursorUpdate where
+module Ribosome.Menu.Prompt.Data.CursorUpdate where
 
 data CursorUpdate =
   Unmodified

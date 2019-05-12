@@ -1,8 +1,8 @@
 {-# LANGUAGE TemplateHaskell #-}
 
-module Ribosome.Menu.Data.Prompt where
+module Ribosome.Menu.Prompt.Data.Prompt where
 
-import Ribosome.Menu.Data.PromptState (PromptState)
+import Ribosome.Menu.Prompt.Data.PromptState (PromptState)
 
 data Prompt =
   Prompt {

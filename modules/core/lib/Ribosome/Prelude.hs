@@ -5,6 +5,7 @@ module Ribosome.Prelude (
   module Control.Monad.DeepState,
   module Data.DeepLenses,
   module Data.DeepPrisms,
+  module Data.Default,
   module Data.Foldable,
   module Relude,
   dbg,
@@ -19,6 +20,7 @@ import Control.Monad.DeepError (MonadDeepError(throwHoist), catchAt, hoistEither
 import Control.Monad.DeepState (MonadDeepState, get, getL, gets, getsL, modify, modifyL, modifyM, modifyM', put, setL)
 import Data.DeepLenses (deepLenses)
 import Data.DeepPrisms (deepPrisms)
+import Data.Default (Default(def))
 import Data.Either.Combinators (mapLeft)
 import Data.Foldable (foldl, traverse_)
 import Data.Functor (void)
