@@ -41,11 +41,14 @@ createScratchTab = do
   vimCommand "tabnew"
   vimGetCurrentTabpage
 
-createScratchWindow :: NvimE e m => Bool -> Bool -> Maybe Int -> m Window
-createScratchWindow vertical wrap size = do
+createScratchWindow :: NvimE e m => Bool -> Bool -> Bool -> Maybe Int -> m Window
+createScratchWindow vertical wrap bottom size = do
   vimCommand $ prefix <> cmd
   win <- vimGetCurrentWindow
   windowSetOption win "wrap" (toMsgpack wrap)
+  windowSetOption win "number" (toMsgpack False)
+  windowSetOption win "cursorline" (toMsgpack True)
+  when bottom (vimCommand "wincmd J")
   return win
   where
     cmd = if vertical then "vnew" else "new"
@@ -58,13 +61,13 @@ createScratchUiInTab = do
   return (win, Just tab)
 
 createScratchUiInWindow :: NvimE e m => Bool -> Bool -> Bool -> Maybe Int -> m (Window, Maybe Tabpage)
-createScratchUiInWindow vertical wrap _ size = do
-  win <- createScratchWindow vertical wrap size
+createScratchUiInWindow vertical wrap bottom size = do
+  win <- createScratchWindow vertical wrap bottom size
   return (win, Nothing)
 
 createScratchUi :: NvimE e m => ScratchOptions -> m (Window, Maybe Tabpage)
-createScratchUi (ScratchOptions False vertical wrap focus _ _ size _ _ _) =
-  createScratchUiInWindow vertical wrap focus size
+createScratchUi (ScratchOptions False vertical wrap _ _ bottom _ size _ _ _) =
+  createScratchUiInWindow vertical wrap bottom size
 createScratchUi _ =
   createScratchUiInTab
 
@@ -93,7 +96,7 @@ setupScratchIn ::
   Maybe Tabpage ->
   ScratchOptions ->
   m Scratch
-setupScratchIn previous window tab (ScratchOptions useTab _ _ focus _ _ _ syntax mappings name) = do
+setupScratchIn previous window tab (ScratchOptions useTab _ _ focus _ _ _ _ syntax mappings name) = do
   buffer <- setupScratchBuffer window name
   traverse_ (executeWindowSyntax window) syntax
   traverse_ (activateBufferMapping buffer) mappings

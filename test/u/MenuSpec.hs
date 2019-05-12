@@ -8,6 +8,7 @@ import Control.Monad.Trans.Control (MonadBaseControl)
 import qualified Data.Map as Map (fromList)
 import Test.Framework
 
+import Ribosome.Control.Monad.Ribo (Ribo(Ribo), runRibo)
 import Ribosome.Menu.Data.Menu (Menu(Menu))
 import Ribosome.Menu.Data.MenuConfig (MenuConfig(MenuConfig))
 import qualified Ribosome.Menu.Data.MenuEvent as MenuEvent (MenuEvent(..))
@@ -20,7 +21,7 @@ import Ribosome.Menu.Prompt.Data.PromptEvent (PromptEvent)
 import qualified Ribosome.Menu.Prompt.Data.PromptEvent as PromptEvent (PromptEvent(..))
 import qualified Ribosome.Menu.Prompt.Data.PromptState as PromptState (PromptState(..))
 import Ribosome.Menu.Prompt.Run (basicTransition)
-import Ribosome.Menu.Run (runMenu)
+import Ribosome.Menu.Run (nvimMenu, runMenu)
 import Ribosome.Menu.Simple (basicMenu, simpleMenu)
 import Ribosome.System.Time (sleep)
 import Ribosome.Test.Tmux (tmuxGuiSpecDef)
@@ -39,7 +40,7 @@ menuItems ::
   [Text] ->
   ConduitT () MenuItem m ()
 menuItems =
-  yieldMany . fmap MenuItem
+  yieldMany . fmap (MenuItem "name")
 
 storePrompt ::
   MonadBaseControl IO m =>
@@ -64,7 +65,7 @@ render ::
   MVar [[MenuItem]] ->
   MenuUpdate ->
   m ()
-render varItems (MenuUpdate _ (Menu _ items _)) = do
+render varItems (MenuUpdate _ (Menu _ items _ _)) = do
   modifyMVar_ varItems (return . (items :))
   sleep 0.01
 
@@ -123,7 +124,7 @@ itemsTarget1 =
     ]
   where
     item =
-      MenuItem
+      MenuItem "name"
 
 test_strictMenuModeChange :: IO ()
 test_strictMenuModeChange = do
@@ -146,7 +147,7 @@ items2 =
 
 itemsTarget :: [MenuItem]
 itemsTarget =
-  [MenuItem "long-item"]
+  [MenuItem "name" "long-item"]
 
 test_strictMenuFilter :: IO ()
 test_strictMenuFilter = do
@@ -170,7 +171,7 @@ exec ::
   Menu ->
   Prompt ->
   m Menu
-exec var m@(Menu _ items _) _ =
+exec var m@(Menu _ items _ _) _ =
   m <$ swapMVar var (MenuItem.text <$> items)
 
 test_strictMenuExecute :: IO ()
@@ -178,11 +179,3 @@ test_strictMenuExecute = do
   var <- newMVar []
   items <- menuTest (simpleMenu (Map.fromList [("cr", exec var)])) items3 chars3
   assertEqual (reverse items3) =<< readMVar var
-
-nvimMenuSpec :: RiboT ()
-nvimMenuSpec =
-  return ()
-
-test_nvimMenu :: IO ()
-test_nvimMenu =
-  tmuxGuiSpecDef nvimMenuSpec

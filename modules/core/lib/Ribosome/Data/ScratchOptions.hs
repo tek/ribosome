@@ -12,6 +12,7 @@ data ScratchOptions =
     wrap :: Bool,
     focus :: Bool,
     resize :: Bool,
+    bottom :: Bool,
     size :: Maybe Int,
     maxSize :: Maybe Int,
     syntax :: [Syntax],
@@ -20,7 +21,7 @@ data ScratchOptions =
   }
 
 defaultScratchOptions :: Text -> ScratchOptions
-defaultScratchOptions = ScratchOptions False False False False True Nothing Nothing [] []
+defaultScratchOptions = ScratchOptions False False False False True True Nothing Nothing [] []
 
 instance Default ScratchOptions where
   def = defaultScratchOptions "scratch"

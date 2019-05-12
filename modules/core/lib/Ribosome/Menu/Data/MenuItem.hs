@@ -1,7 +1,8 @@
 module Ribosome.Menu.Data.MenuItem where
 
-newtype MenuItem =
+data MenuItem =
   MenuItem {
+    ident :: Text,
     text :: Text
   }
   deriving (Eq, Show)

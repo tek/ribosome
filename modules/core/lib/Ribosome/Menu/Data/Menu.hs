@@ -11,7 +11,8 @@ data Menu =
   Menu {
     _items :: [MenuItem],
     _filtered :: [MenuItem],
-    _stack :: [(Text, [MenuItem])]
+    _stack :: [(Text, [MenuItem])],
+    _selected :: Int
   }
   deriving (Eq, Show, Generic, Default)
 

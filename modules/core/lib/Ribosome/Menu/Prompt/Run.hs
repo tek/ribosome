@@ -68,7 +68,7 @@ promptC ::
   PromptConfig m ->
   ConduitT () PromptConsumerUpdate m ()
 promptC config@(PromptConfig source _ _) =
-  source .| evalStateC pristinePrompt (awaitForever (processPromptEvent config))
+  (yield PromptEvent.Init *> source) .| evalStateC pristinePrompt (awaitForever (processPromptEvent config))
 
 basicTransition ::
   Monad m =>
