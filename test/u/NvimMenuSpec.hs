@@ -22,9 +22,11 @@ import Ribosome.Menu.Prompt.Data.PromptConfig (PromptConfig(PromptConfig))
 import Ribosome.Menu.Prompt.Data.PromptEvent (PromptEvent)
 import qualified Ribosome.Menu.Prompt.Data.PromptEvent as PromptEvent (PromptEvent(..))
 import qualified Ribosome.Menu.Prompt.Data.PromptState as PromptState (PromptState(..))
+import Ribosome.Menu.Prompt.Nvim (nvimRenderPrompt)
 import Ribosome.Menu.Prompt.Run (basicTransition)
 import Ribosome.Menu.Run (nvimMenu, runMenu)
 import Ribosome.Menu.Simple (basicMenu, defaultMenu)
+import Ribosome.Nvim.Api.IO (vimCommand)
 import Ribosome.System.Time (sleep)
 import Ribosome.Test.Tmux (tmuxGuiSpecDef)
 import TestError (RiboT)
@@ -46,7 +48,7 @@ menuItems =
 
 chars :: [Text]
 chars =
-  ["i", "esc", "k", "k", "k", "cr"]
+  ["i", "t", "e", "esc", "k", "k", "k", "cr"]
 
 items :: [Text]
 items =
@@ -66,12 +68,13 @@ exec var m@(Menu _ items _ selected) _ =
 
 nvimMenuStrictSpec :: RiboT ()
 nvimMenuStrictSpec = do
+  vimCommand "highlight link RibosomePromptCaret TermCursor"
   var <- newMVar Nothing
   Ribo $ lift $ nvimMenu def (menuItems items) (defaultMenu (Map.fromList [("cr", exec var)])) promptConfig
   gassertEqual (Just "item5") =<< liftIO (readMVar var)
   where
     promptConfig =
-      PromptConfig (promptInput chars) basicTransition (const unit)
+      PromptConfig (promptInput chars) basicTransition nvimRenderPrompt
 
 test_nvimMenuStrict :: IO ()
 test_nvimMenuStrict =
