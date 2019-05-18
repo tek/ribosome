@@ -98,6 +98,7 @@ default-extensions:
 - TupleSections
 - TypeApplications
 - TypeFamilies
+- TypeOperators
 - TypeSynonymInstances
 - UnicodeSyntax
 - ViewPatterns

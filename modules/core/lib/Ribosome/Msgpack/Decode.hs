@@ -1,5 +1,3 @@
-{-# LANGUAGE TypeOperators #-}
-
 module Ribosome.Msgpack.Decode where
 
 import Control.Monad.DeepError (MonadDeepError, hoistEitherWith)
@@ -158,7 +156,7 @@ instance MsgpackDecode a => MsgpackDecode (Maybe a) where
 
 instance (MsgpackDecode a, MsgpackDecode b) => MsgpackDecode (Either a b) where
   fromMsgpack o =
-    fromRight (Left <$> fromMsgpack o) (Right <$> fromMsgpack o)
+    fromRight (Left <$> fromMsgpack o) (Right . Right <$> fromMsgpack o)
 
 instance MsgpackDecode Bool where
   fromMsgpack (ObjectBool a) = Right a
