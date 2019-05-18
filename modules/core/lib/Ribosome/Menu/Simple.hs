@@ -14,7 +14,7 @@ import qualified Ribosome.Menu.Data.MenuItem as MenuItem (MenuItem(text))
 import Ribosome.Menu.Data.MenuUpdate (MenuUpdate(MenuUpdate))
 import Ribosome.Menu.Prompt.Data.Prompt (Prompt(Prompt))
 
-type Mappings m = Map Text (Menu -> Prompt -> m (MenuConsumerAction m, Menu))
+type Mappings m a = Map Text (Menu -> Prompt -> m (MenuConsumerAction m a, Menu))
 
 updateFilter :: Text -> Menu -> Menu
 updateFilter text (Menu items _ stack selected _) =
@@ -31,9 +31,9 @@ reapplyFilter menu@(Menu _ _ _ _ (MenuFilter currentFilter)) =
 
 basicMenu ::
   Monad m =>
-  (MenuUpdate -> m (MenuConsumerAction m, Menu)) ->
-  MenuUpdate ->
-  m (MenuConsumerAction m, Menu)
+  (MenuUpdate m a -> m (MenuConsumerAction m a, Menu)) ->
+  MenuUpdate m a ->
+  m (MenuConsumerAction m a, Menu)
 basicMenu consumer (MenuUpdate event menu) =
   consumer . MenuUpdate event . transform event $ menu
   where
@@ -50,9 +50,9 @@ basicMenu consumer (MenuUpdate event menu) =
 
 mappingConsumer ::
   Monad m =>
-  Mappings m ->
-  MenuUpdate ->
-  m (MenuConsumerAction m, Menu)
+  Mappings m a ->
+  MenuUpdate m a ->
+  m (MenuConsumerAction m a, Menu)
 mappingConsumer mappings (MenuUpdate (MenuEvent.Mapping char prompt) menu) =
   handler menu prompt
   where
@@ -63,9 +63,9 @@ mappingConsumer _ (MenuUpdate _ menu) =
 
 simpleMenu ::
   Monad m =>
-  Mappings m ->
-  MenuUpdate ->
-  m (MenuConsumerAction m, Menu)
+  Mappings m a ->
+  MenuUpdate m a ->
+  m (MenuConsumerAction m a, Menu)
 simpleMenu =
   basicMenu . mappingConsumer
 
@@ -74,45 +74,47 @@ menuCycle ::
   Int ->
   Menu ->
   Prompt ->
-  m (MenuConsumerAction m, Menu)
+  m (MenuConsumerAction m a, Menu)
 menuCycle offset m _ =
   menuContinue (Lens.over Menu.selected add m)
   where
+    count =
+      Lens.views Menu.filtered length m
     add current =
-      (current + offset) `mod` Lens.views Menu.filtered length m
+      if count == 0 then 0 else (current + offset) `mod` count
 
 defaultMappings ::
   Monad m =>
-  Mappings m
+  Mappings m a
 defaultMappings =
   Map.fromList [("k", menuCycle 1), ("j", menuCycle (-1))]
 
 defaultMenu ::
   Monad m =>
-  Mappings m ->
-  MenuUpdate ->
-  m (MenuConsumerAction m, Menu)
+  Mappings m a ->
+  MenuUpdate m a ->
+  m (MenuConsumerAction m a, Menu)
 defaultMenu =
   simpleMenu . (`Map.union` defaultMappings)
 
 menuContinue ::
   Monad m =>
   Menu ->
-  m (MenuConsumerAction m, Menu)
+  m (MenuConsumerAction m a, Menu)
 menuContinue =
   return . (MenuConsumerAction.Continue,)
 
 menuQuit ::
   Monad m =>
   Menu ->
-  m (MenuConsumerAction m, Menu)
+  m (MenuConsumerAction m a, Menu)
 menuQuit =
   return . (MenuConsumerAction.Quit,)
 
 menuQuitWith ::
   Monad m =>
-  m () ->
+  m a ->
   Menu ->
-  m (MenuConsumerAction m, Menu)
+  m (MenuConsumerAction m a, Menu)
 menuQuitWith next =
   return . (MenuConsumerAction.QuitWith next,)

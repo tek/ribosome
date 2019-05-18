@@ -13,6 +13,7 @@ module Ribosome.Prelude (
   dbgs,
   dbgm,
   mapLeft,
+  modify,
   tuple,
   undefined,
   unit,
@@ -28,7 +29,6 @@ import Control.Monad.DeepState (
   getL,
   gets,
   getsL,
-  modify,
   modifyL,
   modifyM,
   modifyM',
@@ -36,6 +36,7 @@ import Control.Monad.DeepState (
   setL,
   stateM,
   )
+import qualified Control.Monad.DeepState as DeepState (modify)
 import Control.Monad.Trans.Control (MonadBaseControl)
 import Data.DeepLenses (deepLenses)
 import Data.DeepPrisms (deepPrisms)
@@ -82,3 +83,11 @@ unsafeLogS a b = unsafePerformIO $ print a >> return b
 
 unsafeLog :: Text -> b -> b
 unsafeLog a b = unsafePerformIO $ putStrLn a >> return b
+
+modify ::
+  ∀ s' s m .
+  MonadDeepState s s' m =>
+  (s' -> s') ->
+  m ()
+modify =
+  DeepState.modify

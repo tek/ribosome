@@ -8,7 +8,6 @@ import Control.Concurrent.MVar.Lifted (modifyMVar_)
 import Control.Exception.Lifted (bracket)
 import Control.Lens ((^?))
 import qualified Control.Lens as Lens (element)
-import Control.Monad.Trans.Control (MonadBaseControl)
 import qualified Data.Map as Map (fromList)
 import qualified Data.Text as Text (unlines)
 import Test.Framework
@@ -66,7 +65,7 @@ exec ::
   MVar (Maybe Text) ->
   Menu ->
   Prompt ->
-  m (MenuConsumerAction m, Menu)
+  m (MenuConsumerAction m a, Menu)
 exec var m@(Menu _ items _ selected _) _ =
   swapMVar var (MenuItem.text <$> item) *> menuQuit m
   where
@@ -81,7 +80,7 @@ nvimMenuSpec source = do
   gassertEqual (Just "item5") =<< liftIO (readMVar var)
   where
     promptConfig =
-      PromptConfig source basicTransition nvimRenderPrompt
+      PromptConfig source basicTransition nvimRenderPrompt True
 
 nvimMenuStrictSpec :: RiboT ()
 nvimMenuStrictSpec =
@@ -104,7 +103,6 @@ nvimMenuNativeSpec :: RiboT ()
 nvimMenuNativeSpec = do
   defineLoopFunction
   () <- vimCommand "call feedkeys(\":call Loop()\\<cr>\")"
-  sleep 0.1
   bracket (fork input) cleanup (const $ nvimMenuSpec (getCharC 0.5))
   where
     input = do

@@ -11,5 +11,6 @@ data PromptConfig m =
   PromptConfig {
     _source :: ConduitT () PromptEvent m (),
     _modes :: PromptEvent -> PromptState -> m PromptUpdate,
-    _render :: Prompt -> m ()
+    _render :: Prompt -> m (),
+    _insert :: Bool
   }

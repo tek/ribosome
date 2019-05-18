@@ -198,14 +198,19 @@ showInScratchDef lines' =
 killScratch ::
   MonadRibo m =>
   NvimE e m =>
+  Scratch ->
+  m ()
+killScratch (Scratch name buffer window _ tab) = do
+  traverse_ closeTabpage tab *> closeWindow window *> wipeBuffer buffer
+  pluginInternalModify $ Lens.set (scratchLens name) Nothing
+
+killScratchByName ::
+  MonadRibo m =>
+  NvimE e m =>
   Text ->
   m ()
-killScratch name = do
-  maybe (return ()) kill =<< lookupScratch name
-  pluginInternalModify $ Lens.set (scratchLens name) Nothing
-  where
-    kill (Scratch _ buffer window _ tab) =
-      traverse_ closeTabpage tab *> closeWindow window *> wipeBuffer buffer
+killScratchByName name =
+  traverse_ killScratch =<< lookupScratch name
 
 scratchPreviousWindow ::
   MonadRibo m =>

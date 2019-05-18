@@ -16,8 +16,10 @@ import Ribosome.Menu.Data.MenuConsumerAction (MenuConsumerAction)
 import qualified Ribosome.Menu.Data.MenuConsumerAction as MenuConsumerAction (MenuConsumerAction(..))
 import Ribosome.Menu.Data.MenuEvent (MenuEvent, QuitReason)
 import qualified Ribosome.Menu.Data.MenuEvent as MenuEvent (MenuEvent(..))
-import qualified Ribosome.Menu.Data.MenuEvent as QuitReason (QuitReason(NoOutput, PromptError, Regular))
+import qualified Ribosome.Menu.Data.MenuEvent as QuitReason (QuitReason(..))
 import Ribosome.Menu.Data.MenuItem (MenuItem)
+import Ribosome.Menu.Data.MenuResult (MenuResult)
+import qualified Ribosome.Menu.Data.MenuResult as MenuResult (MenuResult(..))
 import Ribosome.Menu.Data.MenuUpdate (MenuUpdate(MenuUpdate))
 import Ribosome.Menu.Nvim (renderNvimMenu)
 import Ribosome.Menu.Prompt.Data.Prompt (Prompt(Prompt))
@@ -33,7 +35,7 @@ import Ribosome.Scratch (showInScratch)
 promptEvent ::
   PromptEvent ->
   Prompt ->
-  MenuEvent
+  MenuEvent m a
 promptEvent (PromptEvent.Character a) prompt@(Prompt _ PromptState.Insert _) =
   MenuEvent.PromptChange a prompt
 promptEvent (PromptEvent.Character a) prompt =
@@ -43,28 +45,33 @@ promptEvent PromptEvent.Init prompt =
 promptEvent (PromptEvent.Unexpected code) _ =
   MenuEvent.Quit . QuitReason.PromptError $ "unexpected input character code: " <> show code
 
-menuUpdate ::
+menuEvent ::
   Either PromptConsumerUpdate MenuItem ->
-  Menu ->
-  MenuUpdate
-menuUpdate input =
-  MenuUpdate $ either promptUpdate MenuEvent.NewItems input
+  MenuEvent m a
+menuEvent =
+  either promptUpdate MenuEvent.NewItems
   where
     promptUpdate (PromptConsumerUpdate event prompt) =
       promptEvent event prompt
 
 updateMenu ::
   Monad m =>
-  MenuConsumer m ->
+  MenuConsumer m a ->
   Either PromptConsumerUpdate MenuItem ->
-  ConduitT (Either PromptConsumerUpdate MenuItem) MenuUpdate (StateT Menu m) ()
+  ConduitT (Either PromptConsumerUpdate MenuItem) (MenuUpdate m a) (StateT Menu m) ()
 updateMenu (MenuConsumer consumer) input =
-  emit =<< (lift . stateM $ lift . consumer . menuUpdate input)
+  emit =<< (lift . stateM $ lift . consumer . MenuUpdate (menuEvent input))
   where
     emit MenuConsumerAction.Continue =
-      yield =<< menuUpdate input <$> get
-    emit _ =
-      yield . MenuUpdate (MenuEvent.Quit QuitReason.Regular) =<< get
+      update (menuEvent input)
+    emit (MenuConsumerAction.QuitWith ma) =
+      update (MenuEvent.Quit (QuitReason.Execute ma))
+    emit MenuConsumerAction.Quit =
+      update (MenuEvent.Quit QuitReason.Aborted)
+    emit (MenuConsumerAction.Return a) =
+      update (MenuEvent.Quit (QuitReason.Return a))
+    update event =
+      yield . MenuUpdate event =<< get
 
 menuSources ::
   MonadIO m =>
@@ -81,7 +88,7 @@ menuSources promptConfig items =
 
 menuTerminator ::
   Monad m =>
-  ConduitT MenuUpdate QuitReason m ()
+  ConduitT (MenuUpdate m a) (QuitReason m a) m ()
 menuTerminator =
   traverse_ check =<< await
   where
@@ -90,13 +97,28 @@ menuTerminator =
     check _ =
       menuTerminator
 
+menuResult ::
+  Monad m =>
+  QuitReason m a ->
+  m (MenuResult a)
+menuResult (QuitReason.Return a) =
+  return (MenuResult.Return a)
+menuResult (QuitReason.Execute ma) =
+  MenuResult.Return <$> ma
+menuResult (QuitReason.PromptError err) =
+  return (MenuResult.Error err)
+menuResult QuitReason.NoOutput =
+  return MenuResult.NoOutput
+menuResult QuitReason.Aborted =
+  return MenuResult.Aborted
+
 runMenu ::
   MonadIO m =>
   MonadBaseControl IO m =>
-  MenuConfig m ->
-  m QuitReason
+  MenuConfig m a ->
+  m (MenuResult a)
 runMenu (MenuConfig items handle render promptConfig) =
-  quitReason <$> withMergedSources 64 consumer (menuSources promptConfig items)
+  menuResult =<< quitReason <$> withMergedSources 64 consumer (menuSources promptConfig items)
   where
     consumer =
       evalStateC def (awaitForever (updateMenu handle)) .| iterM render .| menuTerminator .| Conduit.last
@@ -111,9 +133,9 @@ nvimMenu ::
   MonadDeepError e DecodeError m =>
   ScratchOptions ->
   ConduitT () MenuItem m () ->
-  (MenuUpdate -> m (MenuConsumerAction m, Menu)) ->
+  (MenuUpdate m a -> m (MenuConsumerAction m a, Menu)) ->
   PromptConfig m ->
-  m QuitReason
+  m (MenuResult a)
 nvimMenu options items handle promptConfig =
   run =<< showInScratch [] options
   where

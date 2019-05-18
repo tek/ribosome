@@ -47,8 +47,8 @@ menuItems =
 storePrompt ::
   MonadBaseControl IO m =>
   MVar [Prompt] ->
-  MenuUpdate ->
-  m (MenuConsumerAction m, Menu)
+  MenuUpdate m a ->
+  m (MenuConsumerAction m a, Menu)
 storePrompt prompts (MenuUpdate event menu) =
   check event
   where
@@ -65,14 +65,14 @@ render ::
   MonadIO m =>
   MonadBaseControl IO m =>
   MVar [[MenuItem]] ->
-  MenuUpdate ->
+  MenuUpdate m a ->
   m ()
 render varItems (MenuUpdate _ (Menu _ items _ _ _)) = do
   modifyMVar_ varItems (return . (items :))
   sleep 0.01
 
 menuTest ::
-  (MenuUpdate -> (ReaderT () IO) (MenuConsumerAction (ReaderT () IO), Menu)) ->
+  (MenuUpdate (ReaderT () IO) a -> (ReaderT () IO) (MenuConsumerAction (ReaderT () IO) a, Menu)) ->
   [Text] ->
   [Text] ->
   IO [[MenuItem]]
@@ -82,7 +82,7 @@ menuTest handler items chars = do
   readMVar itemsVar
   where
     promptConfig =
-      PromptConfig (promptInput chars) basicTransition (const unit)
+      PromptConfig (promptInput chars) basicTransition (const unit) True
 
 promptTest :: [Text] -> [Text] -> IO ([[MenuItem]], [Prompt])
 promptTest items chars = do
@@ -176,7 +176,7 @@ exec ::
   MVar [Text] ->
   Menu ->
   Prompt ->
-  m (MenuConsumerAction m, Menu)
+  m (MenuConsumerAction m a, Menu)
 exec var m@(Menu _ items _ _ _) _ =
   swapMVar var (MenuItem.text <$> items) *> menuQuit m
 

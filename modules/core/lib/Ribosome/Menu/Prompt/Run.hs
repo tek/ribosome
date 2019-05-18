@@ -58,7 +58,7 @@ processPromptEvent ::
   PromptConfig m ->
   PromptEvent ->
   ConduitT PromptEvent PromptConsumerUpdate (StateT Prompt m) ()
-processPromptEvent (PromptConfig _ modes renderer) event = do
+processPromptEvent (PromptConfig _ modes renderer _) event = do
   newPrompt <- lift . modifyM' $ lift . updatePrompt modes event
   yield (PromptConsumerUpdate event newPrompt)
   lift . lift . renderer $ newPrompt
@@ -67,8 +67,8 @@ promptC ::
   Monad m =>
   PromptConfig m ->
   ConduitT () PromptConsumerUpdate m ()
-promptC config@(PromptConfig source _ _) =
-  (yield PromptEvent.Init *> source) .| evalStateC pristinePrompt (awaitForever (processPromptEvent config))
+promptC config@(PromptConfig source _ _ insert) =
+  (yield PromptEvent.Init *> source) .| evalStateC (pristinePrompt insert) (awaitForever (processPromptEvent config))
 
 basicTransition ::
   Monad m =>
@@ -90,6 +90,6 @@ basicTransition (PromptEvent.Character c) PromptState.Insert =
 basicTransition _ a =
   return (PromptUpdate a CursorUpdate.Unmodified TextUpdate.Unmodified)
 
-pristinePrompt :: Prompt
-pristinePrompt =
-  Prompt 0 PromptState.Insert ""
+pristinePrompt :: Bool -> Prompt
+pristinePrompt insert =
+  Prompt 0 (if insert then PromptState.Insert else PromptState.Normal) ""
