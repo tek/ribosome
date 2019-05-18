@@ -118,3 +118,11 @@ menuQuitWith ::
   m (MenuConsumerAction m a, Menu)
 menuQuitWith next =
   return . (MenuConsumerAction.QuitWith next,)
+
+menuReturn ::
+  Monad m =>
+  a ->
+  Menu ->
+  m (MenuConsumerAction m a, Menu)
+menuReturn a =
+  return . (MenuConsumerAction.Return a,)
