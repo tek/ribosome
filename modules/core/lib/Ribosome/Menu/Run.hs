@@ -2,6 +2,7 @@ module Ribosome.Menu.Run where
 
 import Conduit (ConduitT, await, awaitForever, mapC, yield, (.|))
 import Control.Monad.Trans.Control (MonadBaseControl)
+import Data.Composition ((.::))
 import Data.Conduit.Combinators (iterM)
 import qualified Data.Conduit.Combinators as Conduit (last)
 import Data.Conduit.Lift (evalStateC)
@@ -28,6 +29,7 @@ import Ribosome.Menu.Prompt.Data.PromptConsumerUpdate (PromptConsumerUpdate(Prom
 import Ribosome.Menu.Prompt.Data.PromptEvent (PromptEvent)
 import qualified Ribosome.Menu.Prompt.Data.PromptEvent as PromptEvent (PromptEvent(..))
 import qualified Ribosome.Menu.Prompt.Data.PromptState as PromptState (PromptState(..))
+import Ribosome.Menu.Prompt.Nvim (promptBlocker)
 import Ribosome.Menu.Prompt.Run (promptC)
 import Ribosome.Msgpack.Error (DecodeError)
 import Ribosome.Scratch (showInScratch)
@@ -143,3 +145,16 @@ nvimMenu options items handle promptConfig =
       runMenu $ MenuConfig items (MenuConsumer handle) (render scratch) promptConfig
     render =
       renderNvimMenu options
+
+foregroundNvimMenu ::
+  NvimE e m =>
+  MonadRibo m =>
+  MonadBaseControl IO m =>
+  MonadDeepError e DecodeError m =>
+  ScratchOptions ->
+  ConduitT () MenuItem m () ->
+  (MenuUpdate m a -> m (MenuConsumerAction m a, Menu)) ->
+  PromptConfig m ->
+  m (MenuResult a)
+foregroundNvimMenu =
+  promptBlocker .:: nvimMenu
