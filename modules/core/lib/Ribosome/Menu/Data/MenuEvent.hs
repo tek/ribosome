@@ -3,6 +3,14 @@ module Ribosome.Menu.Data.MenuEvent where
 import Ribosome.Menu.Data.MenuItem (MenuItem)
 import Ribosome.Menu.Prompt.Data.Prompt (Prompt)
 
+data QuitReason =
+  Regular
+  |
+  PromptError Text
+  |
+  NoOutput
+  deriving (Eq, Show)
+
 data MenuEvent =
   Init Prompt
   |
@@ -12,5 +20,5 @@ data MenuEvent =
   |
   NewItems MenuItem
   |
-  Quit
+  Quit QuitReason
   deriving (Eq, Show)

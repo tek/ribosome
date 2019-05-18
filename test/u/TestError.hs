@@ -1,4 +1,5 @@
 {-# LANGUAGE TemplateHaskell #-}
+{-# LANGUAGE DeriveAnyClass #-}
 
 module TestError where
 
@@ -16,14 +17,9 @@ data TestError =
   Decode DecodeError
   |
   Mapping MappingError
-  deriving Show
+  deriving (Generic, ReportError)
 
 deepPrisms ''TestError
-
-instance ReportError TestError where
-  errorReport (Rpc e) = errorReport e
-  errorReport (Decode e) = errorReport e
-  errorReport (Mapping e) = errorReport e
 
 handleTestError :: TestError -> Ribo s TestError ()
 handleTestError _ =

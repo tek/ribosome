@@ -5,5 +5,5 @@ data InputEvent =
   |
   NoInput
   |
-  EOF
+  Unexpected Int
   deriving (Eq, Show)

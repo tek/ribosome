@@ -1,7 +1,9 @@
 module Ribosome.Menu.Data.MenuAction where
 
+import Ribosome.Menu.Data.MenuEvent (QuitReason)
+
 data MenuAction =
-  Quit
+  Quit QuitReason
   |
   Continue
   |

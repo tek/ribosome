@@ -1,7 +1,9 @@
 module Ribosome.Menu.Prompt.Data.Codes where
 
-import Data.Map (Map)
+import Control.Exception.Lifted (try)
+import Data.Map (Map, (!?))
 import qualified Data.Map as Map (fromList)
+import qualified Data.Text as Text (singleton)
 
 specialCodes :: Map Text Text
 specialCodes =
@@ -104,3 +106,16 @@ modifierCodes =
     (128, "command")
     ]
 
+decodeInputChar :: Text -> Maybe Text
+decodeInputChar =
+  (specialCodes !?)
+
+decodeInputNum ::
+  MonadBaseControl IO m =>
+  Int ->
+  m (Maybe Text)
+decodeInputNum a =
+  maybe codepoint (return . Just) (specialNumCodes !? a)
+  where
+    codepoint =
+      fmap Text.singleton . rightToMaybe @SomeException <$> try (return $ chr a)

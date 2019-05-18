@@ -1,105 +1,123 @@
-{-# LANGUAGE TemplateHaskell #-}
-
 module Ribosome.Menu.Run where
 
-import Conduit (ConduitT, awaitForever, mapC, mapMC, runConduit, sinkNull, transPipe, yield, (.|))
-import Control.Monad.Trans.Resource (ResourceT, runResourceT)
-import qualified Data.Conduit.Combinators as Conduit (concatMap)
+import Conduit (ConduitT, await, awaitForever, mapC, yield, (.|))
+import Control.Monad.Trans.Control (MonadBaseControl)
+import Data.Conduit.Combinators (iterM)
+import qualified Data.Conduit.Combinators as Conduit (last)
 import Data.Conduit.Lift (evalStateC)
-import Data.Conduit.TMChan (mergeSources)
-import UnliftIO (MonadUnliftIO)
 
-import Ribosome.Control.Monad.Ribo (MonadRibo, Nvim)
+import Ribosome.Control.Monad.Ribo (MonadRibo, NvimE)
+import Ribosome.Data.Conduit (withMergedSources)
 import Ribosome.Data.ScratchOptions (ScratchOptions)
-import Ribosome.Error.Report (processErrorReport')
-import Ribosome.Error.Report.Class (errorReport)
 import Ribosome.Menu.Data.Menu (Menu)
 import Ribosome.Menu.Data.MenuConfig (MenuConfig(MenuConfig))
+import Ribosome.Menu.Data.MenuConsumer (MenuConsumer(MenuConsumer))
+import Ribosome.Menu.Data.MenuConsumerAction (MenuConsumerAction)
+import qualified Ribosome.Menu.Data.MenuConsumerAction as MenuConsumerAction (MenuConsumerAction(..))
+import Ribosome.Menu.Data.MenuEvent (MenuEvent, QuitReason)
 import qualified Ribosome.Menu.Data.MenuEvent as MenuEvent (MenuEvent(..))
+import qualified Ribosome.Menu.Data.MenuEvent as QuitReason (QuitReason(NoOutput, PromptError, Regular))
 import Ribosome.Menu.Data.MenuItem (MenuItem)
 import Ribosome.Menu.Data.MenuUpdate (MenuUpdate(MenuUpdate))
 import Ribosome.Menu.Nvim (renderNvimMenu)
 import Ribosome.Menu.Prompt.Data.Prompt (Prompt(Prompt))
 import Ribosome.Menu.Prompt.Data.PromptConfig (PromptConfig)
 import Ribosome.Menu.Prompt.Data.PromptConsumerUpdate (PromptConsumerUpdate(PromptConsumerUpdate))
+import Ribosome.Menu.Prompt.Data.PromptEvent (PromptEvent)
 import qualified Ribosome.Menu.Prompt.Data.PromptEvent as PromptEvent (PromptEvent(..))
 import qualified Ribosome.Menu.Prompt.Data.PromptState as PromptState (PromptState(..))
 import Ribosome.Menu.Prompt.Run (promptC)
 import Ribosome.Msgpack.Error (DecodeError)
-import Ribosome.Nvim.Api.RpcCall (RpcError)
 import Ribosome.Scratch (showInScratch)
+
+promptEvent ::
+  PromptEvent ->
+  Prompt ->
+  MenuEvent
+promptEvent (PromptEvent.Character a) prompt@(Prompt _ PromptState.Insert _) =
+  MenuEvent.PromptChange a prompt
+promptEvent (PromptEvent.Character a) prompt =
+  MenuEvent.Mapping a prompt
+promptEvent PromptEvent.Init prompt =
+  MenuEvent.Init prompt
+promptEvent (PromptEvent.Unexpected code) _ =
+  MenuEvent.Quit . QuitReason.PromptError $ "unexpected input character code: " <> show code
+
+menuUpdate ::
+  Either PromptConsumerUpdate MenuItem ->
+  Menu ->
+  MenuUpdate
+menuUpdate input =
+  MenuUpdate $ either promptUpdate MenuEvent.NewItems input
+  where
+    promptUpdate (PromptConsumerUpdate event prompt) =
+      promptEvent event prompt
 
 updateMenu ::
   Monad m =>
-  (MenuUpdate -> m Menu) ->
+  MenuConsumer m ->
   Either PromptConsumerUpdate MenuItem ->
   ConduitT (Either PromptConsumerUpdate MenuItem) MenuUpdate (StateT Menu m) ()
-updateMenu consumer input =
-  yield . update =<< (lift . modifyM') (lift . consumer . update)
+updateMenu (MenuConsumer consumer) input =
+  emit =<< (lift . stateM $ lift . consumer . menuUpdate input)
   where
-    update =
-      MenuUpdate (either promptUpdate MenuEvent.NewItems input)
-    promptUpdate (PromptConsumerUpdate event prompt) =
-      promptEvent event prompt
-    promptEvent (PromptEvent.Character a) prompt@(Prompt _ PromptState.Insert _) =
-      MenuEvent.PromptChange a prompt
-    promptEvent (PromptEvent.Character a) prompt =
-      MenuEvent.Mapping a prompt
-    promptEvent PromptEvent.Init prompt =
-      MenuEvent.Init prompt
-    promptEvent PromptEvent.EOF _ =
-      MenuEvent.Quit
+    emit MenuConsumerAction.Continue =
+      yield =<< menuUpdate input <$> get
+    emit _ =
+      yield . MenuUpdate (MenuEvent.Quit QuitReason.Regular) =<< get
 
 menuSources ::
-  MonadUnliftIO m =>
+  MonadIO m =>
   PromptConfig m ->
   ConduitT () MenuItem m () ->
-  m (ConduitT () (Either PromptConsumerUpdate MenuItem) (ResourceT m) ())
+  [ConduitT () (Either PromptConsumerUpdate MenuItem) m ()]
 menuSources promptConfig items =
-  mergeSources (transPipe lift <$> [promptSource, itemSource]) 64
+  [promptSource, itemSource]
   where
     promptSource =
       promptC promptConfig .| mapC Left
     itemSource =
       items .| mapC Right
 
-runMenu ::
-  MonadUnliftIO m =>
-  MenuConfig m ->
-  m ()
-runMenu (MenuConfig items handle render promptConfig) =
-  runResourceT . runConduit . loop =<< menuSources promptConfig items
+menuTerminator ::
+  Monad m =>
+  ConduitT MenuUpdate QuitReason m ()
+menuTerminator =
+  traverse_ check =<< await
   where
-    loop source =
-      source .| transPipe lift pipe
-    pipe =
-      evalStateC def (awaitForever (updateMenu handle)) .| mapMC render .| sinkNull
+    check (MenuUpdate (MenuEvent.Quit reason) _) =
+      yield reason
+    check _ =
+      menuTerminator
 
-data MenuNvimError =
-  Rpc RpcError
-  |
-  Decode DecodeError
+runMenu ::
+  MonadIO m =>
+  MonadBaseControl IO m =>
+  MenuConfig m ->
+  m QuitReason
+runMenu (MenuConfig items handle render promptConfig) =
+  quitReason <$> withMergedSources 64 consumer (menuSources promptConfig items)
+  where
+    consumer =
+      evalStateC def (awaitForever (updateMenu handle)) .| iterM render .| menuTerminator .| Conduit.last
+    quitReason =
+      fromMaybe QuitReason.NoOutput
 
-deepPrisms ''MenuNvimError
 
 nvimMenu ::
-  MonadUnliftIO m =>
+  NvimE e m =>
   MonadRibo m =>
-  Nvim m =>
+  MonadBaseControl IO m =>
+  MonadDeepError e DecodeError m =>
   ScratchOptions ->
   ConduitT () MenuItem m () ->
-  (MenuUpdate -> m Menu) ->
+  (MenuUpdate -> m (MenuConsumerAction m, Menu)) ->
   PromptConfig m ->
-  m ()
-nvimMenu options items handle promptConfig = do
-  scratch <- runExceptT @MenuNvimError $ showInScratch [] options
-  either (processErrorReport' "menu" . report) run scratch
+  m QuitReason
+nvimMenu options items handle promptConfig =
+  run =<< showInScratch [] options
   where
     run scratch =
-      runMenu $ MenuConfig items handle (render scratch) promptConfig
-    render scratch =
-      void . runExceptT @MenuNvimError . renderNvimMenu options scratch
-    report (Rpc e) =
-      errorReport e
-    report (Decode e) =
-      errorReport e
+      runMenu $ MenuConfig items (MenuConsumer handle) (render scratch) promptConfig
+    render =
+      renderNvimMenu options

@@ -97,3 +97,7 @@ encodedNope =
 test_maybeMissing :: IO ()
 test_maybeMissing =
   assertEqual (Right (Nope 5 Nothing)) (doc2Text $ fromMsgpack encodedNope)
+
+test_decodeEither :: IO ()
+test_decodeEither =
+  assertEqual (Right (Left "text" :: Either Text Int)) (doc2Text $ fromMsgpack $ ObjectString "text")

@@ -11,6 +11,8 @@ import Test.Framework
 import Ribosome.Control.Monad.Ribo (Ribo(Ribo), runRibo)
 import Ribosome.Menu.Data.Menu (Menu(Menu))
 import Ribosome.Menu.Data.MenuConfig (MenuConfig(MenuConfig))
+import Ribosome.Menu.Data.MenuConsumer (MenuConsumer(MenuConsumer))
+import Ribosome.Menu.Data.MenuConsumerAction (MenuConsumerAction)
 import qualified Ribosome.Menu.Data.MenuEvent as MenuEvent (MenuEvent(..))
 import Ribosome.Menu.Data.MenuItem (MenuItem(MenuItem))
 import qualified Ribosome.Menu.Data.MenuItem as MenuItem (MenuItem(text))
@@ -22,7 +24,7 @@ import qualified Ribosome.Menu.Prompt.Data.PromptEvent as PromptEvent (PromptEve
 import qualified Ribosome.Menu.Prompt.Data.PromptState as PromptState (PromptState(..))
 import Ribosome.Menu.Prompt.Run (basicTransition)
 import Ribosome.Menu.Run (nvimMenu, runMenu)
-import Ribosome.Menu.Simple (basicMenu, simpleMenu)
+import Ribosome.Menu.Simple (basicMenu, menuContinue, menuQuit, simpleMenu)
 import Ribosome.System.Time (sleep)
 import Ribosome.Test.Tmux (tmuxGuiSpecDef)
 import TestError (RiboT)
@@ -46,7 +48,7 @@ storePrompt ::
   MonadBaseControl IO m =>
   MVar [Prompt] ->
   MenuUpdate ->
-  m Menu
+  m (MenuConsumerAction m, Menu)
 storePrompt prompts (MenuUpdate event menu) =
   check event
   where
@@ -55,9 +57,9 @@ storePrompt prompts (MenuUpdate event menu) =
     check (MenuEvent.Mapping _ prompt) =
       store prompt
     check _ =
-      return menu
+      menuContinue menu
     store prompt =
-      menu <$ modifyMVar_ prompts (return . (prompt :))
+      modifyMVar_ prompts (return . (prompt :)) *> menuContinue menu
 
 render ::
   MonadIO m =>
@@ -65,14 +67,18 @@ render ::
   MVar [[MenuItem]] ->
   MenuUpdate ->
   m ()
-render varItems (MenuUpdate _ (Menu _ items _ _)) = do
+render varItems (MenuUpdate _ (Menu _ items _ _ _)) = do
   modifyMVar_ varItems (return . (items :))
   sleep 0.01
 
-menuTest :: (MenuUpdate -> (ReaderT () IO) Menu) -> [Text] -> [Text] -> IO [[MenuItem]]
+menuTest ::
+  (MenuUpdate -> (ReaderT () IO) (MenuConsumerAction (ReaderT () IO), Menu)) ->
+  [Text] ->
+  [Text] ->
+  IO [[MenuItem]]
 menuTest handler items chars = do
   itemsVar <- newMVar []
-  runMenu (MenuConfig (menuItems items) handler (render itemsVar) promptConfig) `runReaderT` ()
+  runMenu (MenuConfig (menuItems items) (MenuConsumer handler) (render itemsVar) promptConfig) `runReaderT` ()
   readMVar itemsVar
   where
     promptConfig =
@@ -170,9 +176,9 @@ exec ::
   MVar [Text] ->
   Menu ->
   Prompt ->
-  m Menu
-exec var m@(Menu _ items _ _) _ =
-  m <$ swapMVar var (MenuItem.text <$> items)
+  m (MenuConsumerAction m, Menu)
+exec var m@(Menu _ items _ _ _) _ =
+  swapMVar var (MenuItem.text <$> items) *> menuQuit m
 
 test_strictMenuExecute :: IO ()
 test_strictMenuExecute = do

@@ -47,6 +47,7 @@ dependencies:
 - safe
 - split
 - stm
+- stm-chans
 - stm-conduit
 - template-haskell
 - text

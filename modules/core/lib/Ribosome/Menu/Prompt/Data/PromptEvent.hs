@@ -5,5 +5,5 @@ data PromptEvent =
   |
   Character Text
   |
-  EOF
+  Unexpected Int
   deriving (Eq, Show)
