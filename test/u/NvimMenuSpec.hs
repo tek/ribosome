@@ -27,7 +27,7 @@ import Ribosome.Menu.Prompt.Data.PromptConfig (PromptConfig(PromptConfig))
 import Ribosome.Menu.Prompt.Data.PromptEvent (PromptEvent)
 import qualified Ribosome.Menu.Prompt.Data.PromptEvent as PromptEvent (PromptEvent(..))
 import qualified Ribosome.Menu.Prompt.Data.PromptState as PromptState (PromptState(..))
-import Ribosome.Menu.Prompt.Nvim (getCharC, nvimRenderPrompt)
+import Ribosome.Menu.Prompt.Nvim (getCharC, nvimRenderPrompt, promptBlocker)
 import Ribosome.Menu.Prompt.Run (basicTransition)
 import Ribosome.Menu.Run (nvimMenu, runMenu)
 import Ribosome.Menu.Simple (basicMenu, defaultMenu, menuQuit)
@@ -100,16 +100,13 @@ nativeChars =
   ["i", "t", "e", "<esc>", "k", "k", "k", "<cr>"]
 
 nvimMenuNativeSpec :: RiboT ()
-nvimMenuNativeSpec = do
-  defineLoopFunction
-  () <- vimCommand "call feedkeys(\":call Loop()\\<cr>\")"
-  bracket (fork input) cleanup (const $ nvimMenuSpec (getCharC 0.5))
+nvimMenuNativeSpec =
+  promptBlocker $ bracket (fork input) killThread (const $ nvimMenuSpec (getCharC 0.5))
   where
     input = do
       sleep 0.1
       traverse_ vimInput nativeChars
     cleanup inputThreadId =
-      setVar "looping" False *>
       killThread inputThreadId
 
 test_nvimMenuNative :: IO ()

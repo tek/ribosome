@@ -1,9 +1,12 @@
 module Ribosome.Menu.Prompt.Nvim where
 
 import Conduit (ConduitT, yield)
+import Control.Exception.Lifted (bracket_)
 import qualified Data.Text as Text (singleton, splitAt, uncons)
 
 import Ribosome.Api.Atomic (atomic)
+import Ribosome.Api.Function (defineFunction)
+import Ribosome.Api.Variable (setVar)
 import Ribosome.Control.Monad.Ribo (NvimE)
 import Ribosome.Data.Text (escapeQuotes)
 import Ribosome.Menu.Prompt.Data.Codes (decodeInputChar, decodeInputNum)
@@ -15,7 +18,7 @@ import qualified Ribosome.Menu.Prompt.Data.PromptEvent as PromptEvent (PromptEve
 import Ribosome.Msgpack.Encode (toMsgpack)
 import Ribosome.Msgpack.Error (DecodeError)
 import qualified Ribosome.Nvim.Api.Data as ApiData (vimCommand)
-import Ribosome.Nvim.Api.IO (vimCallFunction)
+import Ribosome.Nvim.Api.IO (vimCallFunction, vimCommand)
 import Ribosome.Nvim.Api.RpcCall (syncRpcCall)
 import Ribosome.System.Time (sleep)
 
@@ -23,7 +26,7 @@ getChar ::
   NvimE e m =>
   MonadBaseControl IO m =>
   m InputEvent
-getChar = do
+getChar =
   event =<< vimCallFunction "getchar" [toMsgpack False]
   where
     event (Right c) =
@@ -69,3 +72,40 @@ nvimRenderPrompt (Prompt cursor _ text) =
       [("None", pre), ("RibosomePromptCaret", Text.singleton cursorChar), ("None", post)]
     (pre, rest) = Text.splitAt cursor text
     (cursorChar, post) = fromMaybe (' ', "") (Text.uncons rest)
+
+loopFunctionName :: Text
+loopFunctionName =
+  "MyoMenuLoop"
+
+loopVarName :: Text
+loopVarName =
+  "ribosome_menu_looping"
+
+defineLoopFunction ::
+  NvimE e m =>
+  m ()
+defineLoopFunction =
+  defineFunction loopFunctionName [] ["while g:" <> loopVarName, "sleep 50m", "endwhile"]
+
+startLoop ::
+  NvimE e m =>
+  m ()
+startLoop = do
+  defineLoopFunction
+  setVar loopVarName True
+  vimCommand $ "call feedkeys(\":call " <> loopFunctionName <> "()\\<cr>\")"
+
+killLoop ::
+  NvimE e m =>
+  m ()
+killLoop = do
+  setVar loopVarName False
+  vimCommand $ "delfunction! " <> loopFunctionName
+
+promptBlocker ::
+  NvimE e m =>
+  MonadBaseControl IO m =>
+  m a ->
+  m a
+promptBlocker =
+  bracket_ startLoop killLoop
