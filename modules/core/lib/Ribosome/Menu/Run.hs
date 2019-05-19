@@ -1,6 +1,7 @@
 module Ribosome.Menu.Run where
 
 import Conduit (ConduitT, await, awaitForever, mapC, yield, (.|))
+import Control.Exception.Lifted (bracket)
 import Control.Monad.Trans.Control (MonadBaseControl)
 import Data.Composition ((.::))
 import Data.Conduit.Combinators (iterM)
@@ -24,10 +25,12 @@ import qualified Ribosome.Menu.Data.MenuResult as MenuResult (MenuResult(..))
 import Ribosome.Menu.Data.MenuUpdate (MenuUpdate(MenuUpdate))
 import Ribosome.Menu.Nvim (renderNvimMenu)
 import Ribosome.Menu.Prompt.Data.Prompt (Prompt(Prompt))
+import Ribosome.Menu.Prompt.Data.PromptConfig (PromptConfig(PromptConfig))
 import Ribosome.Menu.Prompt.Data.PromptConfig (PromptConfig)
 import Ribosome.Menu.Prompt.Data.PromptConsumerUpdate (PromptConsumerUpdate(PromptConsumerUpdate))
 import Ribosome.Menu.Prompt.Data.PromptEvent (PromptEvent)
 import qualified Ribosome.Menu.Prompt.Data.PromptEvent as PromptEvent (PromptEvent(..))
+import Ribosome.Menu.Prompt.Data.PromptRenderer (PromptRenderer(PromptRenderer))
 import qualified Ribosome.Menu.Prompt.Data.PromptState as PromptState (PromptState(..))
 import Ribosome.Menu.Prompt.Nvim (promptBlocker)
 import Ribosome.Menu.Prompt.Run (promptC)
@@ -119,14 +122,17 @@ runMenu ::
   MonadBaseControl IO m =>
   MenuConfig m a ->
   m (MenuResult a)
-runMenu (MenuConfig items handle render promptConfig) =
-  menuResult =<< quitReason <$> withMergedSources 64 consumer (menuSources promptConfig items)
+runMenu (MenuConfig items handle render promptConfig@(PromptConfig _ _ promptRenderer _)) =
+  withPrompt promptRenderer
   where
+    withPrompt (PromptRenderer acquire release renderPrompt) =
+      bracket acquire release (const run)
+    run =
+      menuResult =<< quitReason <$> withMergedSources 64 consumer (menuSources promptConfig items)
     consumer =
       evalStateC def (awaitForever (updateMenu handle)) .| iterM render .| menuTerminator .| Conduit.last
     quitReason =
       fromMaybe QuitReason.NoOutput
-
 
 nvimMenu ::
   NvimE e m =>
@@ -145,16 +151,3 @@ nvimMenu options items handle promptConfig =
       runMenu $ MenuConfig items (MenuConsumer handle) (render scratch) promptConfig
     render =
       renderNvimMenu options
-
-foregroundNvimMenu ::
-  NvimE e m =>
-  MonadRibo m =>
-  MonadBaseControl IO m =>
-  MonadDeepError e DecodeError m =>
-  ScratchOptions ->
-  ConduitT () MenuItem m () ->
-  (MenuUpdate m a -> m (MenuConsumerAction m a, Menu)) ->
-  PromptConfig m ->
-  m (MenuResult a)
-foregroundNvimMenu =
-  promptBlocker .:: nvimMenu

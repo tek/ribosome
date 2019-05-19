@@ -10,7 +10,7 @@ import qualified Ribosome.Menu.Data.Menu as Menu (filtered, items, selected)
 import Ribosome.Menu.Data.MenuConsumerAction (MenuConsumerAction)
 import qualified Ribosome.Menu.Data.MenuConsumerAction as MenuConsumerAction (MenuConsumerAction(..))
 import qualified Ribosome.Menu.Data.MenuEvent as MenuEvent (MenuEvent(..))
-import qualified Ribosome.Menu.Data.MenuItem as MenuItem (MenuItem(text))
+import qualified Ribosome.Menu.Data.MenuItem as MenuItem (MenuItem(_text))
 import Ribosome.Menu.Data.MenuUpdate (MenuUpdate(MenuUpdate))
 import Ribosome.Menu.Prompt.Data.Prompt (Prompt(Prompt))
 
@@ -21,7 +21,7 @@ updateFilter text (Menu items _ stack selected _) =
   Menu items filtered stack selected (MenuFilter text)
   where
     filtered =
-      filter ((text ==) . prefix . MenuItem.text) items
+      filter ((text ==) . prefix . MenuItem._text) items
     prefix =
       Text.take (Text.length text)
 

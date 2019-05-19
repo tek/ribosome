@@ -15,6 +15,7 @@ import qualified Ribosome.Menu.Prompt.Data.InputEvent as InputEvent (InputEvent(
 import Ribosome.Menu.Prompt.Data.Prompt (Prompt(Prompt))
 import Ribosome.Menu.Prompt.Data.PromptEvent (PromptEvent)
 import qualified Ribosome.Menu.Prompt.Data.PromptEvent as PromptEvent (PromptEvent(..))
+import Ribosome.Menu.Prompt.Data.PromptRenderer (PromptRenderer(PromptRenderer))
 import Ribosome.Msgpack.Encode (toMsgpack)
 import Ribosome.Msgpack.Error (DecodeError)
 import qualified Ribosome.Nvim.Api.Data as ApiData (vimCommand)
@@ -109,3 +110,11 @@ promptBlocker ::
   m a
 promptBlocker =
   bracket_ startLoop killLoop
+
+nvimPromptRenderer ::
+  Monad m =>
+  NvimE e m =>
+  MonadDeepError e DecodeError m =>
+  PromptRenderer m
+nvimPromptRenderer =
+  PromptRenderer startLoop (const killLoop) nvimRenderPrompt

@@ -15,14 +15,14 @@ import Ribosome.Menu.Data.MenuConsumer (MenuConsumer(MenuConsumer))
 import Ribosome.Menu.Data.MenuConsumerAction (MenuConsumerAction)
 import qualified Ribosome.Menu.Data.MenuEvent as MenuEvent (MenuEvent(..))
 import Ribosome.Menu.Data.MenuItem (MenuItem(MenuItem))
-import qualified Ribosome.Menu.Data.MenuItem as MenuItem (MenuItem(text))
+import qualified Ribosome.Menu.Data.MenuItem as MenuItem (MenuItem(_text), text)
 import Ribosome.Menu.Data.MenuUpdate (MenuUpdate(MenuUpdate))
 import Ribosome.Menu.Prompt.Data.Prompt (Prompt(Prompt))
 import Ribosome.Menu.Prompt.Data.PromptConfig (PromptConfig(PromptConfig))
 import Ribosome.Menu.Prompt.Data.PromptEvent (PromptEvent)
 import qualified Ribosome.Menu.Prompt.Data.PromptEvent as PromptEvent (PromptEvent(..))
 import qualified Ribosome.Menu.Prompt.Data.PromptState as PromptState (PromptState(..))
-import Ribosome.Menu.Prompt.Run (basicTransition)
+import Ribosome.Menu.Prompt.Run (basicTransition, noPromptRenderer)
 import Ribosome.Menu.Run (nvimMenu, runMenu)
 import Ribosome.Menu.Simple (basicMenu, menuContinue, menuQuit, simpleMenu)
 import Ribosome.System.Time (sleep)
@@ -82,7 +82,7 @@ menuTest handler items chars = do
   readMVar itemsVar
   where
     promptConfig =
-      PromptConfig (promptInput chars) basicTransition (const unit) True
+      PromptConfig (promptInput chars) basicTransition noPromptRenderer True
 
 promptTest :: [Text] -> [Text] -> IO ([[MenuItem]], [Prompt])
 promptTest items chars = do
@@ -178,7 +178,7 @@ exec ::
   Prompt ->
   m (MenuConsumerAction m a, Menu)
 exec var m@(Menu _ items _ _ _) _ =
-  swapMVar var (MenuItem.text <$> items) *> menuQuit m
+  swapMVar var (MenuItem._text <$> items) *> menuQuit m
 
 test_strictMenuExecute :: IO ()
 test_strictMenuExecute = do

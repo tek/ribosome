@@ -11,6 +11,7 @@ import Ribosome.Menu.Prompt.Data.PromptConfig (PromptConfig(PromptConfig))
 import Ribosome.Menu.Prompt.Data.PromptConsumerUpdate (PromptConsumerUpdate(PromptConsumerUpdate))
 import Ribosome.Menu.Prompt.Data.PromptEvent (PromptEvent)
 import qualified Ribosome.Menu.Prompt.Data.PromptEvent as PromptEvent (PromptEvent(..))
+import Ribosome.Menu.Prompt.Data.PromptRenderer (PromptRenderer(PromptRenderer))
 import Ribosome.Menu.Prompt.Data.PromptState (PromptState)
 import qualified Ribosome.Menu.Prompt.Data.PromptState as PromptState (PromptState(..))
 import Ribosome.Menu.Prompt.Data.PromptUpdate (PromptUpdate(PromptUpdate))
@@ -58,10 +59,10 @@ processPromptEvent ::
   PromptConfig m ->
   PromptEvent ->
   ConduitT PromptEvent PromptConsumerUpdate (StateT Prompt m) ()
-processPromptEvent (PromptConfig _ modes renderer _) event = do
+processPromptEvent (PromptConfig _ modes (PromptRenderer _ _ render) _) event = do
   newPrompt <- lift . modifyM' $ lift . updatePrompt modes event
   yield (PromptConsumerUpdate event newPrompt)
-  lift . lift . renderer $ newPrompt
+  lift . lift . render $ newPrompt
 
 promptC ::
   Monad m =>
@@ -93,3 +94,9 @@ basicTransition _ a =
 pristinePrompt :: Bool -> Prompt
 pristinePrompt insert =
   Prompt 0 (if insert then PromptState.Insert else PromptState.Normal) ""
+
+noPromptRenderer ::
+  Applicative m =>
+  PromptRenderer m
+noPromptRenderer =
+  PromptRenderer unit (const unit) (const unit)

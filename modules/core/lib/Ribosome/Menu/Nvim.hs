@@ -6,7 +6,7 @@ import Ribosome.Data.Scratch (Scratch(scratchWindow))
 import Ribosome.Data.ScratchOptions (ScratchOptions)
 import Ribosome.Menu.Data.Menu (Menu(Menu))
 import qualified Ribosome.Menu.Data.MenuEvent as MenuEvent (MenuEvent(Quit))
-import qualified Ribosome.Menu.Data.MenuItem as MenuItem (MenuItem(text))
+import qualified Ribosome.Menu.Data.MenuItem as MenuItem (MenuItem(_text))
 import Ribosome.Menu.Data.MenuUpdate (MenuUpdate(MenuUpdate))
 import Ribosome.Nvim.Api.IO (vimCommand)
 import Ribosome.Scratch (killScratch, setScratchContent)
@@ -25,6 +25,6 @@ renderNvimMenu options scratch (MenuUpdate _ (Menu _ allItems _ selected _)) = d
   setLine (scratchWindow scratch) (max 0 $ length items - selected - 1)
   vimCommand "redraw"
   where
-    text = MenuItem.text <$> items
+    text = MenuItem._text <$> items
     items = take maxItems (reverse allItems)
     maxItems = 100
