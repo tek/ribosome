@@ -36,3 +36,11 @@ echomS ::
   a ->
   m ()
 echomS = echom . show
+
+echon :: MonadRibo m => NvimE e m => Text -> m ()
+echon =
+  echoWithName "echom"
+
+echohl :: MonadRibo m => NvimE e m => Text -> m ()
+echohl =
+  vimCommand . ("echohl " <>)
