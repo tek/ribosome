@@ -26,6 +26,7 @@ import Ribosome.Nvim.Api.IO (
   bufferGetNumber,
   bufferSetName,
   bufferSetOption,
+  nvimWinGetNumber,
   vimCommand,
   vimGetCurrentTabpage,
   vimGetCurrentWindow,
@@ -35,6 +36,7 @@ import Ribosome.Nvim.Api.IO (
   windowSetHeight,
   windowSetOption,
   )
+import Ribosome.Nvim.Api.RpcCall (RpcError)
 
 createScratchTab :: NvimE e m => m Tabpage
 createScratchTab = do
@@ -114,7 +116,11 @@ setupDeleteAutocmd ::
 setupDeleteAutocmd (Scratch name buffer _ _ _) = do
   pname <- capitalize <$> pluginName
   number <- bufferGetNumber buffer
-  vimCommand $ "autocmd BufDelete <buffer=" <> show number <> "> silent! call " <> pname <> "DeleteScratch('" <> name <> "')"
+  vimCommand "augroup RibosomeScratch"
+  vimCommand $ "autocmd RibosomeScratch BufDelete <buffer=" <> show number <> "> " <> deleteCall pname
+  where
+    deleteCall pname =
+      "silent! call " <> pname <> "DeleteScratch('" <> name <> "')"
 
 createScratch ::
   MonadDeepError e DecodeError m =>
@@ -168,9 +174,9 @@ setScratchContent options (Scratch _ buffer win _ _) lines' = do
   bufferSetOption buffer "modifiable" (toMsgpack True)
   setBufferContent buffer (toList lines')
   bufferSetOption buffer "modifiable" (toMsgpack False)
-  when (ScratchOptions.resize options) (windowSetHeight win size)
+  when (ScratchOptions.resize options) (ignoreError @RpcError $ windowSetHeight win size)
   where
-    size = min (length lines') (fromMaybe 30 (ScratchOptions.maxSize options))
+    size = max 1 $ min (length lines') (fromMaybe 30 (ScratchOptions.maxSize options))
 
 showInScratch ::
   Foldable t =>
@@ -201,6 +207,8 @@ killScratch ::
   Scratch ->
   m ()
 killScratch (Scratch name buffer window _ tab) = do
+  number <- bufferGetNumber buffer
+  vimCommand $ "autocmd! RibosomeScratch BufDelete <buffer=" <> show number <> ">"
   traverse_ closeTabpage tab *> closeWindow window *> wipeBuffer buffer
   pluginInternalModify $ Lens.set (scratchLens name) Nothing
 
