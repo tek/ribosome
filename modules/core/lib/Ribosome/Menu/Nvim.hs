@@ -22,9 +22,11 @@ renderNvimMenu _ scratch (MenuUpdate (MenuEvent.Quit _) _) =
   killScratch scratch
 renderNvimMenu options scratch (MenuUpdate _ (Menu _ allItems _ selected _)) = do
   setScratchContent options scratch (reverse text)
-  setLine (scratchWindow scratch) (max 0 $ length items - selected - 1)
+  when (lineNumber > 0) $ setLine (scratchWindow scratch) lineNumber
   vimCommand "redraw"
   where
+    lineNumber =
+      max 0 $ length items - selected - 1
     text = MenuItem._text <$> items
     items = take maxItems (reverse allItems)
     maxItems = 100
