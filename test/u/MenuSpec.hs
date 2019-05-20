@@ -72,7 +72,7 @@ render varItems (MenuUpdate _ (Menu _ items _ _ _)) = do
   sleep 0.01
 
 menuTest ::
-  (MenuUpdate (ReaderT () IO) a -> (ReaderT () IO) (MenuConsumerAction (ReaderT () IO) a, Menu)) ->
+  (MenuUpdate (ReaderT () IO) () -> (ReaderT () IO) (MenuConsumerAction (ReaderT () IO) (), Menu)) ->
   [Text] ->
   [Text] ->
   IO [[MenuItem]]

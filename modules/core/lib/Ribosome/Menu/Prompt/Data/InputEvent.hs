@@ -6,4 +6,8 @@ data InputEvent =
   NoInput
   |
   Unexpected Int
+  |
+  Interrupt
+  |
+  Error Text
   deriving (Eq, Show)

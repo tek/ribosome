@@ -1,7 +1,7 @@
 module Ribosome.Menu.Run where
 
 import Conduit (ConduitT, await, awaitForever, mapC, yield, (.|))
-import Control.Exception.Lifted (bracket)
+import Control.Exception.Lifted (bracket, catch)
 import Control.Monad.Trans.Control (MonadBaseControl)
 import Data.Composition ((.::))
 import Data.Conduit.Combinators (iterM)
@@ -49,6 +49,10 @@ promptEvent PromptEvent.Init prompt =
   MenuEvent.Init prompt
 promptEvent (PromptEvent.Unexpected code) _ =
   MenuEvent.Quit . QuitReason.PromptError $ "unexpected input character code: " <> show code
+promptEvent PromptEvent.Interrupt _ =
+  MenuEvent.Quit QuitReason.Aborted
+promptEvent (PromptEvent.Error e) _ =
+  MenuEvent.Quit (QuitReason.PromptError e)
 
 menuEvent ::
   Either PromptConsumerUpdate MenuItem ->

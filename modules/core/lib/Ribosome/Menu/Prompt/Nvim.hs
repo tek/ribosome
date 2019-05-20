@@ -1,14 +1,17 @@
 module Ribosome.Menu.Prompt.Nvim where
 
 import Conduit (ConduitT, yield)
-import Control.Exception.Lifted (bracket_)
-import qualified Data.Text as Text (singleton, splitAt, uncons)
+import Control.Exception.Lifted (bracket_, try)
+import Control.Monad.DeepError (ignoreError)
+import qualified Data.Text as Text (intercalate, singleton, splitAt, uncons)
 
 import Ribosome.Api.Atomic (atomic)
+import Ribosome.Api.Echo (echo)
 import Ribosome.Api.Function (defineFunction)
 import Ribosome.Api.Variable (setVar)
-import Ribosome.Control.Monad.Ribo (NvimE)
+import Ribosome.Control.Monad.Ribo (MonadRibo, NvimE)
 import Ribosome.Data.Text (escapeQuotes)
+import Ribosome.Log (logDebug)
 import Ribosome.Menu.Prompt.Data.Codes (decodeInputChar, decodeInputNum)
 import Ribosome.Menu.Prompt.Data.InputEvent (InputEvent)
 import qualified Ribosome.Menu.Prompt.Data.InputEvent as InputEvent (InputEvent(..))
@@ -19,28 +22,44 @@ import Ribosome.Menu.Prompt.Data.PromptRenderer (PromptRenderer(PromptRenderer))
 import Ribosome.Msgpack.Encode (toMsgpack)
 import Ribosome.Msgpack.Error (DecodeError)
 import qualified Ribosome.Nvim.Api.Data as ApiData (vimCommand)
-import Ribosome.Nvim.Api.IO (vimCallFunction, vimCommand)
-import Ribosome.Nvim.Api.RpcCall (syncRpcCall)
+import Ribosome.Nvim.Api.IO (nvimCommand, vimCallFunction, vimCommand, vimGetOption, vimSetOption)
+import Ribosome.Nvim.Api.RpcCall (RpcError, syncRpcCall)
 import Ribosome.System.Time (sleep)
+
+quitChar :: Char
+quitChar =
+  '†'
+
+quitCharOrd :: Int
+quitCharOrd =
+  ord quitChar
 
 getChar ::
   NvimE e m =>
+  MonadRibo m =>
   MonadBaseControl IO m =>
   m InputEvent
 getChar =
-  event =<< vimCallFunction "getchar" [toMsgpack False]
+  catchAt @RpcError (const $ return InputEvent.Interrupt) request
   where
+    request =
+      event =<< vimCallFunction "getchar" [toMsgpack False]
     event (Right c) =
       return $ InputEvent.Character (fromMaybe c (decodeInputChar c))
     event (Left 0) =
       return InputEvent.NoInput
+    event (Left num) | num == quitCharOrd =
+      return InputEvent.Interrupt
     event (Left num) =
       maybe (InputEvent.Unexpected num) InputEvent.Character <$> decodeInputNum num
+    rpcError (e :: SomeException) =
+      return (InputEvent.Error (show e))
 
 getCharC ::
   MonadIO m =>
   MonadBaseControl IO m =>
   NvimE e m =>
+  MonadRibo m =>
   Double ->
   ConduitT () PromptEvent m ()
 getCharC interval =
@@ -50,6 +69,10 @@ getCharC interval =
       translate =<< lift getChar
     translate (InputEvent.Character a) =
       yield (PromptEvent.Character a) *> recurse
+    translate InputEvent.Interrupt =
+      yield PromptEvent.Interrupt
+    translate (InputEvent.Error e) =
+      yield (PromptEvent.Error e)
     translate InputEvent.NoInput =
       sleep interval *> recurse
     translate (InputEvent.Unexpected _) =
@@ -68,15 +91,25 @@ nvimRenderPrompt ::
 nvimRenderPrompt (Prompt cursor _ text) =
   void $ atomic calls
   where
+    frags = Text.intercalate " | " (fragments >>= uncurry promptFragment)
     calls = syncRpcCall . ApiData.vimCommand <$> ("redraw" : (fragments >>= uncurry promptFragment))
     fragments =
-      [("None", pre), ("RibosomePromptCaret", Text.singleton cursorChar), ("None", post)]
-    (pre, rest) = Text.splitAt cursor text
-    (cursorChar, post) = fromMaybe (' ', "") (Text.uncons rest)
+      [
+        ("RibosomePromptSign", sign),
+        ("None", pre),
+        ("RibosomePromptCaret", Text.singleton cursorChar),
+        ("None", post)
+        ]
+    (pre, rest) =
+      Text.splitAt cursor text
+    (cursorChar, post) =
+      fromMaybe (' ', "") (Text.uncons rest)
+    sign =
+      "% "
 
 loopFunctionName :: Text
 loopFunctionName =
-  "MyoMenuLoop"
+  "RibosomeMenuLoop"
 
 loopVarName :: Text
 loopVarName =
@@ -86,7 +119,19 @@ defineLoopFunction ::
   NvimE e m =>
   m ()
 defineLoopFunction =
-  defineFunction loopFunctionName [] ["while g:" <> loopVarName, "sleep 50m", "endwhile"]
+  defineFunction loopFunctionName [] lns
+  where
+    lns =
+      [
+        "echo ''",
+        "while g:" <> loopVarName,
+        "try",
+        "sleep 5m",
+        "catch /^Vim:Interrupt$/",
+        "silent! call feedkeys('" <> Text.singleton quitChar <> "')",
+        "endtry",
+        "endwhile"
+        ]
 
 startLoop ::
   NvimE e m =>
@@ -96,12 +141,13 @@ startLoop = do
   setVar loopVarName True
   vimCommand $ "call feedkeys(\":call " <> loopFunctionName <> "()\\<cr>\")"
 
+-- FIXME need to wait for the loop to stop before deleting the function
 killLoop ::
   NvimE e m =>
   m ()
 killLoop = do
   setVar loopVarName False
-  vimCommand $ "delfunction! " <> loopFunctionName
+  ignoreError @RpcError $ vimCommand $ "delfunction! " <> loopFunctionName
 
 promptBlocker ::
   NvimE e m =>
@@ -111,10 +157,40 @@ promptBlocker ::
 promptBlocker =
   bracket_ startLoop killLoop
 
-nvimPromptRenderer ::
-  Monad m =>
+newtype NvimPromptResources =
+  NvimPromptResources {
+    _guicursor :: Text
+  }
+  deriving (Eq, Show)
+
+nvimAcquire ::
   NvimE e m =>
+  m NvimPromptResources
+nvimAcquire = do
+  highlightSet <- catchAs @RpcError False $ True <$ vimCommand "highlight RibosomePromptCaret"
+  unless highlightSet $ vimCommand "highlight link RibosomePromptCaret TermCursor"
+  res <- NvimPromptResources <$> vimGetOption "guicursor"
+  vimSetOption "guicursor" (toMsgpack ("a:None" :: Text))
+  () <- vimCallFunction "inputsave" []
+  startLoop
+  return res
+
+nvimRelease ::
+  NvimE e m =>
+  MonadRibo m =>
+  NvimPromptResources ->
+  m ()
+nvimRelease (NvimPromptResources gc) = do
+  vimSetOption "guicursor" (toMsgpack gc)
+  vimCommand "redraw"
+  vimCommand "echon ''"
+  () <- vimCallFunction "inputrestore" []
+  killLoop
+
+nvimPromptRenderer ::
+  NvimE e m =>
+  MonadRibo m =>
   MonadDeepError e DecodeError m =>
   PromptRenderer m
 nvimPromptRenderer =
-  PromptRenderer startLoop (const killLoop) nvimRenderPrompt
+  PromptRenderer nvimAcquire nvimRelease nvimRenderPrompt

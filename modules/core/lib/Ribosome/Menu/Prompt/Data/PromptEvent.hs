@@ -6,4 +6,8 @@ data PromptEvent =
   Character Text
   |
   Unexpected Int
+  |
+  Interrupt
+  |
+  Error Text
   deriving (Eq, Show)
