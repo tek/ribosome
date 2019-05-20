@@ -36,7 +36,7 @@ newtype SyncRpcCall =
 data RpcError =
   Decode Err
   |
-  Nvim NeovimException
+  Nvim RpcCall NeovimException
   |
   Atomic Text
   deriving Show
@@ -47,19 +47,19 @@ class Rpc c a where
   call :: c -> Neovim e (Either RpcError a)
 
 instance Rpc AsyncRpcCall () where
-  call (AsyncRpcCall (RpcCall name args)) =
-    mapLeft Nvim <$> scall name args
+  call (AsyncRpcCall c@(RpcCall name args)) =
+    mapLeft (Nvim c) <$> scall name args
 
 instance MsgpackDecode a => Rpc SyncRpcCall a where
-  call (SyncRpcCall (RpcCall name args)) =
-    either (Left . Nvim) (mapLeft Decode . fromMsgpack) <$> scall name args
+  call (SyncRpcCall c@(RpcCall name args)) =
+    either (Left . Nvim c) (mapLeft Decode . fromMsgpack) <$> scall name args
 
 instance ReportError RpcError where
   errorReport (Decode err) =
     ErrorReport "error decoding neovim response" ["RpcError.Decode:", rendered] ERROR
     where
       rendered = renderStrict $ layoutPretty defaultLayoutOptions err
-  errorReport (Nvim exc)  =
-    ErrorReport "error in request to neovim" ["RpcError.Nvim:", show exc] ERROR
+  errorReport (Nvim c exc)  =
+    ErrorReport "error in request to neovim" ["RpcError.Nvim:", show c, show exc] ERROR
   errorReport (Atomic msg)  =
     ErrorReport "error in request to neovim" ["RpcError.Atomic:", msg] ERROR

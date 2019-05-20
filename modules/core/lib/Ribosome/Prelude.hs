@@ -22,7 +22,7 @@ module Ribosome.Prelude (
   (<$$>),
 ) where
 
-import Control.Monad.DeepError (MonadDeepError(throwHoist), catchAt, hoistEither)
+import Control.Monad.DeepError (MonadDeepError(throwHoist), catchAs, catchAt, hoistEither, ignoreError)
 import Control.Monad.DeepState (
   MonadDeepState,
   get,

@@ -42,7 +42,7 @@ setting ::
 setting s@(Setting n _ fallback') =
   catchAt handleError $ settingRaw s
   where
-    handleError (RpcError.Nvim _) =
+    handleError (RpcError.Nvim _ _) =
       case fallback' of
         (Just fb) -> return fb
         Nothing -> throwHoist $ SettingError.Unset n
