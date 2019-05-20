@@ -1,9 +1,10 @@
 module Ribosome.Menu.Simple where
 
 import qualified Control.Lens as Lens (over, views)
+import Data.Composition ((.:))
 import Data.Map ((!?))
 import qualified Data.Map as Map (fromList, union)
-import qualified Data.Text as Text (length, take)
+import qualified Data.Text as Text (breakOn, length, null, take)
 
 import Ribosome.Menu.Data.Menu (Menu(Menu), MenuFilter(MenuFilter))
 import qualified Ribosome.Menu.Data.Menu as Menu (filtered, items, selected)
@@ -16,14 +17,19 @@ import Ribosome.Menu.Prompt.Data.Prompt (Prompt(Prompt))
 
 type Mappings m a = Map Text (Menu -> Prompt -> m (MenuConsumerAction m a, Menu))
 
+textContains :: Text -> Text -> Bool
+textContains needle haystack =
+  (Text.null needle) || (not (Text.null haystack) && search needle haystack)
+  where
+    search =
+      not . Text.null . snd .: Text.breakOn
+
 updateFilter :: Text -> Menu -> Menu
 updateFilter text (Menu items _ stack selected _) =
   Menu items filtered stack selected (MenuFilter text)
   where
     filtered =
-      filter ((text ==) . prefix . MenuItem._text) items
-    prefix =
-      Text.take (Text.length text)
+      filter (textContains text . MenuItem._text) items
 
 reapplyFilter :: Menu -> Menu
 reapplyFilter menu@(Menu _ _ _ _ (MenuFilter currentFilter)) =
