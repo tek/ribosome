@@ -1,6 +1,6 @@
 module Ribosome.Plugin.Builtin where
 
-import Neovim.Plugin.Classes (Synchronous(Sync))
+import Neovim.Plugin.Classes (Synchronous(Async))
 
 import Data.MessagePack (Object(ObjectString, ObjectNil))
 import Ribosome.Control.Monad.Ribo (MonadRibo, NvimE)
@@ -26,4 +26,4 @@ deleteScratchRpc ::
   Text ->
   RpcDef m
 deleteScratchRpc pluginName =
-  RpcDef (RpcFunction Sync) (capitalize pluginName <> "DeleteScratch") deleteScratch
+  RpcDef (RpcFunction Async) (capitalize pluginName <> "DeleteScratch") deleteScratch
