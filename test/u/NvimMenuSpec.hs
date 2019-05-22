@@ -34,10 +34,12 @@ import qualified Ribosome.Menu.Prompt.Data.PromptState as PromptState (PromptSta
 import Ribosome.Menu.Prompt.Nvim (getChar, getCharC, nvimPromptRenderer, promptBlocker)
 import Ribosome.Menu.Prompt.Run (basicTransition)
 import Ribosome.Menu.Run (nvimMenu, runMenu)
-import Ribosome.Menu.Simple (basicMenu, defaultMenu, menuQuit, menuReturn)
+import Ribosome.Menu.Simple (Mappings, basicMenu, defaultMenu, menuQuit, menuReturn)
 import Ribosome.Msgpack.Encode (MsgpackEncode(toMsgpack))
 import Ribosome.Nvim.Api.IO (vimCallFunction, vimCommand, vimGetWindows, vimInput)
 import Ribosome.System.Time (sleep)
+import Ribosome.Test.Await (await)
+import Ribosome.Test.Screenshot (assertScreenshot)
 import Ribosome.Test.Tmux (tmuxGuiSpecDef)
 import TestError (RiboT, TestError)
 
@@ -81,13 +83,22 @@ promptConfig ::
 promptConfig source =
   PromptConfig source basicTransition nvimPromptRenderer True
 
-nvimMenuSpec :: ConduitT () PromptEvent (Ribo () TestError) () -> RiboT ()
-nvimMenuSpec source = do
-  result <- promptBlocker spec
-  gassertEqual (MenuResult.Return (Just "item5")) result
-  where
-    spec =
-      nvimMenu def (menuItems items) (defaultMenu (Map.fromList [("cr", exec)])) (promptConfig source)
+runNvimMenu ::
+  Mappings (Ribo () TestError) a ->
+  ConduitT () PromptEvent (Ribo () TestError) () ->
+  RiboT (MenuResult a)
+runNvimMenu mappings source =
+  nvimMenu def (menuItems items) (defaultMenu mappings) (promptConfig source)
+
+mappings :: Mappings (Ribo () TestError) (Maybe Text)
+mappings =
+  Map.fromList [("cr", exec)]
+
+nvimMenuSpec ::
+  ConduitT () PromptEvent (Ribo () TestError) () ->
+  RiboT ()
+nvimMenuSpec =
+  gassertEqual (MenuResult.Return (Just "item5")) <=< runNvimMenu mappings
 
 nvimMenuStrictSpec :: RiboT ()
 nvimMenuStrictSpec =
@@ -129,37 +140,27 @@ test_nvimMenuInterrupt :: IO ()
 test_nvimMenuInterrupt =
   tmuxGuiSpecDef nvimMenuInterruptSpec
 
-defineGetchar ::
-  RiboT ()
-defineGetchar =
-  defineFunction "Getchar" [] body
-  where
-    body = [
-      "try",
-      "return call('getchar', a:000)",
-      "catch /^Vim:Interrupt/",
-      "return 3",
-      "catch",
-      "return 0",
-      "endtry"
-      ]
+returnPrompt ::
+  MonadIO m =>
+  Menu ->
+  Prompt ->
+  m (MenuConsumerAction m Text, Menu)
+returnPrompt m@(Menu _ items _ selected _) (Prompt _ _ text) =
+  menuReturn text m
 
-cursorSpec :: RiboT ()
-cursorSpec = do
-  tid <- fork getter
-  promptBlocker $ traverse_ echo ["a", "b", "c", "d", "e", "f", "g", "h"]
-  killThread tid
-  where
-    echo a =
-      vimCommand ("echon '" <> a <> "'") *> send *> sleep 1
-    send =
-      -- return ()
-      syntheticInput Nothing ["a"]
-    -- redraw =
-    --   vimCommand "redraw" *> vimCommand "redrawstatus"
-    getter =
-      sleep 0.1 *> getChar *> getter
+navChars :: [Text]
+navChars =
+  ["i", "t", "e", "m", "1", "<bs>", "<esc>", "h", "h", "h", "h", "h", "x", "a", "o", "<cr>"]
 
-test_cursor :: IO ()
-test_cursor =
-  tmuxGuiSpecDef cursorSpec
+nvimMenuNavSpec :: RiboT ()
+nvimMenuNavSpec =
+  gassertEqual (MenuResult.Return "toem") =<< run
+  where
+    run =
+      bracket (fork input) killThread (const $ runNvimMenu (Map.fromList [("cr", returnPrompt)]) (getCharC 0.1))
+    input =
+      syntheticInput (Just 0.2) navChars
+
+test_nvimMenuNav :: IO ()
+test_nvimMenuNav =
+  tmuxGuiSpecDef nvimMenuNavSpec

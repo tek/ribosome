@@ -9,7 +9,7 @@ specialCodes :: Map Text Text
 specialCodes =
   Map.fromList [
     ("\x80\xffX", "c-@"),
-    ("\x80k", "bs"),
+    ("\65533kb", "bs"),
     ("\x80kB", "s-ta"),
     ("\x0", "c-k"),
     ("\x80kD", "del"),

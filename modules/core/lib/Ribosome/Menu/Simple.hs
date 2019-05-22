@@ -19,7 +19,7 @@ type Mappings m a = Map Text (Menu -> Prompt -> m (MenuConsumerAction m a, Menu)
 
 textContains :: Text -> Text -> Bool
 textContains needle haystack =
-  (Text.null needle) || (not (Text.null haystack) && search needle haystack)
+  Text.null needle || (not (Text.null haystack) && search needle haystack)
   where
     search =
       not . Text.null . snd .: Text.breakOn
