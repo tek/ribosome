@@ -25,6 +25,7 @@ import GHC.Generics (
   to,
   (:*:)(..),
   )
+import Neovim (CommandArguments, fromObject)
 
 import Ribosome.Msgpack.Error (DecodeError)
 import qualified Ribosome.Msgpack.Error as DecodeError (DecodeError(Failed))
@@ -127,7 +128,7 @@ instance MsgpackDecode Float where
 
 instance {-# OVERLAPPING #-} MsgpackDecode String where
   fromMsgpack (ObjectString os) = Right $ ByteString.toString os
-  fromMsgpack o = Util.illegalType "Text" o
+  fromMsgpack o = Util.illegalType "String" o
 
 instance {-# OVERLAPPABLE #-} MsgpackDecode a => MsgpackDecode [a] where
   fromMsgpack (ObjectArray oa) = traverse fromMsgpack oa
@@ -175,6 +176,8 @@ instance (MsgpackDecode a, MsgpackDecode b) => MsgpackDecode (a, b) where
     Util.invalid "invalid array length for pair" o
   fromMsgpack o =
     Util.illegalType "pair" o
+
+instance MsgpackDecode CommandArguments where
 
 fromMsgpack' ::
   ∀ a e m.

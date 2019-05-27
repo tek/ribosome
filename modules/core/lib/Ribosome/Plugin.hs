@@ -28,13 +28,12 @@ import Ribosome.Data.Text (capitalize)
 import Ribosome.Plugin.Builtin (deleteScratchRpc)
 import Ribosome.Plugin.Mapping (MappingHandler, handleMappingRequest)
 import Ribosome.Plugin.RpcHandler (RpcHandler(..))
-import Ribosome.Plugin.TH (
+import Ribosome.Plugin.TH (rpcHandler, rpcHandlerDef)
+import Ribosome.Plugin.TH.Handler (
   RpcDef(RpcDef),
   RpcDefDetail(..),
   RpcHandlerConfig(..),
   rhcCmd,
-  rpcHandler,
-  rpcHandlerDef,
   )
 import Ribosome.Plugin.Watch (handleWatcherRequest, watchedVariables)
 

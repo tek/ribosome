@@ -6,7 +6,7 @@ import Data.MessagePack (Object(ObjectString, ObjectNil))
 import Ribosome.Control.Monad.Ribo (MonadRibo, NvimE)
 import Ribosome.Data.Mapping (MappingError)
 import Ribosome.Data.Text (capitalize)
-import Ribosome.Plugin.TH (RpcDef(RpcDef), RpcDefDetail(RpcFunction))
+import Ribosome.Plugin.TH.Handler (RpcDef(RpcDef), RpcDefDetail(RpcFunction))
 import Ribosome.Scratch (killScratchByName)
 
 deleteScratch ::

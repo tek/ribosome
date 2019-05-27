@@ -10,6 +10,7 @@ import {-@ HTF_TESTS @-} MappingSpec
 import {-@ HTF_TESTS @-} MenuSpec
 import {-@ HTF_TESTS @-} MsgpackSpec
 import {-@ HTF_TESTS @-} NvimMenuSpec
+import {-@ HTF_TESTS @-} RpcSpec
 import {-@ HTF_TESTS @-} ScratchSpec
 import {-@ HTF_TESTS @-} SettingSpec
 import {-@ HTF_TESTS @-} SyntaxSpec
