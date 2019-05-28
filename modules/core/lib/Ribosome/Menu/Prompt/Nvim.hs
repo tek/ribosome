@@ -9,6 +9,7 @@ import Ribosome.Api.Atomic (atomic)
 import Ribosome.Api.Echo (echo)
 import Ribosome.Api.Function (defineFunction)
 import Ribosome.Api.Variable (setVar)
+import Ribosome.Api.Window (redraw)
 import Ribosome.Control.Monad.Ribo (MonadRibo, NvimE)
 import Ribosome.Data.Text (escapeQuotes)
 import Ribosome.Log (logDebug)
@@ -92,7 +93,7 @@ nvimRenderPrompt (Prompt cursor _ text) =
   void $ atomic calls
   where
     frags = Text.intercalate " | " (fragments >>= uncurry promptFragment)
-    calls = syncRpcCall . ApiData.vimCommand <$> ("redraw" : (fragments >>= uncurry promptFragment))
+    calls = syncRpcCall . ApiData.vimCommand <$> ("silent! redraw!" : (fragments >>= uncurry promptFragment))
     fragments =
       [
         ("RibosomePromptSign", sign),
@@ -182,7 +183,7 @@ nvimRelease ::
   m ()
 nvimRelease (NvimPromptResources gc) = do
   vimSetOption "guicursor" (toMsgpack gc)
-  vimCommand "redraw"
+  redraw
   vimCommand "echon ''"
   () <- vimCallFunction "inputrestore" []
   killLoop

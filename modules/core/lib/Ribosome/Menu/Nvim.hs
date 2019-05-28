@@ -1,6 +1,6 @@
 module Ribosome.Menu.Nvim where
 
-import Ribosome.Api.Window (setLine)
+import Ribosome.Api.Window (redraw, setLine)
 import Ribosome.Control.Monad.Ribo (MonadRibo, NvimE)
 import Ribosome.Data.Scratch (Scratch(scratchWindow))
 import Ribosome.Data.ScratchOptions (ScratchOptions)
@@ -23,7 +23,7 @@ renderNvimMenu _ scratch (MenuUpdate (MenuEvent.Quit _) _) =
 renderNvimMenu options scratch (MenuUpdate _ (Menu _ allItems _ selected _)) = do
   setScratchContent options scratch (reverse text)
   when (lineNumber > 0) $ setLine (scratchWindow scratch) lineNumber
-  vimCommand "redraw"
+  redraw
   where
     lineNumber =
       max 0 $ length items - selected - 1

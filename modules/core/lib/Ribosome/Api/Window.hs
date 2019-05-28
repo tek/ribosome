@@ -4,7 +4,14 @@ import Control.Monad (when)
 
 import Ribosome.Control.Monad.Ribo (NvimE)
 import Ribosome.Nvim.Api.Data (Window)
-import Ribosome.Nvim.Api.IO (nvimGetCurrentWin, nvimWinClose, nvimWinGetCursor, nvimWinSetCursor, windowIsValid)
+import Ribosome.Nvim.Api.IO (
+  nvimGetCurrentWin,
+  nvimWinClose,
+  nvimWinGetCursor,
+  nvimWinSetCursor,
+  vimCommand,
+  windowIsValid,
+  )
 
 closeWindow ::
   NvimE e m =>
@@ -57,3 +64,9 @@ setLine ::
   m ()
 setLine window line =
   setCursor window line 0
+
+redraw ::
+  NvimE e m =>
+  m ()
+redraw =
+  vimCommand "silent! redraw!"
