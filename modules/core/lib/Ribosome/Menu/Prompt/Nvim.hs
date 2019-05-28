@@ -23,7 +23,7 @@ import Ribosome.Menu.Prompt.Data.PromptRenderer (PromptRenderer(PromptRenderer))
 import Ribosome.Msgpack.Encode (toMsgpack)
 import Ribosome.Msgpack.Error (DecodeError)
 import qualified Ribosome.Nvim.Api.Data as ApiData (vimCommand)
-import Ribosome.Nvim.Api.IO (nvimCommand, vimCallFunction, vimCommand, vimGetOption, vimSetOption)
+import Ribosome.Nvim.Api.IO (nvimCommand, vimCallFunction, vimCommand, vimCommandOutput, vimGetOption, vimSetOption)
 import Ribosome.Nvim.Api.RpcCall (RpcError, syncRpcCall)
 import Ribosome.System.Time (sleep)
 
@@ -168,7 +168,7 @@ nvimAcquire ::
   NvimE e m =>
   m NvimPromptResources
 nvimAcquire = do
-  highlightSet <- catchAs @RpcError False $ True <$ vimCommand "highlight RibosomePromptCaret"
+  highlightSet <- catchAs @RpcError False $ True <$ vimCommandOutput "highlight RibosomePromptCaret"
   unless highlightSet $ vimCommand "highlight link RibosomePromptCaret TermCursor"
   res <- NvimPromptResources <$> vimGetOption "guicursor"
   vimSetOption "guicursor" (toMsgpack ("a:None" :: Text))
