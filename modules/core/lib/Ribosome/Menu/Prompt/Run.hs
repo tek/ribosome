@@ -112,7 +112,7 @@ basicTransition (PromptEvent.Character "h") PromptState.Normal =
 basicTransition (PromptEvent.Character "l") PromptState.Normal =
   return (PromptUpdate PromptState.Normal CursorUpdate.OneRight TextUpdate.Unmodified PromptConsumed.Yes)
 basicTransition (PromptEvent.Character "x") PromptState.Normal =
-  return (PromptUpdate PromptState.Normal CursorUpdate.Unmodified TextUpdate.DeleteRight PromptConsumed.Yes)
+  return (PromptUpdate PromptState.Normal CursorUpdate.OneLeft TextUpdate.DeleteRight PromptConsumed.Yes)
 basicTransition _ a =
   return (PromptUpdate a CursorUpdate.Unmodified TextUpdate.Unmodified PromptConsumed.No)
 
