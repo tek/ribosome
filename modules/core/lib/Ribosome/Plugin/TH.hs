@@ -70,11 +70,10 @@ rpcHandler confTrans =
   where
     handler (RpcHandlerConfig sync name cmd autocmd auOptions) funcName = do
       params <- handlerParams funcName
-      -- rpcFun <- rpcFunction vimName' sync funcName (handlerHasArgsParam params)
+      rpcFun <- rpcFunction vimName' sync funcName (handlerHasArgsParam params)
       rpcCmd <- traverse (rpcCommand vimName' funcName params) cmd
       rpcAu <- traverse (rpcAutocmd vimName' funcName sync auOptions) (Text.unpack <$> autocmd)
-      -- listE $ return <$> rpcFun : maybeToList rpcCmd <> maybeToList rpcAu
-      listE $ return <$> maybeToList rpcCmd <> maybeToList rpcAu
+      listE $ return <$> rpcFun : maybeToList rpcCmd <> maybeToList rpcAu
       where
         vimName' = vimName funcName (Text.unpack <$> name)
 
