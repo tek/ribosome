@@ -68,7 +68,6 @@ prefixed prefix a = liftIO $ putStrLn $ prefix <> ": " <> show a
 logR ::
   Loggable a =>
   MonadRibo m =>
-  MonadIO m =>
   Priority ->
   a ->
   m ()
@@ -79,7 +78,6 @@ logR prio message = do
 debug ::
   Loggable a =>
   MonadRibo m =>
-  MonadIO m =>
   a ->
   m ()
 debug =
@@ -88,15 +86,33 @@ debug =
 logDebug ::
   Loggable a =>
   MonadRibo m =>
-  MonadIO m =>
   a ->
   m ()
 logDebug = debug
 
+showDebug ::
+  Show a =>
+  MonadRibo m =>
+  Text ->
+  a ->
+  m ()
+showDebug prefix a =
+  logDebug @Text (prefix <> " " <> show a)
+
+showDebugM ::
+  Show a =>
+  MonadRibo m =>
+  Text ->
+  m a ->
+  m a
+showDebugM prefix ma = do
+  a <- ma
+  logDebug @Text (prefix <> " " <> show a)
+  return a
+
 info ::
   Loggable a =>
   MonadRibo m =>
-  MonadIO m =>
   a ->
   m ()
 info =
@@ -105,7 +121,6 @@ info =
 logInfo ::
   Loggable a =>
   MonadRibo m =>
-  MonadIO m =>
   a ->
   m ()
 logInfo = info
@@ -113,7 +128,6 @@ logInfo = info
 err ::
   Loggable a =>
   MonadRibo m =>
-  MonadIO m =>
   a ->
   m ()
 err =
@@ -122,7 +136,6 @@ err =
 logError ::
   Loggable a =>
   MonadRibo m =>
-  MonadIO m =>
   a ->
   m ()
 logError = err
@@ -130,7 +143,6 @@ logError = err
 debugShow ::
   Show a =>
   MonadRibo m =>
-  MonadIO m =>
   a ->
   m ()
 debugShow =
@@ -139,7 +151,6 @@ debugShow =
 infoShow ::
   Show a =>
   MonadRibo m =>
-  MonadIO m =>
   a ->
   m ()
 infoShow =
@@ -148,7 +159,6 @@ infoShow =
 errShow ::
   Show a =>
   MonadRibo m =>
-  MonadIO m =>
   a ->
   m ()
 errShow =

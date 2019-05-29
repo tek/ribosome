@@ -41,6 +41,7 @@ import Ribosome.System.Time (sleep)
 import Ribosome.Test.Await (await)
 import Ribosome.Test.Screenshot (assertScreenshot)
 import Ribosome.Test.Tmux (tmuxGuiSpecDef)
+import Ribosome.Test.Unit (withLog)
 import TestError (RiboT, TestError)
 
 promptInput ::
@@ -121,7 +122,7 @@ nvimMenuNativeSpec =
 
 test_nvimMenuNative :: IO ()
 test_nvimMenuNative =
-  tmuxGuiSpecDef nvimMenuNativeSpec
+  tmuxGuiSpecDef (withLog nvimMenuNativeSpec)
 
 nvimMenuInterruptSpec :: RiboT ()
 nvimMenuInterruptSpec = do

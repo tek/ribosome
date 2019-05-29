@@ -12,6 +12,7 @@ import Data.MessagePack (Object)
 import GHC.Generics (Generic)
 import UnliftIO.STM (TMVar, TMVar, newTMVarIO)
 
+import Path (Abs, Dir, Path, Rel)
 import Ribosome.Data.Errors (Errors)
 import Ribosome.Data.Scratch (Scratch)
 
@@ -22,7 +23,8 @@ data RibosomeInternal =
     _locks :: Locks,
     _errors :: Errors,
     _scratch :: Map Text Scratch,
-    _watchedVariables :: Map Text Object
+    _watchedVariables :: Map Text Object,
+    _projectDir :: Maybe (Path Abs Dir)
   }
   deriving (Generic, Default)
 
@@ -33,6 +35,7 @@ data RibosomeState s =
     _internal :: RibosomeInternal,
     _public :: s
   }
+  deriving (Generic, Default)
 
 makeClassy ''RibosomeState
 
@@ -41,6 +44,7 @@ data Ribosome s =
     _name :: Text,
     _state :: TMVar (RibosomeState s)
   }
+
 makeClassy ''Ribosome
 
 newRibosomeTMVar :: MonadIO m => s -> m (TMVar (RibosomeState s))

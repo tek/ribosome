@@ -12,6 +12,7 @@ module Ribosome.Prelude (
   dbg,
   dbgs,
   dbgm,
+  makeClassy,
   mapLeft,
   modify,
   tuple,
@@ -22,6 +23,7 @@ module Ribosome.Prelude (
   (<$$>),
 ) where
 
+import Control.Lens (makeClassy)
 import Control.Monad.DeepError (MonadDeepError(throwHoist), catchAs, catchAt, hoistEither, ignoreError)
 import Control.Monad.DeepState (
   MonadDeepState,

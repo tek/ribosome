@@ -10,8 +10,12 @@ import Data.Conduit.Lift (evalStateC)
 
 import Ribosome.Control.Monad.Ribo (MonadRibo, NvimE)
 import Ribosome.Data.Conduit (withMergedSources)
+import Ribosome.Data.Scratch (scratchWindow)
 import Ribosome.Data.ScratchOptions (ScratchOptions)
+import Ribosome.Log (showDebug)
 import Ribosome.Menu.Data.Menu (Menu)
+import Ribosome.Menu.Data.MenuAction (MenuAction)
+import qualified Ribosome.Menu.Data.MenuAction as MenuAction (MenuAction(..))
 import Ribosome.Menu.Data.MenuConfig (MenuConfig(MenuConfig))
 import Ribosome.Menu.Data.MenuConsumer (MenuConsumer(MenuConsumer))
 import Ribosome.Menu.Data.MenuConsumerAction (MenuConsumerAction)
@@ -20,6 +24,8 @@ import Ribosome.Menu.Data.MenuEvent (MenuEvent, QuitReason)
 import qualified Ribosome.Menu.Data.MenuEvent as MenuEvent (MenuEvent(..))
 import qualified Ribosome.Menu.Data.MenuEvent as QuitReason (QuitReason(..))
 import Ribosome.Menu.Data.MenuItem (MenuItem)
+import Ribosome.Menu.Data.MenuRenderEvent (MenuRenderEvent)
+import qualified Ribosome.Menu.Data.MenuRenderEvent as MenuRenderEvent (MenuRenderEvent(..))
 import Ribosome.Menu.Data.MenuResult (MenuResult)
 import qualified Ribosome.Menu.Data.MenuResult as MenuResult (MenuResult(..))
 import Ribosome.Menu.Data.MenuUpdate (MenuUpdate(MenuUpdate))
@@ -35,7 +41,9 @@ import Ribosome.Menu.Prompt.Data.PromptRenderer (PromptRenderer(PromptRenderer))
 import qualified Ribosome.Menu.Prompt.Data.PromptState as PromptState (PromptState(..))
 import Ribosome.Menu.Prompt.Nvim (promptBlocker)
 import Ribosome.Menu.Prompt.Run (promptC)
+import Ribosome.Msgpack.Encode (MsgpackEncode(toMsgpack))
 import Ribosome.Msgpack.Error (DecodeError)
+import Ribosome.Nvim.Api.IO (windowSetOption)
 import Ribosome.Scratch (showInScratch)
 
 promptEvent ::
@@ -43,6 +51,8 @@ promptEvent ::
   Prompt ->
   PromptConsumed ->
   MenuEvent m a
+promptEvent _ (Prompt _ PromptState.Quit _) _ =
+  MenuEvent.Quit QuitReason.Aborted
 promptEvent (PromptEvent.Character a) prompt PromptConsumed.No =
   MenuEvent.Mapping a prompt
 promptEvent (PromptEvent.Character a) prompt@(Prompt _ PromptState.Insert _) _ =
@@ -68,44 +78,44 @@ menuEvent =
       promptEvent event prompt consumed
 
 updateMenu ::
-  Monad m =>
+  MonadRibo m =>
   MenuConsumer m a ->
   Either PromptConsumerUpdate MenuItem ->
-  ConduitT (Either PromptConsumerUpdate MenuItem) (MenuUpdate m a) (StateT Menu m) ()
-updateMenu (MenuConsumer consumer) input =
-  emit =<< (lift . stateM $ lift . consumer . MenuUpdate (menuEvent input))
+  ConduitT (Either PromptConsumerUpdate MenuItem) (MenuRenderEvent m a) (StateT Menu m) ()
+updateMenu (MenuConsumer consumer) input = do
+  showDebug "menu update:" input
+  action <- lift . stateM $ lift . consumer . MenuUpdate (menuEvent input)
+  showDebug "menu action:" action
+  emit action
   where
-    emit MenuConsumerAction.Continue =
-      update (menuEvent input)
-    emit (MenuConsumerAction.QuitWith ma) =
-      update (MenuEvent.Quit (QuitReason.Execute ma))
-    emit MenuConsumerAction.Quit =
-      update (MenuEvent.Quit QuitReason.Aborted)
-    emit (MenuConsumerAction.Return a) =
-      update (MenuEvent.Quit (QuitReason.Return a))
-    update event =
-      yield . MenuUpdate event =<< get
+    emit MenuAction.Continue =
+      return ()
+    emit (MenuAction.Render changed) =
+      yield . MenuRenderEvent.Render changed =<< get
+    emit (MenuAction.Quit reason) =
+      yield (MenuRenderEvent.Quit reason)
 
 menuSources ::
   MonadIO m =>
+  MonadRibo m =>
   PromptConfig m ->
   ConduitT () MenuItem m () ->
-  [ConduitT () (Either PromptConsumerUpdate MenuItem) m ()]
+  [CConduit () (Either PromptConsumerUpdate MenuItem) m ()]
 menuSources promptConfig items =
   [promptSource, itemSource]
   where
     promptSource =
-      promptC promptConfig .| mapC Left
+      ccMap (.| mapC Left) (promptC promptConfig)
     itemSource =
-      items .| mapC Right
+      CConduit.Single $ items .| mapC Right
 
 menuTerminator ::
   Monad m =>
-  ConduitT (MenuUpdate m a) (QuitReason m a) m ()
+  ConduitT (MenuRenderEvent m a) (QuitReason m a) m ()
 menuTerminator =
   traverse_ check =<< await
   where
-    check (MenuUpdate (MenuEvent.Quit reason) _) =
+    check (MenuRenderEvent.Quit reason) =
       yield reason
     check _ =
       menuTerminator
@@ -127,6 +137,7 @@ menuResult QuitReason.Aborted =
 
 runMenu ::
   MonadIO m =>
+  MonadRibo m =>
   MonadBaseControl IO m =>
   MenuConfig m a ->
   m (MenuResult a)
@@ -136,7 +147,7 @@ runMenu (MenuConfig items handle render promptConfig@(PromptConfig _ _ promptRen
     withPrompt (PromptRenderer acquire release renderPrompt) =
       bracket acquire release (const run)
     run =
-      menuResult =<< quitReason <$> withMergedSources 64 consumer (menuSources promptConfig items)
+      menuResult =<< quitReason <$> withMergedSources consumer 64 (menuSources promptConfig items)
     consumer =
       evalStateC def (awaitForever (updateMenu handle)) .| iterM render .| menuTerminator .| Conduit.last
     quitReason =
@@ -144,18 +155,20 @@ runMenu (MenuConfig items handle render promptConfig@(PromptConfig _ _ promptRen
 
 nvimMenu ::
   NvimE e m =>
+  MonadIO m =>
   MonadRibo m =>
   MonadBaseControl IO m =>
   MonadDeepError e DecodeError m =>
   ScratchOptions ->
   ConduitT () MenuItem m () ->
-  (MenuUpdate m a -> m (MenuConsumerAction m a, Menu)) ->
+  (MenuUpdate m a -> m (MenuAction m a, Menu)) ->
   PromptConfig m ->
   m (MenuResult a)
 nvimMenu options items handle promptConfig =
   run =<< showInScratch [] options
   where
-    run scratch =
+    run scratch = do
+      windowSetOption (scratchWindow scratch) "cursorline" (toMsgpack True)
       runMenu $ MenuConfig items (MenuConsumer handle) (render scratch) promptConfig
     render =
       renderNvimMenu options

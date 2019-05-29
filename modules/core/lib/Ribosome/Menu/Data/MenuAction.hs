@@ -6,7 +6,10 @@ data MenuAction m a =
   Quit (QuitReason m a)
   |
   Continue
+  -- |
+  -- Cursor Int
   |
-  Cursor Int
-  |
-  Submenu Text
+  Render Bool
+  -- |
+  -- Submenu Text
+  deriving Show

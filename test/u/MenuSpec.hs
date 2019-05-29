@@ -9,13 +9,18 @@ import qualified Data.Map as Map (fromList)
 import Test.Framework
 
 import Ribosome.Control.Monad.Ribo (Ribo(Ribo), runRibo)
+import Ribosome.Control.StrictRibosome (StrictRibosome(StrictRibosome))
 import Ribosome.Menu.Data.Menu (Menu(Menu))
+import Ribosome.Menu.Data.MenuAction (MenuAction)
 import Ribosome.Menu.Data.MenuConfig (MenuConfig(MenuConfig))
 import Ribosome.Menu.Data.MenuConsumer (MenuConsumer(MenuConsumer))
 import Ribosome.Menu.Data.MenuConsumerAction (MenuConsumerAction)
+import Ribosome.Menu.Data.MenuConsumerUpdate (MenuConsumerUpdate(MenuConsumerUpdate))
 import qualified Ribosome.Menu.Data.MenuEvent as MenuEvent (MenuEvent(..))
 import Ribosome.Menu.Data.MenuItem (MenuItem(MenuItem))
 import qualified Ribosome.Menu.Data.MenuItem as MenuItem (MenuItem(_text), text)
+import Ribosome.Menu.Data.MenuRenderEvent (MenuRenderEvent)
+import qualified Ribosome.Menu.Data.MenuRenderEvent as MenuRenderEvent (MenuRenderEvent(..))
 import Ribosome.Menu.Data.MenuUpdate (MenuUpdate(MenuUpdate))
 import Ribosome.Menu.Prompt.Data.Prompt (Prompt(Prompt))
 import Ribosome.Menu.Prompt.Data.PromptConfig (PromptConfig(PromptConfig))
@@ -65,20 +70,24 @@ render ::
   MonadIO m =>
   MonadBaseControl IO m =>
   MVar [[MenuItem]] ->
-  MenuUpdate m a ->
+  MenuRenderEvent m a ->
   m ()
-render varItems (MenuUpdate _ (Menu _ items _ _ _)) = do
+render varItems (MenuRenderEvent.Render _ (Menu _ items _ _ _)) = do
   modifyMVar_ varItems (return . (items :))
   sleep 0.01
+render _ (MenuRenderEvent.Quit _) =
+  return ()
+
+type MenuTestM = StateT (StrictRibosome ()) IO
 
 menuTest ::
-  (MenuUpdate (ReaderT () IO) () -> (ReaderT () IO) (MenuConsumerAction (ReaderT () IO) (), Menu)) ->
+  (MenuUpdate MenuTestM a -> MenuTestM (MenuAction MenuTestM a, Menu)) ->
   [Text] ->
   [Text] ->
   IO [[MenuItem]]
 menuTest handler items chars = do
   itemsVar <- newMVar []
-  runMenu (MenuConfig (menuItems items) (MenuConsumer handler) (render itemsVar) promptConfig) `runReaderT` ()
+  runMenu (MenuConfig (menuItems items) (MenuConsumer handler) (render itemsVar) promptConfig) `execStateT` def
   readMVar itemsVar
   where
     promptConfig =

@@ -33,6 +33,32 @@ sourceChan chan =
     recurse a =
       yield a *> loop
 
+withSourcesInChanAs ::
+  MonadIO m =>
+  MonadBaseControl IO m =>
+  (ConduitT () a m () -> m b) ->
+  [ConduitT () a m ()] ->
+  TBMChan a ->
+  m b
+withSourcesInChanAs executor sources chan = do
+  threadIds <- traverse (fork . runConduit . start) sources
+  finally listen (release threadIds)
+  where
+    release =
+      traverse_ killThread
+    listen =
+      executor $ sourceChan chan
+    start source =
+      source .| Conduit.mapM_ (atomically . writeTBMChan chan)
+
+simpleExecutor ::
+  Monad m =>
+  ConduitT a Void m b ->
+  ConduitT () a m () ->
+  m b
+simpleExecutor consumer s =
+  runConduit $ s .| consumer
+
 withSourcesInChan ::
   MonadIO m =>
   MonadBaseControl IO m =>
@@ -40,23 +66,25 @@ withSourcesInChan ::
   [ConduitT () a m ()] ->
   TBMChan a ->
   m b
-withSourcesInChan consumer sources chan = do
-  threadIds <- traverse (fork . runConduit . start) sources
-  finally listen (release threadIds)
-  where
-    release =
-      traverse_ killThread
-    listen =
-      runConduit $ sourceChan chan .| consumer
-    start source =
-      source .| Conduit.mapM_ (atomically . writeTBMChan chan)
+withSourcesInChan =
+  withSourcesInChanAs . simpleExecutor
+
+withMergedSourcesAs ::
+  MonadIO m =>
+  MonadBaseControl IO m =>
+  (ConduitT () a m () -> m b) ->
+  Int ->
+  [ConduitT () a m ()] ->
+  m b
+withMergedSourcesAs executor bound sources =
+  withTBMChan bound (withSourcesInChanAs executor sources)
 
 withMergedSources ::
   MonadIO m =>
   MonadBaseControl IO m =>
-  Int ->
   ConduitT a Void m b ->
+  Int ->
   [ConduitT () a m ()] ->
   m b
-withMergedSources bound consumer sources =
-  withTBMChan bound (withSourcesInChan consumer sources)
+withMergedSources =
+  withMergedSourcesAs . simpleExecutor

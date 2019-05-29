@@ -1,9 +1,14 @@
 module Ribosome.Menu.Prompt.Run where
 
-import Conduit (ConduitT, awaitForever, evalStateC, yield, (.|))
+import Conduit (ConduitT, await, awaitForever, evalStateC, yield, (.|))
 import Control.Monad.DeepState (modifyM')
+import Data.Conduit.Combinators (peek)
 import qualified Data.Text as Text (drop, dropEnd, length, splitAt)
 
+import Ribosome.Control.Monad.Ribo (MonadRibo)
+import Ribosome.Data.Conduit.Composition (CCatable, CConduit, buffer')
+import qualified Ribosome.Data.Conduit.Composition as CConduit (CConduit(Single))
+import Ribosome.Log (logDebug)
 import Ribosome.Menu.Prompt.Data.CursorUpdate (CursorUpdate)
 import qualified Ribosome.Menu.Prompt.Data.CursorUpdate as CursorUpdate (CursorUpdate(..))
 import Ribosome.Menu.Prompt.Data.Prompt (Prompt(Prompt))
@@ -63,22 +68,49 @@ updatePrompt modes update (Prompt cursor state text) = do
   return (consumed, newPrompt)
 
 processPromptEvent ::
-  Monad m =>
+  MonadIO m =>
+  MonadRibo m =>
   PromptConfig m ->
   PromptEvent ->
   ConduitT PromptEvent PromptConsumerUpdate (StateT Prompt m) ()
 processPromptEvent (PromptConfig _ modes (PromptRenderer _ _ render) _) event = do
+  logDebug @Text $ "prompt event: " <> show event
   consumed <- lift . stateM $ lift . updatePrompt modes event
   newPrompt <- get
   yield (PromptConsumerUpdate event newPrompt consumed)
   lift . lift . render $ newPrompt
 
-promptC ::
+skippingRenderer ::
   Monad m =>
+  (Prompt -> m ()) ->
+  ConduitT PromptConsumerUpdate PromptConsumerUpdate m a
+skippingRenderer render =
+  go
+  where
+    go =
+      check =<< await
+    check (Just next@(PromptConsumerUpdate _ prompt _)) = do
+      yield next
+      renderIfIdle prompt =<< peek
+      go
+    renderIfIdle prompt (Just _) =
+      return ()
+    renderIfIdle prompt Nothing =
+      lift (render prompt)
+
+promptC ::
+  MonadIO m =>
+  MonadRibo m =>
   PromptConfig m ->
-  ConduitT () PromptConsumerUpdate m ()
-promptC config@(PromptConfig source _ _ insert) =
-  (yield PromptEvent.Init *> source) .| evalStateC (pristinePrompt insert) (awaitForever (processPromptEvent config))
+  CConduit () PromptConsumerUpdate m ()
+promptC config@(PromptConfig source _ (PromptRenderer _ _ render) insert) =
+  -- buffer' 64 (sourceWithInit .| process) (skippingRenderer render)
+  CConduit.Single $ sourceWithInit .| process .| skippingRenderer render
+  where
+    sourceWithInit =
+      yield PromptEvent.Init *> source
+    process =
+      evalStateC (pristinePrompt insert) (awaitForever (processPromptEvent config))
 
 unprocessable :: [Text]
 unprocessable =
@@ -86,35 +118,59 @@ unprocessable =
     "cr"
     ]
 
+consumeUnmodified :: PromptState -> CursorUpdate -> PromptUpdate
+consumeUnmodified s u =
+  PromptUpdate s u TextUpdate.Unmodified PromptConsumed.Yes
+
+basicTransitionNormal ::
+  PromptEvent ->
+  PromptUpdate
+basicTransitionNormal (PromptEvent.Character "esc") =
+  consumeUnmodified PromptState.Quit CursorUpdate.Unmodified
+basicTransitionNormal (PromptEvent.Character "q") =
+  consumeUnmodified PromptState.Quit CursorUpdate.Unmodified
+basicTransitionNormal (PromptEvent.Character "i") =
+  consumeUnmodified PromptState.Insert CursorUpdate.Unmodified
+basicTransitionNormal (PromptEvent.Character "I") =
+  consumeUnmodified PromptState.Insert CursorUpdate.Prepend
+basicTransitionNormal (PromptEvent.Character "a") =
+  consumeUnmodified PromptState.Insert CursorUpdate.OneRight
+basicTransitionNormal (PromptEvent.Character "A") =
+  consumeUnmodified PromptState.Insert CursorUpdate.Append
+basicTransitionNormal (PromptEvent.Character "h") =
+  consumeUnmodified PromptState.Normal CursorUpdate.OneLeft
+basicTransitionNormal (PromptEvent.Character "l") =
+  consumeUnmodified PromptState.Normal CursorUpdate.OneRight
+basicTransitionNormal (PromptEvent.Character "x") =
+  PromptUpdate PromptState.Normal CursorUpdate.OneLeft TextUpdate.DeleteRight PromptConsumed.Yes
+basicTransitionNormal _ =
+  PromptUpdate PromptState.Normal CursorUpdate.Unmodified TextUpdate.Unmodified PromptConsumed.No
+
+basicTransitionInsert ::
+  PromptEvent ->
+  PromptUpdate
+basicTransitionInsert (PromptEvent.Character "esc") =
+  PromptUpdate PromptState.Normal CursorUpdate.OneLeft TextUpdate.Unmodified PromptConsumed.Yes
+basicTransitionInsert (PromptEvent.Character "bs") =
+  PromptUpdate PromptState.Insert CursorUpdate.OneLeft TextUpdate.DeleteLeft PromptConsumed.Yes
+basicTransitionInsert (PromptEvent.Character c) | c `elem` unprocessable =
+  PromptUpdate PromptState.Insert CursorUpdate.Unmodified TextUpdate.Unmodified PromptConsumed.No
+basicTransitionInsert (PromptEvent.Character c) =
+  PromptUpdate PromptState.Insert CursorUpdate.OneRight (TextUpdate.Insert c) PromptConsumed.Yes
+basicTransitionInsert _ =
+  PromptUpdate PromptState.Insert CursorUpdate.Unmodified TextUpdate.Unmodified PromptConsumed.No
+
 basicTransition ::
   Monad m =>
   PromptEvent ->
   PromptState ->
   m PromptUpdate
-basicTransition (PromptEvent.Character "esc") PromptState.Insert =
-  return (PromptUpdate PromptState.Normal CursorUpdate.OneLeft TextUpdate.Unmodified PromptConsumed.Yes)
-basicTransition (PromptEvent.Character "bs") PromptState.Insert =
-  return (PromptUpdate PromptState.Insert CursorUpdate.OneLeft TextUpdate.DeleteLeft PromptConsumed.Yes)
-basicTransition (PromptEvent.Character "i") PromptState.Normal =
-  return (PromptUpdate PromptState.Insert CursorUpdate.Unmodified TextUpdate.Unmodified PromptConsumed.Yes)
-basicTransition (PromptEvent.Character "I") PromptState.Normal =
-  return (PromptUpdate PromptState.Insert CursorUpdate.Prepend TextUpdate.Unmodified PromptConsumed.Yes)
-basicTransition (PromptEvent.Character "a") PromptState.Normal =
-  return (PromptUpdate PromptState.Insert CursorUpdate.OneRight TextUpdate.Unmodified PromptConsumed.Yes)
-basicTransition (PromptEvent.Character "A") PromptState.Normal =
-  return (PromptUpdate PromptState.Insert CursorUpdate.Append TextUpdate.Unmodified PromptConsumed.Yes)
-basicTransition (PromptEvent.Character c) PromptState.Insert | c `elem` unprocessable =
-  return (PromptUpdate PromptState.Insert CursorUpdate.Unmodified TextUpdate.Unmodified PromptConsumed.No)
-basicTransition (PromptEvent.Character c) PromptState.Insert =
-  return (PromptUpdate PromptState.Insert CursorUpdate.OneRight (TextUpdate.Insert c) PromptConsumed.Yes)
-basicTransition (PromptEvent.Character "h") PromptState.Normal =
-  return (PromptUpdate PromptState.Normal CursorUpdate.OneLeft TextUpdate.Unmodified PromptConsumed.Yes)
-basicTransition (PromptEvent.Character "l") PromptState.Normal =
-  return (PromptUpdate PromptState.Normal CursorUpdate.OneRight TextUpdate.Unmodified PromptConsumed.Yes)
-basicTransition (PromptEvent.Character "x") PromptState.Normal =
-  return (PromptUpdate PromptState.Normal CursorUpdate.OneLeft TextUpdate.DeleteRight PromptConsumed.Yes)
-basicTransition _ a =
-  return (PromptUpdate a CursorUpdate.Unmodified TextUpdate.Unmodified PromptConsumed.No)
+basicTransition event PromptState.Normal =
+  return $ basicTransitionNormal event
+basicTransition event PromptState.Insert =
+  return $ basicTransitionInsert event
+basicTransition _ PromptState.Quit =
+  return $ PromptUpdate PromptState.Quit CursorUpdate.Unmodified TextUpdate.Unmodified PromptConsumed.No
 
 pristinePrompt :: Bool -> Prompt
 pristinePrompt insert =

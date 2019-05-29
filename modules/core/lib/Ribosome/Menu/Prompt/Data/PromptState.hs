@@ -6,6 +6,8 @@ data PromptState =
   Insert
   |
   Normal
+  |
+  Quit
   deriving (Eq, Show)
 
 deepLenses ''PromptState

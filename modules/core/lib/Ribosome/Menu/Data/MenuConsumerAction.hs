@@ -7,4 +7,6 @@ data MenuConsumerAction m a =
   |
   Continue
   |
+  Render Bool
+  |
   Return a

@@ -99,6 +99,7 @@ safeDecodeFile file = do
   either (decodeError file) return . mapLeft toText $ result
 
 persistLoad ::
+  MonadIO m =>
   MonadRibo m =>
   NvimE e m =>
   MonadThrow m =>
@@ -113,6 +114,7 @@ persistLoad path = do
   safeDecodeFile file
 
 mayPersistLoad ::
+  MonadIO m =>
   MonadRibo m =>
   NvimE e m =>
   MonadDeepError e SettingError m =>
