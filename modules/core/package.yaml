@@ -17,10 +17,13 @@ dependencies:
 - ansi-terminal
 - base-noprelude >= 4.7 && < 5
 - bytestring
+- cereal
+- cereal-conduit
 - chiasma
 - composition
 - composition-extra
 - conduit
+- conduit-extra
 - containers
 - cornea
 - data-default
@@ -32,9 +35,11 @@ dependencies:
 - free
 - hslogger
 - lens
+- lifted-async
 - lifted-base
 - messagepack
 - monad-control
+- monad-loops
 - mtl
 - nvim-hs
 - path
