@@ -25,7 +25,7 @@ import GHC.Generics (
   to,
   (:*:)(..),
   )
-import Neovim (CommandArguments, fromObject)
+import Neovim (CommandArguments)
 
 import Ribosome.Msgpack.Error (DecodeError)
 import qualified Ribosome.Msgpack.Error as DecodeError (DecodeError(Failed))

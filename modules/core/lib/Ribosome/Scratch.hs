@@ -26,7 +26,6 @@ import Ribosome.Nvim.Api.IO (
   bufferGetNumber,
   bufferSetName,
   bufferSetOption,
-  nvimWinGetNumber,
   vimCommand,
   vimGetCurrentTabpage,
   vimGetCurrentWindow,

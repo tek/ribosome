@@ -5,8 +5,8 @@ data PromptEvent =
   |
   Character Text
   |
-  SpecialCharacter Text
-  |
+  -- SpecialCharacter Text
+  -- |
   Unexpected Int
   |
   Interrupt

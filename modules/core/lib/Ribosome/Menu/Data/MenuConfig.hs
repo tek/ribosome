@@ -3,7 +3,6 @@ module Ribosome.Menu.Data.MenuConfig where
 import Conduit (ConduitT)
 
 import Ribosome.Menu.Data.MenuConsumer (MenuConsumer)
-import Ribosome.Menu.Data.MenuConsumerUpdate (MenuConsumerUpdate)
 import Ribosome.Menu.Data.MenuItem (MenuItem)
 import Ribosome.Menu.Data.MenuRenderEvent (MenuRenderEvent)
 import Ribosome.Menu.Prompt.Data.PromptConfig (PromptConfig)

@@ -12,7 +12,7 @@ import Data.MessagePack (Object)
 import GHC.Generics (Generic)
 import UnliftIO.STM (TMVar, TMVar, newTMVarIO)
 
-import Path (Abs, Dir, Path, Rel)
+import Path (Abs, Dir, Path)
 import Ribosome.Data.Errors (Errors)
 import Ribosome.Data.Scratch (Scratch)
 

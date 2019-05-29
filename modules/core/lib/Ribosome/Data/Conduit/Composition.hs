@@ -261,7 +261,7 @@ link2 = (liftBase .) . A.link2
 -- producer produces.
 sender :: (MonadIO m) => TBQueue (Maybe o) -> ConduitT () o m () -> m ()
 sender chan input = do
-  input $$ mapM_C (send chan . Just)
+  runConduit $ input .| mapM_C (send chan . Just)
   send chan Nothing
 
 -- One "layer" of withAsync in a CConduit run.
@@ -269,7 +269,7 @@ stage :: (MonadBaseControl IO m, MonadIO m) => TBQueue (Maybe i) -> Async x -> C
 stage chan prevAsync (Single c) =
   -- The last layer; feed the output of "chan" into the conduit and
   -- wait for the result.
-  withAsync (receiver chan $$ c) $ \c' -> do
+  withAsync (runConduit $ receiver chan .| c) $ \c' -> do
     link2 prevAsync c'
     wait c'
 stage chan prevAsync (Multiple bufsz c cs) = do
@@ -277,7 +277,7 @@ stage chan prevAsync (Multiple bufsz c cs) = do
   -- layer's conduit process it, and send the conduit's output to the
   -- next layer.
   chan' <- liftIO $ newTBQueueIO bufsz
-  withAsync (sender chan' $ receiver chan =$= c) $ \c' -> do
+  withAsync (sender chan' $ receiver chan .| c) $ \c' -> do
     link2 prevAsync c'
     stage chan' c' cs
 
@@ -311,7 +311,7 @@ instance CFConduitLike CFConduit where
   asCFConduit = id
 
 data BufferContext m a = BufferContext { chan :: TBQueue a
-                                       , restore :: TQueue (Source m a)
+                                       , restore :: TQueue (ConduitT () a m ())
                                        , slotsFree :: TVar (Maybe Int)
                                        , done :: TVar Bool
                                        , tempDir :: FilePath
@@ -322,12 +322,14 @@ data BufferContext m a = BufferContext { chan :: TBQueue a
 -- gets full, then flushes it to disk via "persistChan".
 fsender :: (MonadIO m, MonadResource m, Serialize x, MonadThrow m) => BufferContext m x -> ConduitT () x m () -> m ()
 fsender bc@BufferContext{..} input = do
-  input $$ mapM_C $ \x -> join $ liftIO $ atomically $ do
-    (writeTBQueue chan x >> return (return ())) `orElse` do
-      action <- persistChan bc
-      writeTBQueue chan x
-      return action
+  runConduit $ input .| mapM_C f
   liftIO $ atomically $ writeTVar done True
+  where
+    f x = join $ liftIO $ atomically $
+      (writeTBQueue chan x >> return (return ())) `orElse` do
+        action <- persistChan bc
+        writeTBQueue chan x
+        return action
 
 -- Connect a stage to another stage via either an in-memory queue or a
 -- disk buffer.  This is the file-backed equivalent of "stage".
@@ -335,7 +337,7 @@ fstage :: (MonadBaseControl IO m, MonadIO m, MonadResource m, MonadThrow m) => C
 fstage prevStage prevAsync (FSingle c) =
   -- The final conduit in the chain; just accept everything from
   -- the previous stage and wait for the result.
-  withAsync (prevStage $$ c) $ \c' -> do
+  withAsync (runConduit $ prevStage .| c) $ \c' -> do
     link2 prevAsync c'
     wait c'
 fstage prevStage prevAsync (FMultiple bufsz c cs) = do
@@ -343,7 +345,7 @@ fstage prevStage prevAsync (FMultiple bufsz c cs) = do
   -- channel, so it just uses "sender" and "reciever" in the same way
   -- "stage" does.
   chan' <- liftIO $ newTBQueueIO bufsz
-  withAsync (sender chan' $ prevStage =$= c) $ \c' -> do
+  withAsync (sender chan' $ prevStage .| c) $ \c' -> do
     link2 prevAsync c'
     fstage (receiver chan') c' cs
 fstage prevStage prevAsync (FMultipleF bufsz dsksz tempDir c cs) = do
@@ -354,7 +356,7 @@ fstage prevStage prevAsync (FMultipleF bufsz dsksz tempDir c cs) = do
                                <*> newTVarIO dsksz
                                <*> newTVarIO False
                                <*> pure tempDir
-  withAsync (fsender bc $ prevStage =$= c) $ \c' -> do
+  withAsync (fsender bc $ prevStage .| c) $ \c' -> do
     link2 prevAsync c'
     fstage (freceiver bc) c' cs
 
@@ -382,8 +384,8 @@ persistChan BufferContext{..} = do
   filePath <- newEmptyTMVar
   writeTQueue restore $ do
     (path, key) <- liftIO $ atomically $ takeTMVar filePath
-    CB.sourceFile path $= do
-      C.conduitGet get
+    CB.sourceFile path .| do
+      C.conduitGet2 get
       liftIO $ atomically $ modifyTVar slotsFree (fmap (+ len))
       release key
   case xs of
@@ -393,7 +395,7 @@ persistChan BufferContext{..} = do
      return $ do
        (key, (path, h)) <- allocate (openBinaryTempFile tempDir "conduit.bin") (\(path, h) -> hClose h `finally` removeFile path)
        liftIO $ do
-         CL.sourceList xs $= C.conduitPut put $$ CB.sinkHandle h
+         runConduit $ CL.sourceList xs .| C.conduitPut put .| CB.sinkHandle h
          hClose h
          atomically $ putTMVar filePath (path, key)
 

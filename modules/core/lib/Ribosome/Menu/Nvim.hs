@@ -6,13 +6,9 @@ import Ribosome.Data.Scratch (Scratch(scratchWindow))
 import Ribosome.Data.ScratchOptions (ScratchOptions)
 import Ribosome.Log (logDebug)
 import Ribosome.Menu.Data.Menu (Menu(Menu))
-import Ribosome.Menu.Data.MenuConsumerUpdate (MenuConsumerUpdate(MenuConsumerUpdate))
-import qualified Ribosome.Menu.Data.MenuEvent as MenuEvent (MenuEvent(Quit))
 import qualified Ribosome.Menu.Data.MenuItem as MenuItem (MenuItem(_text))
 import Ribosome.Menu.Data.MenuRenderEvent (MenuRenderEvent)
 import qualified Ribosome.Menu.Data.MenuRenderEvent as MenuRenderEvent (MenuRenderEvent(..))
-import Ribosome.Menu.Data.MenuUpdate (MenuUpdate(MenuUpdate))
-import Ribosome.Nvim.Api.IO (vimCommand)
 import Ribosome.Scratch (killScratch, setScratchContent)
 
 renderNvimMenu ::

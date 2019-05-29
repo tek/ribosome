@@ -4,31 +4,20 @@
 module Ribosome.Plugin.TH.Command where
 
 import Control.Exception (throw)
-import Control.Monad (replicateM, (<=<))
+import Control.Monad ((<=<))
 import Data.Aeson (FromJSON, eitherDecodeStrict)
 import qualified Data.ByteString as ByteString (intercalate)
-import Data.Default (def)
 import Data.Either.Combinators (mapLeft)
-import Data.Functor ((<&>))
-import Data.Maybe (fromMaybe, maybeToList)
 import Data.MessagePack (Object(ObjectArray))
-import qualified Data.Text as Text (unpack)
-import Data.Text.Prettyprint.Doc (Doc, Pretty(..))
-import Data.Text.Prettyprint.Doc.Render.Terminal (AnsiStyle)
+import Data.Text.Prettyprint.Doc (Pretty(..))
 import Language.Haskell.TH
-import Language.Haskell.TH.Syntax (Lift(..))
-import Neovim.Exceptions (NeovimException(ErrorMessage, ErrorResult))
+import Neovim.Exceptions (NeovimException(ErrorMessage))
 import Neovim.Plugin.Classes (
-  AutocmdOptions(AutocmdOptions),
   CommandArguments,
   CommandOption(..),
-  CommandOptions,
-  RangeSpecification(..),
-  Synchronous(..),
   mkCommandOptions,
   )
 
-import Ribosome.Data.String (capitalize)
 import Ribosome.Msgpack.Decode (fromMsgpack)
 import Ribosome.Msgpack.Encode (MsgpackEncode(toMsgpack))
 import Ribosome.Msgpack.Util (Err)
@@ -37,13 +26,9 @@ import Ribosome.Plugin.TH.Handler (
   RpcDefDetail(RpcCommand),
   argsCase,
   decodedCallSequence,
-  dispatchCase,
   functionParamTypes,
   lambdaNames,
   listParamsPattern,
-  rpcLambda,
-  rpcLambdaWithErrorCase,
-  rpcLambdaWithoutErrorCase,
   )
 
 data CmdParams =
@@ -158,8 +143,8 @@ normalizeArgsPlus ::
 normalizeArgsPlus =
   ArgNormalizer normalize
   where
-    normalize _ [cmdArgs, first, ObjectArray rest] =
-      return (cmdArgs, first : rest)
+    normalize _ [cmdArgs, first', ObjectArray rest] =
+      return (cmdArgs, first' : rest)
     normalize rpcName _ =
       shapeError rpcName
 
@@ -184,12 +169,6 @@ rpc ::
 rpc rpcName (ArgNormalizer normalize) dispatch =
   toMsgpack <$$> decodeResult . uncurry dispatch <=< normalize rpcName
   where
-    ensureArgShape [cmdArgs, first, ObjectArray rest] =
-      toMsgpack <$> decodeResult (dispatch cmdArgs (first : rest))
-    ensureArgShape _ =
-      throw $ ErrorMessage $ pretty errorMessage
-    errorMessage =
-      "Bad argument shape for rpc command: " <> rpcName
     decodeResult =
       either (throw . ErrorMessage) id
 
@@ -212,9 +191,12 @@ command rpcName handlerName paramNames (HandlerParams hasCmdArgs cmdParams) args
   cmdArgsName <- newName "cmdArgs"
   let
     handler =
-      lamE [varP cmdArgsName, argsPattern] (dispatch handlerName cmdArgsName paramNames hasCmdArgs)
+      lamE [firstParam cmdArgsName, argsPattern] (dispatch handlerName cmdArgsName paramNames hasCmdArgs)
   [|rpc $(nameLit) $(normalizeArgs cmdParams) $(handler)|]
   where
+    firstParam cmdArgsName =
+      if hasCmdArgs then varP cmdArgsName
+      else wildP
     nameLit =
       litE (StringL rpcName)
 
@@ -224,12 +206,9 @@ primCommand ::
   [Name] ->
   HandlerParams ->
   ExpQ
-primCommand rpcName handlerName paramNames handlerPar@(HandlerParams hasCmdArgs cmdParams) = do
+primCommand rpcName handlerName paramNames handlerPar = do
   argsName <- newName "args"
   command rpcName handlerName paramNames handlerPar (varP argsName) (primDispatch rpcName argsName)
-  where
-    nameLit =
-      litE (StringL rpcName)
 
 jsonCommand :: String -> Name -> [Name] -> HandlerParams -> ExpQ
 jsonCommand rpcName handlerName paramNames handlerPar = do
@@ -285,7 +264,7 @@ cmdNargs _ =
   CmdNargs "+"
 
 rpcCommand :: String -> Name -> HandlerParams -> [CommandOption] -> ExpQ
-rpcCommand rpcName funcName hps@(HandlerParams hasArgsParam params) opts = do
+rpcCommand rpcName funcName hps@(HandlerParams _ params) opts = do
   fun <- commandImplementation rpcName funcName hps
   [|RpcDef (RpcCommand $ mkCommandOptions (nargs : opts)) $((litE (StringL rpcName))) $(return fun)|]
   where

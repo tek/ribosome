@@ -2,19 +2,11 @@ module Ribosome.Error.Report.Class where
 
 import qualified Data.Text as Text (pack)
 import GHC.Generics (
-  C1,
-  Constructor,
-  D1,
   Generic,
   K1(..),
   M1(..),
   Rep,
-  S1,
-  Selector,
-  conIsRecord,
   from,
-  selName,
-  (:*:)(..),
   (:+:)(..),
   )
 import System.Log.Logger (Priority(NOTICE, DEBUG))

@@ -1,18 +1,16 @@
 module Ribosome.Menu.Prompt.Nvim where
 
 import Conduit (ConduitT, yield)
-import Control.Exception.Lifted (bracket_, try)
+import Control.Exception.Lifted (bracket_)
 import Control.Monad.DeepError (ignoreError)
-import qualified Data.Text as Text (intercalate, singleton, splitAt, uncons)
+import qualified Data.Text as Text (singleton, splitAt, uncons)
 
 import Ribosome.Api.Atomic (atomic)
-import Ribosome.Api.Echo (echo)
 import Ribosome.Api.Function (defineFunction)
 import Ribosome.Api.Variable (setVar)
 import Ribosome.Api.Window (redraw)
 import Ribosome.Control.Monad.Ribo (MonadRibo, NvimE)
 import Ribosome.Data.Text (escapeQuotes)
-import Ribosome.Log (logDebug)
 import Ribosome.Menu.Prompt.Data.Codes (decodeInputChar, decodeInputNum)
 import Ribosome.Menu.Prompt.Data.InputEvent (InputEvent)
 import qualified Ribosome.Menu.Prompt.Data.InputEvent as InputEvent (InputEvent(..))
@@ -23,7 +21,7 @@ import Ribosome.Menu.Prompt.Data.PromptRenderer (PromptRenderer(PromptRenderer))
 import Ribosome.Msgpack.Encode (toMsgpack)
 import Ribosome.Msgpack.Error (DecodeError)
 import qualified Ribosome.Nvim.Api.Data as ApiData (vimCommand)
-import Ribosome.Nvim.Api.IO (nvimCommand, vimCallFunction, vimCommand, vimCommandOutput, vimGetOption, vimSetOption)
+import Ribosome.Nvim.Api.IO (vimCallFunction, vimCommand, vimCommandOutput, vimGetOption, vimSetOption)
 import Ribosome.Nvim.Api.RpcCall (RpcError, syncRpcCall)
 import Ribosome.System.Time (sleep)
 
@@ -41,7 +39,7 @@ getChar ::
   MonadBaseControl IO m =>
   m InputEvent
 getChar =
-  catchAt @RpcError (const $ return InputEvent.Interrupt) request
+  catchAs @RpcError InputEvent.Interrupt request
   where
     request =
       event =<< vimCallFunction "getchar" [toMsgpack False]
@@ -53,8 +51,6 @@ getChar =
       return InputEvent.Interrupt
     event (Left num) =
       maybe (InputEvent.Unexpected num) InputEvent.Character <$> decodeInputNum num
-    rpcError (e :: SomeException) =
-      return (InputEvent.Error (show e))
 
 getCharC ::
   MonadIO m =>
@@ -92,7 +88,6 @@ nvimRenderPrompt ::
 nvimRenderPrompt (Prompt cursor _ text) =
   void $ atomic calls
   where
-    frags = Text.intercalate " | " (fragments >>= uncurry promptFragment)
     calls = syncRpcCall . ApiData.vimCommand <$> ("silent! redraw!" : (fragments >>= uncurry promptFragment))
     fragments =
       [

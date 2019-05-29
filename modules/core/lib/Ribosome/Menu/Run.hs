@@ -1,9 +1,8 @@
 module Ribosome.Menu.Run where
 
 import Conduit (ConduitT, await, awaitForever, mapC, yield, (.|))
-import Control.Exception.Lifted (bracket, catch)
+import Control.Exception.Lifted (bracket)
 import Control.Monad.Trans.Control (MonadBaseControl)
-import Data.Composition ((.::))
 import Data.Conduit.Combinators (iterM)
 import qualified Data.Conduit.Combinators as Conduit (last)
 import Data.Conduit.Lift (evalStateC)
@@ -18,8 +17,6 @@ import Ribosome.Menu.Data.MenuAction (MenuAction)
 import qualified Ribosome.Menu.Data.MenuAction as MenuAction (MenuAction(..))
 import Ribosome.Menu.Data.MenuConfig (MenuConfig(MenuConfig))
 import Ribosome.Menu.Data.MenuConsumer (MenuConsumer(MenuConsumer))
-import Ribosome.Menu.Data.MenuConsumerAction (MenuConsumerAction)
-import qualified Ribosome.Menu.Data.MenuConsumerAction as MenuConsumerAction (MenuConsumerAction(..))
 import Ribosome.Menu.Data.MenuEvent (MenuEvent, QuitReason)
 import qualified Ribosome.Menu.Data.MenuEvent as MenuEvent (MenuEvent(..))
 import qualified Ribosome.Menu.Data.MenuEvent as QuitReason (QuitReason(..))
@@ -39,7 +36,6 @@ import Ribosome.Menu.Prompt.Data.PromptEvent (PromptEvent)
 import qualified Ribosome.Menu.Prompt.Data.PromptEvent as PromptEvent (PromptEvent(..))
 import Ribosome.Menu.Prompt.Data.PromptRenderer (PromptRenderer(PromptRenderer))
 import qualified Ribosome.Menu.Prompt.Data.PromptState as PromptState (PromptState(..))
-import Ribosome.Menu.Prompt.Nvim (promptBlocker)
 import Ribosome.Menu.Prompt.Run (promptC)
 import Ribosome.Msgpack.Encode (MsgpackEncode(toMsgpack))
 import Ribosome.Msgpack.Error (DecodeError)
@@ -100,14 +96,14 @@ menuSources ::
   MonadRibo m =>
   PromptConfig m ->
   ConduitT () MenuItem m () ->
-  [CConduit () (Either PromptConsumerUpdate MenuItem) m ()]
+  [ConduitT () (Either PromptConsumerUpdate MenuItem) m ()]
 menuSources promptConfig items =
   [promptSource, itemSource]
   where
     promptSource =
-      ccMap (.| mapC Left) (promptC promptConfig)
+      promptC promptConfig .| mapC Left
     itemSource =
-      CConduit.Single $ items .| mapC Right
+      items .| mapC Right
 
 menuTerminator ::
   Monad m =>
@@ -144,7 +140,7 @@ runMenu ::
 runMenu (MenuConfig items handle render promptConfig@(PromptConfig _ _ promptRenderer _)) =
   withPrompt promptRenderer
   where
-    withPrompt (PromptRenderer acquire release renderPrompt) =
+    withPrompt (PromptRenderer acquire release _) =
       bracket acquire release (const run)
     run =
       menuResult =<< quitReason <$> withMergedSources consumer 64 (menuSources promptConfig items)

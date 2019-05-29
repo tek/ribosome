@@ -4,33 +4,25 @@
 module Ribosome.Plugin.TH.Handler where
 
 import Control.Exception (throw)
-import Control.Monad (replicateM, (<=<))
-import Data.Aeson (FromJSON, eitherDecodeStrict)
-import qualified Data.ByteString as ByteString (intercalate)
-import Data.Default (def)
-import Data.Either.Combinators (mapLeft)
+import Control.Monad (replicateM)
 import Data.Functor ((<&>))
-import Data.Maybe (fromMaybe, maybeToList)
+import Data.Maybe (maybeToList)
 import Data.MessagePack (Object)
-import qualified Data.Text as Text (unpack)
 import Data.Text.Prettyprint.Doc (Doc, Pretty(..))
 import Data.Text.Prettyprint.Doc.Render.Terminal (AnsiStyle)
 import Language.Haskell.TH
 import Language.Haskell.TH.Syntax (Lift(..))
-import Neovim.Exceptions (NeovimException(ErrorMessage, ErrorResult))
+import Neovim.Exceptions (NeovimException(ErrorMessage))
 import Neovim.Plugin.Classes (
   AutocmdOptions(AutocmdOptions),
   CommandOption(..),
   CommandOptions,
   RangeSpecification(..),
   Synchronous(..),
-  mkCommandOptions,
   )
 
-import Ribosome.Data.String (capitalize)
 import Ribosome.Msgpack.Decode (fromMsgpack)
 import Ribosome.Msgpack.Encode (toMsgpack)
-import Ribosome.Msgpack.Util (Err)
 
 data RpcHandlerConfig =
   RpcHandlerConfig {

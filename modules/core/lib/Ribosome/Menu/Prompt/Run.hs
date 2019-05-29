@@ -1,13 +1,10 @@
 module Ribosome.Menu.Prompt.Run where
 
 import Conduit (ConduitT, await, awaitForever, evalStateC, yield, (.|))
-import Control.Monad.DeepState (modifyM')
 import Data.Conduit.Combinators (peek)
 import qualified Data.Text as Text (drop, dropEnd, length, splitAt)
 
 import Ribosome.Control.Monad.Ribo (MonadRibo)
-import Ribosome.Data.Conduit.Composition (CCatable, CConduit, buffer')
-import qualified Ribosome.Data.Conduit.Composition as CConduit (CConduit(Single))
 import Ribosome.Log (logDebug)
 import Ribosome.Menu.Prompt.Data.CursorUpdate (CursorUpdate)
 import qualified Ribosome.Menu.Prompt.Data.CursorUpdate as CursorUpdate (CursorUpdate(..))
@@ -83,7 +80,7 @@ processPromptEvent (PromptConfig _ modes (PromptRenderer _ _ render) _) event = 
 skippingRenderer ::
   Monad m =>
   (Prompt -> m ()) ->
-  ConduitT PromptConsumerUpdate PromptConsumerUpdate m a
+  ConduitT PromptConsumerUpdate PromptConsumerUpdate m ()
 skippingRenderer render =
   go
   where
@@ -93,7 +90,9 @@ skippingRenderer render =
       yield next
       renderIfIdle prompt =<< peek
       go
-    renderIfIdle prompt (Just _) =
+    check Nothing =
+      return ()
+    renderIfIdle _ (Just _) =
       return ()
     renderIfIdle prompt Nothing =
       lift (render prompt)
@@ -102,10 +101,9 @@ promptC ::
   MonadIO m =>
   MonadRibo m =>
   PromptConfig m ->
-  CConduit () PromptConsumerUpdate m ()
+  ConduitT () PromptConsumerUpdate m ()
 promptC config@(PromptConfig source _ (PromptRenderer _ _ render) insert) =
-  -- buffer' 64 (sourceWithInit .| process) (skippingRenderer render)
-  CConduit.Single $ sourceWithInit .| process .| skippingRenderer render
+  sourceWithInit .| process .| skippingRenderer render
   where
     sourceWithInit =
       yield PromptEvent.Init *> source
