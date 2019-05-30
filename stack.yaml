@@ -13,6 +13,6 @@ extra-deps:
 - github: neovimhaskell/nvim-hs
   commit: 63e7ef2fc40110e23240a6d0109a8bae2e29c4fa
 - github: tek/cornea
-  commit: 9571744596af36b46dc31b40c6f767b5c035800c
+  commit: 90ce914ac80f4ea38c7963046857e5a14e07432c
 - github: tek/chiasma-hs
-  commit: 7fb856f43487fd27a21deeb36a1c4972ec8b1548
+  commit: 9571744596af36b46dc31b40c6f767b5c035800c
