@@ -14,5 +14,5 @@ extra-deps:
   commit: 8a9930f2975eda1e4ced5703042fbbfc68028052
 - github: tek/cornea
   commit: 90ce914ac80f4ea38c7963046857e5a14e07432c
-- github: tek/chiasma-hs
-  commit: 3ccda8a22ca04804887c2cf17fc390bfed2e9a38
+- github: tek/chiasma
+  commit: 3f224bb9cac08e0ca6b7a2bc75ba7a36b954b668
