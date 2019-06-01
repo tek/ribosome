@@ -8,6 +8,7 @@ import Data.DeepPrisms (deepPrisms)
 import Ribosome.Control.Monad.Ribo (Ribo)
 import Ribosome.Data.Mapping (MappingError)
 import Ribosome.Error.Report.Class (ReportError(..))
+import Ribosome.Log (showError)
 import Ribosome.Msgpack.Error (DecodeError)
 import Ribosome.Nvim.Api.RpcCall (RpcError)
 
@@ -17,12 +18,12 @@ data TestError =
   Decode DecodeError
   |
   Mapping MappingError
-  deriving (Generic, ReportError)
+  deriving (Show, Generic, ReportError)
 
 deepPrisms ''TestError
 
 handleTestError :: TestError -> Ribo s TestError ()
-handleTestError _ =
-  return ()
+handleTestError =
+  showError "error in test:"
 
 type RiboT a = Ribo () TestError a

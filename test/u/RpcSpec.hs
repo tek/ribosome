@@ -4,7 +4,7 @@
 module RpcSpec (htf_thisModulesTests) where
 
 import qualified Data.Map as Map (empty)
-import Language.Haskell.TH hiding (reportError)
+-- import Language.Haskell.TH hiding (reportError)
 import Neovim (CommandArguments, Neovim, Plugin(..))
 import Test.Framework
 
@@ -12,11 +12,9 @@ import Ribosome.Api.Variable (setVar)
 import Ribosome.Control.Monad.Ribo (MonadRibo, NvimE)
 import Ribosome.Control.Ribosome (Ribosome, newRibosome)
 import Ribosome.Error.Report (reportError)
-import Ribosome.Log (logError)
-import Ribosome.Msgpack.Encode (MsgpackEncode(toMsgpack))
-import Ribosome.Nvim.Api.IO (vimCallFunction, vimCommand, vimGetVar)
+import Ribosome.Nvim.Api.IO (vimCommand, vimGetVar)
 import Ribosome.Nvim.Api.RpcCall (RpcError)
-import Ribosome.Plugin (RpcDef(RpcDef), cmd, riboPlugin, rpcHandler, sync)
+import Ribosome.Plugin (RpcDef, cmd, riboPlugin, rpcHandler, sync)
 import Ribosome.System.Time (sleep)
 import Ribosome.Test.Embed (integrationSpecDef)
 import System.Log.Logger (Priority(DEBUG), setLevel, updateGlobalLogger)
@@ -101,9 +99,9 @@ successCommand ::
   NvimE e m =>
   Text ->
   m ()
-successCommand cmd = do
+successCommand cmd' = do
   setVar resultVar (0 :: Int)
-  vimCommand cmd
+  vimCommand cmd'
   gassertEqual target =<< vimGetVar resultVar
 
 failureCommand ::
@@ -111,12 +109,12 @@ failureCommand ::
   NvimE e m =>
   Text ->
   m ()
-failureCommand cmd = do
+failureCommand cmd' = do
   setVar resultVar (0 :: Int)
-  catchAt recover (vimCommand cmd)
+  catchAt recoverRpc (vimCommand cmd')
   gassertEqual (0 :: Int) =<< vimGetVar resultVar
   where
-    recover (_ :: RpcError) =
+    recoverRpc (_ :: RpcError) =
       return ()
 
 rpcSpec :: ExceptT RpcError (Neovim ()) ()

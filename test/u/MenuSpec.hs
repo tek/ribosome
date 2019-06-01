@@ -8,17 +8,15 @@ import Control.Monad.Trans.Control (MonadBaseControl)
 import qualified Data.Map as Map (fromList)
 import Test.Framework
 
-import Ribosome.Control.Monad.Ribo (Ribo(Ribo), runRibo)
-import Ribosome.Control.StrictRibosome (StrictRibosome(StrictRibosome))
+import Ribosome.Control.StrictRibosome (StrictRibosome)
 import Ribosome.Menu.Data.Menu (Menu(Menu))
 import Ribosome.Menu.Data.MenuAction (MenuAction)
 import Ribosome.Menu.Data.MenuConfig (MenuConfig(MenuConfig))
 import Ribosome.Menu.Data.MenuConsumer (MenuConsumer(MenuConsumer))
 import Ribosome.Menu.Data.MenuConsumerAction (MenuConsumerAction)
-import Ribosome.Menu.Data.MenuConsumerUpdate (MenuConsumerUpdate(MenuConsumerUpdate))
 import qualified Ribosome.Menu.Data.MenuEvent as MenuEvent (MenuEvent(..))
 import Ribosome.Menu.Data.MenuItem (MenuItem(MenuItem))
-import qualified Ribosome.Menu.Data.MenuItem as MenuItem (MenuItem(_text), text)
+import qualified Ribosome.Menu.Data.MenuItem as MenuItem (MenuItem(_text))
 import Ribosome.Menu.Data.MenuRenderEvent (MenuRenderEvent)
 import qualified Ribosome.Menu.Data.MenuRenderEvent as MenuRenderEvent (MenuRenderEvent(..))
 import Ribosome.Menu.Data.MenuUpdate (MenuUpdate(MenuUpdate))
@@ -28,11 +26,9 @@ import Ribosome.Menu.Prompt.Data.PromptEvent (PromptEvent)
 import qualified Ribosome.Menu.Prompt.Data.PromptEvent as PromptEvent (PromptEvent(..))
 import qualified Ribosome.Menu.Prompt.Data.PromptState as PromptState (PromptState(..))
 import Ribosome.Menu.Prompt.Run (basicTransition, noPromptRenderer)
-import Ribosome.Menu.Run (nvimMenu, runMenu)
+import Ribosome.Menu.Run (runMenu)
 import Ribosome.Menu.Simple (basicMenu, menuContinue, menuQuit, simpleMenu)
 import Ribosome.System.Time (sleep)
-import Ribosome.Test.Tmux (tmuxGuiSpecDef)
-import TestError (RiboT)
 
 promptInput ::
   MonadIO m =>
@@ -87,7 +83,7 @@ menuTest ::
   IO [[MenuItem]]
 menuTest handler items chars = do
   itemsVar <- newMVar []
-  runMenu (MenuConfig (menuItems items) (MenuConsumer handler) (render itemsVar) promptConfig) `execStateT` def
+  void $ runMenu (MenuConfig (menuItems items) (MenuConsumer handler) (render itemsVar) promptConfig) `execStateT` def
   readMVar itemsVar
   where
     promptConfig =
@@ -192,5 +188,5 @@ exec var m@(Menu _ items _ _ _) _ =
 test_strictMenuExecute :: IO ()
 test_strictMenuExecute = do
   var <- newMVar []
-  items <- menuTest (simpleMenu (Map.fromList [("cr", exec var)])) items3 chars3
+  _ <- menuTest (simpleMenu (Map.fromList [("cr", exec var)])) items3 chars3
   assertEqual (reverse items3) =<< readMVar var

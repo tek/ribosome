@@ -1,24 +1,25 @@
 {-# OPTIONS_GHC -fno-warn-orphans #-}
+{-# OPTIONS_GHC -Wno-unused-imports #-}
 {-# OPTIONS_GHC -F -pgmF htfpp #-}
 {-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE DeriveAnyClass #-}
+{- HLINT ignore -}
 
-module THSpec(
-  htf_thisModulesTests,
-) where
+module THSpec(htf_thisModulesTests) where
 
 import Data.Aeson (FromJSON)
-import Data.Default (def)
+-- import Data.Default (def)
 import GHC.Generics (Generic)
 import Language.Haskell.TH
 import Neovim (Plugin(..))
 import Test.Framework
 
+-- import Ribosome.Control.Ribosome (Ribosome, newRibosome)
 import Ribosome.Control.Ribosome (Ribosome, newRibosome)
 import Ribosome.Msgpack.Decode (MsgpackDecode)
 import Ribosome.Msgpack.Encode (MsgpackEncode)
 import Ribosome.Plugin
-import TestError (handleTestError)
+-- import TestError (handleTestError)
 
 data Par =
   Par {
@@ -35,7 +36,7 @@ $(return [])
 
 plugin' :: IO (Plugin (Ribosome Int))
 plugin' = do
-  ribo <- newRibosome ("test" :: Text) 1
+  -- ribo <- newRibosome ("test" :: Text) 1
   undefined
   -- return $ riboPlugin "test" ribo [$(rpcHandler (cmd []) 'handler)] [] handleTestError def
 

@@ -37,6 +37,6 @@ fixtureContent ::
   Text ->
   FilePath ->
   m Text
-fixtureContent prefix path = do
-  path <- fixture prefix path
+fixtureContent prefix subPath = do
+  path <- fixture prefix subPath
   decodeUtf8 <$> liftIO (ByteString.readFile path)

@@ -5,7 +5,7 @@ import Data.Default (def)
 import System.FilePath (takeDirectory, takeFileName, (</>))
 import System.Log.Logger (Priority(DEBUG), setLevel, updateGlobalLogger)
 
-import Ribosome.Control.Monad.Ribo (MonadRibo, NvimE, Ribo, pluginName)
+import Ribosome.Control.Monad.Ribo (MonadRibo, NvimE, pluginName)
 import Ribosome.Control.Ribosome (Ribosome)
 import Ribosome.Error.Report.Class (ReportError)
 import Ribosome.Plugin.RpcHandler (RpcHandler)
