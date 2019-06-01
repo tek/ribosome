@@ -1,5 +1,5 @@
 name: ribosome-test
-version: 0.3.0.0
+version: 0.3.0.1
 synopsis: test helpers for ribosome
 description: Please see the README on GitHub at <https://github.com/tek/ribosome-hs>
 github: "tek/ribosome-hs"
