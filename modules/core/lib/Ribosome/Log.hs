@@ -140,26 +140,11 @@ logError ::
   m ()
 logError = err
 
-debugShow ::
+showError ::
   Show a =>
   MonadRibo m =>
+  Text ->
   a ->
   m ()
-debugShow =
-  debug @Text . show
-
-infoShow ::
-  Show a =>
-  MonadRibo m =>
-  a ->
-  m ()
-infoShow =
-  info @Text . show
-
-errShow ::
-  Show a =>
-  MonadRibo m =>
-  a ->
-  m ()
-errShow =
-  err @Text . show
+showError prefix a =
+  logError @Text (prefix <> " " <> show a)
