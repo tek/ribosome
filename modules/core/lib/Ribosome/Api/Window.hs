@@ -65,6 +65,14 @@ setLine ::
 setLine window line =
   setCursor window line 0
 
+setCurrentLine ::
+  NvimE e m =>
+  Int ->
+  m ()
+setCurrentLine line = do
+  window <- nvimGetCurrentWin
+  setLine window line
+
 redraw ::
   NvimE e m =>
   m ()
