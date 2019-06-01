@@ -59,5 +59,8 @@ fixture = F.fixture uPrefix
 withLog :: Ribo s e a -> Ribo s e a
 withLog thunk = do
   name <- pluginName
+fixtureContent :: MonadIO m => FilePath -> m Text
+fixtureContent = F.fixtureContent uPrefix
+
   liftIO $ updateGlobalLogger (toString name) (setLevel DEBUG)
   thunk

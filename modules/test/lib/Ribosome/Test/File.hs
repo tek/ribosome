@@ -1,15 +1,12 @@
-module Ribosome.Test.File(
-  tempDirIO,
-  tempDir,
-  fixture,
-) where
+module Ribosome.Test.File where
 
 import Control.Monad.IO.Class (MonadIO, liftIO)
+import qualified Data.ByteString as ByteString (readFile)
 import System.Directory (canonicalizePath, createDirectoryIfMissing, removePathForcibly)
 import System.FilePath ((</>))
 
 testDir :: Text -> IO FilePath
-testDir prefix = canonicalizePath $ "test" </> (toString prefix)
+testDir prefix = canonicalizePath $ "test" </> toString prefix
 
 -- raises exception if cwd is not the package root so we don't damage anything
 tempDirIO :: Text -> FilePath -> IO FilePath
@@ -26,7 +23,20 @@ tempDir :: MonadIO m => Text -> FilePath -> m FilePath
 tempDir prefix path =
   liftIO $ tempDirIO prefix path
 
-fixture :: MonadIO m => Text -> FilePath -> m FilePath
+fixture ::
+  MonadIO m =>
+  Text ->
+  FilePath ->
+  m FilePath
 fixture prefix path = do
   base <- liftIO $ testDir prefix
   return $ base </> "fixtures" </> path
+
+fixtureContent ::
+  MonadIO m =>
+  Text ->
+  FilePath ->
+  m Text
+fixtureContent prefix path = do
+  path <- fixture prefix path
+  decodeUtf8 <$> liftIO (ByteString.readFile path)
