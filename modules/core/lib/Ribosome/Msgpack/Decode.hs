@@ -124,10 +124,12 @@ instance MsgpackDecode Float where
   fromMsgpack (ObjectFloat a) = Right a
   fromMsgpack (ObjectDouble a) = Right (double2Float a)
   fromMsgpack (ObjectInt a) = Right (fromIntegral a)
+  fromMsgpack (ObjectUInt a) = Right (fromIntegral a)
   fromMsgpack o = Util.illegalType "Float" o
 
 instance {-# OVERLAPPING #-} MsgpackDecode String where
-  fromMsgpack (ObjectString os) = Right $ ByteString.toString os
+  fromMsgpack (ObjectString os) = Right $ decodeUtf8 os
+  fromMsgpack (ObjectBinary os) = Right $ decodeUtf8 os
   fromMsgpack o = Util.illegalType "String" o
 
 instance {-# OVERLAPPABLE #-} MsgpackDecode a => MsgpackDecode [a] where
@@ -136,10 +138,12 @@ instance {-# OVERLAPPABLE #-} MsgpackDecode a => MsgpackDecode [a] where
 
 instance MsgpackDecode Text where
   fromMsgpack (ObjectString os) = Right (decodeUtf8 os)
+  fromMsgpack (ObjectBinary os) = Right (decodeUtf8 os)
   fromMsgpack o = Util.illegalType "Text" o
 
 instance MsgpackDecode ByteString where
   fromMsgpack (ObjectString os) = Right os
+  fromMsgpack (ObjectBinary os) = Right os
   fromMsgpack o = Util.illegalType "ByteString" o
 
 instance MsgpackDecode Char where
@@ -187,3 +191,12 @@ fromMsgpack' ::
   m a
 fromMsgpack' =
   hoistEitherWith DecodeError.Failed . fromMsgpack
+
+msgpackFromString :: IsString a => String -> Object -> Either Err a
+msgpackFromString name o =
+  adapt $ fromMsgpack o
+  where
+    adapt (Right a) =
+      Right $ fromString a
+    adapt (Left _) =
+      Util.illegalType name o
