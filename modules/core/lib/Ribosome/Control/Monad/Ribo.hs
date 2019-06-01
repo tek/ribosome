@@ -217,6 +217,19 @@ prepend :: ∀s' s m a. MonadDeepState s s' m => Lens' s' [a] -> a -> m ()
 prepend lens a =
   modify $ Lens.over lens (a:)
 
+prependUnique ::
+  ∀ s' s m a .
+  Eq a =>
+  MonadDeepState s s' m =>
+  Lens' s' [a] ->
+  a ->
+  m ()
+prependUnique lens a =
+  modify $ Lens.over lens modder
+  where
+    modder as =
+      a : filter (a /=) as
+
 inspectHeadE ::
   ∀ s' s e e' m a .
   (MonadDeepState s s' m, MonadDeepError e e' m) =>
