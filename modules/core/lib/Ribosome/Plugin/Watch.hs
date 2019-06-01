@@ -7,6 +7,7 @@ import qualified Data.Map as Map (toList)
 import Data.Map.Strict (Map)
 import Data.MessagePack (Object(ObjectNil))
 
+import Ribosome.Control.Lock (lockOrSkip)
 import Ribosome.Control.Monad.Ribo (MonadRibo, NvimE, pluginInternalL, pluginInternalModifyL)
 import Ribosome.Control.Ribosome (RibosomeInternal)
 import qualified Ribosome.Control.Ribosome as RibosomeInternal (watchedVariables)
@@ -69,3 +70,13 @@ handleWatcherRequest ::
   m Object
 handleWatcherRequest variables _ =
   ObjectNil <$ traverse_ checkVar variables
+
+handleWatcherRequestSafe ::
+  MonadBaseControl IO m =>
+  MonadRibo m =>
+  NvimE e m =>
+  [WatchedVariable m] ->
+  [Object] ->
+  m Object
+handleWatcherRequestSafe variables o =
+  ObjectNil <$ lockOrSkip "variable-watcher" (void $ handleWatcherRequest variables o)

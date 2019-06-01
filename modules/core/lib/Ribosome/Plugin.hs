@@ -35,7 +35,7 @@ import Ribosome.Plugin.TH.Handler (
   RpcHandlerConfig(..),
   rhcCmd,
   )
-import Ribosome.Plugin.Watch (handleWatcherRequest, watchedVariables)
+import Ribosome.Plugin.Watch (handleWatcherRequestSafe, watchedVariables)
 
 poll ::
   Monad m =>
@@ -60,6 +60,7 @@ mappingHandlerRpc pluginName mappings =
   RpcDef (RpcFunction Async) (capitalize pluginName <> "Mapping") (handleMappingRequest mappings)
 
 watcherRpc ::
+  MonadBaseControl IO m =>
   MonadDeepError e MappingError m =>
   MonadRibo m =>
   NvimE e m =>
@@ -74,7 +75,7 @@ watcherRpc pluginName variables =
     rpcDef event =
       rpcDefFromDetail (detail event) event
     rpcDefFromDetail dt event =
-      RpcDef dt (name' event) (handleWatcherRequest (watchedVariables variables))
+      RpcDef dt (name' event) (handleWatcherRequestSafe (watchedVariables variables))
     name' event = capitalize pluginName <> "VariableChanged" <> event
     detail event = RpcAutocmd event Async def
 
@@ -104,6 +105,7 @@ nvimPlugin env rpcDefs errorHandler =
   Plugin env (compileRpcDef errorHandler <$> join rpcDefs)
 
 riboPlugin ::
+  MonadBaseControl IO m =>
   MonadDeepError e MappingError m =>
   MonadRibo m =>
   NvimE e m =>
