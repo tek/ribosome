@@ -5,12 +5,12 @@ import Data.Default (def)
 import System.FilePath (takeDirectory, takeFileName, (</>))
 import System.Log.Logger (Priority(DEBUG), setLevel, updateGlobalLogger)
 
-import Ribosome.Control.Monad.Ribo (NvimE, Ribo, pluginName)
+import Ribosome.Control.Monad.Ribo (MonadRibo, NvimE, Ribo, pluginName)
 import Ribosome.Control.Ribosome (Ribosome)
 import Ribosome.Error.Report.Class (ReportError)
 import Ribosome.Plugin.RpcHandler (RpcHandler)
 import Ribosome.Test.Embed (Runner, TestConfig(..), setupPluginEnv, unsafeEmbeddedSpecR)
-import qualified Ribosome.Test.File as F (fixture, tempDir)
+import qualified Ribosome.Test.File as F (fixture, fixtureContent, tempDir)
 import Ribosome.Test.Orphans ()
 
 uPrefix :: Text
@@ -56,11 +56,21 @@ tempFile file = do
 fixture :: MonadIO m => FilePath -> m FilePath
 fixture = F.fixture uPrefix
 
-withLog :: Ribo s e a -> Ribo s e a
-withLog thunk = do
-  name <- pluginName
 fixtureContent :: MonadIO m => FilePath -> m Text
 fixtureContent = F.fixtureContent uPrefix
 
+withLogAs ::
+  MonadIO m =>
+  Text ->
+  m a ->
+  m a
+withLogAs name thunk = do
   liftIO $ updateGlobalLogger (toString name) (setLevel DEBUG)
   thunk
+
+withLog ::
+  MonadRibo m =>
+  m a ->
+  m a
+withLog thunk =
+  (`withLogAs` thunk) =<< pluginName

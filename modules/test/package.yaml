@@ -14,6 +14,7 @@ build-type: Simple
 dependencies:
 - HTF
 - base-noprelude >= 4.7 && < 5
+- bytestring
 - chiasma
 - cornea
 - data-default
@@ -22,6 +23,7 @@ dependencies:
 - filepath
 - free
 - hslogger
+- lifted-base
 - messagepack
 - monad-control
 - mtl
