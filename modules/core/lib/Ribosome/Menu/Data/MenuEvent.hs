@@ -38,3 +38,4 @@ data MenuEvent m a =
   NewItems MenuItem
   |
   Quit (QuitReason m a)
+  deriving Show

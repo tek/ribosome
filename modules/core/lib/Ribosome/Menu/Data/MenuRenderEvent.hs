@@ -7,3 +7,4 @@ data MenuRenderEvent m a =
   Render Bool Menu
   |
   Quit (QuitReason m a)
+  deriving Show

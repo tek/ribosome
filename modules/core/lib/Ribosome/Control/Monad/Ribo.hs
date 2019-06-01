@@ -60,9 +60,11 @@ modifyTMVar ::
   MonadBaseControl IO m =>
   (a -> a) ->
   TMVar a ->
-  m ()
-modifyTMVar f tmvar =
-  atomically . putTMVar tmvar =<< f <$> atomically (takeTMVar tmvar)
+  m a
+modifyTMVar f tmvar = do
+  a <- f <$> atomically (takeTMVar tmvar)
+  atomically $ putTMVar tmvar a
+  return a
 
 safeModifyTMVarM ::
   MonadIO m =>
@@ -180,7 +182,7 @@ instance MonadRibo (RNeovim s) where
     Lens.view RibosomeState.internal <$$> atomically . readTMVar =<< asks (Lens.view Ribosome.state)
 
   pluginInternalModify f =
-    modifyTMVar (Lens.over RibosomeState.internal f) =<< riboStateVar
+    void . modifyTMVar (Lens.over RibosomeState.internal f) =<< riboStateVar
 
 instance MonadRibo (Ribo s e) where
   pluginName = Ribo pluginName
@@ -191,11 +193,6 @@ instance {-# OVERLAPPABLE #-} (MonadTrans t, MonadIO (t m), MonadRibo m) => Mona
   pluginName = lift pluginName
   pluginInternal = lift pluginInternal
   pluginInternalModify = lift . pluginInternalModify
-
--- instance MonadRibo m => MonadRibo (ExceptT e m) where
---   pluginName = lift pluginName
---   pluginInternal = lift pluginInternal
---   pluginInternalModify = lift . pluginInternalModify
 
 instance {-# OVERLAPPING #-} MonadIO m => MonadRibo (StateT (StrictRibosome s) m) where
   pluginName =

@@ -57,6 +57,8 @@ storePrompt prompts (MenuUpdate event menu) =
       store prompt
     check (MenuEvent.Mapping _ prompt) =
       store prompt
+    check (MenuEvent.Quit _) =
+      menuQuit menu
     check _ =
       menuContinue menu
     store prompt =

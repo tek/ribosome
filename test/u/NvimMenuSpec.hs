@@ -105,7 +105,7 @@ nvimMenuNativeSpec =
   bracket (fork input) killThread (const $ nvimMenuSpec (getCharC 0.1))
   where
     input =
-      syntheticInput (Just 1) nativeChars
+      syntheticInput (Just 0.2) nativeChars
 
 test_nvimMenuNative :: IO ()
 test_nvimMenuNative =
@@ -122,7 +122,7 @@ nvimMenuInterruptSpec = do
     run =
       nvimMenu def (menuItems items) (defaultMenu Map.empty) (promptConfig (getCharC 0.1))
     input =
-      syntheticInput (Just 1) ["<c-c>", "<cr>"]
+      syntheticInput (Just 0.2) ["<c-c>", "<cr>"]
 
 test_nvimMenuInterrupt :: IO ()
 test_nvimMenuInterrupt =

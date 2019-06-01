@@ -3,9 +3,12 @@ module Ribosome.Data.Conduit where
 import Conduit (ConduitT, runConduit, yield, (.|))
 import Control.Concurrent.Lifted (fork, killThread)
 import Control.Concurrent.STM.TBMChan (TBMChan, closeTBMChan, newTBMChan, readTBMChan, writeTBMChan)
+import Control.Concurrent.STM.TMVar (TMVar, newTMVar)
 import Control.Exception.Lifted (bracket, finally)
 import Control.Monad.Trans.Control (MonadBaseControl)
 import qualified Data.Conduit.Combinators as Conduit (mapM_)
+
+import Ribosome.Control.Monad.Ribo (modifyTMVar)
 
 withTBMChan ::
   MonadIO m =>
@@ -33,6 +36,16 @@ sourceChan chan =
     recurse a =
       yield a *> loop
 
+sourceTerminated ::
+  MonadIO m =>
+  MonadBaseControl IO m =>
+  TMVar Int ->
+  TBMChan a ->
+  m ()
+sourceTerminated var chan = do
+  n <- modifyTMVar (subtract 1) var
+  when (n == 0) (atomically $ closeTBMChan chan)
+
 withSourcesInChanAs ::
   MonadIO m =>
   MonadBaseControl IO m =>
@@ -41,15 +54,17 @@ withSourcesInChanAs ::
   TBMChan a ->
   m b
 withSourcesInChanAs executor sources chan = do
-  threadIds <- traverse (fork . runConduit . start) sources
+  activeSources <- atomically $ newTMVar (length sources)
+  threadIds <- traverse (fork . start activeSources) sources
   finally listen (release threadIds)
   where
     release =
       traverse_ killThread
     listen =
       executor $ sourceChan chan
-    start source =
-      source .| Conduit.mapM_ (atomically . writeTBMChan chan)
+    start activeSources source = do
+      runConduit (source .| Conduit.mapM_ (atomically . writeTBMChan chan))
+      sourceTerminated activeSources chan
 
 simpleExecutor ::
   Monad m =>

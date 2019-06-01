@@ -42,5 +42,6 @@ plugin' = do
 
 test_plug :: IO ()
 test_plug = do
-  _ <- plugin'
-  traverse_ putStrLn $ lines $(stringE . pprint =<< rpcHandler (sync . cmd []) 'handler)
+  return ()
+  -- _ <- plugin'
+  -- traverse_ putStrLn $ lines $(stringE . pprint =<< rpcHandler (sync . cmd []) 'handler)
