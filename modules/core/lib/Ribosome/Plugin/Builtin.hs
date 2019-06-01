@@ -14,7 +14,7 @@ deleteScratch ::
   NvimE e m =>
   [Object] ->
   m Object
-deleteScratch [ObjectString name] =
+deleteScratch [ObjectString name] = do
   ObjectNil <$ killScratchByName (decodeUtf8 name)
 deleteScratch _ =
   return ObjectNil

@@ -206,17 +206,20 @@ killScratch ::
   Scratch ->
   m ()
 killScratch (Scratch name buffer window _ tab) = do
-  number <- bufferGetNumber buffer
-  vimCommand $ "autocmd! RibosomeScratch BufDelete <buffer=" <> show number <> ">"
+  catchAs @RpcError () removeAutocmd
   traverse_ closeTabpage tab *> closeWindow window *> wipeBuffer buffer
   pluginInternalModify $ Lens.set (scratchLens name) Nothing
+  where
+    removeAutocmd = do
+      number <- bufferGetNumber buffer
+      vimCommand $ "autocmd! RibosomeScratch BufDelete <buffer=" <> show number <> ">"
 
 killScratchByName ::
   MonadRibo m =>
   NvimE e m =>
   Text ->
   m ()
-killScratchByName name =
+killScratchByName name = do
   traverse_ killScratch =<< lookupScratch name
 
 scratchPreviousWindow ::
