@@ -21,7 +21,8 @@ import qualified Ribosome.Menu.Data.MenuItem as MenuItem (MenuItem(_text))
 import Ribosome.Menu.Data.MenuUpdate (MenuUpdate(MenuUpdate))
 import Ribosome.Menu.Prompt.Data.Prompt (Prompt(Prompt))
 
-type Mappings m a = Map Text (Menu -> Prompt -> m (MenuConsumerAction m a, Menu))
+type MappingHandler m a = Menu -> Prompt -> m (MenuConsumerAction m a, Menu)
+type Mappings m a = Map Text (MappingHandler m a)
 
 textContains :: Text -> Text -> Bool
 textContains needle haystack =
