@@ -1,5 +1,5 @@
 module Prelude (
-  module Ribosome.Prelude
+  module Ribosome.PreludeExport
 ) where
 
-import Ribosome.Prelude
+import Ribosome.PreludeExport

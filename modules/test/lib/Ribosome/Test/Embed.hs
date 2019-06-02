@@ -169,7 +169,6 @@ shutdownNvim :: Internal.Config e -> NvimProc -> IO () -> IO ()
 shutdownNvim _ prc stopEventHandlers = do
   stopEventHandlers
   killProcess prc
-  -- quitNvim testCfg prc
 
 runTest ::
   RpcHandler e env m =>
