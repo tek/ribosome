@@ -2,6 +2,7 @@ module Ribosome.Data.ScratchOptions where
 
 import Data.Default (Default(def))
 
+import Ribosome.Data.FloatOptions (FloatOptions)
 import Ribosome.Data.Mapping (Mapping)
 import Ribosome.Data.Syntax (Syntax)
 
@@ -13,6 +14,7 @@ data ScratchOptions =
     focus :: Bool,
     resize :: Bool,
     bottom :: Bool,
+    float :: Maybe FloatOptions,
     size :: Maybe Int,
     maxSize :: Maybe Int,
     syntax :: [Syntax],
@@ -21,7 +23,7 @@ data ScratchOptions =
   }
 
 defaultScratchOptions :: Text -> ScratchOptions
-defaultScratchOptions = ScratchOptions False False False False True True Nothing Nothing [] []
+defaultScratchOptions = ScratchOptions False False False False True True Nothing Nothing Nothing [] []
 
 instance Default ScratchOptions where
   def = defaultScratchOptions "scratch"

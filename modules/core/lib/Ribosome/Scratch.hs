@@ -5,6 +5,8 @@ import qualified Control.Lens as Lens (at, set)
 import Control.Monad (unless)
 import Data.Default (Default(def))
 import Data.Foldable (traverse_)
+import qualified Data.Map as Map (empty)
+import Data.MessagePack (Object(ObjectMap))
 
 import Ribosome.Api.Buffer (setBufferContent, wipeBuffer)
 import Ribosome.Api.Syntax (executeWindowSyntax)
@@ -13,12 +15,14 @@ import Ribosome.Api.Window (closeWindow)
 import Ribosome.Control.Monad.Ribo (MonadRibo, NvimE, pluginInternalL, pluginInternalModify, pluginName)
 import Ribosome.Control.Ribosome (RibosomeInternal)
 import qualified Ribosome.Control.Ribosome as Ribosome (scratch)
+import Ribosome.Data.FloatOptions (FloatOptions)
 import Ribosome.Data.Scratch (Scratch(Scratch))
 import qualified Ribosome.Data.Scratch as Scratch (Scratch(scratchPrevious, scratchWindow))
 import Ribosome.Data.ScratchOptions (ScratchOptions(ScratchOptions))
 import qualified Ribosome.Data.ScratchOptions as ScratchOptions (ScratchOptions(name, resize, maxSize))
 import Ribosome.Data.Text (capitalize)
 import Ribosome.Mapping (activateBufferMapping)
+import Ribosome.Msgpack.Decode (fromMsgpack)
 import Ribosome.Msgpack.Encode (toMsgpack)
 import Ribosome.Msgpack.Error (DecodeError)
 import Ribosome.Nvim.Api.Data (Buffer, Tabpage, Window)
@@ -26,6 +30,9 @@ import Ribosome.Nvim.Api.IO (
   bufferGetNumber,
   bufferSetName,
   bufferSetOption,
+  nvimCreateBuf,
+  nvimOpenWin,
+  nvimWinSetBuf,
   vimCommand,
   vimGetCurrentTabpage,
   vimGetCurrentWindow,
@@ -42,39 +49,84 @@ createScratchTab = do
   vimCommand "tabnew"
   vimGetCurrentTabpage
 
-createScratchWindow :: NvimE e m => Bool -> Bool -> Bool -> Maybe Int -> m Window
-createScratchWindow vertical wrap bottom size = do
+createRegularWindow ::
+  NvimE e m =>
+  Buffer ->
+  Window ->
+  Bool ->
+  Bool ->
+  Bool ->
+  Maybe Int ->
+  m Window
+createRegularWindow buffer previous vertical focus bottom size = do
   vimCommand $ prefix <> cmd
   win <- vimGetCurrentWindow
-  windowSetOption win "wrap" (toMsgpack wrap)
-  windowSetOption win "number" (toMsgpack False)
-  windowSetOption win "cursorline" (toMsgpack True)
+  nvimWinSetBuf win buffer
   when bottom (vimCommand "wincmd J")
+  unless focus $ vimSetCurrentWindow previous
   return win
   where
     cmd = if vertical then "vnew" else "new"
     prefix = maybe "" show size
 
-createScratchUiInTab :: NvimE e m => m (Window, Maybe Tabpage)
+floatConfig ::
+  FloatOptions ->
+  Map Text Object
+floatConfig =
+  fromRight Map.empty . fromMsgpack . toMsgpack
+
+createFloat ::
+  NvimE e m =>
+  Bool ->
+  FloatOptions ->
+  Buffer ->
+  m Window
+createFloat focus options buffer =
+  nvimOpenWin buffer focus (floatConfig options)
+
+createScratchWindow ::
+  NvimE e m =>
+  Window ->
+  Bool ->
+  Bool ->
+  Bool ->
+  Bool ->
+  Maybe FloatOptions ->
+  Maybe Int ->
+  m (Buffer, Window)
+createScratchWindow previous vertical wrap focus bottom float size = do
+  buffer <- nvimCreateBuf True True
+  win <- createWindow buffer
+  windowSetOption win "wrap" (toMsgpack wrap)
+  windowSetOption win "number" (toMsgpack False)
+  windowSetOption win "cursorline" (toMsgpack True)
+  return (buffer, win)
+  where
+    createWindow =
+      maybe regular (createFloat focus) float
+    regular buffer =
+      createRegularWindow buffer previous vertical focus bottom size
+
+createScratchUiInTab :: NvimE e m => m (Buffer, Window, Maybe Tabpage)
 createScratchUiInTab = do
   tab <- createScratchTab
   win <- vimGetCurrentWindow
-  return (win, Just tab)
+  buffer <- windowGetBuffer win
+  return (buffer, win, Just tab)
 
-createScratchUiInWindow :: NvimE e m => Bool -> Bool -> Bool -> Maybe Int -> m (Window, Maybe Tabpage)
-createScratchUiInWindow vertical wrap bottom size = do
-  win <- createScratchWindow vertical wrap bottom size
-  return (win, Nothing)
-
-createScratchUi :: NvimE e m => ScratchOptions -> m (Window, Maybe Tabpage)
-createScratchUi (ScratchOptions False vertical wrap _ _ bottom _ size _ _ _) =
-  createScratchUiInWindow vertical wrap bottom size
-createScratchUi _ =
+createScratchUi ::
+  NvimE e m =>
+  Window ->
+  ScratchOptions ->
+  m (Buffer, Window, Maybe Tabpage)
+createScratchUi previous (ScratchOptions False vertical wrap focus _ bottom float _ size _ _ _) =
+  uncurry (,,Nothing) <$> createScratchWindow previous vertical wrap focus bottom float size
+createScratchUi _ _ =
   createScratchUiInTab
 
 configureScratchBuffer :: NvimE e m => Buffer -> Text -> m ()
 configureScratchBuffer buffer name = do
-  bufferSetOption buffer "buftype" (toMsgpack ("nofile" :: Text))
+  -- bufferSetOption buffer "buftype" (toMsgpack ("nofile" :: Text))
   bufferSetOption buffer "bufhidden" (toMsgpack ("wipe" :: Text))
   bufferSetName buffer name
 
@@ -87,25 +139,6 @@ setupScratchBuffer window name = do
 scratchLens :: Text -> Lens' RibosomeInternal (Maybe Scratch)
 scratchLens name =
   Ribosome.scratch . Lens.at name
-
-setupScratchIn ::
-  MonadDeepError e DecodeError m =>
-  MonadRibo m =>
-  NvimE e m =>
-  Window ->
-  Window ->
-  Maybe Tabpage ->
-  ScratchOptions ->
-  m Scratch
-setupScratchIn previous window tab (ScratchOptions useTab _ _ focus _ _ _ _ syntax mappings name) = do
-  buffer <- setupScratchBuffer window name
-  traverse_ (executeWindowSyntax window) syntax
-  traverse_ (activateBufferMapping buffer) mappings
-  unless (focus || useTab) $ vimSetCurrentWindow previous
-  let scratch = Scratch name buffer window previous tab
-  pluginInternalModify $ Lens.set (scratchLens name) (Just scratch)
-  setupDeleteAutocmd scratch
-  return scratch
 
 setupDeleteAutocmd ::
   MonadRibo m =>
@@ -121,6 +154,25 @@ setupDeleteAutocmd (Scratch name buffer _ _ _) = do
     deleteCall pname =
       "silent! call " <> pname <> "DeleteScratch('" <> name <> "')"
 
+setupScratchIn ::
+  MonadDeepError e DecodeError m =>
+  MonadRibo m =>
+  NvimE e m =>
+  Buffer ->
+  Window ->
+  Window ->
+  Maybe Tabpage ->
+  ScratchOptions ->
+  m Scratch
+setupScratchIn buffer previous window tab (ScratchOptions useTab _ _ focus _ _ _ _ _ syntax mappings name) = do
+  configureScratchBuffer buffer name
+  traverse_ (executeWindowSyntax window) syntax
+  traverse_ (activateBufferMapping buffer) mappings
+  let scratch = Scratch name buffer window previous tab
+  pluginInternalModify $ Lens.set (scratchLens name) (Just scratch)
+  setupDeleteAutocmd scratch
+  return scratch
+
 createScratch ::
   MonadDeepError e DecodeError m =>
   MonadRibo m =>
@@ -129,8 +181,8 @@ createScratch ::
   m Scratch
 createScratch options = do
   previous <- vimGetCurrentWindow
-  (window, tab) <- createScratchUi options
-  setupScratchIn previous window tab options
+  (buffer, window, tab) <- createScratchUi previous options
+  setupScratchIn buffer previous window tab options
 
 updateScratch ::
   MonadDeepError e DecodeError m =>
@@ -139,11 +191,11 @@ updateScratch ::
   Scratch ->
   ScratchOptions ->
   m Scratch
-updateScratch (Scratch _ _ oldWindow _ oldTab) options = do
+updateScratch (Scratch _ oldBuffer oldWindow _ oldTab) options = do
   previous <- vimGetCurrentWindow
   winValid <- windowIsValid oldWindow
-  (window, tab) <- if winValid then return (oldWindow, oldTab) else createScratchUi options
-  setupScratchIn previous window tab options
+  (buffer, window, tab) <- if winValid then return (oldBuffer, oldWindow, oldTab) else createScratchUi previous options
+  setupScratchIn buffer previous window tab options
 
 lookupScratch ::
   MonadRibo m =>
@@ -219,7 +271,7 @@ killScratchByName ::
   NvimE e m =>
   Text ->
   m ()
-killScratchByName name = do
+killScratchByName name =
   traverse_ killScratch =<< lookupScratch name
 
 scratchPreviousWindow ::
