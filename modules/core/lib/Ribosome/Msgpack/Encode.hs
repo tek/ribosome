@@ -6,6 +6,8 @@ module Ribosome.Msgpack.Encode where
 import Data.Bifunctor (bimap)
 import Data.ByteString (ByteString)
 import Data.Int (Int64)
+import Data.List.NonEmpty (NonEmpty)
+import qualified Data.List.NonEmpty as NonEmpty (toList)
 import Data.Map (Map)
 import qualified Data.Map as Map (fromList, toList)
 import Data.MessagePack (Object(..))
@@ -82,6 +84,9 @@ instance {-# OVERLAPPING #-} MsgpackEncode String where
 
 instance {-# OVERLAPPABLE #-} MsgpackEncode a => MsgpackEncode [a] where
   toMsgpack = ObjectArray . fmap toMsgpack
+
+instance MsgpackEncode a => MsgpackEncode (NonEmpty a) where
+  toMsgpack = toMsgpack . NonEmpty.toList
 
 instance MsgpackEncode Text where
   toMsgpack = Util.text
