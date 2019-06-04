@@ -165,6 +165,8 @@ instance (MsgpackDecode a, MsgpackDecode b) => MsgpackDecode (Either a b) where
 
 instance MsgpackDecode Bool where
   fromMsgpack (ObjectBool a) = Right a
+  fromMsgpack (ObjectInt 0) = Right False
+  fromMsgpack (ObjectInt 1) = Right True
   fromMsgpack o = Util.illegalType "Bool" o
 
 instance MsgpackDecode () where
