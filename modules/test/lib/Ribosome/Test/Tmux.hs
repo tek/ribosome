@@ -12,28 +12,15 @@ import Data.DeepPrisms (DeepPrisms)
 import Data.Default (Default(def))
 import Data.Functor (void)
 import qualified Neovim.Context.Internal as Internal (
-  Config,
   StateTransition(Quit),
   newConfig,
   retypeConfig,
   )
 import Neovim.Plugin (Plugin)
-import Neovim.Plugin.Internal (NeovimPlugin, wrapPlugin)
-import Neovim.RPC.Common (RPCConfig, SocketType(UnixSocket), createHandle, newRPCConfig)
+import Neovim.Plugin.Internal (wrapPlugin)
+import Neovim.RPC.Common (SocketType(UnixSocket), createHandle, newRPCConfig)
 import System.FilePath ((</>))
-import System.Process.Typed (
-  Process,
-  ProcessConfig,
-  createPipe,
-  getExitCode,
-  getStdin,
-  getStdout,
-  proc,
-  setStdin,
-  setStdout,
-  unsafeProcessHandle,
-  withProcess,
-  )
+import System.Process.Typed (withProcess)
 import UnliftIO (throwString)
 import UnliftIO.Directory (doesPathExist)
 import UnliftIO.Exception (bracket)
@@ -51,7 +38,6 @@ import Ribosome.Plugin.RpcHandler (RpcHandler)
 import Ribosome.Test.Embed (
   Runner,
   TestConfig(..),
-  runEmbeddedWithPlugin,
   runPlugin,
   runTest,
   startHandlers,
@@ -242,7 +228,7 @@ runTmuxWithPlugin api conf plugin thunk = do
     run temp prc = do
       nvimConf <- Internal.newConfig (pure Nothing) (pure ())
       bracket (acquire prc nvimConf temp) release (const $ runTest conf nvimConf thunk)
-    acquire prc nvimConf temp = do
+    acquire _ nvimConf temp = do
       socket <- startNvimInTmux api temp
       runPlugin socket socket [wrapPlugin plugin] nvimConf <* sleep 0.5
     release transitions =

@@ -6,7 +6,7 @@ import Control.Monad (unless)
 import Data.Default (Default(def))
 import Data.Foldable (traverse_)
 import qualified Data.Map as Map (empty)
-import Data.MessagePack (Object(ObjectMap))
+import Data.MessagePack (Object)
 
 import Ribosome.Api.Buffer (setBufferContent, wipeBuffer)
 import Ribosome.Api.Syntax (executeWindowSyntax)
@@ -164,7 +164,7 @@ setupScratchIn ::
   Maybe Tabpage ->
   ScratchOptions ->
   m Scratch
-setupScratchIn buffer previous window tab (ScratchOptions useTab _ _ focus _ _ _ _ _ syntax mappings name) = do
+setupScratchIn buffer previous window tab (ScratchOptions _ _ _ _ _ _ _ _ _ syntax mappings name) = do
   configureScratchBuffer buffer name
   traverse_ (executeWindowSyntax window) syntax
   traverse_ (activateBufferMapping buffer) mappings
@@ -271,8 +271,8 @@ killScratchByName ::
   NvimE e m =>
   Text ->
   m ()
-killScratchByName name =
-  traverse_ killScratch =<< lookupScratch name
+killScratchByName =
+  traverse_ killScratch <=< lookupScratch
 
 scratchPreviousWindow ::
   MonadRibo m =>
