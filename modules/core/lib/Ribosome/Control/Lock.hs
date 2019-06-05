@@ -5,7 +5,7 @@ import qualified Control.Lens as Lens (at, view)
 import Control.Monad.IO.Class (MonadIO)
 import Control.Monad.Trans.Control (MonadBaseControl)
 import qualified Data.Map as Map (insert)
-import UnliftIO.STM (TMVar, newTMVarIO, tryPutTMVar, tryTakeTMVar)
+import UnliftIO.STM (TMVar, newTMVarIO, putTMVar, takeTMVar, tryPutTMVar, tryTakeTMVar)
 
 import Ribosome.Control.Monad.Ribo (MonadRibo, pluginInternalL, pluginInternalModifyL)
 import Ribosome.Control.Ribosome (Locks)
@@ -45,7 +45,21 @@ lockOrSkip key thunk = do
   currentState <- atomically $ tryTakeTMVar currentLock
   case currentState of
     Just _ -> do
-      Log.debug $ "locking MVar `" <> key <> "`"
+      Log.debug $ "locking TMVar `" <> key <> "`"
       finally thunk $ atomically $ tryPutTMVar currentLock ()
-      Log.debug $ "unlocking MVar `" <> key <> "`"
+      Log.debug $ "unlocking TMVar `" <> key <> "`"
     Nothing -> return ()
+
+lockOrWait ::
+  MonadRibo m =>
+  MonadIO m =>
+  MonadBaseControl IO m =>
+  Text ->
+  m () ->
+  m ()
+lockOrWait key thunk = do
+  currentLock <- getOrCreateLock key
+  atomically $ takeTMVar currentLock
+  Log.debug $ "locking TMVar `" <> key <> "`"
+  finally thunk $ atomically $ putTMVar currentLock ()
+  Log.debug $ "unlocking TMVar `" <> key <> "`"
