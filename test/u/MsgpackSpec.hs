@@ -101,3 +101,38 @@ test_maybeMissing =
 test_decodeEither :: IO ()
 test_decodeEither =
   assertEqual (Right (Left "text" :: Either Text Int)) (doc2Text $ fromMsgpack $ ObjectString "text")
+
+data ST =
+  STL {
+    stName :: Text,
+    stCount :: Int
+  }
+  |
+  STR {
+    stName :: Text,
+    stDesc :: Text
+  }
+  deriving (Eq, Show, Generic, MsgpackEncode, MsgpackDecode)
+
+sumName :: Text
+sumName =
+  "sumName"
+
+sumCount :: Int
+sumCount =
+  1313
+
+encodedSum :: Object
+encodedSum =
+  ObjectMap $ Map.fromList [
+    (toMsgpack @Text "stName", toMsgpack sumName),
+    (toMsgpack @Text "stCount", toMsgpack sumCount)
+    ]
+
+test_encodeSum :: IO ()
+test_encodeSum =
+  assertEqual encodedSum (toMsgpack (STL sumName sumCount))
+
+test_decodeSum :: IO ()
+test_decodeSum =
+  assertEqual (Right $ STL sumName sumCount) (doc2Text $ fromMsgpack encodedSum)

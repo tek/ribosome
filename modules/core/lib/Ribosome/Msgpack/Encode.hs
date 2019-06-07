@@ -25,6 +25,7 @@ import GHC.Generics (
   from,
   selName,
   (:*:)(..),
+  (:+:)(..),
   )
 import qualified Ribosome.Msgpack.Util as Util (assembleMap, string, text)
 
@@ -59,6 +60,10 @@ instance (Constructor c, MsgpackEncodeProd f) => GMsgpackEncode (C1 c f) where
 instance (MsgpackEncodeProd f, MsgpackEncodeProd g) => MsgpackEncodeProd (f :*: g) where
   msgpackEncodeRecord (f :*: g) = msgpackEncodeRecord f <> msgpackEncodeRecord g
   msgpackEncodeProd (f :*: g) = msgpackEncodeProd f <> msgpackEncodeProd g
+
+instance (GMsgpackEncode f, GMsgpackEncode g) => GMsgpackEncode (f :+: g) where
+  gMsgpackEncode (L1 a) = gMsgpackEncode a
+  gMsgpackEncode (R1 a) = gMsgpackEncode a
 
 instance (Selector s, GMsgpackEncode f) => MsgpackEncodeProd (S1 s f) where
   msgpackEncodeRecord s@(M1 f) = [(selName s, gMsgpackEncode f)]

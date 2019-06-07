@@ -6,7 +6,7 @@ import qualified Data.ByteString.UTF8 as ByteString (toString)
 import Data.Either.Combinators (mapLeft)
 import Data.Int (Int64)
 import Data.Map (Map, (!?))
-import qualified Data.Map as Map (fromList, toList)
+import qualified Data.Map as Map (empty, fromList, toList)
 import Data.MessagePack (Object(..))
 import Data.Text.Prettyprint.Doc (pretty)
 import GHC.Float (double2Float)
@@ -24,6 +24,7 @@ import GHC.Generics (
   selName,
   to,
   (:*:)(..),
+  (:+:)(..),
   )
 import Neovim (CommandArguments)
 
@@ -81,6 +82,9 @@ instance (MsgpackDecodeProd f, MsgpackDecodeProd g) => MsgpackDecodeProd (f :*: 
     (rest1, right) <- msgpackDecodeProd rest
     return (rest1, left :*: right)
 
+instance (GMsgpackDecode f, GMsgpackDecode g) => GMsgpackDecode (f :+: g) where
+  gMsgpackDecode o = fromRight (L1 <$> gMsgpackDecode @f o) (Right . R1 <$> gMsgpackDecode @g o)
+
 instance (Selector s, GMsgpackDecode f) => MsgpackDecodeProd (S1 s f) where
   msgpackDecodeRecord o =
     M1 <$> maybe (gMissingKey key (ObjectMap o)) gMsgpackDecode (o !? Util.string key)
@@ -107,6 +111,7 @@ instance (Ord k, MsgpackDecode k, MsgpackDecode v) => MsgpackDecode (Map k v) wh
         v1 <- fromMsgpack v
         return (k1, v1)
   fromMsgpack o = Util.illegalType "Map" o
+  missingKey _ _ = Right Map.empty
 
 msgpackIntegral :: (Integral a, Read a) => Object -> Either Err a
 msgpackIntegral (ObjectInt i) = Right $ fromIntegral i
@@ -135,6 +140,7 @@ instance {-# OVERLAPPING #-} MsgpackDecode String where
 instance {-# OVERLAPPABLE #-} MsgpackDecode a => MsgpackDecode [a] where
   fromMsgpack (ObjectArray oa) = traverse fromMsgpack oa
   fromMsgpack o = Util.illegalType "List" o
+  missingKey _ _ = Right []
 
 instance MsgpackDecode Text where
   fromMsgpack (ObjectString os) = Right (decodeUtf8 os)
