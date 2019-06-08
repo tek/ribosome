@@ -153,6 +153,8 @@ basicTransitionInsert (PromptEvent.Character "bs") =
   PromptUpdate PromptState.Insert CursorUpdate.OneLeft TextUpdate.DeleteLeft PromptConsumed.Yes
 basicTransitionInsert (PromptEvent.Character c) | c `elem` unprocessable =
   PromptUpdate PromptState.Insert CursorUpdate.Unmodified TextUpdate.Unmodified PromptConsumed.No
+basicTransitionInsert (PromptEvent.Character "space") =
+  PromptUpdate PromptState.Insert CursorUpdate.OneRight (TextUpdate.Insert " ") PromptConsumed.Yes
 basicTransitionInsert (PromptEvent.Character c) =
   PromptUpdate PromptState.Insert CursorUpdate.OneRight (TextUpdate.Insert c) PromptConsumed.Yes
 basicTransitionInsert _ =
