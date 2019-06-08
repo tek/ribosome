@@ -1,10 +1,9 @@
 {-# OPTIONS_GHC -F -pgmF htfpp #-}
 {-# LANGUAGE DeriveAnyClass #-}
 {-# LANGUAGE NoGeneralizedNewtypeDeriving #-}
+{-# LANGUAGE QuasiQuotes #-}
 
-module MsgpackSpec(
-  htf_thisModulesTests
-) where
+module MsgpackSpec(htf_thisModulesTests) where
 
 import Data.Int (Int64)
 import Data.Map (Map)
@@ -14,6 +13,7 @@ import Data.Text (Text)
 import Data.Text.Prettyprint.Doc (Doc, defaultLayoutOptions, layoutPretty)
 import Data.Text.Prettyprint.Doc.Render.Terminal (AnsiStyle, renderStrict)
 import GHC.Generics (Generic)
+import Path (Abs, Dir, File, Path, Rel, absfile, relfile)
 import Test.Framework
 
 import Ribosome.Msgpack.Decode (MsgpackDecode(..))
@@ -136,3 +136,19 @@ test_encodeSum =
 test_decodeSum :: IO ()
 test_decodeSum =
   assertEqual (Right $ STL sumName sumCount) (doc2Text $ fromMsgpack encodedSum)
+
+encodedPath :: Object
+encodedPath =
+  ObjectString "/path/to/file"
+
+test_decodePath :: IO ()
+test_decodePath =
+  assertEqual (Right [absfile|/path/to/file|]) (doc2Text $ fromMsgpack encodedPath)
+
+test_failDecodePath :: IO ()
+test_failDecodePath =
+  assertEqual (Left "InvalidRelDir \"/path/to/file\"") (doc2Text $ fromMsgpack @(Path Rel Dir) encodedPath)
+
+test_encodePath :: IO ()
+test_encodePath =
+  assertEqual (ObjectString "path/to/file") (toMsgpack [relfile|path/to/file|])

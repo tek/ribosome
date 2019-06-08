@@ -19,14 +19,14 @@ assembleMap :: [(String, Object)] -> Object
 assembleMap =
   ObjectMap . Map.fromList . (fmap . first) string
 
-invalid :: String -> Object -> Either Err a
+invalid :: Text -> Object -> Either Err a
 invalid msg obj =
-  Left $ pretty (msg ++ ": ") <+> viaShow obj
+  Left $ pretty (msg <> ": ") <+> viaShow obj
 
 missingRecordKey :: String -> Object -> Either Err a
 missingRecordKey key =
-  invalid $ "missing record key " ++ key ++ " in ObjectMap"
+  invalid $ "missing record key " <> toText key <> " in ObjectMap"
 
-illegalType :: String -> Object -> Either Err a
+illegalType :: Text -> Object -> Either Err a
 illegalType tpe =
-  invalid $ "illegal type for " ++ tpe
+  invalid $ "illegal type for " <> tpe

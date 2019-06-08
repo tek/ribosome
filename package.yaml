@@ -35,6 +35,7 @@ dependencies:
 - monad-control
 - mtl
 - nvim-hs
+- path
 - pretty-terminal
 - prettyprinter
 - prettyprinter-ansi-terminal

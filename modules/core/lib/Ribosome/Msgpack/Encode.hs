@@ -27,6 +27,7 @@ import GHC.Generics (
   (:*:)(..),
   (:+:)(..),
   )
+import Path (Path, toFilePath)
 import qualified Ribosome.Msgpack.Util as Util (assembleMap, string, text)
 
 class MsgpackEncode a where
@@ -113,3 +114,6 @@ instance MsgpackEncode ByteString where
 
 instance (MsgpackEncode a, MsgpackEncode b) => MsgpackEncode (a, b) where
   toMsgpack (a, b) = ObjectArray [toMsgpack a, toMsgpack b]
+
+instance MsgpackEncode (Path b t) where
+  toMsgpack = ObjectString . encodeUtf8 . toFilePath

@@ -8,7 +8,7 @@ import Data.Int (Int64)
 import Data.Map (Map, (!?))
 import qualified Data.Map as Map (empty, fromList, toList)
 import Data.MessagePack (Object(..))
-import Data.Text.Prettyprint.Doc (pretty)
+import Data.Text.Prettyprint.Doc (pretty, viaShow, (<+>))
 import GHC.Float (double2Float)
 import GHC.Generics (
   C1,
@@ -27,6 +27,7 @@ import GHC.Generics (
   (:+:)(..),
   )
 import Neovim (CommandArguments)
+import Path (Abs, Dir, File, Path, Rel, absfile, parseAbsDir, parseAbsFile, parseRelDir, parseRelFile)
 
 import Ribosome.Msgpack.Error (DecodeError)
 import qualified Ribosome.Msgpack.Error as DecodeError (DecodeError(Failed))
@@ -85,6 +86,7 @@ instance (MsgpackDecodeProd f, MsgpackDecodeProd g) => MsgpackDecodeProd (f :*: 
 instance (GMsgpackDecode f, GMsgpackDecode g) => GMsgpackDecode (f :+: g) where
   gMsgpackDecode o = fromRight (L1 <$> gMsgpackDecode @f o) (Right . R1 <$> gMsgpackDecode @g o)
 
+-- TODO use Proxy instead of undefined
 instance (Selector s, GMsgpackDecode f) => MsgpackDecodeProd (S1 s f) where
   msgpackDecodeRecord o =
     M1 <$> maybe (gMissingKey key (ObjectMap o)) gMsgpackDecode (o !? Util.string key)
@@ -119,6 +121,14 @@ msgpackIntegral (ObjectUInt i) = Right $ fromIntegral i
 msgpackIntegral (ObjectString s) = mapLeft pretty . readEither . ByteString.toString $ s
 msgpackIntegral o = Util.illegalType "Integral" o
 
+msgpackText :: ConvertUtf8 t ByteString => Text -> (t -> Either Err a) -> Object -> Either Err a
+msgpackText typeName decode =
+  run
+  where
+    run (ObjectString os) = decode $ decodeUtf8 os
+    run (ObjectBinary os) = decode $ decodeUtf8 os
+    run o = Util.illegalType typeName o
+
 instance MsgpackDecode Int where
   fromMsgpack = msgpackIntegral
 
@@ -133,9 +143,7 @@ instance MsgpackDecode Float where
   fromMsgpack o = Util.illegalType "Float" o
 
 instance {-# OVERLAPPING #-} MsgpackDecode String where
-  fromMsgpack (ObjectString os) = Right $ decodeUtf8 os
-  fromMsgpack (ObjectBinary os) = Right $ decodeUtf8 os
-  fromMsgpack o = Util.illegalType "String" o
+  fromMsgpack = msgpackText "String" Right
 
 instance {-# OVERLAPPABLE #-} MsgpackDecode a => MsgpackDecode [a] where
   fromMsgpack (ObjectArray oa) = traverse fromMsgpack oa
@@ -191,6 +199,37 @@ instance (MsgpackDecode a, MsgpackDecode b) => MsgpackDecode (a, b) where
 
 instance MsgpackDecode CommandArguments where
 
+class DecodePath b t where
+  decodePath :: FilePath -> Either SomeException (Path b t)
+
+instance DecodePath Abs File where
+  decodePath =
+    parseAbsFile
+
+instance DecodePath Abs Dir where
+  decodePath =
+    parseAbsDir
+
+instance DecodePath Rel File where
+  decodePath =
+    parseRelFile
+
+instance DecodePath Rel Dir where
+  decodePath =
+    parseRelDir
+
+decodePathE ::
+  ∀ b t .
+  DecodePath b t =>
+  Text ->
+  Either Err (Path b t)
+decodePathE =
+  first viaShow . decodePath . toString
+
+instance DecodePath b t => MsgpackDecode (Path b t) where
+  fromMsgpack =
+    msgpackText "Path" decodePathE
+
 fromMsgpack' ::
   ∀ a e m.
   MonadDeepError e DecodeError m =>
@@ -200,7 +239,7 @@ fromMsgpack' ::
 fromMsgpack' =
   hoistEitherWith DecodeError.Failed . fromMsgpack
 
-msgpackFromString :: IsString a => String -> Object -> Either Err a
+msgpackFromString :: IsString a => Text -> Object -> Either Err a
 msgpackFromString name o =
   adapt $ fromMsgpack o
   where
