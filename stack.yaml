@@ -11,8 +11,8 @@ extra-deps:
 - pretty-terminal-0.1.0.0
 - posix-pty-0.2.1.1
 - github: neovimhaskell/nvim-hs
-  commit: 6b276629c1db1b4af9a8d33a1d6fbaf1ed46fae8
+  commit: 8b1a38c18f530f65a17a7fda2a14c168a2663821
 - github: tek/cornea
-  commit: 90ce914ac80f4ea38c7963046857e5a14e07432c
+  commit: fe735cb878e43ea2a257346f4f228cd04fa77b4c
 - github: tek/chiasma
   commit: 3f224bb9cac08e0ca6b7a2bc75ba7a36b954b668
