@@ -1,5 +1,4 @@
 {-# OPTIONS_GHC -fno-warn-orphans #-}
-{-# LANGUAGE TemplateHaskell #-}
 
 module Ribosome.Plugin.TH.Handler where
 
@@ -20,6 +19,7 @@ import Neovim.Plugin.Classes (
   RangeSpecification(..),
   Synchronous(..),
   )
+import qualified Text.Show as Show (Show(show))
 
 import Ribosome.Msgpack.Decode (fromMsgpack)
 import Ribosome.Msgpack.Encode (toMsgpack)
@@ -48,6 +48,7 @@ data RpcDefDetail =
     raSync :: Synchronous,
     raOptions :: AutocmdOptions
     }
+  deriving Show
 
 data RpcDef m =
   RpcDef {
@@ -55,6 +56,10 @@ data RpcDef m =
     rdName :: Text,
     rdHandler :: [Object] -> m Object
   }
+
+instance Show (RpcDef m) where
+  show (RpcDef d n h) =
+    "RpcDef" <> show (d, n)
 
 instance Lift Synchronous where
   lift Sync = [|Sync|]
