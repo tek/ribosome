@@ -67,6 +67,11 @@ dependencies:
 - unliftio-core
 - utf8-string
 
+library:
+  source-dirs: lib
+  other-modules:
+    - Prelude
+
 default-extensions:
 - AutoDeriveTypeable
 - BangPatterns
@@ -110,8 +115,3 @@ default-extensions:
 - TypeSynonymInstances
 - UnicodeSyntax
 - ViewPatterns
-
-library:
-  source-dirs: lib
-  other-modules:
-    - Prelude

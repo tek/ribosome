@@ -1,6 +1,3 @@
-{-# LANGUAGE DefaultSignatures #-}
-{-# LANGUAGE TypeOperators #-}
-
 module Ribosome.Msgpack.Encode where
 
 import Data.Bifunctor (bimap)
