@@ -68,7 +68,7 @@ encoded =
   ObjectMap $ Map.fromList [
     (os "key1", encodedBlob),
     (os "key2", ObjectBool False),
-    (os "key3", ObjectArray [os "dat", i 27])
+    (ObjectBinary "key3", ObjectArray [os "dat", i 27])
     ]
 
 test_encode :: IO ()
@@ -79,8 +79,8 @@ doc2Text :: Either (Doc AnsiStyle) a -> Either Text a
 doc2Text =
   mapLeft (renderStrict . layoutPretty defaultLayoutOptions)
 
-test_decode :: IO ()
-test_decode =
+test_decodeBasic :: IO ()
+test_decodeBasic =
   assertEqual (Right dat) (doc2Text $ fromMsgpack encoded)
 
 data Nope =
@@ -100,7 +100,7 @@ test_maybeMissing =
 
 test_decodeEither :: IO ()
 test_decodeEither =
-  assertEqual (Right (Left "text" :: Either Text Int)) (doc2Text $ fromMsgpack $ ObjectString "text")
+  assertEqual (Right (Left "text" :: Either Text Int)) (doc2Text $ fromMsgpack $ ObjectBinary "text")
 
 data ST =
   STL {

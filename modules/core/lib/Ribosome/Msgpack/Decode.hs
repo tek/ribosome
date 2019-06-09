@@ -8,7 +8,7 @@ import Data.Int (Int64)
 import Data.Map (Map, (!?))
 import qualified Data.Map as Map (empty, fromList, toList)
 import Data.MessagePack (Object(..))
-import Data.Text.Prettyprint.Doc (pretty, viaShow, (<+>))
+import Data.Text.Prettyprint.Doc (pretty, viaShow)
 import GHC.Float (double2Float)
 import GHC.Generics (
   C1,
@@ -27,12 +27,12 @@ import GHC.Generics (
   (:+:)(..),
   )
 import Neovim (CommandArguments)
-import Path (Abs, Dir, File, Path, Rel, absfile, parseAbsDir, parseAbsFile, parseRelDir, parseRelFile)
+import Path (Abs, Dir, File, Path, Rel, parseAbsDir, parseAbsFile, parseRelDir, parseRelFile)
 
 import Ribosome.Msgpack.Error (DecodeError)
 import qualified Ribosome.Msgpack.Error as DecodeError (DecodeError(Failed))
 import Ribosome.Msgpack.Util (Err)
-import qualified Ribosome.Msgpack.Util as Util (illegalType, invalid, missingRecordKey, string)
+import qualified Ribosome.Msgpack.Util as Util (binary, illegalType, invalid, lookupObjectMap, missingRecordKey, string)
 
 class MsgpackDecode a where
   fromMsgpack :: Object -> Either Err a
@@ -89,7 +89,7 @@ instance (GMsgpackDecode f, GMsgpackDecode g) => GMsgpackDecode (f :+: g) where
 -- TODO use Proxy instead of undefined
 instance (Selector s, GMsgpackDecode f) => MsgpackDecodeProd (S1 s f) where
   msgpackDecodeRecord o =
-    M1 <$> maybe (gMissingKey key (ObjectMap o)) gMsgpackDecode (o !? Util.string key)
+    M1 <$> maybe (gMissingKey key (ObjectMap o)) gMsgpackDecode (Util.lookupObjectMap key o)
     where
       key = selName (undefined :: t s f p)
   msgpackDecodeProd (cur:rest) = do
@@ -115,10 +115,23 @@ instance (Ord k, MsgpackDecode k, MsgpackDecode v) => MsgpackDecode (Map k v) wh
   fromMsgpack o = Util.illegalType "Map" o
   missingKey _ _ = Right Map.empty
 
-msgpackIntegral :: (Integral a, Read a) => Object -> Either Err a
+integralFromString ::
+  Integral a =>
+  Read a =>
+  ByteString ->
+  Either Err a
+integralFromString =
+  mapLeft pretty . readEither . ByteString.toString
+
+msgpackIntegral ::
+  Integral a =>
+  Read a =>
+  Object ->
+  Either Err a
 msgpackIntegral (ObjectInt i) = Right $ fromIntegral i
 msgpackIntegral (ObjectUInt i) = Right $ fromIntegral i
-msgpackIntegral (ObjectString s) = mapLeft pretty . readEither . ByteString.toString $ s
+msgpackIntegral (ObjectString s) = integralFromString s
+msgpackIntegral (ObjectBinary s) = integralFromString s
 msgpackIntegral o = Util.illegalType "Integral" o
 
 msgpackText :: ConvertUtf8 t ByteString => Text -> (t -> Either Err a) -> Object -> Either Err a
@@ -151,9 +164,8 @@ instance {-# OVERLAPPABLE #-} MsgpackDecode a => MsgpackDecode [a] where
   missingKey _ _ = Right []
 
 instance MsgpackDecode Text where
-  fromMsgpack (ObjectString os) = Right (decodeUtf8 os)
-  fromMsgpack (ObjectBinary os) = Right (decodeUtf8 os)
-  fromMsgpack o = Util.illegalType "Text" o
+  fromMsgpack =
+    msgpackText "Text" Right
 
 instance MsgpackDecode ByteString where
   fromMsgpack (ObjectString os) = Right os
@@ -161,12 +173,11 @@ instance MsgpackDecode ByteString where
   fromMsgpack o = Util.illegalType "ByteString" o
 
 instance MsgpackDecode Char where
-  fromMsgpack o@(ObjectString os) =
-    check . decodeUtf8 $ os
+  fromMsgpack o =
+    msgpackText "Char" check o
     where
       check [c] = Right c
       check _ = Util.invalid "multiple characters when decoding Char" o
-  fromMsgpack o = Util.illegalType "Char" o
 
 instance MsgpackDecode a => MsgpackDecode (Maybe a) where
   fromMsgpack ObjectNil = Right Nothing
