@@ -1,13 +1,8 @@
 module Ribosome.Test.Embed where
 
 import Control.Concurrent (forkIO)
-import Control.Monad.IO.Class (MonadIO, liftIO)
-import Control.Monad.Reader (runReaderT)
-import Control.Monad.Trans.Except (runExceptT)
 import Control.Monad.Trans.Resource (runResourceT)
-import Data.Default (Default(def))
-import Data.Foldable (traverse_)
-import Data.Functor (void)
+import qualified Data.Map as Map (fromList, toList, union)
 import Data.Maybe (fromMaybe)
 import GHC.IO.Handle (Handle)
 import Neovim (Neovim, Object)
@@ -24,7 +19,7 @@ import qualified Neovim.Context.Internal as Internal (
   transitionTo,
   )
 import Neovim.Main (standalone)
-import Neovim.Plugin (Plugin, startPluginThreads)
+import Neovim.Plugin (Plugin(Plugin), startPluginThreads)
 import Neovim.Plugin.Internal (NeovimPlugin, wrapPlugin)
 import Neovim.RPC.Common (RPCConfig, newRPCConfig)
 import Neovim.RPC.EventHandler (runEventHandler)
@@ -65,8 +60,17 @@ import Ribosome.Test.Orphans ()
 type Runner m = TestConfig -> m () -> m ()
 
 newtype Vars =
-  Vars [(Text, Object)]
+  Vars (Map Text Object)
   deriving (Eq, Show, Semigroup, Monoid, Default)
+
+-- |left biased
+varsUnion :: Vars -> Vars -> Vars
+varsUnion (Vars v1) (Vars v2) =
+  Vars (Map.union v1 v2)
+
+varsFromList :: [(Text, Object)] -> Vars
+varsFromList =
+  Vars . Map.fromList
 
 data TestConfig =
   TestConfig {
@@ -80,23 +84,28 @@ data TestConfig =
   }
 
 instance Default TestConfig where
-  def = TestConfig "ribosome" "test/f/fixtures/rtp" "test/f/temp/log" 10 def def (Vars [])
+  def = TestConfig "ribosome" "test/u/fixtures/rtp" "test/u/temp/log" 10 def def def
 
 defaultTestConfigWith :: Text -> Vars -> TestConfig
 defaultTestConfigWith name vars =
   def { tcPluginName = name, tcVariables = vars }
 
 defaultTestConfig :: Text -> TestConfig
-defaultTestConfig name = defaultTestConfigWith name (Vars [])
+defaultTestConfig name = defaultTestConfigWith name def
 
 setVars :: ∀ m e. NvimE e m => Vars -> m ()
 setVars (Vars vars) =
-  traverse_ set vars
+  traverse_ set (Map.toList vars)
   where
     set :: (Text, Object) -> m ()
-    set = uncurry vimSetVar
+    set =
+      uncurry vimSetVar
 
-setupPluginEnv :: (MonadIO m, NvimE e m) => TestConfig -> m ()
+setupPluginEnv ::
+  MonadIO m =>
+  NvimE e m =>
+  TestConfig ->
+  m ()
 setupPluginEnv (TestConfig _ rtp _ _ _ _ vars) = do
   absRtp <- liftIO $ makeAbsolute (toString rtp)
   rtpCat (toText absRtp)
@@ -254,29 +263,35 @@ runPlugin evHandlerHandle sockreaderHandle plugins baseConf = do
       standalone (srTid:ehTid:pluginTids) conf
   return (Internal.transitionTo conf)
 
-runEmbeddedWithPlugin ::
-  RpcHandler e () m =>
+integrationSpec ::
+  NvimE e m =>
+  MonadIO m =>
+  RpcHandler e env m =>
   ReportError e =>
   TestConfig ->
   Plugin env ->
   m () ->
   IO ()
-runEmbeddedWithPlugin conf plugin thunk =
+integrationSpec conf plugin@(Plugin env _) thunk =
   withProcess (testNvimProcessConfig conf) run
   where
     run prc = do
-      nvimConf <- Internal.newConfig (pure Nothing) (pure ())
-      bracket (acquire prc nvimConf) release (const $ runTest conf nvimConf thunk)
+      nvimConf <- Internal.newConfig (pure Nothing) (pure env)
+      bracket (acquire prc nvimConf) release (const $ runTest conf nvimConf runSpec)
     acquire prc nvimConf =
       runPlugin (getStdin prc) (getStdout prc) [wrapPlugin plugin] nvimConf <* sleep 0.5
     release transitions =
       tryPutMVar transitions Internal.Quit *> sleep 0.5
+    runSpec =
+      setupPluginEnv conf *> thunk
 
 integrationSpecDef ::
-  RpcHandler e () m =>
+  NvimE e m =>
+  MonadIO m =>
+  RpcHandler e env m =>
   ReportError e =>
   Plugin env ->
   m () ->
   IO ()
 integrationSpecDef =
-  runEmbeddedWithPlugin def
+  integrationSpec def

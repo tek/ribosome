@@ -16,6 +16,7 @@ dependencies:
 - base-noprelude >= 4.7 && < 5
 - bytestring
 - chiasma
+- containers
 - cornea
 - data-default
 - directory
@@ -74,6 +75,7 @@ default-extensions:
 - RecordWildCards
 - ScopedTypeVariables
 - StandaloneDeriving
+- TemplateHaskell
 - TupleSections
 - TypeApplications
 - TypeFamilies

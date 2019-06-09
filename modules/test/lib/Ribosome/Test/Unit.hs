@@ -22,7 +22,10 @@ uSpec conf spec = do
   spec
 
 unitSpec ::
-  (RpcHandler e (Ribosome env) m, ReportError e, MonadIO m, NvimE e' m) =>
+  RpcHandler e (Ribosome env) m =>
+  ReportError e =>
+  MonadIO m =>
+  NvimE e' m =>
   TestConfig ->
   env ->
   m () ->
@@ -31,7 +34,10 @@ unitSpec =
   unsafeEmbeddedSpecR uSpec
 
 unitSpecDef ::
-  (RpcHandler e (Ribosome env) m, ReportError e, MonadIO m, NvimE e' m) =>
+  RpcHandler e (Ribosome env) m =>
+  ReportError e =>
+  MonadIO m =>
+  NvimE e' m =>
   env ->
   m () ->
   IO ()
@@ -39,7 +45,10 @@ unitSpecDef =
   unitSpec def
 
 unitSpecDef' ::
-  (RpcHandler e (Ribosome ()) m, ReportError e, MonadIO m, NvimE e' m) =>
+  RpcHandler e (Ribosome ()) m =>
+  ReportError e =>
+  MonadIO m =>
+  NvimE e' m =>
   m () ->
   IO ()
 unitSpecDef' =
