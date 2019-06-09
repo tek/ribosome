@@ -24,7 +24,15 @@ module Ribosome.Prelude (
 ) where
 
 import Control.Lens (makeClassy)
-import Control.Monad.DeepError (MonadDeepError(throwHoist), catchAs, catchAt, hoistEither, hoistMaybe, ignoreError)
+import Control.Monad.DeepError (
+  MonadDeepError(throwHoist),
+  catchAs,
+  catchAt,
+  hoistEither,
+  hoistEitherAs,
+  hoistMaybe,
+  ignoreError,
+  )
 import Control.Monad.DeepState (
   MonadDeepState,
   get,
