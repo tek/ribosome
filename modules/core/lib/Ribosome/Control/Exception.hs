@@ -1,6 +1,6 @@
 module Ribosome.Control.Exception where
 
-import Control.Exception.Lifted (IOException, try)
+import Control.Exception.Lifted (IOException, catch, try)
 import Control.Monad.Trans.Control (MonadBaseControl)
 
 tryIO ::
@@ -16,3 +16,19 @@ tryAny ::
   m (Either SomeException a)
 tryAny =
   try
+
+catchAny ::
+  MonadBaseControl IO m =>
+  (SomeException -> m a) ->
+  m a ->
+  m a
+catchAny =
+  flip catch
+
+catchAnyAs ::
+  MonadBaseControl IO m =>
+  a ->
+  m a ->
+  m a
+catchAnyAs =
+  catchAny . const . return
