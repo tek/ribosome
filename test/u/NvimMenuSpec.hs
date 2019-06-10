@@ -7,7 +7,7 @@ import Control.Concurrent.Lifted (fork, killThread)
 import Control.Exception.Lifted (bracket)
 import Control.Lens ((^?))
 import qualified Control.Lens as Lens (element)
-import qualified Data.Map as Map (empty, fromList)
+import qualified Data.Map.Strict as Map (empty, fromList)
 import Test.Framework
 
 import Ribosome.Api.Input (syntheticInput)

@@ -2,7 +2,7 @@ module Ribosome.Test.Embed where
 
 import Control.Concurrent (forkIO)
 import Control.Monad.Trans.Resource (runResourceT)
-import qualified Data.Map as Map (fromList, toList, union)
+import qualified Data.Map.Strict as Map (fromList, toList, union)
 import Data.Maybe (fromMaybe)
 import GHC.IO.Handle (Handle)
 import Neovim (Neovim, Object)

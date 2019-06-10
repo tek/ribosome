@@ -1,8 +1,8 @@
 module Ribosome.Api.Syntax where
 
 import Data.Functor.Syntax ((<$$>))
-import Data.Map (Map)
-import qualified Data.Map as Map (toList)
+import Data.Map.Strict (Map)
+import qualified Data.Map.Strict as Map (toList)
 import Data.MessagePack (Object)
 import Neovim.Plugin.Classes (FunctionName(F))
 

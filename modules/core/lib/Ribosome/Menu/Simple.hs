@@ -3,8 +3,8 @@ module Ribosome.Menu.Simple where
 import Control.Lens ((^?))
 import qualified Control.Lens as Lens (element, over, views)
 import Data.Composition ((.:))
-import Data.Map ((!?))
-import qualified Data.Map as Map (fromList, union)
+import Data.Map.Strict ((!?))
+import qualified Data.Map.Strict as Map (fromList, union)
 import qualified Data.Text as Text (breakOn, null)
 
 import Ribosome.Menu.Data.Menu (Menu(Menu), MenuFilter(MenuFilter))

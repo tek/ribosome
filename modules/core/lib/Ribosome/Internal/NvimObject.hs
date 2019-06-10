@@ -1,6 +1,6 @@
 module Ribosome.Internal.NvimObject where
 
-import Data.Map (Map, (!?))
+import Data.Map.Strict (Map, (!?))
 import Data.Text.Prettyprint.Doc (pretty, (<+>))
 import Neovim (AnsiStyle, Doc, NvimObject, Object(ObjectString), fromObject)
 

@@ -5,7 +5,7 @@ module MenuSpec (htf_thisModulesTests) where
 import Conduit (ConduitT, yieldMany)
 import Control.Concurrent.MVar.Lifted (modifyMVar_)
 import Control.Monad.Trans.Control (MonadBaseControl)
-import qualified Data.Map as Map (fromList)
+import qualified Data.Map.Strict as Map (fromList)
 import Test.Framework
 
 import Ribosome.Control.StrictRibosome (StrictRibosome)

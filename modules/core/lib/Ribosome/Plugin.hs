@@ -10,7 +10,7 @@ import Control.Monad (join, (<=<))
 import Control.Monad.DeepError (MonadDeepError)
 import Control.Monad.Trans.Except (runExceptT)
 import Data.Default (def)
-import qualified Data.Map as Map ()
+import qualified Data.Map.Strict as Map ()
 import Data.MessagePack (Object(ObjectNil, ObjectBool))
 import Neovim.Context (Neovim)
 import Neovim.Plugin.Classes (

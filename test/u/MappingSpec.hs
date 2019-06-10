@@ -3,7 +3,7 @@
 
 module MappingSpec (htf_thisModulesTests) where
 
-import qualified Data.Map as Map (empty)
+import qualified Data.Map.Strict as Map (empty)
 import Neovim (Plugin(..))
 import Test.Framework
 

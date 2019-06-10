@@ -1,8 +1,8 @@
 module Ribosome.Menu.Prompt.Data.Codes where
 
 import Control.Exception.Lifted (try)
-import Data.Map (Map, (!?))
-import qualified Data.Map as Map (fromList)
+import Data.Map.Strict (Map, (!?))
+import qualified Data.Map.Strict as Map (fromList)
 import qualified Data.Text as Text (singleton)
 
 specialCodes :: Map Text Text

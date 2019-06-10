@@ -2,7 +2,7 @@
 
 module RpcSpec (htf_thisModulesTests) where
 
-import qualified Data.Map as Map (empty)
+import qualified Data.Map.Strict as Map (empty)
 -- import Language.Haskell.TH hiding (reportError)
 import Neovim (CommandArguments, Plugin(..))
 import Test.Framework

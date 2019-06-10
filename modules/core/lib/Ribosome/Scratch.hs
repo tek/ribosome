@@ -5,7 +5,7 @@ import qualified Control.Lens as Lens (at, set)
 import Control.Monad (unless)
 import Data.Default (Default(def))
 import Data.Foldable (traverse_)
-import qualified Data.Map as Map (empty)
+import qualified Data.Map.Strict as Map (empty)
 import Data.MessagePack (Object)
 
 import Ribosome.Api.Buffer (setBufferContent, wipeBuffer)

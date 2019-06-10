@@ -3,7 +3,7 @@
 module ScratchSpec (htf_thisModulesTests) where
 
 import Data.Default (def)
-import qualified Data.Map as Map (toList)
+import qualified Data.Map.Strict as Map (toList)
 import Neovim (Plugin(..))
 import Test.Framework
 

@@ -2,7 +2,7 @@
 
 module WatcherSpec (htf_thisModulesTests) where
 
-import qualified Data.Map as Map (singleton)
+import qualified Data.Map.Strict as Map (singleton)
 import Data.MessagePack (Object)
 import Neovim (Plugin(..))
 import Test.Framework
