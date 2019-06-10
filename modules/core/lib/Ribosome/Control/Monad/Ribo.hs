@@ -230,6 +230,22 @@ prependUnique lens a =
     modder as =
       a : filter (a /=) as
 
+prependUniqueBy ::
+  ∀ s' s m a b .
+  Eq b =>
+  MonadDeepState s s' m =>
+  Lens' a b ->
+  Lens' s' [a] ->
+  a ->
+  m ()
+prependUniqueBy attr lens a =
+  modify $ Lens.over lens modder
+  where
+    modder as =
+      a : filter (pred a) as
+    pred a b =
+      Lens.view attr a /= Lens.view attr b
+
 inspectHeadE ::
   ∀ s' s e e' m a .
   (MonadDeepState s s' m, MonadDeepError e e' m) =>
