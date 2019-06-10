@@ -39,3 +39,7 @@ scratchSyntax syn so =
 scratchMappings :: [Mapping] -> ScratchOptions -> ScratchOptions
 scratchMappings maps so =
   so { mappings = maps }
+
+scratchFloat :: FloatOptions -> ScratchOptions -> ScratchOptions
+scratchFloat fl so =
+  so { float = Just fl }
