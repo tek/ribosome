@@ -1,26 +1,22 @@
 {-# OPTIONS_GHC -F -pgmF htfpp #-}
 {-# LANGUAGE TemplateHaskell #-}
 
-module AutocmdSpec(
-  htf_thisModulesTests
-) where
+module AutocmdSpec (htf_thisModulesTests) where
 
-import Control.Monad.Trans.Except (ExceptT)
 import Data.Default (def)
-import Neovim (Neovim, Plugin(..))
+import Neovim (Plugin(..))
 import Test.Framework
 
 import Ribosome.Control.Monad.Ribo (MonadRibo, NvimE)
 import Ribosome.Control.Ribosome (Ribosome, newRibosome)
 import Ribosome.Msgpack.Encode (MsgpackEncode(toMsgpack))
 import Ribosome.Nvim.Api.IO (vimCommand, vimGetVar, vimSetVar)
-import Ribosome.Nvim.Api.RpcCall (RpcError)
 import Ribosome.Orphans ()
 import Ribosome.Plugin (autocmd, riboPlugin, rpcHandler)
 import Ribosome.Test.Await (await)
 import Ribosome.Test.Embed (integrationSpecDef)
 import Ribosome.Test.Orphans ()
-import TestError (handleTestError)
+import TestError (RiboT, handleTestError)
 
 varName :: Text
 varName =
@@ -46,7 +42,7 @@ autocmdPlugin = do
   where
     funcs = [$(rpcHandler (autocmd "BufWritePre") 'testAuto)]
 
-autocmdSpec :: ExceptT RpcError (Neovim ()) ()
+autocmdSpec :: RiboT ()
 autocmdSpec = do
   () <- vimCommand "doautocmd BufWritePre"
   await (gassertEqual result) (vimGetVar varName)

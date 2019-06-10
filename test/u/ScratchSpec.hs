@@ -4,7 +4,7 @@ module ScratchSpec (htf_thisModulesTests) where
 
 import Data.Default (def)
 import qualified Data.Map as Map (toList)
-import Neovim (Neovim, Plugin(..))
+import Neovim (Plugin(..))
 import Test.Framework
 
 import Ribosome.Api.Buffer (currentBufferContent)
@@ -15,7 +15,6 @@ import Ribosome.Data.FloatOptions (FloatOptions(FloatOptions), FloatRelative(Cur
 import Ribosome.Data.ScratchOptions (ScratchOptions(ScratchOptions))
 import Ribosome.Msgpack.Error (DecodeError)
 import Ribosome.Nvim.Api.IO (vimCallFunction, vimCommand)
-import Ribosome.Nvim.Api.RpcCall (RpcError)
 import Ribosome.Plugin (riboPlugin, rpcHandler, rpcHandlerDef, sync)
 import Ribosome.Scratch (showInScratch)
 import Ribosome.Test.Await (await)

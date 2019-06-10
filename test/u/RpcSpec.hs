@@ -4,7 +4,7 @@ module RpcSpec (htf_thisModulesTests) where
 
 import qualified Data.Map as Map (empty)
 -- import Language.Haskell.TH hiding (reportError)
-import Neovim (CommandArguments, Neovim, Plugin(..))
+import Neovim (CommandArguments, Plugin(..))
 import Test.Framework
 
 import Ribosome.Api.Variable (setVar)

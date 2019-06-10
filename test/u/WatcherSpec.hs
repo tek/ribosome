@@ -1,13 +1,10 @@
 {-# OPTIONS_GHC -F -pgmF htfpp #-}
 
-module WatcherSpec(
-  htf_thisModulesTests,
-) where
+module WatcherSpec (htf_thisModulesTests) where
 
-import Control.Monad.Trans.Except (ExceptT)
 import qualified Data.Map as Map (singleton)
 import Data.MessagePack (Object)
-import Neovim (Neovim, Plugin(..))
+import Neovim (Plugin(..))
 import Test.Framework
 
 import Ribosome.Api.Autocmd (doautocmd)
@@ -15,12 +12,11 @@ import Ribosome.Api.Variable (setVar)
 import Ribosome.Control.Monad.Ribo (NvimE)
 import Ribosome.Control.Ribosome (Ribosome, newRibosome)
 import Ribosome.Nvim.Api.IO (vimGetVar)
-import Ribosome.Nvim.Api.RpcCall (RpcError)
 import Ribosome.Plugin (riboPlugin)
 import Ribosome.Test.Await (await)
 import Ribosome.Test.Embed (integrationSpecDef)
 import Ribosome.Test.Orphans ()
-import TestError (handleTestError)
+import TestError (RiboT, handleTestError)
 
 changed :: NvimE e m => Object -> m ()
 changed _ =
@@ -31,7 +27,7 @@ varWatcherPlugin = do
   env <- newRibosome "varwatcher" ()
   return $ riboPlugin "varwatcher" env [] [] handleTestError (Map.singleton "trigger" changed)
 
-varWatcherSpec :: ExceptT RpcError (Neovim ()) ()
+varWatcherSpec :: RiboT ()
 varWatcherSpec = do
   setVar "number" (10 :: Int)
   setVar "trigger" (5 :: Int)

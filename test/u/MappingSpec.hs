@@ -3,9 +3,8 @@
 
 module MappingSpec (htf_thisModulesTests) where
 
-import Control.Monad.Trans.Except (ExceptT)
 import qualified Data.Map as Map (empty)
-import Neovim (Neovim, Plugin(..))
+import Neovim (Plugin(..))
 import Test.Framework
 
 import Ribosome.Api.Buffer (currentBufferContent)
@@ -16,7 +15,6 @@ import Ribosome.Data.ScratchOptions (ScratchOptions(ScratchOptions))
 import Ribosome.Msgpack.Encode (MsgpackEncode(toMsgpack))
 import Ribosome.Msgpack.Error (DecodeError)
 import Ribosome.Nvim.Api.IO (nvimFeedkeys, vimCallFunction, vimGetVar, vimSetVar)
-import Ribosome.Nvim.Api.RpcCall (RpcError)
 import Ribosome.Plugin (riboPlugin, rpcHandlerDef)
 import Ribosome.Plugin.Mapping (MappingHandler, mappingHandler)
 import Ribosome.Scratch (showInScratch)
