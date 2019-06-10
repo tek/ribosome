@@ -2,11 +2,20 @@ module Ribosome.Api.Register where
 
 import Ribosome.Control.Monad.Ribo (NvimE)
 import Ribosome.Data.Register (Register)
+import qualified Ribosome.Data.Register as Register (Register(..))
 import Ribosome.Data.RegisterType (RegisterType)
 import qualified Ribosome.Data.RegisterType as RegisterType (RegisterType(..))
 import Ribosome.Msgpack.Decode (MsgpackDecode(fromMsgpack))
 import Ribosome.Msgpack.Encode (MsgpackEncode(toMsgpack))
 import Ribosome.Nvim.Api.IO (vimCallFunction, vimCommand)
+
+starRegister :: Register
+starRegister =
+  Register.Special "*"
+
+unnamedRegister :: Register
+unnamedRegister =
+  Register.Special "\""
 
 setregAs ::
   NvimE e m =>
