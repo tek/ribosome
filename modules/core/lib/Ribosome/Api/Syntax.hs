@@ -18,7 +18,7 @@ import Ribosome.Data.Syntax (
 import Ribosome.Msgpack.Encode (MsgpackEncode(toMsgpack))
 import Ribosome.Msgpack.Error (DecodeError)
 import Ribosome.Nvim.Api.Data (Window)
-import Ribosome.Nvim.Api.IO (nvimWinGetNumber)
+import Ribosome.Nvim.Api.IO (nvimWinGetNumber, vimGetCurrentWindow, vimSetCurrentWindow)
 import Ribosome.Nvim.Api.RpcCall (RpcCall(RpcCall))
 
 joinEquals :: Map Text Text -> Text
@@ -82,8 +82,11 @@ executeWindowSyntax ::
   Syntax ->
   m [Object]
 executeWindowSyntax win syntax = do
+  previous <- vimGetCurrentWindow
   number <- nvimWinGetNumber win
-  atomic $ wrapCmd (show number <> "windo") <$> syntaxCmds syntax
+  exec number <* vimSetCurrentWindow previous
   where
+    exec number =
+      atomic $ wrapCmd (show number <> "windo") <$> syntaxCmds syntax
     wrapCmd wrap cmd =
       rpcCommand (wrap : cmd)
