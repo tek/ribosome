@@ -23,7 +23,7 @@ import Ribosome.Scratch (showInScratch)
 import Ribosome.Test.Await (await)
 import Ribosome.Test.Embed (integrationSpecDef)
 import Ribosome.Test.Orphans ()
-import TestError (handleTestError)
+import TestError (RiboT, handleTestError)
 
 target :: [Text]
 target = ["line 1", "line 2"]
@@ -58,7 +58,7 @@ mappingPlugin = do
   where
     funcs = [$(rpcHandlerDef 'setupMappingScratch)]
 
-mappingSpec :: ExceptT RpcError (Neovim ()) ()
+mappingSpec :: RiboT ()
 mappingSpec = do
   () <- vimCallFunction "SetupMappingScratch" []
   await (gassertEqual target) currentBufferContent

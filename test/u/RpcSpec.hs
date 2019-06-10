@@ -1,5 +1,4 @@
 {-# OPTIONS_GHC -F -pgmF htfpp #-}
-{-# LANGUAGE TemplateHaskell #-}
 
 module RpcSpec (htf_thisModulesTests) where
 
@@ -117,7 +116,7 @@ failureCommand cmd' = do
     recoverRpc (_ :: RpcError) =
       return ()
 
-rpcSpec :: ExceptT RpcError (Neovim ()) ()
+rpcSpec :: RiboT ()
 rpcSpec = do
   successCommand "HandlerCmdCmdArgs a b c"
   successCommand "HandlerCmdNoCmdArgs a b c"

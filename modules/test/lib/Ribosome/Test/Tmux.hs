@@ -16,7 +16,7 @@ import qualified Neovim.Context.Internal as Internal (
   newConfig,
   retypeConfig,
   )
-import Neovim.Plugin (Plugin)
+import Neovim.Plugin (Plugin(Plugin))
 import Neovim.Plugin.Internal (wrapPlugin)
 import Neovim.RPC.Common (SocketType(UnixSocket), createHandle, newRPCConfig)
 import System.FilePath ((</>))
@@ -199,7 +199,7 @@ tmuxGuiSpecDef =
 withTmuxInt ::
   NvimE e m =>
   MonadIO m =>
-  RpcHandler e () m =>
+  RpcHandler e env m =>
   Text ->
   DeepPrisms e RpcError =>
   m () ->
@@ -212,21 +212,21 @@ withTmuxInt _ _ _ =
   throwString "no socket in test tmux"
 
 runTmuxWithPlugin ::
-  RpcHandler e () m =>
+  RpcHandler e env m =>
   ReportError e =>
   TmuxNative ->
   TestConfig ->
   Plugin env ->
   m () ->
   IO ()
-runTmuxWithPlugin api conf plugin thunk = do
+runTmuxWithPlugin api conf plugin@(Plugin env _) thunk = do
   socketDir <- tempDir "gui-spec"
   withTempDirectory socketDir "spec" runProc
   where
     runProc temp =
       withProcess (testNvimProcessConfig conf) (run temp)
     run temp prc = do
-      nvimConf <- Internal.newConfig (pure Nothing) (pure ())
+      nvimConf <- Internal.newConfig (pure Nothing) (pure env)
       bracket (acquire prc nvimConf temp) release (const $ runTest conf nvimConf thunk)
     acquire _ nvimConf temp = do
       socket <- startNvimInTmux api temp
@@ -237,7 +237,7 @@ runTmuxWithPlugin api conf plugin thunk = do
 tmuxIntegrationSpecDef ::
   NvimE e m =>
   MonadIO m =>
-  RpcHandler e () m =>
+  RpcHandler e env m =>
   ReportError e =>
   Text ->
   Plugin env ->

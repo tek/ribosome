@@ -21,7 +21,7 @@ import Ribosome.Scratch (showInScratch)
 import Ribosome.Test.Await (await)
 import Ribosome.Test.Embed (integrationSpecDef)
 import Ribosome.Test.Tmux (tmuxIntegrationSpecDef)
-import TestError (handleTestError)
+import TestError (RiboT, handleTestError)
 
 target :: [Text]
 target = ["line 1", "line 2"]
@@ -68,7 +68,7 @@ scratchPlugin = do
   where
     funcs = [$(rpcHandlerDef 'makeScratch), $(rpcHandlerDef 'makeFloatScratch), $(rpcHandler sync 'scratchCount)]
 
-scratchSpec :: Text -> ExceptT RpcError (Neovim ()) ()
+scratchSpec :: Text -> RiboT ()
 scratchSpec fun = do
   () <- vimCallFunction fun []
   await (gassertEqual (1 :: Int)) scratches
@@ -78,7 +78,7 @@ scratchSpec fun = do
   where
     scratches = vimCallFunction "ScratchCount" []
 
-regularScratchSpec :: ExceptT RpcError (Neovim ()) ()
+regularScratchSpec :: RiboT ()
 regularScratchSpec =
   scratchSpec "MakeScratch"
 
@@ -87,8 +87,8 @@ test_scratch = do
   plug <- scratchPlugin
   integrationSpecDef plug regularScratchSpec
 
-floatScratchSpec :: ExceptT RpcError (Neovim ()) ()
-floatScratchSpec = do
+floatScratchSpec :: RiboT ()
+floatScratchSpec =
   scratchSpec "MakeFloatScratch"
 
 test_floatScratch :: IO ()
