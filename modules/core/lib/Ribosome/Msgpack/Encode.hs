@@ -82,6 +82,9 @@ instance MsgpackEncode Int64 where
 instance MsgpackEncode Float where
   toMsgpack = ObjectFloat
 
+instance MsgpackEncode Double where
+  toMsgpack = ObjectDouble
+
 instance {-# OVERLAPPING #-} MsgpackEncode String where
   toMsgpack = Util.string
 

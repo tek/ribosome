@@ -9,7 +9,7 @@ import Data.Map.Strict (Map, (!?))
 import qualified Data.Map.Strict as Map (empty, fromList, toList)
 import Data.MessagePack (Object(..))
 import Data.Text.Prettyprint.Doc (pretty, viaShow)
-import GHC.Float (double2Float)
+import GHC.Float (double2Float, float2Double)
 import GHC.Generics (
   C1,
   Constructor,
@@ -154,6 +154,13 @@ instance MsgpackDecode Float where
   fromMsgpack (ObjectInt a) = Right (fromIntegral a)
   fromMsgpack (ObjectUInt a) = Right (fromIntegral a)
   fromMsgpack o = Util.illegalType "Float" o
+
+instance MsgpackDecode Double where
+  fromMsgpack (ObjectFloat a) = Right (float2Double a)
+  fromMsgpack (ObjectDouble a) = Right a
+  fromMsgpack (ObjectInt a) = Right (fromIntegral a)
+  fromMsgpack (ObjectUInt a) = Right (fromIntegral a)
+  fromMsgpack o = Util.illegalType "Double" o
 
 instance {-# OVERLAPPING #-} MsgpackDecode String where
   fromMsgpack = msgpackText "String" Right
