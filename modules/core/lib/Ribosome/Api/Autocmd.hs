@@ -9,3 +9,10 @@ doautocmd ::
   m ()
 doautocmd name =
   vimCommand $ "doautocmd " <> name
+
+uautocmd ::
+  NvimE e m =>
+  Text ->
+  m ()
+uautocmd name =
+  doautocmd $ "User " <> name
