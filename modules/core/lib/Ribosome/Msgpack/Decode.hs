@@ -5,7 +5,7 @@ import Data.ByteString (ByteString)
 import qualified Data.ByteString.UTF8 as ByteString (toString)
 import Data.Either.Combinators (mapLeft)
 import Data.Int (Int64)
-import Data.Map.Strict (Map, (!?))
+import Data.Map.Strict (Map)
 import qualified Data.Map.Strict as Map (empty, fromList, toList)
 import Data.MessagePack (Object(..))
 import Data.Text.Prettyprint.Doc (pretty, viaShow)
@@ -32,7 +32,7 @@ import Path (Abs, Dir, File, Path, Rel, parseAbsDir, parseAbsFile, parseRelDir, 
 import Ribosome.Msgpack.Error (DecodeError)
 import qualified Ribosome.Msgpack.Error as DecodeError (DecodeError(Failed))
 import Ribosome.Msgpack.Util (Err)
-import qualified Ribosome.Msgpack.Util as Util (binary, illegalType, invalid, lookupObjectMap, missingRecordKey, string)
+import qualified Ribosome.Msgpack.Util as Util (illegalType, invalid, lookupObjectMap, missingRecordKey)
 
 class MsgpackDecode a where
   fromMsgpack :: Object -> Either Err a

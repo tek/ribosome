@@ -242,8 +242,8 @@ prependUniqueBy attr lens a =
   modify $ Lens.over lens modder
   where
     modder as =
-      a : filter (pred a) as
-    pred a b =
+      a : filter pred' as
+    pred' b =
       Lens.view attr a /= Lens.view attr b
 
 inspectHeadE ::

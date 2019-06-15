@@ -58,7 +58,7 @@ data RpcDef m =
   }
 
 instance Show (RpcDef m) where
-  show (RpcDef d n h) =
+  show (RpcDef d n _) =
     "RpcDef" <> show (d, n)
 
 instance Lift Synchronous where

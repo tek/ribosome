@@ -1,7 +1,6 @@
 module Ribosome.Msgpack.Util where
 
 import Data.Bifunctor (first)
-import qualified Data.ByteString.UTF8 as ByteString (fromString)
 import Data.Map.Strict (Map, (!?))
 import qualified Data.Map.Strict as Map (fromList)
 import Data.MessagePack (Object(..))
