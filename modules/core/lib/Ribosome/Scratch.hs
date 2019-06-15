@@ -21,6 +21,7 @@ import qualified Ribosome.Data.Scratch as Scratch (Scratch(scratchPrevious, scra
 import Ribosome.Data.ScratchOptions (ScratchOptions(ScratchOptions))
 import qualified Ribosome.Data.ScratchOptions as ScratchOptions (ScratchOptions(name, resize, maxSize))
 import Ribosome.Data.Text (capitalize)
+import Ribosome.Log (logDebug)
 import Ribosome.Mapping (activateBufferMapping)
 import Ribosome.Msgpack.Decode (fromMsgpack)
 import Ribosome.Msgpack.Encode (toMsgpack)
@@ -30,6 +31,7 @@ import Ribosome.Nvim.Api.IO (
   bufferGetNumber,
   bufferSetName,
   bufferSetOption,
+  nvimBufIsLoaded,
   nvimCreateBuf,
   nvimOpenWin,
   nvimWinSetBuf,
@@ -127,15 +129,22 @@ createScratchUi _ _ =
 
 configureScratchBuffer :: NvimE e m => Buffer -> Text -> m ()
 configureScratchBuffer buffer name = do
-  -- bufferSetOption buffer "buftype" (toMsgpack ("nofile" :: Text))
   bufferSetOption buffer "bufhidden" (toMsgpack ("wipe" :: Text))
   bufferSetName buffer name
 
-setupScratchBuffer :: NvimE e m => Window -> Text -> m Buffer
-setupScratchBuffer window name = do
-  buffer <- windowGetBuffer window
-  configureScratchBuffer buffer name
-  return buffer
+setupScratchBuffer ::
+  NvimE e m =>
+  MonadRibo m =>
+  Window ->
+  Buffer ->
+  Text ->
+  m Buffer
+setupScratchBuffer window buffer name = do
+  valid <- nvimBufIsLoaded buffer
+  logDebug @Text $ (if valid then "" else "in") <> "valid scratch buffer"
+  validBuffer <- if valid then return buffer else windowGetBuffer window
+  configureScratchBuffer validBuffer name
+  return validBuffer
 
 scratchLens :: Text -> Lens' RibosomeInternal (Maybe Scratch)
 scratchLens name =
@@ -166,10 +175,10 @@ setupScratchIn ::
   ScratchOptions ->
   m Scratch
 setupScratchIn buffer previous window tab (ScratchOptions _ _ _ _ _ _ _ _ _ syntax mappings name) = do
-  configureScratchBuffer buffer name
+  validBuffer <- setupScratchBuffer window buffer name
   traverse_ (executeWindowSyntax window) syntax
-  traverse_ (activateBufferMapping buffer) mappings
-  let scratch = Scratch name buffer window previous tab
+  traverse_ (activateBufferMapping validBuffer) mappings
+  let scratch = Scratch name validBuffer window previous tab
   pluginInternalModify $ Lens.set (scratchLens name) (Just scratch)
   setupDeleteAutocmd scratch
   return scratch
@@ -181,6 +190,7 @@ createScratch ::
   ScratchOptions ->
   m Scratch
 createScratch options = do
+  logDebug $ "creating new scratch `" <> ScratchOptions.name options <> "`"
   previous <- vimGetCurrentWindow
   (buffer, window, tab) <- createScratchUi previous options
   setupScratchIn buffer previous window tab options
@@ -192,7 +202,8 @@ updateScratch ::
   Scratch ->
   ScratchOptions ->
   m Scratch
-updateScratch (Scratch _ oldBuffer oldWindow _ oldTab) options = do
+updateScratch (Scratch name oldBuffer oldWindow _ oldTab) options = do
+  logDebug $ "updating existing scratch `" <> name <> "`"
   previous <- vimGetCurrentWindow
   winValid <- windowIsValid oldWindow
   (buffer, window, tab) <- if winValid then return (oldBuffer, oldWindow, oldTab) else createScratchUi previous options
@@ -214,6 +225,7 @@ ensureScratch ::
 ensureScratch options = do
   f <- maybe createScratch updateScratch <$> lookupScratch (ScratchOptions.name options)
   f options
+  -- catchAt @RpcError killAndRetry $ f options
 
 setScratchContent ::
   Foldable t =>

@@ -1,7 +1,5 @@
 module Ribosome.Api.Window where
 
-import Control.Monad (when)
-
 import Ribosome.Control.Monad.Ribo (NvimE)
 import Ribosome.Nvim.Api.Data (Window)
 import Ribosome.Nvim.Api.IO (
@@ -10,6 +8,7 @@ import Ribosome.Nvim.Api.IO (
   nvimWinGetCursor,
   nvimWinSetCursor,
   vimCommand,
+  vimGetWindows,
   windowIsValid,
   )
 
@@ -19,7 +18,8 @@ closeWindow ::
   m ()
 closeWindow window = do
   valid <- windowIsValid window
-  when valid $ nvimWinClose window True
+  last <- (1 ==) . length <$> vimGetWindows
+  when (valid && not last) $ nvimWinClose window True
 
 cursor ::
   NvimE e m =>
