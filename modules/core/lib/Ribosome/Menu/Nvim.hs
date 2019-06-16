@@ -16,7 +16,7 @@ renderNvimMenu ::
   NvimE e m =>
   ScratchOptions ->
   Scratch ->
-  MenuRenderEvent m a ->
+  MenuRenderEvent m a i ->
   m ()
 renderNvimMenu _ scratch (MenuRenderEvent.Quit _) =
   killScratch scratch

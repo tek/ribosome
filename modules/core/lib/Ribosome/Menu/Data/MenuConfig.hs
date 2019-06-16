@@ -7,10 +7,10 @@ import Ribosome.Menu.Data.MenuItem (MenuItem)
 import Ribosome.Menu.Data.MenuRenderEvent (MenuRenderEvent)
 import Ribosome.Menu.Prompt.Data.PromptConfig (PromptConfig)
 
-data MenuConfig m a =
+data MenuConfig m a i =
   MenuConfig {
-    _items :: ConduitT () MenuItem m (),
-    _handle :: MenuConsumer m a,
-    _render :: MenuRenderEvent m a -> m (),
+    _items :: ConduitT () (MenuItem i) m (),
+    _handle :: MenuConsumer m a i,
+    _render :: MenuRenderEvent m a i -> m (),
     _prompt :: PromptConfig m
   }

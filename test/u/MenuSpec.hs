@@ -41,15 +41,15 @@ promptInput chars = do
 menuItems ::
   Monad m =>
   [Text] ->
-  ConduitT () MenuItem m ()
+  ConduitT () (MenuItem Text) m ()
 menuItems =
   yieldMany . fmap (MenuItem "name")
 
 storePrompt ::
   MonadBaseControl IO m =>
   MVar [Prompt] ->
-  MenuUpdate m a ->
-  m (MenuConsumerAction m a, Menu)
+  MenuUpdate m a Text ->
+  m (MenuConsumerAction m a, Menu Text)
 storePrompt prompts (MenuUpdate event menu) =
   check event
   where
@@ -67,8 +67,8 @@ storePrompt prompts (MenuUpdate event menu) =
 render ::
   MonadIO m =>
   MonadBaseControl IO m =>
-  MVar [[MenuItem]] ->
-  MenuRenderEvent m a ->
+  MVar [[MenuItem Text]] ->
+  MenuRenderEvent m a Text ->
   m ()
 render varItems (MenuRenderEvent.Render _ (Menu _ items _ _ _)) = do
   modifyMVar_ varItems (return . (items :))
@@ -79,10 +79,10 @@ render _ (MenuRenderEvent.Quit _) =
 type MenuTestM = StateT (StrictRibosome ()) IO
 
 menuTest ::
-  (MenuUpdate MenuTestM a -> MenuTestM (MenuAction MenuTestM a, Menu)) ->
+  (MenuUpdate MenuTestM a Text -> MenuTestM (MenuAction MenuTestM a, Menu Text)) ->
   [Text] ->
   [Text] ->
-  IO [[MenuItem]]
+  IO [[MenuItem Text]]
 menuTest handler items chars = do
   itemsVar <- newMVar []
   void $ runMenu (MenuConfig (menuItems items) (MenuConsumer handler) (render itemsVar) promptConfig) `execStateT` def
@@ -91,7 +91,7 @@ menuTest handler items chars = do
     promptConfig =
       PromptConfig (promptInput chars) basicTransition noPromptRenderer True
 
-promptTest :: [Text] -> [Text] -> IO ([[MenuItem]], [Prompt])
+promptTest :: [Text] -> [Text] -> IO ([[MenuItem Text]], [Prompt])
 promptTest items chars = do
   prompts <- newMVar []
   itemsResult <- menuTest (basicMenu (storePrompt prompts)) items chars
@@ -129,7 +129,7 @@ chars1 =
     "2"
     ]
 
-itemsTarget1 :: [[MenuItem]]
+itemsTarget1 :: [[MenuItem Text]]
 itemsTarget1 =
   [
     item <$> ["i2"],
@@ -158,7 +158,7 @@ items2 =
     "longitem"
     ]
 
-itemsTarget :: [MenuItem]
+itemsTarget :: [MenuItem Text]
 itemsTarget =
   [MenuItem "name" "long-item"]
 
@@ -181,9 +181,9 @@ items3 =
 exec ::
   MonadIO m =>
   MVar [Text] ->
-  Menu ->
+  Menu Text ->
   Prompt ->
-  m (MenuConsumerAction m a, Menu)
+  m (MenuConsumerAction m a, Menu Text)
 exec var m@(Menu _ items _ _ _) _ =
   swapMVar var (MenuItem._text <$> items) *> menuQuit m
 

@@ -28,14 +28,14 @@ instance Show (QuitReason m a) where
   show (Execute _) =
     "Execute"
 
-data MenuEvent m a =
+data MenuEvent m a i =
   Init Prompt
   |
   PromptChange Text Prompt
   |
   Mapping Text Prompt
   |
-  NewItems MenuItem
+  NewItems (MenuItem i)
   |
   Quit (QuitReason m a)
   deriving Show

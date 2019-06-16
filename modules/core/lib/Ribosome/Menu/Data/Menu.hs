@@ -1,7 +1,8 @@
 {-# LANGUAGE DeriveAnyClass #-}
-{-# LANGUAGE TemplateHaskell #-}
 
 module Ribosome.Menu.Data.Menu where
+
+import Data.DeepLenses (DeepLenses(..))
 
 import Ribosome.Menu.Data.MenuItem (MenuItem)
 
@@ -12,14 +13,17 @@ newtype MenuFilter =
 instance Default MenuFilter where
   def = MenuFilter ""
 
-data Menu =
+data Menu a =
   Menu {
-    _items :: [MenuItem],
-    _filtered :: [MenuItem],
-    _stack :: [(Text, [MenuItem])],
+    _items :: [MenuItem a],
+    _filtered :: [MenuItem a],
+    _stack :: [(Text, [MenuItem a])],
     _selected :: Int,
     _currentFilter :: MenuFilter
   }
   deriving (Eq, Show, Generic, Default)
 
-deepLenses ''Menu
+makeClassy ''Menu
+
+instance DeepLenses (Menu a) (Menu a) where
+  deepLens = id

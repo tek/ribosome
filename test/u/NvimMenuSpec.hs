@@ -42,7 +42,7 @@ promptInput chars' = do
 menuItems ::
   Monad m =>
   [Text] ->
-  ConduitT () MenuItem m ()
+  ConduitT () (MenuItem Text) m ()
 menuItems =
   yieldMany . fmap (MenuItem "name")
 
@@ -56,9 +56,9 @@ items =
 
 exec ::
   MonadIO m =>
-  Menu ->
+  Menu Text ->
   Prompt ->
-  m (MenuConsumerAction m (Maybe Text), Menu)
+  m (MenuConsumerAction m (Maybe Text), Menu Text)
 exec m@(Menu _ items' _ selected _) _ =
   menuReturn item m
   where
@@ -72,13 +72,13 @@ promptConfig source =
   PromptConfig source basicTransition nvimPromptRenderer True
 
 runNvimMenu ::
-  Mappings (Ribo () TestError) a ->
+  Mappings (Ribo () TestError) a Text ->
   ConduitT () PromptEvent (Ribo () TestError) () ->
   RiboT (MenuResult a)
 runNvimMenu maps source =
   nvimMenu def (menuItems items) (defaultMenu maps) (promptConfig source)
 
-mappings :: Mappings (Ribo () TestError) (Maybe Text)
+mappings :: Mappings (Ribo () TestError) (Maybe Text) Text
 mappings =
   Map.fromList [("cr", exec)]
 
@@ -130,10 +130,10 @@ test_nvimMenuInterrupt =
 
 returnPrompt ::
   MonadIO m =>
-  Menu ->
+  Menu Text ->
   Prompt ->
-  m (MenuConsumerAction m Text, Menu)
-returnPrompt m@(Menu _ _ _ _ _) (Prompt _ _ text) =
+  m (MenuConsumerAction m Text, Menu Text)
+returnPrompt m (Prompt _ _ text) =
   menuReturn text m
 
 navChars :: [Text]

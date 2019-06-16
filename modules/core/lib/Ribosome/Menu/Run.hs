@@ -21,6 +21,7 @@ import Ribosome.Menu.Data.MenuEvent (MenuEvent, QuitReason)
 import qualified Ribosome.Menu.Data.MenuEvent as MenuEvent (MenuEvent(..))
 import qualified Ribosome.Menu.Data.MenuEvent as QuitReason (QuitReason(..))
 import Ribosome.Menu.Data.MenuItem (MenuItem)
+import qualified Ribosome.Menu.Data.MenuItem as MenuItem (MenuItem(_text))
 import Ribosome.Menu.Data.MenuRenderEvent (MenuRenderEvent)
 import qualified Ribosome.Menu.Data.MenuRenderEvent as MenuRenderEvent (MenuRenderEvent(..))
 import Ribosome.Menu.Data.MenuResult (MenuResult)
@@ -46,7 +47,7 @@ promptEvent ::
   PromptEvent ->
   Prompt ->
   PromptConsumed ->
-  MenuEvent m a
+  MenuEvent m a i
 promptEvent _ (Prompt _ PromptState.Quit _) _ =
   MenuEvent.Quit QuitReason.Aborted
 promptEvent (PromptEvent.Character a) prompt PromptConsumed.No =
@@ -65,8 +66,8 @@ promptEvent (PromptEvent.Error e) _ _ =
   MenuEvent.Quit (QuitReason.PromptError e)
 
 menuEvent ::
-  Either PromptConsumerUpdate MenuItem ->
-  MenuEvent m a
+  Either PromptConsumerUpdate (MenuItem i) ->
+  MenuEvent m a i
 menuEvent =
   either promptUpdate MenuEvent.NewItems
   where
@@ -75,11 +76,11 @@ menuEvent =
 
 updateMenu ::
   MonadRibo m =>
-  MenuConsumer m a ->
-  Either PromptConsumerUpdate MenuItem ->
-  ConduitT (Either PromptConsumerUpdate MenuItem) (MenuRenderEvent m a) (StateT Menu m) ()
+  MenuConsumer m a i ->
+  Either PromptConsumerUpdate (MenuItem i) ->
+  ConduitT (Either PromptConsumerUpdate (MenuItem i)) (MenuRenderEvent m a i) (StateT (Menu i) m) ()
 updateMenu (MenuConsumer consumer) input = do
-  showDebug "menu update:" input
+  showDebug "menu update:" (MenuItem._text <$> input)
   action <- lift . stateM $ lift . consumer . MenuUpdate (menuEvent input)
   showDebug "menu action:" action
   emit action
@@ -95,8 +96,8 @@ menuSources ::
   MonadIO m =>
   MonadRibo m =>
   PromptConfig m ->
-  ConduitT () MenuItem m () ->
-  [ConduitT () (Either PromptConsumerUpdate MenuItem) m ()]
+  ConduitT () (MenuItem i) m () ->
+  [ConduitT () (Either PromptConsumerUpdate (MenuItem i)) m ()]
 menuSources promptConfig items =
   [promptSource, itemSource]
   where
@@ -107,7 +108,7 @@ menuSources promptConfig items =
 
 menuTerminator ::
   Monad m =>
-  ConduitT (MenuRenderEvent m a) (QuitReason m a) m ()
+  ConduitT (MenuRenderEvent m a i) (QuitReason m a) m ()
 menuTerminator =
   traverse_ check =<< await
   where
@@ -135,7 +136,7 @@ runMenu ::
   MonadIO m =>
   MonadRibo m =>
   MonadBaseControl IO m =>
-  MenuConfig m a ->
+  MenuConfig m a i ->
   m (MenuResult a)
 runMenu (MenuConfig items handle render promptConfig@(PromptConfig _ _ promptRenderer _)) =
   withPrompt promptRenderer
@@ -156,8 +157,8 @@ nvimMenu ::
   MonadBaseControl IO m =>
   MonadDeepError e DecodeError m =>
   ScratchOptions ->
-  ConduitT () MenuItem m () ->
-  (MenuUpdate m a -> m (MenuAction m a, Menu)) ->
+  ConduitT () (MenuItem i) m () ->
+  (MenuUpdate m a i -> m (MenuAction m a, Menu i)) ->
   PromptConfig m ->
   m (MenuResult a)
 nvimMenu options items handle promptConfig =

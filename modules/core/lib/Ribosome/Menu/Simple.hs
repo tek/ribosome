@@ -21,8 +21,8 @@ import qualified Ribosome.Menu.Data.MenuItem as MenuItem (MenuItem(_text))
 import Ribosome.Menu.Data.MenuUpdate (MenuUpdate(MenuUpdate))
 import Ribosome.Menu.Prompt.Data.Prompt (Prompt(Prompt))
 
-type MappingHandler m a = Menu -> Prompt -> m (MenuConsumerAction m a, Menu)
-type Mappings m a = Map Text (MappingHandler m a)
+type MappingHandler m a i = Menu i -> Prompt -> m (MenuConsumerAction m a, Menu i)
+type Mappings m a i = Map Text (MappingHandler m a i)
 
 textContains :: Text -> Text -> Bool
 textContains needle haystack =
@@ -31,18 +31,22 @@ textContains needle haystack =
     search =
       not . Text.null . snd .: Text.breakOn
 
-updateFilter :: Text -> Menu -> (Bool, MenuAction m a, Menu)
+menuItemsNonequal :: [MenuItem i] -> [MenuItem i] -> Bool
+menuItemsNonequal a b =
+  (MenuItem._text <$> a) /= (MenuItem._text <$> b)
+
+updateFilter :: Text -> Menu i -> (Bool, MenuAction m a, Menu i)
 updateFilter text (Menu items oldFiltered stack selected _) =
-  (filtered /= oldFiltered, MenuAction.Continue, Menu items filtered stack selected (MenuFilter text))
+  (menuItemsNonequal filtered oldFiltered, MenuAction.Continue, Menu items filtered stack selected (MenuFilter text))
   where
     filtered =
       filter (textContains text . MenuItem._text) items
 
-reapplyFilter :: Menu -> (Bool, MenuAction m a, Menu)
+reapplyFilter :: Menu i -> (Bool, MenuAction m a, Menu i)
 reapplyFilter menu@(Menu _ _ _ _ (MenuFilter currentFilter)) =
   updateFilter currentFilter menu
 
-basicMenuTransform :: MenuEvent m a -> Menu -> (Bool, MenuAction m a, Menu)
+basicMenuTransform :: MenuEvent m a i -> Menu i -> (Bool, MenuAction m a, Menu i)
 basicMenuTransform (MenuEvent.PromptChange _ (Prompt _ _ text)) =
   updateFilter text
 basicMenuTransform (MenuEvent.Mapping _ _) =
@@ -56,9 +60,9 @@ basicMenuTransform (MenuEvent.Quit reason) =
 
 basicMenu ::
   Monad m =>
-  (MenuUpdate m a -> m (MenuConsumerAction m a, Menu)) ->
-  MenuUpdate m a ->
-  m (MenuAction m a, Menu)
+  (MenuUpdate m a i -> m (MenuConsumerAction m a, Menu i)) ->
+  MenuUpdate m a i ->
+  m (MenuAction m a, Menu i)
 basicMenu consumer (MenuUpdate event menu) =
   consumerAction action
   where
@@ -80,9 +84,9 @@ basicMenu consumer (MenuUpdate event menu) =
 
 mappingConsumer ::
   Monad m =>
-  Mappings m a ->
-  MenuUpdate m a ->
-  m (MenuConsumerAction m a, Menu)
+  Mappings m a i ->
+  MenuUpdate m a i ->
+  m (MenuConsumerAction m a, Menu i)
 mappingConsumer mappings (MenuUpdate (MenuEvent.Mapping char prompt) menu) =
   handler menu prompt
   where
@@ -93,18 +97,18 @@ mappingConsumer _ (MenuUpdate _ menu) =
 
 simpleMenu ::
   Monad m =>
-  Mappings m a ->
-  MenuUpdate m a ->
-  m (MenuAction m a, Menu)
+  Mappings m a i ->
+  MenuUpdate m a i ->
+  m (MenuAction m a, Menu i)
 simpleMenu =
   basicMenu . mappingConsumer
 
 menuCycle ::
   Monad m =>
   Int ->
-  Menu ->
+  Menu i ->
   Prompt ->
-  m (MenuConsumerAction m a, Menu)
+  m (MenuConsumerAction m a, Menu i)
 menuCycle offset m _ =
   menuRender False (Lens.over Menu.selected add m)
   where
@@ -115,56 +119,56 @@ menuCycle offset m _ =
 
 defaultMappings ::
   Monad m =>
-  Mappings m a
+  Mappings m a i
 defaultMappings =
   Map.fromList [("k", menuCycle 1), ("j", menuCycle (-1))]
 
 defaultMenu ::
   Monad m =>
-  Mappings m a ->
-  MenuUpdate m a ->
-  m (MenuAction m a, Menu)
+  Mappings m a i ->
+  MenuUpdate m a i ->
+  m (MenuAction m a, Menu i)
 defaultMenu =
   simpleMenu . (`Map.union` defaultMappings)
 
 menuContinue ::
   Monad m =>
-  Menu ->
-  m (MenuConsumerAction m a, Menu)
+  Menu i ->
+  m (MenuConsumerAction m a, Menu i)
 menuContinue =
   return . (MenuConsumerAction.Continue,)
 
 menuRender ::
   Monad m =>
   Bool ->
-  Menu ->
-  m (MenuConsumerAction m a, Menu)
+  Menu i ->
+  m (MenuConsumerAction m a, Menu i)
 menuRender changed =
   return . (MenuConsumerAction.Render changed,)
 
 menuQuit ::
   Monad m =>
-  Menu ->
-  m (MenuConsumerAction m a, Menu)
+  Menu i ->
+  m (MenuConsumerAction m a, Menu i)
 menuQuit =
   return . (MenuConsumerAction.Quit,)
 
 menuQuitWith ::
   Monad m =>
   m a ->
-  Menu ->
-  m (MenuConsumerAction m a, Menu)
+  Menu i ->
+  m (MenuConsumerAction m a, Menu i)
 menuQuitWith next =
   return . (MenuConsumerAction.QuitWith next,)
 
 menuReturn ::
   Monad m =>
   a ->
-  Menu ->
-  m (MenuConsumerAction m a, Menu)
+  Menu i ->
+  m (MenuConsumerAction m a, Menu i)
 menuReturn a =
   return . (MenuConsumerAction.Return a,)
 
-selectedMenuItem :: Menu -> Maybe MenuItem
+selectedMenuItem :: Menu i -> Maybe (MenuItem i)
 selectedMenuItem (Menu _ items _ selected _) =
   items ^? Lens.element (length items - selected - 1)

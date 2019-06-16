@@ -1,12 +1,8 @@
-{-# LANGUAGE TemplateHaskell #-}
-
 module Ribosome.Menu.Data.MenuItem where
 
-import Control.Lens (makeClassy)
-
-data MenuItem =
+data MenuItem a =
   MenuItem {
-    _ident :: Text,
+    _meta :: a,
     _text :: Text
   }
   deriving (Eq, Show)
