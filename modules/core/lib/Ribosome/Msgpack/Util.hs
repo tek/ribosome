@@ -7,8 +7,6 @@ import Data.MessagePack (Object(..))
 import Data.Text.Prettyprint.Doc (Doc, pretty, viaShow, (<+>))
 import Data.Text.Prettyprint.Doc.Render.Terminal (AnsiStyle)
 
-import Ribosome.Data.Maybe (orElse)
-
 type Err = Doc AnsiStyle
 
 string :: ConvertUtf8 a ByteString => a -> Object
@@ -42,4 +40,4 @@ lookupObjectMap ::
   Map Object Object ->
   Maybe Object
 lookupObjectMap key o =
-  (o !? string key) `orElse` (o !? binary key)
+  (o !? string key) <|> (o !? binary key)
