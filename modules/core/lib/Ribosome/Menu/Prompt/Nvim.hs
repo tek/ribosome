@@ -42,7 +42,7 @@ getChar =
   catchAs @RpcError InputEvent.Interrupt request
   where
     request =
-      event =<< vimCallFunction "getchar" [toMsgpack False]
+      event =<< vimCallFunction "getchar" []
     event (Right c) =
       return $ InputEvent.Character (fromMaybe c (decodeInputChar c))
     event (Left 0) =
