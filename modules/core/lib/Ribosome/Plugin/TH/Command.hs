@@ -12,11 +12,7 @@ import Data.MessagePack (Object(ObjectArray))
 import Data.Text.Prettyprint.Doc (Pretty(..))
 import Language.Haskell.TH
 import Neovim.Exceptions (NeovimException(ErrorMessage))
-import Neovim.Plugin.Classes (
-  CommandArguments,
-  CommandOption(..),
-  mkCommandOptions,
-  )
+import Neovim.Plugin.Classes (CommandArguments, CommandOption(..), Synchronous, mkCommandOptions)
 
 import Ribosome.Msgpack.Decode (fromMsgpack)
 import Ribosome.Msgpack.Encode (MsgpackEncode(toMsgpack))
@@ -263,10 +259,21 @@ cmdNargs (OnlyPrims 1) =
 cmdNargs _ =
   CmdNargs "+"
 
-rpcCommand :: String -> Name -> HandlerParams -> [CommandOption] -> ExpQ
-rpcCommand rpcName funcName hps@(HandlerParams _ params) opts = do
+amendSync :: Synchronous -> [CommandOption] -> [CommandOption]
+amendSync _ options | any isSync options =
+  options
+  where
+    isSync (CmdSync _) =
+      True
+    isSync _ =
+      False
+amendSync sync options =
+  CmdSync sync : options
+
+rpcCommand :: String -> Name -> HandlerParams -> Synchronous -> [CommandOption] -> ExpQ
+rpcCommand rpcName funcName hps@(HandlerParams _ params) sync opts = do
   fun <- commandImplementation rpcName funcName hps
-  [|RpcDef (RpcCommand $ mkCommandOptions (nargs : opts)) $((litE (StringL rpcName))) $(return fun)|]
+  [|RpcDef (RpcCommand $ mkCommandOptions (nargs : amendSync sync opts)) $((litE (StringL rpcName))) $(return fun)|]
   where
     nargs = cmdNargs params
 
