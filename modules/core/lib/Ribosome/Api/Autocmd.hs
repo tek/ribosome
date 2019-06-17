@@ -12,7 +12,7 @@ doautocmd silent name =
   vimCommand $ pre <> "doautocmd " <> name
   where
     pre =
-      if silent then "silent " else ""
+      if silent then "silent! " else ""
 
 uautocmd ::
   NvimE e m =>
