@@ -5,14 +5,19 @@ import Ribosome.Nvim.Api.IO (vimCommand)
 
 doautocmd ::
   NvimE e m =>
+  Bool ->
   Text ->
   m ()
-doautocmd name =
-  vimCommand $ "doautocmd " <> name
+doautocmd silent name =
+  vimCommand $ pre <> "doautocmd " <> name
+  where
+    pre =
+      if silent then "silent " else ""
 
 uautocmd ::
   NvimE e m =>
+  Bool ->
   Text ->
   m ()
-uautocmd name =
-  doautocmd $ "User " <> name
+uautocmd silent name =
+  doautocmd silent $ "User " <> name

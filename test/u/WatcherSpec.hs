@@ -31,10 +31,10 @@ varWatcherSpec :: RiboT ()
 varWatcherSpec = do
   setVar "number" (10 :: Int)
   setVar "trigger" (5 :: Int)
-  doautocmd "CmdlineLeave"
-  doautocmd "CmdlineLeave"
+  doautocmd True "CmdlineLeave"
+  doautocmd True "CmdlineLeave"
   setVar "trigger" (6 :: Int)
-  doautocmd "CmdlineLeave"
+  doautocmd True "CmdlineLeave"
   await (gassertEqual (12 :: Int)) (vimGetVar "number")
 
 test_varWatcher :: IO ()
