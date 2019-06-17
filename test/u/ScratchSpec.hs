@@ -93,4 +93,4 @@ floatScratchSpec =
 test_floatScratch :: IO ()
 test_floatScratch = do
   plug <- scratchPlugin
-  tmuxIntegrationSpecDef "test" plug floatScratchSpec
+  integrationSpecDef plug floatScratchSpec
