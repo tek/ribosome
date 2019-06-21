@@ -43,3 +43,7 @@ scratchMappings maps so =
 scratchFloat :: FloatOptions -> ScratchOptions -> ScratchOptions
 scratchFloat fl so =
   so { float = Just fl }
+
+scratchSize :: Int -> ScratchOptions -> ScratchOptions
+scratchSize sz so =
+  so { size = Just sz }
