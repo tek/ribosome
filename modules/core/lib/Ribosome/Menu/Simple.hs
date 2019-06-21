@@ -1,7 +1,7 @@
 module Ribosome.Menu.Simple where
 
 import Control.Lens ((^?))
-import qualified Control.Lens as Lens (element, over, views)
+import qualified Control.Lens as Lens (element, over)
 import Data.Composition ((.:))
 import Data.Map.Strict ((!?))
 import qualified Data.Map.Strict as Map (fromList, union)
@@ -9,7 +9,7 @@ import qualified Data.Text as Text (breakOn, null)
 import qualified Text.Fuzzy as Fuzzy (Fuzzy(score, original), filter)
 
 import Ribosome.Menu.Data.Menu (Menu(Menu), MenuFilter(MenuFilter))
-import qualified Ribosome.Menu.Data.Menu as Menu (filtered, items, selected)
+import qualified Ribosome.Menu.Data.Menu as Menu (items, selected)
 import Ribosome.Menu.Data.MenuAction (MenuAction)
 import qualified Ribosome.Menu.Data.MenuAction as MenuAction (MenuAction(..))
 import Ribosome.Menu.Data.MenuConsumerAction (MenuConsumerAction)
@@ -54,14 +54,14 @@ menuItemsNonequal a b =
   (MenuItem._text <$> a) /= (MenuItem._text <$> b)
 
 updateFilter :: MenuItemMatcher i -> Text -> Menu i -> (Bool, MenuAction m a, Menu i)
-updateFilter (MenuItemMatcher matcher) text (Menu items oldFiltered stack selected _) =
-  (menuItemsNonequal filtered oldFiltered, MenuAction.Continue, Menu items filtered stack selected (MenuFilter text))
+updateFilter (MenuItemMatcher matcher) text (Menu items oldFiltered stack selected _ mi) =
+  (menuItemsNonequal filtered oldFiltered, MenuAction.Continue, Menu items filtered stack selected (MenuFilter text) mi)
   where
     filtered =
       matcher text items
 
 reapplyFilter :: MenuItemMatcher i -> Menu i -> (Bool, MenuAction m a, Menu i)
-reapplyFilter matcher menu@(Menu _ _ _ _ (MenuFilter currentFilter)) =
+reapplyFilter matcher menu@(Menu _ _ _ _ (MenuFilter currentFilter) _) =
   updateFilter matcher currentFilter menu
 
 basicMenuTransform :: MenuItemMatcher i -> MenuEvent m a i -> Menu i -> (Bool, MenuAction m a, Menu i)
@@ -128,11 +128,11 @@ menuCycle ::
   Menu i ->
   Prompt ->
   m (MenuConsumerAction m a, Menu i)
-menuCycle offset m _ =
+menuCycle offset m@(Menu _ filtered _ _ _ maxItems) _ =
   menuRender False (Lens.over Menu.selected add m)
   where
     count =
-      Lens.views Menu.filtered length m
+      (maybe id min maxItems) (length filtered)
     add current =
       if count == 0 then 0 else (current + offset) `mod` count
 
@@ -189,5 +189,5 @@ menuReturn a =
   return . (MenuConsumerAction.Return a,)
 
 selectedMenuItem :: Menu i -> Maybe (MenuItem i)
-selectedMenuItem (Menu _ items _ selected _) =
+selectedMenuItem (Menu _ items _ selected _ _) =
   items ^? Lens.element selected

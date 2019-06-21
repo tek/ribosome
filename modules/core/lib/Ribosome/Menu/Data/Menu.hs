@@ -19,7 +19,8 @@ data Menu a =
     _filtered :: [MenuItem a],
     _stack :: [(Text, [MenuItem a])],
     _selected :: Int,
-    _currentFilter :: MenuFilter
+    _currentFilter :: MenuFilter,
+    _maxItems :: Maybe Int
   }
   deriving (Eq, Show, Generic, Default)
 

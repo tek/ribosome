@@ -59,7 +59,7 @@ exec ::
   Menu Text ->
   Prompt ->
   m (MenuConsumerAction m (Maybe Text), Menu Text)
-exec m@(Menu _ items' _ selected _) _ =
+exec m@(Menu _ items' _ selected _ _) _ =
   menuReturn item m
   where
     item =
@@ -76,7 +76,7 @@ runNvimMenu ::
   ConduitT () PromptEvent (Ribo () TestError) () ->
   RiboT (MenuResult a)
 runNvimMenu maps source =
-  nvimMenu def (menuItems items) (defaultMenu maps) (promptConfig source)
+  nvimMenu def (menuItems items) (defaultMenu maps) (promptConfig source) Nothing
 
 mappings :: Mappings (Ribo () TestError) (Maybe Text) Text
 mappings =
@@ -120,7 +120,7 @@ nvimMenuInterruptSpec = do
     spec =
       bracket (fork input) killThread (const run)
     run =
-      nvimMenu def (menuItems items) (defaultMenu Map.empty) (promptConfig (getCharC 0.1))
+      nvimMenu def (menuItems items) (defaultMenu Map.empty) (promptConfig (getCharC 0.1)) Nothing
     input =
       syntheticInput (Just 0.2) ["<c-c>", "<cr>"]
 

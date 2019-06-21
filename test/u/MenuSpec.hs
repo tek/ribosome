@@ -70,7 +70,7 @@ render ::
   MVar [[MenuItem Text]] ->
   MenuRenderEvent m a Text ->
   m ()
-render varItems (MenuRenderEvent.Render _ (Menu _ items _ _ _)) = do
+render varItems (MenuRenderEvent.Render _ (Menu _ items _ _ _ _)) = do
   modifyMVar_ varItems (return . (items :))
   sleep 0.01
 render _ (MenuRenderEvent.Quit _) =
@@ -85,9 +85,11 @@ menuTest ::
   IO [[MenuItem Text]]
 menuTest handler items chars = do
   itemsVar <- newMVar []
-  void $ runMenu (MenuConfig (menuItems items) (MenuConsumer handler) (render itemsVar) promptConfig) `execStateT` def
+  void $ runMenu (conf itemsVar) `execStateT` def
   readMVar itemsVar
   where
+    conf itemsVar =
+      MenuConfig (menuItems items) (MenuConsumer handler) (render itemsVar) promptConfig def
     promptConfig =
       PromptConfig (promptInput chars) basicTransition noPromptRenderer True
 
@@ -184,7 +186,7 @@ exec ::
   Menu Text ->
   Prompt ->
   m (MenuConsumerAction m a, Menu Text)
-exec var m@(Menu _ items _ _ _) _ =
+exec var m@(Menu _ items _ _ _ _) _ =
   swapMVar var (MenuItem._text <$> items) *> menuQuit m
 
 test_strictMenuExecute :: IO ()

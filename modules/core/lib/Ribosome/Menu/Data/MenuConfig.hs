@@ -12,5 +12,6 @@ data MenuConfig m a i =
     _items :: ConduitT () [MenuItem i] m (),
     _handle :: MenuConsumer m a i,
     _render :: MenuRenderEvent m a i -> m (),
-    _prompt :: PromptConfig m
+    _prompt :: PromptConfig m,
+    _maxItems :: Maybe Int
   }

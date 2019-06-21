@@ -2,6 +2,7 @@ module Ribosome.Menu.Run where
 
 import Conduit (ConduitT, await, awaitForever, mapC, yield, (.|))
 import Control.Exception.Lifted (bracket)
+import qualified Control.Lens as Lens (set)
 import Control.Monad.Trans.Control (MonadBaseControl)
 import Data.Conduit.Combinators (iterM)
 import qualified Data.Conduit.Combinators as Conduit (last)
@@ -13,6 +14,7 @@ import Ribosome.Data.Scratch (scratchWindow)
 import Ribosome.Data.ScratchOptions (ScratchOptions)
 import Ribosome.Log (showDebug)
 import Ribosome.Menu.Data.Menu (Menu)
+import qualified Ribosome.Menu.Data.Menu as Menu (maxItems)
 import Ribosome.Menu.Data.MenuAction (MenuAction)
 import qualified Ribosome.Menu.Data.MenuAction as MenuAction (MenuAction(..))
 import Ribosome.Menu.Data.MenuConfig (MenuConfig(MenuConfig))
@@ -138,7 +140,7 @@ runMenu ::
   MonadBaseControl IO m =>
   MenuConfig m a i ->
   m (MenuResult a)
-runMenu (MenuConfig items handle render promptConfig@(PromptConfig _ _ promptRenderer _)) =
+runMenu (MenuConfig items handle render promptConfig@(PromptConfig _ _ promptRenderer _) maxItems) =
   withPrompt promptRenderer
   where
     withPrompt (PromptRenderer acquire release _) =
@@ -146,7 +148,9 @@ runMenu (MenuConfig items handle render promptConfig@(PromptConfig _ _ promptRen
     run =
       menuResult =<< quitReason <$> withMergedSources consumer 64 (menuSources promptConfig items)
     consumer =
-      evalStateC def (awaitForever (updateMenu handle)) .| iterM render .| menuTerminator .| Conduit.last
+      evalStateC initial (awaitForever (updateMenu handle)) .| iterM render .| menuTerminator .| Conduit.last
+    initial =
+      Lens.set Menu.maxItems maxItems def
     quitReason =
       fromMaybe QuitReason.NoOutput
 
@@ -160,12 +164,13 @@ nvimMenu ::
   ConduitT () [MenuItem i] m () ->
   (MenuUpdate m a i -> m (MenuAction m a, Menu i)) ->
   PromptConfig m ->
+  Maybe Int ->
   m (MenuResult a)
-nvimMenu options items handle promptConfig =
+nvimMenu options items handle promptConfig maxItems =
   run =<< showInScratch [] options
   where
     run scratch = do
       windowSetOption (scratchWindow scratch) "cursorline" (toMsgpack True)
-      runMenu $ MenuConfig items (MenuConsumer handle) (render scratch) promptConfig
+      runMenu $ MenuConfig items (MenuConsumer handle) (render scratch) promptConfig maxItems
     render =
       renderNvimMenu options
