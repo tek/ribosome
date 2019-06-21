@@ -28,7 +28,7 @@ renderNvimMenu options scratch (MenuRenderEvent.Render changed (Menu _ allItems 
     lineNumber =
       max 0 $ length items - selected - 1
     text = MenuItem._text <$> items
-    items = take maxItems (reverse allItems)
+    items = take maxItems allItems
     maxItems = 100
     updateCursor = do
       logDebug @Text logMsg

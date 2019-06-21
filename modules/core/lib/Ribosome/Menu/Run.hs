@@ -66,7 +66,7 @@ promptEvent (PromptEvent.Error e) _ _ =
   MenuEvent.Quit (QuitReason.PromptError e)
 
 menuEvent ::
-  Either PromptConsumerUpdate (MenuItem i) ->
+  Either PromptConsumerUpdate [MenuItem i] ->
   MenuEvent m a i
 menuEvent =
   either promptUpdate MenuEvent.NewItems
@@ -77,10 +77,10 @@ menuEvent =
 updateMenu ::
   MonadRibo m =>
   MenuConsumer m a i ->
-  Either PromptConsumerUpdate (MenuItem i) ->
-  ConduitT (Either PromptConsumerUpdate (MenuItem i)) (MenuRenderEvent m a i) (StateT (Menu i) m) ()
+  Either PromptConsumerUpdate [MenuItem i] ->
+  ConduitT (Either PromptConsumerUpdate [MenuItem i]) (MenuRenderEvent m a i) (StateT (Menu i) m) ()
 updateMenu (MenuConsumer consumer) input = do
-  showDebug "menu update:" (MenuItem._text <$> input)
+  showDebug "menu update:" (MenuItem._text <$$> input)
   action <- lift . stateM $ lift . consumer . MenuUpdate (menuEvent input)
   showDebug "menu action:" action
   emit action
@@ -96,8 +96,8 @@ menuSources ::
   MonadIO m =>
   MonadRibo m =>
   PromptConfig m ->
-  ConduitT () (MenuItem i) m () ->
-  [ConduitT () (Either PromptConsumerUpdate (MenuItem i)) m ()]
+  ConduitT () [MenuItem i] m () ->
+  [ConduitT () (Either PromptConsumerUpdate [MenuItem i]) m ()]
 menuSources promptConfig items =
   [promptSource, itemSource]
   where
@@ -157,7 +157,7 @@ nvimMenu ::
   MonadBaseControl IO m =>
   MonadDeepError e DecodeError m =>
   ScratchOptions ->
-  ConduitT () (MenuItem i) m () ->
+  ConduitT () [MenuItem i] m () ->
   (MenuUpdate m a i -> m (MenuAction m a, Menu i)) ->
   PromptConfig m ->
   m (MenuResult a)

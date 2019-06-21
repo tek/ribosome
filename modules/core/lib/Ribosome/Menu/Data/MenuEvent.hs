@@ -35,7 +35,7 @@ data MenuEvent m a i =
   |
   Mapping Text Prompt
   |
-  NewItems (MenuItem i)
+  NewItems [MenuItem i]
   |
   Quit (QuitReason m a)
   deriving Show

@@ -2,7 +2,7 @@
 
 module NvimMenuSpec (htf_thisModulesTests) where
 
-import Conduit (ConduitT, yieldMany)
+import Conduit (ConduitT, yield, yieldMany)
 import Control.Concurrent.Lifted (fork, killThread)
 import Control.Exception.Lifted (bracket)
 import Control.Lens ((^?))
@@ -42,9 +42,9 @@ promptInput chars' = do
 menuItems ::
   Monad m =>
   [Text] ->
-  ConduitT () (MenuItem Text) m ()
+  ConduitT () [MenuItem Text] m ()
 menuItems =
-  yieldMany . fmap (MenuItem "name")
+  yield . fmap (MenuItem "name")
 
 chars :: [Text]
 chars =
@@ -86,7 +86,7 @@ nvimMenuSpec ::
   ConduitT () PromptEvent (Ribo () TestError) () ->
   RiboT ()
 nvimMenuSpec =
-  gassertEqual (MenuResult.Return (Just "item5")) <=< runNvimMenu mappings
+  gassertEqual (MenuResult.Return (Just "item4")) <=< runNvimMenu mappings
 
 nvimMenuStrictSpec :: RiboT ()
 nvimMenuStrictSpec =

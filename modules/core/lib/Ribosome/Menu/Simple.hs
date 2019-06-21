@@ -69,8 +69,8 @@ basicMenuTransform matcher (MenuEvent.PromptChange _ (Prompt _ _ text)) =
   updateFilter matcher text
 basicMenuTransform _ (MenuEvent.Mapping _ _) =
   (False, MenuAction.Continue,)
-basicMenuTransform matcher (MenuEvent.NewItems item) =
-  reapplyFilter matcher . Lens.over Menu.items (item :)
+basicMenuTransform matcher (MenuEvent.NewItems items) =
+  reapplyFilter matcher . Lens.over Menu.items (++ items)
 basicMenuTransform _ (MenuEvent.Init _) =
   (True, MenuAction.Continue,)
 basicMenuTransform _ (MenuEvent.Quit reason) =

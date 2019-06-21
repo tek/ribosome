@@ -2,7 +2,7 @@
 
 module MenuSpec (htf_thisModulesTests) where
 
-import Conduit (ConduitT, yieldMany)
+import Conduit (ConduitT, yield, yieldMany)
 import Control.Concurrent.MVar.Lifted (modifyMVar_)
 import Control.Monad.Trans.Control (MonadBaseControl)
 import qualified Data.Map.Strict as Map (fromList)
@@ -27,7 +27,7 @@ import qualified Ribosome.Menu.Prompt.Data.PromptEvent as PromptEvent (PromptEve
 import qualified Ribosome.Menu.Prompt.Data.PromptState as PromptState (PromptState(..))
 import Ribosome.Menu.Prompt.Run (basicTransition, noPromptRenderer)
 import Ribosome.Menu.Run (runMenu)
-import Ribosome.Menu.Simple (basicMenu, menuContinue, menuQuit, simpleMenu, fuzzyMenuItemMatcher)
+import Ribosome.Menu.Simple (basicMenu, fuzzyMenuItemMatcher, menuContinue, menuQuit, simpleMenu)
 import Ribosome.System.Time (sleep)
 
 promptInput ::
@@ -41,9 +41,9 @@ promptInput chars = do
 menuItems ::
   Monad m =>
   [Text] ->
-  ConduitT () (MenuItem Text) m ()
+  ConduitT () [MenuItem Text] m ()
 menuItems =
-  yieldMany . fmap (MenuItem "name")
+  yield . fmap (MenuItem "name")
 
 storePrompt ::
   MonadBaseControl IO m =>
@@ -133,7 +133,7 @@ itemsTarget1 :: [[MenuItem Text]]
 itemsTarget1 =
   [
     item <$> ["i2"],
-    item <$> ["i4", "i3", "i2", "i1"]
+    item <$> ["i1", "i2", "i3", "i4"]
     ]
   where
     item =
@@ -191,4 +191,4 @@ test_strictMenuExecute :: IO ()
 test_strictMenuExecute = do
   var <- newMVar []
   _ <- menuTest (simpleMenu (Map.fromList [("cr", exec var)])) items3 chars3
-  assertEqual (reverse items3) =<< readMVar var
+  assertEqual items3 =<< readMVar var
