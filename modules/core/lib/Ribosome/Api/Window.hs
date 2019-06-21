@@ -18,8 +18,8 @@ closeWindow ::
   m ()
 closeWindow window = do
   valid <- windowIsValid window
-  last <- (1 ==) . length <$> vimGetWindows
-  when (valid && not last) $ nvimWinClose window True
+  last' <- (1 ==) . length <$> vimGetWindows
+  when (valid && not last') $ nvimWinClose window True
 
 cursor ::
   NvimE e m =>

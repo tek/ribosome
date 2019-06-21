@@ -27,7 +27,7 @@ import qualified Ribosome.Menu.Prompt.Data.PromptEvent as PromptEvent (PromptEve
 import qualified Ribosome.Menu.Prompt.Data.PromptState as PromptState (PromptState(..))
 import Ribosome.Menu.Prompt.Run (basicTransition, noPromptRenderer)
 import Ribosome.Menu.Run (runMenu)
-import Ribosome.Menu.Simple (basicMenu, menuContinue, menuQuit, simpleMenu)
+import Ribosome.Menu.Simple (basicMenu, menuContinue, menuQuit, simpleMenu, fuzzyMenuItemMatcher)
 import Ribosome.System.Time (sleep)
 
 promptInput ::
@@ -94,7 +94,7 @@ menuTest handler items chars = do
 promptTest :: [Text] -> [Text] -> IO ([[MenuItem Text]], [Prompt])
 promptTest items chars = do
   prompts <- newMVar []
-  itemsResult <- menuTest (basicMenu (storePrompt prompts)) items chars
+  itemsResult <- menuTest (basicMenu fuzzyMenuItemMatcher (storePrompt prompts)) items chars
   (itemsResult,) <$> readMVar prompts
 
 promptsTarget1 :: [Prompt]

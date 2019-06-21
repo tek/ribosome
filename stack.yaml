@@ -10,6 +10,7 @@ extra-deps:
 - base-noprelude-4.11.1.0
 - pretty-terminal-0.1.0.0
 - posix-pty-0.2.1.1
+- fuzzy-0.1.0.0
 - github: neovimhaskell/nvim-hs
   commit: 8b1a38c18f530f65a17a7fda2a14c168a2663821
 - github: tek/cornea

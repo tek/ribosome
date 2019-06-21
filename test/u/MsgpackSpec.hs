@@ -13,7 +13,7 @@ import Data.Text (Text)
 import Data.Text.Prettyprint.Doc (Doc, defaultLayoutOptions, layoutPretty)
 import Data.Text.Prettyprint.Doc.Render.Terminal (AnsiStyle, renderStrict)
 import GHC.Generics (Generic)
-import Path (Abs, Dir, File, Path, Rel, absfile, relfile)
+import Path (Dir, Path, Rel, absfile, relfile)
 import Test.Framework
 
 import Ribosome.Msgpack.Decode (MsgpackDecode(..))
