@@ -190,4 +190,4 @@ menuReturn a =
 
 selectedMenuItem :: Menu i -> Maybe (MenuItem i)
 selectedMenuItem (Menu _ items _ selected _) =
-  items ^? Lens.element (length items - selected - 1)
+  items ^? Lens.element selected
