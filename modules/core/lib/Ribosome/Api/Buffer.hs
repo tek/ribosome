@@ -18,10 +18,12 @@ import Ribosome.Nvim.Api.IO (
   bufferGetNumber,
   bufferIsValid,
   bufferSetLines,
+  nvimWinSetBuf,
   vimCallFunction,
   vimCommand,
   vimGetBuffers,
   vimGetCurrentBuffer,
+  vimGetCurrentWindow,
   )
 import Ribosome.Nvim.Api.RpcCall (syncRpcCall)
 
@@ -110,3 +112,11 @@ currentBufferName ::
   m Text
 currentBufferName =
   bufferGetName =<< vimGetCurrentBuffer
+
+setCurrentBuffer ::
+  NvimE e m =>
+  Buffer ->
+  m ()
+setCurrentBuffer buf = do
+  win <- vimGetCurrentWindow
+  nvimWinSetBuf win buf
