@@ -28,7 +28,7 @@ renderNvimMenu options scratch (MenuRenderEvent.Render changed (Menu _ allItems 
     lineNumber =
       max 0 $ length items - selected - 1
     text = MenuItem._text <$> items
-    items = maybe id take maxItems $ allItems
+    items = maybe id take maxItems allItems
     updateCursor =
       logDebug @Text logMsg *>
       setLine (scratchWindow scratch) lineNumber

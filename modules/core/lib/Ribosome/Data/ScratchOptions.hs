@@ -1,6 +1,6 @@
 module Ribosome.Data.ScratchOptions where
 
-import Data.Default (Default(def))
+import Control.Lens (set)
 
 import Ribosome.Data.FloatOptions (FloatOptions)
 import Ribosome.Data.Mapping (Mapping)
@@ -8,19 +8,21 @@ import Ribosome.Data.Syntax (Syntax)
 
 data ScratchOptions =
   ScratchOptions {
-    tab :: Bool,
-    vertical :: Bool,
-    wrap :: Bool,
-    focus :: Bool,
-    resize :: Bool,
-    bottom :: Bool,
-    float :: Maybe FloatOptions,
-    size :: Maybe Int,
-    maxSize :: Maybe Int,
-    syntax :: [Syntax],
-    mappings :: [Mapping],
-    name :: Text
+    _tab :: Bool,
+    _vertical :: Bool,
+    _wrap :: Bool,
+    _focus :: Bool,
+    _resize :: Bool,
+    _bottom :: Bool,
+    _float :: Maybe FloatOptions,
+    _size :: Maybe Int,
+    _maxSize :: Maybe Int,
+    _syntax :: [Syntax],
+    _mappings :: [Mapping],
+    _name :: Text
   }
+
+makeClassy ''ScratchOptions
 
 defaultScratchOptions :: Text -> ScratchOptions
 defaultScratchOptions = ScratchOptions False False False False True True Nothing Nothing Nothing [] []
@@ -29,21 +31,21 @@ instance Default ScratchOptions where
   def = defaultScratchOptions "scratch"
 
 scratchFocus :: ScratchOptions -> ScratchOptions
-scratchFocus so =
-  so { focus = True }
+scratchFocus =
+  set focus True
 
 scratchSyntax :: [Syntax] -> ScratchOptions -> ScratchOptions
-scratchSyntax syn so =
-  so { syntax = syn }
+scratchSyntax =
+  set syntax
 
 scratchMappings :: [Mapping] -> ScratchOptions -> ScratchOptions
-scratchMappings maps so =
-  so { mappings = maps }
+scratchMappings =
+  set mappings
 
 scratchFloat :: FloatOptions -> ScratchOptions -> ScratchOptions
-scratchFloat fl so =
-  so { float = Just fl }
+scratchFloat =
+  set float . Just
 
 scratchSize :: Int -> ScratchOptions -> ScratchOptions
-scratchSize sz so =
-  so { size = Just sz }
+scratchSize =
+  set size . Just

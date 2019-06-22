@@ -2,7 +2,7 @@ module Ribosome.Menu.Run where
 
 import Conduit (ConduitT, await, awaitForever, mapC, yield, (.|))
 import Control.Exception.Lifted (bracket)
-import qualified Control.Lens as Lens (set)
+import Control.Lens (over, set)
 import Control.Monad.Trans.Control (MonadBaseControl)
 import Data.Conduit.Combinators (iterM)
 import qualified Data.Conduit.Combinators as Conduit (last)
@@ -12,6 +12,7 @@ import Ribosome.Control.Monad.Ribo (MonadRibo, NvimE)
 import Ribosome.Data.Conduit (withMergedSources)
 import Ribosome.Data.Scratch (scratchWindow)
 import Ribosome.Data.ScratchOptions (ScratchOptions)
+import qualified Ribosome.Data.ScratchOptions as ScratchOptions (size)
 import Ribosome.Log (showDebug)
 import Ribosome.Menu.Data.Menu (Menu)
 import qualified Ribosome.Menu.Data.Menu as Menu (maxItems)
@@ -150,7 +151,7 @@ runMenu (MenuConfig items handle render promptConfig@(PromptConfig _ _ promptRen
     consumer =
       evalStateC initial (awaitForever (updateMenu handle)) .| iterM render .| menuTerminator .| Conduit.last
     initial =
-      Lens.set Menu.maxItems maxItems def
+      set Menu.maxItems maxItems def
     quitReason =
       fromMaybe QuitReason.NoOutput
 
@@ -173,4 +174,24 @@ nvimMenu options items handle promptConfig maxItems =
       windowSetOption (scratchWindow scratch) "cursorline" (toMsgpack True)
       runMenu $ MenuConfig items (MenuConsumer handle) (render scratch) promptConfig maxItems
     render =
-      renderNvimMenu options
+      renderNvimMenu (ensureSize options)
+    ensureSize =
+      over ScratchOptions.size (<|> Just 1)
+
+strictNvimMenu ::
+  NvimE e m =>
+  MonadIO m =>
+  MonadRibo m =>
+  MonadBaseControl IO m =>
+  MonadDeepError e DecodeError m =>
+  ScratchOptions ->
+  [MenuItem i] ->
+  (MenuUpdate m a i -> m (MenuAction m a, Menu i)) ->
+  PromptConfig m ->
+  Maybe Int ->
+  m (MenuResult a)
+strictNvimMenu options items =
+  nvimMenu (ensureSize options) (yield items)
+  where
+    ensureSize =
+      over ScratchOptions.size (<|> Just (length items))

@@ -1,7 +1,7 @@
 module Ribosome.Scratch where
 
-import Control.Lens (Lens')
-import qualified Control.Lens as Lens (at, set)
+import Control.Lens (Lens', set, view)
+import qualified Control.Lens as Lens (at)
 import Control.Monad (unless)
 import Data.Default (Default(def))
 import Data.Foldable (traverse_)
@@ -19,7 +19,7 @@ import Ribosome.Data.FloatOptions (FloatOptions)
 import Ribosome.Data.Scratch (Scratch(Scratch))
 import qualified Ribosome.Data.Scratch as Scratch (Scratch(scratchPrevious, scratchWindow))
 import Ribosome.Data.ScratchOptions (ScratchOptions(ScratchOptions))
-import qualified Ribosome.Data.ScratchOptions as ScratchOptions (ScratchOptions(name, resize, maxSize))
+import qualified Ribosome.Data.ScratchOptions as ScratchOptions (maxSize, name, resize)
 import Ribosome.Data.Text (capitalize)
 import Ribosome.Log (logDebug)
 import Ribosome.Mapping (activateBufferMapping)
@@ -179,7 +179,7 @@ setupScratchIn buffer previous window tab (ScratchOptions _ _ _ _ _ _ _ _ _ synt
   traverse_ (executeWindowSyntax window) syntax
   traverse_ (activateBufferMapping validBuffer) mappings
   let scratch = Scratch name validBuffer window previous tab
-  pluginInternalModify $ Lens.set (scratchLens name) (Just scratch)
+  pluginInternalModify $ set (scratchLens name) (Just scratch)
   setupDeleteAutocmd scratch
   return scratch
 
@@ -190,7 +190,7 @@ createScratch ::
   ScratchOptions ->
   m Scratch
 createScratch options = do
-  logDebug $ "creating new scratch `" <> ScratchOptions.name options <> "`"
+  logDebug $ "creating new scratch `" <> view ScratchOptions.name options <> "`"
   previous <- vimGetCurrentWindow
   (buffer, window, tab) <- createScratchUi previous options
   setupScratchIn buffer previous window tab options
@@ -223,7 +223,7 @@ ensureScratch ::
   ScratchOptions ->
   m Scratch
 ensureScratch options = do
-  f <- maybe createScratch updateScratch <$> lookupScratch (ScratchOptions.name options)
+  f <- maybe createScratch updateScratch <$> lookupScratch (view ScratchOptions.name options)
   f options
   -- catchAt @RpcError killAndRetry $ f options
 
@@ -238,9 +238,9 @@ setScratchContent options (Scratch _ buffer win _ _) lines' = do
   bufferSetOption buffer "modifiable" (toMsgpack True)
   setBufferContent buffer (toList lines')
   bufferSetOption buffer "modifiable" (toMsgpack False)
-  when (ScratchOptions.resize options) (ignoreError @RpcError $ windowSetHeight win size)
+  when (view ScratchOptions.resize options) (ignoreError @RpcError $ windowSetHeight win size)
   where
-    size = max 1 $ min (length lines') (fromMaybe 30 (ScratchOptions.maxSize options))
+    size = max 1 $ min (length lines') (fromMaybe 30 (view ScratchOptions.maxSize options))
 
 showInScratch ::
   Foldable t =>
@@ -273,7 +273,7 @@ killScratch ::
 killScratch (Scratch name buffer window _ tab) = do
   catchAs @RpcError () removeAutocmd
   traverse_ closeTabpage tab *> closeWindow window *> wipeBuffer buffer
-  pluginInternalModify $ Lens.set (scratchLens name) Nothing
+  pluginInternalModify $ set (scratchLens name) Nothing
   where
     removeAutocmd = do
       number <- bufferGetNumber buffer
