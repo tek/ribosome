@@ -191,3 +191,11 @@ menuReturn a =
 selectedMenuItem :: Menu i -> Maybe (MenuItem i)
 selectedMenuItem (Menu _ items _ selected _ _) =
   items ^? Lens.element selected
+
+withSelectedMenuItem ::
+  Monad m =>
+  (MenuItem i -> m (MenuConsumerAction m a, Menu i)) ->
+  Menu i ->
+  m (MenuConsumerAction m a, Menu i)
+withSelectedMenuItem f m =
+  maybe (menuContinue m) pure =<< traverse f (selectedMenuItem m)
