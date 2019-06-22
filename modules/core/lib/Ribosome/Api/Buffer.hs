@@ -16,6 +16,7 @@ import Ribosome.Nvim.Api.IO (
   bufferGetLines,
   bufferGetName,
   bufferGetNumber,
+  bufferGetOption,
   bufferIsValid,
   bufferSetLines,
   nvimWinSetBuf,
@@ -120,3 +121,10 @@ setCurrentBuffer ::
 setCurrentBuffer buf = do
   win <- vimGetCurrentWindow
   nvimWinSetBuf win buf
+
+bufferIsFile ::
+  NvimE e m =>
+  Buffer ->
+  m Bool
+bufferIsFile buf =
+  bufferGetOption buf "file"
