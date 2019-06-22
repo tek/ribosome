@@ -3,6 +3,7 @@ module Ribosome.Api.Buffer where
 import Control.Monad (when)
 import Data.Bifunctor (second)
 import Data.MessagePack (Object)
+import qualified Data.Text as Text (null)
 import System.FilePath ((</>))
 
 import Ribosome.Api.Atomic (atomicAs)
@@ -127,4 +128,4 @@ bufferIsFile ::
   Buffer ->
   m Bool
 bufferIsFile buf =
-  bufferGetOption buf "file"
+  Text.null <$> bufferGetOption buf "buftype"
