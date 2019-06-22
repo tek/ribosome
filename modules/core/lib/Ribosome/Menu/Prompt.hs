@@ -11,6 +11,7 @@ defaultPrompt ::
   MonadRibo m =>
   MonadBaseControl IO m =>
   MonadDeepError e DecodeError m =>
+  Bool ->
   PromptConfig m
 defaultPrompt =
-  PromptConfig (getCharC 0.033) basicTransition nvimPromptRenderer False
+  PromptConfig (getCharC 0.033) basicTransition nvimPromptRenderer
