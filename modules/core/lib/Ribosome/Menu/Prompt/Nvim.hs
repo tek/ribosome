@@ -53,7 +53,6 @@ getChar =
       maybe (InputEvent.Unexpected num) InputEvent.Character <$> decodeInputNum num
 
 getCharC ::
-  MonadIO m =>
   MonadBaseControl IO m =>
   NvimE e m =>
   MonadRibo m =>
