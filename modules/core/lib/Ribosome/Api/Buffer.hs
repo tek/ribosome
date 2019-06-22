@@ -10,9 +10,11 @@ import Ribosome.Api.Path (nvimCwd)
 import Ribosome.Control.Monad.Ribo (NvimE)
 import Ribosome.Msgpack.Encode (toMsgpack)
 import Ribosome.Msgpack.Error (DecodeError)
-import Ribosome.Nvim.Api.Data (Buffer, bufferGetName)
+import Ribosome.Nvim.Api.Data (Buffer)
+import qualified Ribosome.Nvim.Api.Data as ApiData (bufferGetName)
 import Ribosome.Nvim.Api.IO (
   bufferGetLines,
+  bufferGetName,
   bufferGetNumber,
   bufferIsValid,
   bufferSetLines,
@@ -82,7 +84,7 @@ buffersAndNames ::
   m [(Buffer, Text)]
 buffersAndNames = do
   buffers <- vimGetBuffers
-  names <- atomicAs (syncRpcCall . bufferGetName <$> buffers)
+  names <- atomicAs (syncRpcCall . ApiData.bufferGetName <$> buffers)
   return (zip buffers names)
 
 bufferForFile ::
@@ -102,3 +104,9 @@ bufferForFile target = do
       p
     absolute dir path =
       dir </> path
+
+currentBufferName ::
+  NvimE e m =>
+  m Text
+currentBufferName =
+  bufferGetName =<< vimGetCurrentBuffer
