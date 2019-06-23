@@ -42,7 +42,13 @@ getChar =
   catchAs @RpcError InputEvent.Interrupt request
   where
     request =
-      event =<< vimCallFunction "getchar" []
+      ifM peek consume (return InputEvent.NoInput)
+    peek =
+      (/= 0) <$> getchar True
+    consume =
+      event =<< getchar False
+    getchar peek' =
+      vimCallFunction "getchar" [toMsgpack peek']
     event (Right c) =
       return $ InputEvent.Character (fromMaybe c (decodeInputChar c))
     event (Left 0) =
@@ -53,9 +59,9 @@ getChar =
       maybe (InputEvent.Unexpected num) InputEvent.Character <$> decodeInputNum num
 
 getCharC ::
-  MonadBaseControl IO m =>
   NvimE e m =>
   MonadRibo m =>
+  MonadBaseControl IO m =>
   Double ->
   ConduitT () PromptEvent m ()
 getCharC interval =
@@ -165,7 +171,7 @@ nvimAcquire = do
   highlightSet <- catchAs @RpcError False $ True <$ vimCommandOutput "highlight RibosomePromptCaret"
   unless highlightSet $ vimCommand "highlight link RibosomePromptCaret TermCursor"
   res <- NvimPromptResources <$> vimGetOption "guicursor"
-  vimSetOption "guicursor" (toMsgpack ("a:None" :: Text))
+  vimSetOption "guicursor" (toMsgpack ("a:hor20" :: Text))
   () <- vimCallFunction "inputsave" []
   startLoop
   return res
