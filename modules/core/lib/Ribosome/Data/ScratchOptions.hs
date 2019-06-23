@@ -21,6 +21,7 @@ data ScratchOptions =
     _mappings :: [Mapping],
     _name :: Text
   }
+  deriving (Eq, Show)
 
 makeClassy ''ScratchOptions
 

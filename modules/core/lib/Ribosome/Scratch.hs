@@ -61,15 +61,15 @@ createRegularWindow ::
   Maybe Int ->
   m Window
 createRegularWindow buffer previous vertical focus bottom size = do
-  vimCommand $ prefix <> cmd
+  vimCommand $ locationPrefix <> " " <> sizePrefix <> cmd
   win <- vimGetCurrentWindow
   nvimWinSetBuf win buffer
-  when bottom (vimCommand "wincmd J")
   unless focus $ vimSetCurrentWindow previous
   return win
   where
     cmd = if vertical then "vnew" else "new"
-    prefix = maybe "" show size
+    sizePrefix = maybe "" show size
+    locationPrefix = if bottom then "belowright" else "aboveleft"
 
 floatConfig ::
   FloatOptions ->
@@ -122,7 +122,7 @@ createScratchUi ::
   Window ->
   ScratchOptions ->
   m (Buffer, Window, Maybe Tabpage)
-createScratchUi previous (ScratchOptions False vertical wrap focus _ bottom float _ size _ _ _) =
+createScratchUi previous (ScratchOptions False vertical wrap focus _ bottom float size _ _ _ _) =
   uncurry (,,Nothing) <$> createScratchWindow previous vertical wrap focus bottom float size
 createScratchUi _ _ =
   createScratchUiInTab
@@ -190,7 +190,7 @@ createScratch ::
   ScratchOptions ->
   m Scratch
 createScratch options = do
-  logDebug $ "creating new scratch `" <> view ScratchOptions.name options <> "`"
+  logDebug $ "creating new scratch `" <> show options <> "`"
   previous <- vimGetCurrentWindow
   (buffer, window, tab) <- createScratchUi previous options
   setupScratchIn buffer previous window tab options
@@ -225,7 +225,6 @@ ensureScratch ::
 ensureScratch options = do
   f <- maybe createScratch updateScratch <$> lookupScratch (view ScratchOptions.name options)
   f options
-  -- catchAt @RpcError killAndRetry $ f options
 
 setScratchContent ::
   Foldable t =>
