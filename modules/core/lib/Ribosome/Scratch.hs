@@ -8,8 +8,9 @@ import Data.Foldable (traverse_)
 import qualified Data.Map.Strict as Map (empty)
 import Data.MessagePack (Object)
 
+import Ribosome.Api.Autocmd (withNoAutocmd)
 import Ribosome.Api.Buffer (setBufferContent, wipeBuffer)
-import Ribosome.Api.Syntax (executeWindowSyntax)
+import Ribosome.Api.Syntax (executeCurrentWindowSyntax)
 import Ribosome.Api.Tabpage (closeTabpage)
 import Ribosome.Api.Window (closeWindow)
 import Ribosome.Control.Monad.Ribo (MonadRibo, NvimE, pluginInternalL, pluginInternalModify, pluginName)
@@ -19,7 +20,7 @@ import Ribosome.Data.FloatOptions (FloatOptions)
 import Ribosome.Data.Scratch (Scratch(Scratch))
 import qualified Ribosome.Data.Scratch as Scratch (Scratch(scratchPrevious, scratchWindow))
 import Ribosome.Data.ScratchOptions (ScratchOptions(ScratchOptions))
-import qualified Ribosome.Data.ScratchOptions as ScratchOptions (maxSize, name, resize)
+import qualified Ribosome.Data.ScratchOptions as ScratchOptions (maxSize, name, resize, vertical)
 import Ribosome.Data.Text (capitalize)
 import Ribosome.Log (logDebug)
 import Ribosome.Mapping (activateBufferMapping)
@@ -34,8 +35,8 @@ import Ribosome.Nvim.Api.IO (
   nvimBufIsLoaded,
   nvimCreateBuf,
   nvimOpenWin,
-  nvimWinSetBuf,
   vimCommand,
+  vimGetCurrentBuffer,
   vimGetCurrentTabpage,
   vimGetCurrentWindow,
   vimSetCurrentWindow,
@@ -43,6 +44,7 @@ import Ribosome.Nvim.Api.IO (
   windowIsValid,
   windowSetHeight,
   windowSetOption,
+  windowSetWidth,
   )
 import Ribosome.Nvim.Api.RpcCall (RpcError)
 
@@ -53,20 +55,17 @@ createScratchTab = do
 
 createRegularWindow ::
   NvimE e m =>
-  Buffer ->
-  Window ->
-  Bool ->
   Bool ->
   Bool ->
   Maybe Int ->
-  m Window
-createRegularWindow buffer previous vertical focus bottom size = do
-  vimCommand $ locationPrefix <> " " <> sizePrefix <> cmd
+  m (Buffer, Window)
+createRegularWindow vertical bottom size = do
+  vimCommand prefixedCmd
+  buf <- vimGetCurrentBuffer
   win <- vimGetCurrentWindow
-  nvimWinSetBuf win buffer
-  unless focus $ vimSetCurrentWindow previous
-  return win
+  return (buf, win)
   where
+    prefixedCmd = locationPrefix <> " " <> sizePrefix <> cmd
     cmd = if vertical then "vnew" else "new"
     sizePrefix = maybe "" show size
     locationPrefix = if bottom then "belowright" else "aboveleft"
@@ -79,26 +78,23 @@ floatConfig =
 
 createFloat ::
   NvimE e m =>
-  Bool ->
   FloatOptions ->
-  Buffer ->
-  m Window
-createFloat focus options buffer =
-  nvimOpenWin buffer focus (floatConfig options)
+  m (Buffer, Window)
+createFloat options = do
+  buffer <- nvimCreateBuf True True
+  window <- nvimOpenWin buffer True (floatConfig options)
+  return (buffer, window)
 
 createScratchWindow ::
   NvimE e m =>
-  Window ->
-  Bool ->
   Bool ->
   Bool ->
   Bool ->
   Maybe FloatOptions ->
   Maybe Int ->
   m (Buffer, Window)
-createScratchWindow previous vertical wrap focus bottom float size = do
-  buffer <- nvimCreateBuf True True
-  win <- createWindow buffer
+createScratchWindow vertical wrap bottom float size = do
+  (buffer, win) <- createWindow
   windowSetOption win "wrap" (toMsgpack wrap)
   windowSetOption win "number" (toMsgpack False)
   windowSetOption win "cursorline" (toMsgpack True)
@@ -106,9 +102,9 @@ createScratchWindow previous vertical wrap focus bottom float size = do
   return (buffer, win)
   where
     createWindow =
-      maybe regular (createFloat focus) float
-    regular buffer =
-      createRegularWindow buffer previous vertical focus bottom size
+      maybe regular createFloat float
+    regular =
+      createRegularWindow vertical bottom size
 
 createScratchUiInTab :: NvimE e m => m (Buffer, Window, Maybe Tabpage)
 createScratchUiInTab = do
@@ -119,17 +115,18 @@ createScratchUiInTab = do
 
 createScratchUi ::
   NvimE e m =>
-  Window ->
   ScratchOptions ->
   m (Buffer, Window, Maybe Tabpage)
-createScratchUi previous (ScratchOptions False vertical wrap focus _ bottom float size _ _ _ _) =
-  uncurry (,,Nothing) <$> createScratchWindow previous vertical wrap focus bottom float size
-createScratchUi _ _ =
+createScratchUi (ScratchOptions False vertical wrap _ _ bottom float size _ _ _ _) =
+  uncurry (,,Nothing) <$> createScratchWindow vertical wrap bottom float size
+createScratchUi _ =
   createScratchUiInTab
 
 configureScratchBuffer :: NvimE e m => Buffer -> Text -> m ()
 configureScratchBuffer buffer name = do
   bufferSetOption buffer "bufhidden" (toMsgpack ("wipe" :: Text))
+  bufferSetOption buffer "buftype" (toMsgpack ("nofile" :: Text))
+  bufferSetOption buffer "swapfile" (toMsgpack False)
   bufferSetName buffer name
 
 setupScratchBuffer ::
@@ -174,31 +171,34 @@ setupScratchIn ::
   Maybe Tabpage ->
   ScratchOptions ->
   m Scratch
-setupScratchIn buffer previous window tab (ScratchOptions _ _ _ _ _ _ _ _ _ syntax mappings name) = do
+setupScratchIn buffer previous window tab (ScratchOptions _ _ _ focus _ _ _ _ _ syntax mappings name) = do
   validBuffer <- setupScratchBuffer window buffer name
-  traverse_ (executeWindowSyntax window) syntax
+  traverse_ executeCurrentWindowSyntax syntax
   traverse_ (activateBufferMapping validBuffer) mappings
+  unless focus $ vimSetCurrentWindow previous
   let scratch = Scratch name validBuffer window previous tab
   pluginInternalModify $ set (scratchLens name) (Just scratch)
   setupDeleteAutocmd scratch
   return scratch
 
 createScratch ::
-  MonadDeepError e DecodeError m =>
-  MonadRibo m =>
   NvimE e m =>
+  MonadRibo m =>
+  MonadBaseControl IO m =>
+  MonadDeepError e DecodeError m =>
   ScratchOptions ->
   m Scratch
 createScratch options = do
-  logDebug $ "creating new scratch `" <> show options <> "`"
+  logDebug @Text $ "creating new scratch `" <> show options <> "`"
   previous <- vimGetCurrentWindow
-  (buffer, window, tab) <- createScratchUi previous options
-  setupScratchIn buffer previous window tab options
+  (buffer, window, tab) <- withNoAutocmd $ createScratchUi options
+  withNoAutocmd $ setupScratchIn buffer previous window tab options
 
 updateScratch ::
-  MonadDeepError e DecodeError m =>
-  MonadRibo m =>
   NvimE e m =>
+  MonadRibo m =>
+  MonadBaseControl IO m =>
+  MonadDeepError e DecodeError m =>
   Scratch ->
   ScratchOptions ->
   m Scratch
@@ -206,7 +206,7 @@ updateScratch (Scratch name oldBuffer oldWindow _ oldTab) options = do
   logDebug $ "updating existing scratch `" <> name <> "`"
   previous <- vimGetCurrentWindow
   winValid <- windowIsValid oldWindow
-  (buffer, window, tab) <- if winValid then return (oldBuffer, oldWindow, oldTab) else createScratchUi previous options
+  (buffer, window, tab) <- if winValid then return (oldBuffer, oldWindow, oldTab) else createScratchUi options
   setupScratchIn buffer previous window tab options
 
 lookupScratch ::
@@ -217,9 +217,10 @@ lookupScratch name =
   pluginInternalL (scratchLens name)
 
 ensureScratch ::
-  MonadDeepError e DecodeError m =>
-  MonadRibo m =>
   NvimE e m =>
+  MonadRibo m =>
+  MonadBaseControl IO m =>
+  MonadDeepError e DecodeError m =>
   ScratchOptions ->
   m Scratch
 ensureScratch options = do
@@ -237,15 +238,25 @@ setScratchContent options (Scratch _ buffer win _ _) lines' = do
   bufferSetOption buffer "modifiable" (toMsgpack True)
   setBufferContent buffer (toList lines')
   bufferSetOption buffer "modifiable" (toMsgpack False)
-  when (view ScratchOptions.resize options) (ignoreError @RpcError $ windowSetHeight win size)
+  when (view ScratchOptions.resize options) (ignoreError @RpcError $ setSize win size)
   where
-    size = max 1 $ min (length lines') (fromMaybe 30 (view ScratchOptions.maxSize options))
+    size =
+      max 1 calculateSize
+    calculateSize =
+      if vertical then fromMaybe 50 maxSize else min (length lines') (fromMaybe 30 maxSize)
+    maxSize =
+      view ScratchOptions.maxSize options
+    vertical =
+      view ScratchOptions.vertical options
+    setSize =
+      if vertical then windowSetWidth else windowSetHeight
 
 showInScratch ::
   Foldable t =>
-  MonadDeepError e DecodeError m =>
-  MonadRibo m =>
   NvimE e m =>
+  MonadRibo m =>
+  MonadBaseControl IO m =>
+  MonadDeepError e DecodeError m =>
   t Text ->
   ScratchOptions ->
   m Scratch
@@ -256,9 +267,10 @@ showInScratch lines' options = do
 
 showInScratchDef ::
   Foldable t =>
-  MonadDeepError e DecodeError m =>
-  MonadRibo m =>
   NvimE e m =>
+  MonadRibo m =>
+  MonadBaseControl IO m =>
+  MonadDeepError e DecodeError m =>
   t Text ->
   m Scratch
 showInScratchDef lines' =

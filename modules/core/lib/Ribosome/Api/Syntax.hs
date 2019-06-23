@@ -75,6 +75,14 @@ executeSyntax ::
 executeSyntax =
   atomic . (rpcCommand <$$> syntaxCmds)
 
+executeCurrentWindowSyntax ::
+  MonadDeepError e DecodeError m =>
+  NvimE e m =>
+  Syntax ->
+  m [Object]
+executeCurrentWindowSyntax syntax =
+  atomic $ rpcCommand <$> syntaxCmds syntax
+
 executeWindowSyntax ::
   MonadDeepError e DecodeError m =>
   NvimE e m =>

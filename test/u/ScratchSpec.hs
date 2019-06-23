@@ -19,6 +19,7 @@ import Ribosome.Plugin (riboPlugin, rpcHandler, rpcHandlerDef, sync)
 import Ribosome.Scratch (showInScratch)
 import Ribosome.Test.Await (await)
 import Ribosome.Test.Embed (integrationSpecDef)
+import Ribosome.Test.Tmux (tmuxIntegrationSpecDef)
 import TestError (RiboT, handleTestError)
 
 target :: [Text]
@@ -29,21 +30,23 @@ name =
   "buffi"
 
 makeScratch ::
-  MonadDeepError e DecodeError m =>
-  MonadRibo m =>
   NvimE e m =>
+  MonadRibo m =>
+  MonadBaseControl IO m =>
+  MonadDeepError e DecodeError m =>
   m ()
 makeScratch =
-  void $ showInScratch target (ScratchOptions False True False True True True Nothing Nothing (Just 0) [] [] name)
+  void $ showInScratch target (ScratchOptions False True False True True True Nothing Nothing Nothing [] [] name)
 
 floatOptions :: FloatOptions
 floatOptions =
   FloatOptions Cursor 30 2 1 1 True def
 
 makeFloatScratch ::
-  MonadDeepError e DecodeError m =>
-  MonadRibo m =>
   NvimE e m =>
+  MonadRibo m =>
+  MonadBaseControl IO m =>
+  MonadDeepError e DecodeError m =>
   m ()
 makeFloatScratch =
   void $ showInScratch target options
@@ -80,10 +83,10 @@ regularScratchSpec :: RiboT ()
 regularScratchSpec =
   scratchSpec "MakeScratch"
 
-test_scratch :: IO ()
-test_scratch = do
+test_regularScratch :: IO ()
+test_regularScratch = do
   plug <- scratchPlugin
-  integrationSpecDef plug regularScratchSpec
+  tmuxIntegrationSpecDef "test" plug regularScratchSpec
 
 floatScratchSpec :: RiboT ()
 floatScratchSpec =

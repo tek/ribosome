@@ -39,9 +39,10 @@ mapHandler =
   mappingHandler "go" go
 
 setupMappingScratch ::
-  MonadDeepError e DecodeError m =>
-  MonadRibo m =>
   NvimE e m =>
+  MonadRibo m =>
+  MonadBaseControl IO m =>
+  MonadDeepError e DecodeError m =>
   m ()
 setupMappingScratch = do
   _ <- showInScratch target (ScratchOptions False True False True True True Nothing Nothing Nothing [] [mapping] "buffi")

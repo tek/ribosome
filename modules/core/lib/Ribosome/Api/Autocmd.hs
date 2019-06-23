@@ -1,7 +1,10 @@
 module Ribosome.Api.Autocmd where
 
+import Control.Exception.Lifted (bracket)
+
 import Ribosome.Control.Monad.Ribo (NvimE)
-import Ribosome.Nvim.Api.IO (vimCommand)
+import Ribosome.Msgpack.Encode (toMsgpack)
+import Ribosome.Nvim.Api.IO (vimCommand, vimGetOption, vimSetOption)
 
 doautocmd ::
   NvimE e m =>
@@ -21,3 +24,18 @@ uautocmd ::
   m ()
 uautocmd silent name =
   doautocmd silent $ "User " <> name
+
+withNoAutocmd ::
+  NvimE e m =>
+  MonadBaseControl IO m =>
+  m a ->
+  m a
+withNoAutocmd =
+  bracket getAndSet restore . const
+  where
+    getAndSet = do
+      previous <- vimGetOption "eventignore"
+      vimSetOption "eventignore" (toMsgpack ("all" :: Text))
+      return previous
+    restore =
+      vimSetOption "eventignore"

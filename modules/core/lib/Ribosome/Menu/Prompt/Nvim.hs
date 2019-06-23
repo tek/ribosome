@@ -44,7 +44,7 @@ getChar =
     request =
       ifM peek consume (return InputEvent.NoInput)
     peek =
-      (/= 0) <$> getchar True
+      (/= (0 :: Int)) <$> getchar True
     consume =
       event =<< getchar False
     getchar peek' =
