@@ -168,13 +168,13 @@ nvimMenu ::
   Maybe Int ->
   m (MenuResult a)
 nvimMenu options items handle promptConfig maxItems =
-  run =<< showInScratch [] options
+  run =<< showInScratch [] (ensureSize options)
   where
     run scratch = do
       windowSetOption (scratchWindow scratch) "cursorline" (toMsgpack True)
       runMenu $ MenuConfig items (MenuConsumer handle) (render scratch) promptConfig maxItems
     render =
-      renderNvimMenu (ensureSize options)
+      renderNvimMenu options
     ensureSize =
       over ScratchOptions.size (<|> Just 1)
 
