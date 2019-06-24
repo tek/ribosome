@@ -12,7 +12,7 @@ import Ribosome.Control.Monad.Ribo (MonadRibo, NvimE)
 import Ribosome.Data.Conduit (withMergedSources)
 import Ribosome.Data.Scratch (scratchWindow)
 import Ribosome.Data.ScratchOptions (ScratchOptions)
-import qualified Ribosome.Data.ScratchOptions as ScratchOptions (size)
+import qualified Ribosome.Data.ScratchOptions as ScratchOptions (size, syntax)
 import Ribosome.Log (showDebug)
 import Ribosome.Menu.Data.Menu (Menu)
 import qualified Ribosome.Menu.Data.Menu as Menu (maxItems)
@@ -30,7 +30,7 @@ import qualified Ribosome.Menu.Data.MenuRenderEvent as MenuRenderEvent (MenuRend
 import Ribosome.Menu.Data.MenuResult (MenuResult)
 import qualified Ribosome.Menu.Data.MenuResult as MenuResult (MenuResult(..))
 import Ribosome.Menu.Data.MenuUpdate (MenuUpdate(MenuUpdate))
-import Ribosome.Menu.Nvim (renderNvimMenu)
+import Ribosome.Menu.Nvim (menuSyntax, renderNvimMenu)
 import Ribosome.Menu.Prompt.Data.Prompt (Prompt(Prompt))
 import Ribosome.Menu.Prompt.Data.PromptConfig (PromptConfig(PromptConfig))
 import Ribosome.Menu.Prompt.Data.PromptConsumed (PromptConsumed)
@@ -136,7 +136,6 @@ menuResult QuitReason.Aborted =
   return MenuResult.Aborted
 
 runMenu ::
-  MonadIO m =>
   MonadRibo m =>
   MonadBaseControl IO m =>
   MenuConfig m a i ->
@@ -157,7 +156,6 @@ runMenu (MenuConfig items handle render promptConfig@(PromptConfig _ _ promptRen
 
 nvimMenu ::
   NvimE e m =>
-  MonadIO m =>
   MonadRibo m =>
   MonadBaseControl IO m =>
   MonadDeepError e DecodeError m =>
@@ -168,7 +166,7 @@ nvimMenu ::
   Maybe Int ->
   m (MenuResult a)
 nvimMenu options items handle promptConfig maxItems =
-  run =<< showInScratch [] (ensureSize options)
+  run =<< showInScratch [] (withSyntax (ensureSize options))
   where
     run scratch = do
       windowSetOption (scratchWindow scratch) "cursorline" (toMsgpack True)
@@ -177,6 +175,8 @@ nvimMenu options items handle promptConfig maxItems =
       renderNvimMenu options
     ensureSize =
       over ScratchOptions.size (<|> Just 1)
+    withSyntax =
+      over ScratchOptions.syntax (++ [menuSyntax])
 
 strictNvimMenu ::
   NvimE e m =>

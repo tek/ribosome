@@ -1,12 +1,12 @@
 module Ribosome.Menu.Simple where
 
 import Control.Lens (over, set, (^?))
-import qualified Control.Lens as Lens (element, over)
+import qualified Control.Lens as Lens (element)
 import Data.Composition ((.:))
 import Data.Map.Strict ((!?))
 import qualified Data.Map.Strict as Map (fromList, union)
 import qualified Data.Text as Text (breakOn, null)
-import qualified Text.Fuzzy as Fuzzy (filter, Fuzzy(score, original))
+import qualified Text.Fuzzy as Fuzzy (Fuzzy(score, original), filter)
 
 import Ribosome.Menu.Data.Menu (Menu(Menu), MenuFilter(MenuFilter))
 import qualified Ribosome.Menu.Data.Menu as Menu (currentFilter, filtered, items, marked, selected)
@@ -69,10 +69,10 @@ reapplyFilter matcher menu@(Menu _ _ _ _ (MenuFilter currentFilter) _) =
 basicMenuTransform :: MenuItemMatcher i -> MenuEvent m a i -> Menu i -> (Bool, MenuAction m a, Menu i)
 basicMenuTransform matcher (MenuEvent.PromptChange _ (Prompt _ _ text)) =
   updateFilter matcher text
-basicMenuTransform _ (MenuEvent.Mapping a b) =
+basicMenuTransform _ (MenuEvent.Mapping _ _) =
   (False, MenuAction.Continue,)
 basicMenuTransform matcher (MenuEvent.NewItems items) =
-  reapplyFilter matcher . Lens.over Menu.items (++ items)
+  reapplyFilter matcher . over Menu.items (++ items)
 basicMenuTransform _ (MenuEvent.Init _) =
   (True, MenuAction.Continue,)
 basicMenuTransform _ (MenuEvent.Quit reason) =
@@ -131,7 +131,7 @@ menuCycle ::
   Prompt ->
   m (MenuConsumerAction m a, Menu i)
 menuCycle offset m@(Menu _ filtered _ _ _ maxItems) _ =
-  menuRender False (Lens.over Menu.selected add m)
+  menuRender False (over Menu.selected add m)
   where
     count =
       maybe id min maxItems (length filtered)
@@ -143,8 +143,8 @@ menuToggle ::
   Menu i ->
   Prompt ->
   m (MenuConsumerAction m a, Menu i)
-menuToggle m@(Menu _ _ selected marked _ _) =
-  menuCycle 1 newMenu
+menuToggle m@(Menu _ _ selected marked _ _) prompt =
+  menuRender True . snd =<< menuCycle 1 newMenu prompt
   where
     newMenu =
       set Menu.marked newMarked m
@@ -229,7 +229,7 @@ filterIndexes indexes =
       result
 
 markedMenuItemsOnly :: Menu i -> Maybe [MenuItem i]
-markedMenuItemsOnly (Menu _ filtered _ [] _ _) =
+markedMenuItemsOnly (Menu _ _ _ [] _ _) =
   Nothing
 markedMenuItemsOnly (Menu _ filtered _ marked _ _) =
   Just (filterIndexes marked filtered)
