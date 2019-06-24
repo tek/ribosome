@@ -209,6 +209,14 @@ selectedMenuItem :: Menu i -> Maybe (MenuItem i)
 selectedMenuItem (Menu _ filtered selected _ _ _) =
   filtered ^? Lens.element selected
 
+withSelectedMenuItem ::
+  Monad m =>
+  (MenuItem i -> m (MenuConsumerAction m a, Menu i)) ->
+  Menu i ->
+  m (MenuConsumerAction m a, Menu i)
+withSelectedMenuItem f m =
+  maybe (menuContinue m) pure =<< traverse f (selectedMenuItem m)
+
 filterIndexes :: [Int] -> [a] -> [a]
 filterIndexes indexes =
   reverse . go 0 (sort indexes) []
@@ -230,10 +238,21 @@ markedMenuItems :: Menu i -> Maybe [MenuItem i]
 markedMenuItems m =
   markedMenuItemsOnly m <|> (pure <$> selectedMenuItem m)
 
-withSelectedMenuItem ::
+withMarkedMenuItems ::
   Monad m =>
-  (MenuItem i -> m (MenuConsumerAction m a, Menu i)) ->
+  ([MenuItem i] -> m (MenuConsumerAction m a, Menu i)) ->
   Menu i ->
   m (MenuConsumerAction m a, Menu i)
-withSelectedMenuItem f m =
-  maybe (menuContinue m) pure =<< traverse f (selectedMenuItem m)
+withMarkedMenuItems f m =
+  maybe (menuContinue m) pure =<< traverse f (markedMenuItems m)
+
+traverseMarkedMenuItems ::
+  Monad m =>
+  (MenuItem i -> m a) ->
+  Menu i ->
+  m (MenuConsumerAction m [a], Menu i)
+traverseMarkedMenuItems f m =
+  maybe (menuContinue m) pure =<< traverse run (markedMenuItems m)
+  where
+    run items =
+      menuQuitWith (traverse f items) m
