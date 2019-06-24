@@ -100,6 +100,7 @@ createScratchWindow vertical wrap bottom float size = do
   windowSetOption win "cursorline" (toMsgpack True)
   windowSetOption win "colorcolumn" (toMsgpack ("" :: Text))
   windowSetOption win "foldmethod" (toMsgpack ("manual" :: Text))
+  windowSetOption win "conceallevel" (toMsgpack (3 :: Int))
   return (buffer, win)
   where
     createWindow =
