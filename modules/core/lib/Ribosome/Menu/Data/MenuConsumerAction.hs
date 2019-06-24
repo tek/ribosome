@@ -10,3 +10,4 @@ data MenuConsumerAction m a =
   Render Bool
   |
   Return a
+  deriving (Functor)

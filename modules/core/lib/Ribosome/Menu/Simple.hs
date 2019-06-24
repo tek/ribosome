@@ -256,3 +256,11 @@ traverseMarkedMenuItems f m =
   where
     run items =
       menuQuitWith (traverse f items) m
+
+traverseMarkedMenuItems_ ::
+  Monad m =>
+  (MenuItem i -> m ()) ->
+  Menu i ->
+  m (MenuConsumerAction m (), Menu i)
+traverseMarkedMenuItems_ f m =
+  first void <$> traverseMarkedMenuItems f m
