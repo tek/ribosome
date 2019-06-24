@@ -17,8 +17,8 @@ data Menu a =
   Menu {
     _items :: [MenuItem a],
     _filtered :: [MenuItem a],
-    _stack :: [(Text, [MenuItem a])],
     _selected :: Int,
+    _marked :: [Int],
     _currentFilter :: MenuFilter,
     _maxItems :: Maybe Int
   }

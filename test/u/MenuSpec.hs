@@ -27,7 +27,15 @@ import qualified Ribosome.Menu.Prompt.Data.PromptEvent as PromptEvent (PromptEve
 import qualified Ribosome.Menu.Prompt.Data.PromptState as PromptState (PromptState(..))
 import Ribosome.Menu.Prompt.Run (basicTransition, noPromptRenderer)
 import Ribosome.Menu.Run (runMenu)
-import Ribosome.Menu.Simple (basicMenu, fuzzyMenuItemMatcher, menuContinue, menuQuit, simpleMenu)
+import Ribosome.Menu.Simple (
+  basicMenu,
+  defaultMenu,
+  fuzzyMenuItemMatcher,
+  markedMenuItems,
+  menuContinue,
+  menuQuit,
+  simpleMenu,
+  )
 import Ribosome.System.Time (sleep)
 
 promptInput ::
@@ -194,3 +202,33 @@ test_strictMenuExecute = do
   var <- newMVar []
   _ <- menuTest (simpleMenu (Map.fromList [("cr", exec var)])) items3 chars3
   assertEqual items3 =<< readMVar var
+
+charsMulti :: [Text]
+charsMulti =
+  ["esc", "k", "k", "space", "space", "space", "space", "j", "space", "cr"]
+
+itemsMulti :: [Text]
+itemsMulti =
+  [
+    "item1",
+    "item2",
+    "item3",
+    "item4",
+    "item5",
+    "item6"
+    ]
+
+execMulti ::
+  MonadIO m =>
+  MVar (Maybe [Text]) ->
+  Menu Text ->
+  Prompt ->
+  m (MenuConsumerAction m a, Menu Text)
+execMulti var m _ =
+  swapMVar var (MenuItem._text <$$> markedMenuItems m) *> menuQuit m
+
+test_menuMultiMark :: IO ()
+test_menuMultiMark = do
+  var <- newMVar Nothing
+  _ <- menuTest (defaultMenu (Map.fromList [("cr", execMulti var)])) itemsMulti charsMulti
+  assertEqual (Just ["item3", "item4", "item5"]) =<< readMVar var

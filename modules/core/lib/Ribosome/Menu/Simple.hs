@@ -1,15 +1,15 @@
 module Ribosome.Menu.Simple where
 
-import Control.Lens ((^?))
+import Control.Lens (over, set, (^?))
 import qualified Control.Lens as Lens (element, over)
 import Data.Composition ((.:))
 import Data.Map.Strict ((!?))
 import qualified Data.Map.Strict as Map (fromList, union)
 import qualified Data.Text as Text (breakOn, null)
-import qualified Text.Fuzzy as Fuzzy (Fuzzy(score, original), filter)
+import qualified Text.Fuzzy as Fuzzy (filter, Fuzzy(score, original))
 
 import Ribosome.Menu.Data.Menu (Menu(Menu), MenuFilter(MenuFilter))
-import qualified Ribosome.Menu.Data.Menu as Menu (items, selected)
+import qualified Ribosome.Menu.Data.Menu as Menu (currentFilter, filtered, items, marked, selected)
 import Ribosome.Menu.Data.MenuAction (MenuAction)
 import qualified Ribosome.Menu.Data.MenuAction as MenuAction (MenuAction(..))
 import Ribosome.Menu.Data.MenuConsumerAction (MenuConsumerAction)
@@ -54,9 +54,11 @@ menuItemsNonequal a b =
   (MenuItem._text <$> a) /= (MenuItem._text <$> b)
 
 updateFilter :: MenuItemMatcher i -> Text -> Menu i -> (Bool, MenuAction m a, Menu i)
-updateFilter (MenuItemMatcher matcher) text (Menu items oldFiltered stack selected _ mi) =
-  (menuItemsNonequal filtered oldFiltered, MenuAction.Continue, Menu items filtered stack selected (MenuFilter text) mi)
+updateFilter (MenuItemMatcher matcher) text menu@(Menu items oldFiltered _ _ _ _) =
+  (menuItemsNonequal filtered oldFiltered, MenuAction.Continue, update menu)
   where
+    update =
+      set Menu.filtered filtered . set Menu.currentFilter (MenuFilter text)
     filtered =
       matcher text items
 
@@ -67,7 +69,7 @@ reapplyFilter matcher menu@(Menu _ _ _ _ (MenuFilter currentFilter) _) =
 basicMenuTransform :: MenuItemMatcher i -> MenuEvent m a i -> Menu i -> (Bool, MenuAction m a, Menu i)
 basicMenuTransform matcher (MenuEvent.PromptChange _ (Prompt _ _ text)) =
   updateFilter matcher text
-basicMenuTransform _ (MenuEvent.Mapping _ _) =
+basicMenuTransform _ (MenuEvent.Mapping a b) =
   (False, MenuAction.Continue,)
 basicMenuTransform matcher (MenuEvent.NewItems items) =
   reapplyFilter matcher . Lens.over Menu.items (++ items)
@@ -132,15 +134,30 @@ menuCycle offset m@(Menu _ filtered _ _ _ maxItems) _ =
   menuRender False (Lens.over Menu.selected add m)
   where
     count =
-      (maybe id min maxItems) (length filtered)
+      maybe id min maxItems (length filtered)
     add current =
       if count == 0 then 0 else (current + offset) `mod` count
+
+menuToggle ::
+  Monad m =>
+  Menu i ->
+  Prompt ->
+  m (MenuConsumerAction m a, Menu i)
+menuToggle m@(Menu _ _ selected marked _ _) =
+  menuCycle 1 newMenu
+  where
+    newMenu =
+      set Menu.marked newMarked m
+    newMarked =
+      if length removed == length marked then selected : marked else removed
+    removed =
+      filter (selected /=) marked
 
 defaultMappings ::
   Monad m =>
   Mappings m a i
 defaultMappings =
-  Map.fromList [("k", menuCycle 1), ("j", menuCycle (-1))]
+  Map.fromList [("k", menuCycle 1), ("j", menuCycle (-1)), ("space", menuToggle)]
 
 defaultMenu ::
   Monad m =>
@@ -189,8 +206,29 @@ menuReturn a =
   return . (MenuConsumerAction.Return a,)
 
 selectedMenuItem :: Menu i -> Maybe (MenuItem i)
-selectedMenuItem (Menu _ items _ selected _ _) =
-  items ^? Lens.element selected
+selectedMenuItem (Menu _ filtered selected _ _ _) =
+  filtered ^? Lens.element selected
+
+filterIndexes :: [Int] -> [a] -> [a]
+filterIndexes indexes =
+  reverse . go 0 (sort indexes) []
+  where
+    go current (i : is) result (a : asTail) | i == current =
+      go (current + 1) is (a : result) asTail
+    go current is result (_ : asTail) =
+      go (current + 1) is result asTail
+    go _ _ result _ =
+      result
+
+markedMenuItemsOnly :: Menu i -> Maybe [MenuItem i]
+markedMenuItemsOnly (Menu _ filtered _ [] _ _) =
+  Nothing
+markedMenuItemsOnly (Menu _ filtered _ marked _ _) =
+  Just (filterIndexes marked filtered)
+
+markedMenuItems :: Menu i -> Maybe [MenuItem i]
+markedMenuItems m =
+  markedMenuItemsOnly m <|> (pure <$> selectedMenuItem m)
 
 withSelectedMenuItem ::
   Monad m =>

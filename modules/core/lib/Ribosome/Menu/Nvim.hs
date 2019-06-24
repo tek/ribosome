@@ -20,17 +20,21 @@ renderNvimMenu ::
   m ()
 renderNvimMenu _ scratch (MenuRenderEvent.Quit _) =
   killScratch scratch
-renderNvimMenu options scratch (MenuRenderEvent.Render changed (Menu _ allItems _ selected _ maxItems)) =
+renderNvimMenu options scratch (MenuRenderEvent.Render changed (Menu _ allItems selected marked _ maxItems)) =
   when changed (setScratchContent options scratch (reverse text)) *>
+  logDebug @Text logMsg *>
   updateCursor *>
   redraw
   where
     lineNumber =
       max 0 $ length items - selected - 1
-    text = MenuItem._text <$> items
-    items = maybe id take maxItems allItems
+    text =
+      MenuItem._text <$> items
+    items =
+      limit allItems
+    limit =
+      maybe id take maxItems
     updateCursor =
-      logDebug @Text logMsg *>
       setLine (scratchWindow scratch) lineNumber
     logMsg =
       "updating menu cursor to line " <> show lineNumber <> "; " <> show selected <> "/" <> show (length items)

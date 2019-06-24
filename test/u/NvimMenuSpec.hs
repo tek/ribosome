@@ -59,7 +59,7 @@ exec ::
   Menu Text ->
   Prompt ->
   m (MenuConsumerAction m (Maybe Text), Menu Text)
-exec m@(Menu _ items' _ selected _ _) _ =
+exec m@(Menu _ items' selected _ _ _) _ =
   menuReturn item m
   where
     item =
