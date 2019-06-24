@@ -47,7 +47,7 @@ fuzzyMenuItemMatcher =
     matcher =
       fmap Fuzzy.original . sortOn Fuzzy.score .: filtered
     filtered text items =
-      Fuzzy.filter text items "" "" MenuItem._text True
+      Fuzzy.filter text items "" "" MenuItem._text False
 
 menuItemsNonequal :: [MenuItem i] -> [MenuItem i] -> Bool
 menuItemsNonequal a b =
