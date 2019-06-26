@@ -19,7 +19,6 @@ import Ribosome.Plugin (riboPlugin, rpcHandler, rpcHandlerDef, sync)
 import Ribosome.Scratch (showInScratch)
 import Ribosome.Test.Await (await)
 import Ribosome.Test.Embed (integrationSpecDef)
-import Ribosome.Test.Tmux (tmuxIntegrationSpecDef)
 import TestError (RiboT, handleTestError)
 
 target :: [Text]
@@ -86,7 +85,7 @@ regularScratchSpec =
 test_regularScratch :: IO ()
 test_regularScratch = do
   plug <- scratchPlugin
-  tmuxIntegrationSpecDef "test" plug regularScratchSpec
+  integrationSpecDef plug regularScratchSpec
 
 floatScratchSpec :: RiboT ()
 floatScratchSpec =

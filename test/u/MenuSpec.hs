@@ -32,6 +32,7 @@ import Ribosome.Menu.Simple (
   defaultMenu,
   fuzzyMenuItemMatcher,
   markedMenuItems,
+  markedMenuItemsOnly,
   menuContinue,
   menuQuit,
   simpleMenu,
@@ -232,3 +233,30 @@ test_menuMultiMark = do
   var <- newMVar Nothing
   _ <- menuTest (defaultMenu (Map.fromList [("cr", execMulti var)])) itemsMulti charsMulti
   assertEqual (Just ["item3", "item4", "item5"]) =<< readMVar var
+
+charsToggle :: [Text]
+charsToggle =
+  ["esc", "k", "space", "*", "i", "a", "b", "cr"]
+
+itemsToggle :: [Text]
+itemsToggle =
+  [
+    "a",
+    "ab",
+    "abc"
+    ]
+
+execToggle ::
+  MonadIO m =>
+  MVar (Maybe [Text]) ->
+  Menu Text ->
+  Prompt ->
+  m (MenuConsumerAction m a, Menu Text)
+execToggle var m _ =
+  swapMVar var (MenuItem._text <$$> markedMenuItemsOnly m) *> menuQuit m
+
+test_menuToggle :: IO ()
+test_menuToggle = do
+  var <- newMVar Nothing
+  _ <- menuTest (defaultMenu (Map.fromList [("cr", execToggle var)])) itemsToggle charsToggle
+  assertEqual Nothing =<< readMVar var

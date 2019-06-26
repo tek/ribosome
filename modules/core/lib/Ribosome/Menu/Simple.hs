@@ -1,10 +1,11 @@
 module Ribosome.Menu.Simple where
 
-import Control.Lens (over, set, (^?))
+import Control.Lens (over, set, (^?), _2)
 import qualified Control.Lens as Lens (element)
 import Data.Composition ((.:))
 import Data.Map.Strict ((!?))
 import qualified Data.Map.Strict as Map (fromList, union)
+import qualified Data.Set as Set (difference, fromList, toList)
 import qualified Data.Text as Text (breakOn, null)
 import qualified Text.Fuzzy as Fuzzy (Fuzzy(score, original), filter)
 
@@ -53,30 +54,34 @@ menuItemsNonequal :: [MenuItem i] -> [MenuItem i] -> Bool
 menuItemsNonequal a b =
   (MenuItem._text <$> a) /= (MenuItem._text <$> b)
 
-updateFilter :: MenuItemMatcher i -> Text -> Menu i -> (Bool, MenuAction m a, Menu i)
+updateFilter :: MenuItemMatcher i -> Text -> Menu i -> (Bool, Bool, MenuAction m a, Menu i)
 updateFilter (MenuItemMatcher matcher) text menu@(Menu items oldFiltered _ _ _ _) =
-  (menuItemsNonequal filtered oldFiltered, MenuAction.Continue, update menu)
+  (menuItemsNonequal filtered oldFiltered, False, MenuAction.Continue, update menu)
   where
     update =
       set Menu.filtered filtered . set Menu.currentFilter (MenuFilter text)
     filtered =
       matcher text items
 
-reapplyFilter :: MenuItemMatcher i -> Menu i -> (Bool, MenuAction m a, Menu i)
+reapplyFilter :: MenuItemMatcher i -> Menu i -> (Bool, Bool, MenuAction m a, Menu i)
 reapplyFilter matcher menu@(Menu _ _ _ _ (MenuFilter currentFilter) _) =
   updateFilter matcher currentFilter menu
 
-basicMenuTransform :: MenuItemMatcher i -> MenuEvent m a i -> Menu i -> (Bool, MenuAction m a, Menu i)
+basicMenuTransform :: MenuItemMatcher i -> MenuEvent m a i -> Menu i -> (Bool, Bool, MenuAction m a, Menu i)
 basicMenuTransform matcher (MenuEvent.PromptChange _ (Prompt _ _ text)) =
-  updateFilter matcher text
+  set _2 True . updateFilter matcher text
 basicMenuTransform _ (MenuEvent.Mapping _ _) =
-  (False, MenuAction.Continue,)
+  (False, False, MenuAction.Continue,)
 basicMenuTransform matcher (MenuEvent.NewItems items) =
   reapplyFilter matcher . over Menu.items (++ items)
 basicMenuTransform _ (MenuEvent.Init _) =
-  (True, MenuAction.Continue,)
+  (True, False, MenuAction.Continue,)
 basicMenuTransform _ (MenuEvent.Quit reason) =
-  (False, MenuAction.Quit reason,)
+  (False, False, MenuAction.Quit reason,)
+
+resetSelection :: Menu i -> Menu i
+resetSelection (Menu i f _ _ filt mi) =
+  Menu i f 0 [] filt mi
 
 basicMenu ::
   Monad m =>
@@ -87,7 +92,12 @@ basicMenu ::
 basicMenu matcher consumer (MenuUpdate event menu) =
   consumerAction action
   where
-    (changed, action, newMenu) = basicMenuTransform matcher event menu
+    (changed, action, newMenu) =
+      handleReset $ basicMenuTransform matcher event menu
+    handleReset (changed, True, action, newMenu) =
+      (changed, action, resetSelection newMenu)
+    handleReset (changed, False, action, newMenu) =
+      (changed, action, newMenu)
     consumerAction (MenuAction.Quit reason) =
       return (MenuAction.Quit reason, menu)
     consumerAction _ =
@@ -153,11 +163,24 @@ menuToggle m@(Menu _ _ selected marked _ _) prompt =
     removed =
       filter (selected /=) marked
 
+menuToggleAll ::
+  Monad m =>
+  Menu i ->
+  Prompt ->
+  m (MenuConsumerAction m a, Menu i)
+menuToggleAll m@(Menu _ filtered _ marked _ _) _ =
+  menuRender True newMenu
+  where
+    newMenu =
+      set Menu.marked (Set.toList . Set.difference allIndexes $ Set.fromList marked) m
+    allIndexes =
+      Set.fromList [0..length filtered - 1]
+
 defaultMappings ::
   Monad m =>
   Mappings m a i
 defaultMappings =
-  Map.fromList [("k", menuCycle 1), ("j", menuCycle (-1)), ("space", menuToggle)]
+  Map.fromList [("k", menuCycle 1), ("j", menuCycle (-1)), ("space", menuToggle), ("*", menuToggleAll)]
 
 defaultMenu ::
   Monad m =>

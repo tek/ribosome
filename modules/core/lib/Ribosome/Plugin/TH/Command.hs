@@ -1,10 +1,8 @@
 {-# OPTIONS_GHC -fno-warn-orphans #-}
-{-# LANGUAGE TemplateHaskell #-}
 
 module Ribosome.Plugin.TH.Command where
 
 import Control.Exception (throw)
-import Control.Monad ((<=<))
 import Data.Aeson (FromJSON, eitherDecodeStrict)
 import qualified Data.ByteString as ByteString (intercalate)
 import Data.Either.Combinators (mapLeft)
