@@ -74,6 +74,14 @@ handlerCmdOneArg ::
 handlerCmdOneArg _ =
   handler
 
+handlerCmdMaybeArg ::
+  MonadRibo m =>
+  NvimE e m =>
+  Maybe Text ->
+  m Int
+handlerCmdMaybeArg _ =
+  handler
+
 $(return [])
 
 handlers ::
@@ -85,8 +93,10 @@ handlers =
     $(rpcHandler (sync . cmd []) 'handlerCmdCmdArgs),
     $(rpcHandler (sync . cmd []) 'handlerCmdNoCmdArgs),
     $(rpcHandler (sync . cmd []) 'handlerCmdNoArgs),
-    $(rpcHandler (sync . cmd []) 'handlerCmdOneArg)
+    $(rpcHandler (sync . cmd []) 'handlerCmdOneArg),
+    $(rpcHandler (sync . cmd []) 'handlerCmdMaybeArg)
     ]
+
 
 plugin :: IO (Plugin (Ribosome ()))
 plugin = do
@@ -122,6 +132,8 @@ rpcSpec = do
   successCommand "HandlerCmdNoCmdArgs a b c"
   successCommand "HandlerCmdNoArgs"
   successCommand "HandlerCmdOneArg a"
+  successCommand "HandlerCmdMaybeArg a"
+  successCommand "HandlerCmdMaybeArg"
   failureCommand "HandlerCmdCmdArgs a b"
   failureCommand "HandlerCmdNoCmdArgs a b"
   failureCommand "HandlerCmdNoArgs a"
@@ -131,5 +143,5 @@ test_rpc :: IO ()
 test_rpc = do
   liftIO $ updateGlobalLogger "test" (setLevel DEBUG)
   plug <- plugin
-  -- traverse_ putStrLn $ lines $(stringE . pprint =<< rpcHandler (sync . cmd []) 'handlerCmdOneArg)
+  -- traverse_ putStrLn $ take 1 $ lines $(stringE . pprint =<< rpcHandler (sync . cmd []) 'handlerCmdMaybeArg)
   integrationSpecDef plug rpcSpec
