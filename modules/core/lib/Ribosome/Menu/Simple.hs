@@ -94,10 +94,10 @@ basicMenu matcher consumer (MenuUpdate event menu) =
   where
     (changed, action, newMenu) =
       handleReset $ basicMenuTransform matcher event menu
-    handleReset (changed, True, action, newMenu) =
-      (changed, action, resetSelection newMenu)
-    handleReset (changed, False, action, newMenu) =
-      (changed, action, newMenu)
+    handleReset (c, True, a, new) =
+      (c, a, resetSelection new)
+    handleReset (c, False, a, n) =
+      (c, a, n)
     consumerAction (MenuAction.Quit reason) =
       return (MenuAction.Quit reason, menu)
     consumerAction _ =
@@ -279,16 +279,25 @@ withMarkedMenuItems ::
 withMarkedMenuItems f m =
   maybe (menuContinue m) pure =<< traverse f (markedMenuItems m)
 
-traverseMarkedMenuItems ::
+traverseMarkedMenuItemsWith ::
   Monad m =>
-  (MenuItem i -> m a) ->
+  (m [b] -> Menu i -> m (MenuConsumerAction m a, Menu i)) ->
+  (MenuItem i -> m b) ->
   Menu i ->
-  m (MenuConsumerAction m [a], Menu i)
-traverseMarkedMenuItems f m =
+  m (MenuConsumerAction m a, Menu i)
+traverseMarkedMenuItemsWith next f m =
   maybe (menuContinue m) pure =<< traverse run (markedMenuItems m)
   where
     run items =
-      menuQuitWith (traverse f items) m
+      next (traverse f items) m
+
+traverseMarkedMenuItems ::
+  Monad m =>
+  (MenuItem i -> m ()) ->
+  Menu i ->
+  m (MenuConsumerAction m a, Menu i)
+traverseMarkedMenuItems =
+  traverseMarkedMenuItemsWith (menuExecute . void)
 
 traverseMarkedMenuItems_ ::
   Monad m =>
@@ -296,4 +305,20 @@ traverseMarkedMenuItems_ ::
   Menu i ->
   m (MenuConsumerAction m (), Menu i)
 traverseMarkedMenuItems_ f m =
+  first void <$> traverseMarkedMenuItems f m
+
+traverseMarkedMenuItemsAndQuit ::
+  Monad m =>
+  (MenuItem i -> m a) ->
+  Menu i ->
+  m (MenuConsumerAction m [a], Menu i)
+traverseMarkedMenuItemsAndQuit =
+  traverseMarkedMenuItemsWith menuQuitWith
+
+traverseMarkedMenuItemsAndQuit_ ::
+  Monad m =>
+  (MenuItem i -> m ()) ->
+  Menu i ->
+  m (MenuConsumerAction m (), Menu i)
+traverseMarkedMenuItemsAndQuit_ f m =
   first void <$> traverseMarkedMenuItems f m
