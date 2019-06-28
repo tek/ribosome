@@ -1,6 +1,6 @@
 module Ribosome.Menu.Simple where
 
-import Control.Lens (over, set, (^?), _2)
+import Control.Lens (_2, over, set, (^?))
 import qualified Control.Lens as Lens (element)
 import Data.Composition ((.:))
 import Data.Map.Strict ((!?))
@@ -104,6 +104,8 @@ basicMenu matcher consumer (MenuUpdate event menu) =
       first menuAction <$> consumer (MenuUpdate event newMenu)
     menuAction MenuConsumerAction.Continue =
       if changed then MenuAction.Render True else MenuAction.Continue
+    menuAction (MenuConsumerAction.Execute thunk) =
+      MenuAction.Execute thunk
     menuAction (MenuConsumerAction.Render consumerChanged) =
       MenuAction.Render (changed || consumerChanged)
     menuAction (MenuConsumerAction.QuitWith ma) =
@@ -196,6 +198,14 @@ menuContinue ::
   m (MenuConsumerAction m a, Menu i)
 menuContinue =
   return . (MenuConsumerAction.Continue,)
+
+menuExecute ::
+  Monad m =>
+  m () ->
+  Menu i ->
+  m (MenuConsumerAction m a, Menu i)
+menuExecute thunk =
+  return . (MenuConsumerAction.Execute thunk,)
 
 menuRender ::
   Monad m =>

@@ -90,6 +90,8 @@ updateMenu (MenuConsumer consumer) input = do
   where
     emit MenuAction.Continue =
       return ()
+    emit (MenuAction.Execute thunk) =
+      lift $ lift thunk
     emit (MenuAction.Render changed) =
       yield . MenuRenderEvent.Render changed =<< get
     emit (MenuAction.Quit reason) =

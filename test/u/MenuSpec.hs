@@ -34,7 +34,9 @@ import Ribosome.Menu.Simple (
   markedMenuItems,
   markedMenuItemsOnly,
   menuContinue,
+  menuExecute,
   menuQuit,
+  selectedMenuItem,
   simpleMenu,
   )
 import Ribosome.System.Time (sleep)
@@ -260,3 +262,33 @@ test_menuToggle = do
   var <- newMVar Nothing
   _ <- menuTest (defaultMenu (Map.fromList [("cr", execToggle var)])) itemsToggle charsToggle
   assertEqual Nothing =<< readMVar var
+
+charsExecuteThunk :: [Text]
+charsExecuteThunk =
+  ["esc", "cr", "k", "cr", "esc"]
+
+itemsExecuteThunk :: [Text]
+itemsExecuteThunk =
+  [
+    "a",
+    "b"
+    ]
+
+execExecuteThunk ::
+  MonadIO m =>
+  MonadBaseControl IO m =>
+  MVar [Text] ->
+  Menu Text ->
+  Prompt ->
+  m (MenuConsumerAction m a, Menu Text)
+execExecuteThunk var m _ =
+  menuExecute (modifyMVar_ var prepend) m
+  where
+    prepend a =
+      pure $ a ++ maybeToList (MenuItem._text <$> selectedMenuItem m)
+
+test_menuExecuteThunk :: IO ()
+test_menuExecuteThunk = do
+  var <- newMVar []
+  _ <- menuTest (defaultMenu (Map.fromList [("cr", execExecuteThunk var)])) itemsExecuteThunk charsExecuteThunk
+  assertEqual ["a", "b"] =<< readMVar var

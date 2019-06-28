@@ -7,6 +7,8 @@ data MenuConsumerAction m a =
   |
   Continue
   |
+  Execute (m ())
+  |
   Render Bool
   |
   Return a
