@@ -16,7 +16,7 @@ import qualified Ribosome.Menu.Data.BasicMenuAction as BasicMenuChange (BasicMen
 import Ribosome.Menu.Data.FilteredMenuItem (FilteredMenuItem(FilteredMenuItem))
 import qualified Ribosome.Menu.Data.FilteredMenuItem as FilteredMenuItem (index, item)
 import Ribosome.Menu.Data.Menu (Menu(Menu), MenuFilter(MenuFilter))
-import qualified Ribosome.Menu.Data.Menu as Menu (currentFilter, filtered, items, marked, selected)
+import qualified Ribosome.Menu.Data.Menu as Menu (currentFilter, filtered, items, marked)
 import Ribosome.Menu.Data.MenuAction (MenuAction)
 import qualified Ribosome.Menu.Data.MenuAction as MenuAction (MenuAction(..))
 import Ribosome.Menu.Data.MenuConsumerAction (MenuConsumerAction)

@@ -7,14 +7,14 @@ import Ribosome.Menu.Data.Menu (Menu(Menu))
 import qualified Ribosome.Menu.Data.Menu as Menu (marked, selected)
 import Ribosome.Menu.Data.MenuConsumerAction (MenuConsumerAction)
 import qualified Ribosome.Menu.Data.MenuConsumerAction as MenuConsumerAction (MenuConsumerAction(..))
-import Ribosome.Menu.Prompt.Data.Prompt (Prompt(Prompt))
+import Ribosome.Menu.Prompt.Data.Prompt (Prompt)
 
 menuContinue ::
   Applicative m =>
   Menu i ->
   m (MenuConsumerAction m a, Menu i)
 menuContinue =
-  return . (MenuConsumerAction.Continue,)
+  pure . (MenuConsumerAction.Continue,)
 
 menuExecute ::
   Applicative m =>
@@ -57,10 +57,9 @@ menuReturn a =
 
 menuFilter ::
   Applicative m =>
-  a ->
   Menu i ->
   m (MenuConsumerAction m a, Menu i)
-menuFilter a =
+menuFilter =
   pure . (MenuConsumerAction.Filter,)
 
 menuCycle ::
