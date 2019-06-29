@@ -10,6 +10,7 @@ import qualified Data.Map.Strict as Map (fromList)
 import Test.Framework
 
 import Ribosome.Control.StrictRibosome (StrictRibosome)
+import Ribosome.Menu.Action (menuContinue, menuCycle, menuExecute, menuQuit, menuQuitWith, menuToggle, menuToggleAll)
 import Ribosome.Menu.Data.FilteredMenuItem (FilteredMenuItem(FilteredMenuItem))
 import qualified Ribosome.Menu.Data.FilteredMenuItem as FilteredMenuItem (item)
 import Ribosome.Menu.Data.Menu (Menu(Menu), MenuFilter(MenuFilter))
@@ -38,9 +39,6 @@ import Ribosome.Menu.Simple (
   fuzzyMenuItemMatcher,
   markedMenuItems,
   markedMenuItemsOnly,
-  menuContinue,
-  menuExecute,
-  menuQuit,
   selectedMenuItem,
   simpleMenu,
   )

@@ -9,6 +9,7 @@ import qualified Data.Text as Text (breakOn, null)
 import qualified Text.Fuzzy as Fuzzy (Fuzzy(score, original), filter)
 
 import Ribosome.Data.List (indexesComplement)
+import Ribosome.Menu.Action (menuContinue, menuCycle, menuQuitWith, menuToggle, menuToggleAll)
 import Ribosome.Menu.Data.BasicMenuAction (BasicMenuAction, BasicMenuChange)
 import qualified Ribosome.Menu.Data.BasicMenuAction as BasicMenuAction (BasicMenuAction(..))
 import qualified Ribosome.Menu.Data.BasicMenuAction as BasicMenuChange (BasicMenuChange(..))
@@ -163,46 +164,6 @@ simpleMenu ::
 simpleMenu =
   basicMenu fuzzyMenuItemMatcher . mappingConsumer
 
-menuCycle ::
-  Monad m =>
-  Int ->
-  Menu i ->
-  Prompt ->
-  m (MenuConsumerAction m a, Menu i)
-menuCycle offset m@(Menu _ filtered _ _ _ maxItems) _ =
-  menuRender False (over Menu.selected add m)
-  where
-    count =
-      maybe id min maxItems (length filtered)
-    add current =
-      if count == 0 then 0 else (current + offset) `mod` count
-
-menuToggle ::
-  Monad m =>
-  Menu i ->
-  Prompt ->
-  m (MenuConsumerAction m a, Menu i)
-menuToggle m@(Menu _ _ selected marked _ _) prompt =
-  menuRender True . snd =<< menuCycle 1 newMenu prompt
-  where
-    newMenu =
-      set Menu.marked newMarked m
-    newMarked =
-      if length removed == length marked then selected : marked else removed
-    removed =
-      filter (selected /=) marked
-
-menuToggleAll ::
-  Monad m =>
-  Menu i ->
-  Prompt ->
-  m (MenuConsumerAction m a, Menu i)
-menuToggleAll m@(Menu _ filtered _ marked _ _) _ =
-  menuRender True newMenu
-  where
-    newMenu =
-      set Menu.marked (indexesComplement (length filtered) marked) m
-
 defaultMappings ::
   Monad m =>
   Mappings m a i
@@ -216,52 +177,6 @@ defaultMenu ::
   m (MenuAction m a, Menu i)
 defaultMenu =
   simpleMenu . (`Map.union` defaultMappings)
-
-menuContinue ::
-  Monad m =>
-  Menu i ->
-  m (MenuConsumerAction m a, Menu i)
-menuContinue =
-  return . (MenuConsumerAction.Continue,)
-
-menuExecute ::
-  Monad m =>
-  m () ->
-  Menu i ->
-  m (MenuConsumerAction m a, Menu i)
-menuExecute thunk =
-  return . (MenuConsumerAction.Execute thunk,)
-
-menuRender ::
-  Monad m =>
-  Bool ->
-  Menu i ->
-  m (MenuConsumerAction m a, Menu i)
-menuRender changed =
-  return . (MenuConsumerAction.Render changed,)
-
-menuQuit ::
-  Monad m =>
-  Menu i ->
-  m (MenuConsumerAction m a, Menu i)
-menuQuit =
-  return . (MenuConsumerAction.Quit,)
-
-menuQuitWith ::
-  Monad m =>
-  m a ->
-  Menu i ->
-  m (MenuConsumerAction m a, Menu i)
-menuQuitWith next =
-  return . (MenuConsumerAction.QuitWith next,)
-
-menuReturn ::
-  Monad m =>
-  a ->
-  Menu i ->
-  m (MenuConsumerAction m a, Menu i)
-menuReturn a =
-  return . (MenuConsumerAction.Return a,)
 
 selectedMenuItem :: Menu i -> Maybe (MenuItem i)
 selectedMenuItem (Menu _ filtered selected _ _ _) =
