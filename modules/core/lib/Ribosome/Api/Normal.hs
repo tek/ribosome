@@ -16,3 +16,10 @@ normal ::
   m ()
 normal cmd =
   vimCommand $ "normal! " <> cmd
+
+noautocmdNormal ::
+  NvimE e m =>
+  Text ->
+  m ()
+noautocmdNormal cmd =
+  vimCommand $ "noautocmd normal! " <> cmd
