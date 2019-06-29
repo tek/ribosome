@@ -11,6 +11,7 @@ import Ribosome.Nvim.Api.IO (
   nvimWinSetCursor,
   vimCommand,
   vimGetWindows,
+  vimSetCurrentWindow,
   windowIsValid,
   )
 
@@ -101,14 +102,17 @@ findMainWindow =
       (("" :: Text) ==) <$> nvimBufGetOption buf "buftype"
 
 -- |Create a new window at the top if no existing window has empty 'buftype'.
+-- Focuses the window.
 ensureMainWindow ::
   NvimE e m =>
   m Window
 ensureMainWindow =
-  maybe create pure =<< findMainWindow
+  maybe create focus =<< findMainWindow
   where
     create = do
       vimCommand "aboveleft new"
       win <- nvimGetCurrentWin
       vimCommand "wincmd K"
       return win
+    focus w =
+      w <$ vimSetCurrentWindow w
