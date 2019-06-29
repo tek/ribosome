@@ -16,6 +16,7 @@ import Ribosome.Data.Syntax (
   syntaxMatch,
   )
 import Ribosome.Log (logDebug)
+import qualified Ribosome.Menu.Data.FilteredMenuItem as FilteredMenuItem (item)
 import Ribosome.Menu.Data.Menu (Menu(Menu))
 import qualified Ribosome.Menu.Data.MenuItem as MenuItem (text)
 import Ribosome.Menu.Data.MenuRenderEvent (MenuRenderEvent)
@@ -71,7 +72,7 @@ renderNvimMenu options scratch (MenuRenderEvent.Render changed (Menu _ allItems 
     lineNumber =
       max 0 $ length items - selected - 1
     text =
-      withMarks marked (view MenuItem.text <$> items)
+      withMarks marked (view (FilteredMenuItem.item . MenuItem.text) <$> items)
     items =
       limit allItems
     limit =

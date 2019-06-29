@@ -4,19 +4,23 @@ module MenuSpec (htf_thisModulesTests) where
 
 import Conduit (ConduitT, yield, yieldMany)
 import Control.Concurrent.MVar.Lifted (modifyMVar_)
+import Control.Lens (mapped, over, view, (^.), (^..))
 import Control.Monad.Trans.Control (MonadBaseControl)
 import qualified Data.Map.Strict as Map (fromList)
 import Test.Framework
 
 import Ribosome.Control.StrictRibosome (StrictRibosome)
-import Ribosome.Menu.Data.Menu (Menu(Menu))
+import Ribosome.Menu.Data.FilteredMenuItem (FilteredMenuItem(FilteredMenuItem))
+import qualified Ribosome.Menu.Data.FilteredMenuItem as FilteredMenuItem (item)
+import Ribosome.Menu.Data.Menu (Menu(Menu), MenuFilter(MenuFilter))
+import qualified Ribosome.Menu.Data.Menu as Menu (items)
 import Ribosome.Menu.Data.MenuAction (MenuAction)
 import Ribosome.Menu.Data.MenuConfig (MenuConfig(MenuConfig))
 import Ribosome.Menu.Data.MenuConsumer (MenuConsumer(MenuConsumer))
 import Ribosome.Menu.Data.MenuConsumerAction (MenuConsumerAction)
 import qualified Ribosome.Menu.Data.MenuEvent as MenuEvent (MenuEvent(..))
 import Ribosome.Menu.Data.MenuItem (MenuItem(MenuItem))
-import qualified Ribosome.Menu.Data.MenuItem as MenuItem (MenuItem(_text))
+import qualified Ribosome.Menu.Data.MenuItem as MenuItem (MenuItem(_text), text)
 import Ribosome.Menu.Data.MenuRenderEvent (MenuRenderEvent)
 import qualified Ribosome.Menu.Data.MenuRenderEvent as MenuRenderEvent (MenuRenderEvent(..))
 import Ribosome.Menu.Data.MenuUpdate (MenuUpdate(MenuUpdate))
@@ -30,6 +34,7 @@ import Ribosome.Menu.Run (runMenu)
 import Ribosome.Menu.Simple (
   basicMenu,
   defaultMenu,
+  deleteByFilteredIndex,
   fuzzyMenuItemMatcher,
   markedMenuItems,
   markedMenuItemsOnly,
@@ -78,7 +83,7 @@ storePrompt prompts (MenuUpdate event menu) =
 render ::
   MonadIO m =>
   MonadBaseControl IO m =>
-  MVar [[MenuItem Text]] ->
+  MVar [[FilteredMenuItem Text]] ->
   MenuRenderEvent m a Text ->
   m ()
 render varItems (MenuRenderEvent.Render _ (Menu _ items _ _ _ _)) = do
@@ -93,7 +98,7 @@ menuTest ::
   (MenuUpdate MenuTestM a Text -> MenuTestM (MenuAction MenuTestM a, Menu Text)) ->
   [Text] ->
   [Text] ->
-  IO [[MenuItem Text]]
+  IO [[FilteredMenuItem Text]]
 menuTest handler items chars = do
   itemsVar <- newMVar []
   void $ runMenu (conf itemsVar) `execStateT` def
@@ -104,7 +109,7 @@ menuTest handler items chars = do
     promptConfig =
       PromptConfig (promptInput chars) basicTransition noPromptRenderer True
 
-promptTest :: [Text] -> [Text] -> IO ([[MenuItem Text]], [Prompt])
+promptTest :: [Text] -> [Text] -> IO ([[FilteredMenuItem Text]], [Prompt])
 promptTest items chars = do
   prompts <- newMVar []
   itemsResult <- menuTest (basicMenu fuzzyMenuItemMatcher (storePrompt prompts)) items chars
@@ -155,7 +160,7 @@ itemsTarget1 =
 test_strictMenuModeChange :: IO ()
 test_strictMenuModeChange = do
   (items, prompts) <- promptTest items1 chars1
-  assertEqual itemsTarget1 (take 2 items)
+  assertEqual itemsTarget1 (view FilteredMenuItem.item <$$> take 2 items)
   assertEqual promptsTarget1 (take 4 $ reverse prompts)
 
 chars2 :: [Text]
@@ -178,7 +183,7 @@ itemsTarget =
 test_strictMenuFilter :: IO ()
 test_strictMenuFilter = do
   items <- fst <$> promptTest items2 chars2
-  assertEqual [itemsTarget] (take 1 items)
+  assertEqual [itemsTarget] (view FilteredMenuItem.item <$$> take 1 items)
 
 chars3 :: [Text]
 chars3 =
@@ -198,7 +203,7 @@ exec ::
   Prompt ->
   m (MenuConsumerAction m a, Menu Text)
 exec var m@(Menu _ items _ _ _ _) _ =
-  swapMVar var (MenuItem._text <$> items) *> menuQuit m
+  swapMVar var (view (FilteredMenuItem.item . MenuItem.text) <$> items) *> menuQuit m
 
 test_strictMenuExecute :: IO ()
 test_strictMenuExecute = do
@@ -292,3 +297,16 @@ test_menuExecuteThunk = do
   var <- newMVar []
   _ <- menuTest (defaultMenu (Map.fromList [("cr", execExecuteThunk var)])) itemsExecuteThunk charsExecuteThunk
   assertEqual ["a", "b"] =<< readMVar var
+
+test_menuDeleteByFilteredIndex :: IO ()
+test_menuDeleteByFilteredIndex =
+  assertEqual target . fmap (view MenuItem.text) . view Menu.items . deleteByFilteredIndex [1, 2] $ menu
+  where
+    target =
+      ["1", "2", "3", "5", "7", "8"]
+    menu =
+      Menu items filtered 0 [] (MenuFilter "") Nothing
+    items =
+      MenuItem () <$> ["1", "2", "3", "4", "5", "6", "7", "8"]
+    filtered =
+      uncurry FilteredMenuItem . second (MenuItem ()) <$> [(1, "2"), (3, "4"), (5, "6"), (7, "8")]

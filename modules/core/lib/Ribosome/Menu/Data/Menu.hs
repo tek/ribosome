@@ -4,6 +4,7 @@ module Ribosome.Menu.Data.Menu where
 
 import Data.DeepLenses (DeepLenses(..))
 
+import Ribosome.Menu.Data.FilteredMenuItem (FilteredMenuItem)
 import Ribosome.Menu.Data.MenuItem (MenuItem)
 
 newtype MenuFilter =
@@ -16,7 +17,7 @@ instance Default MenuFilter where
 data Menu a =
   Menu {
     _items :: [MenuItem a],
-    _filtered :: [MenuItem a],
+    _filtered :: [FilteredMenuItem a],
     _selected :: Int,
     _marked :: [Int],
     _currentFilter :: MenuFilter,

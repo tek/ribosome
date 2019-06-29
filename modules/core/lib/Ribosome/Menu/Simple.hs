@@ -1,14 +1,15 @@
 module Ribosome.Menu.Simple where
 
-import Control.Lens (_2, over, set, (^?))
-import qualified Control.Lens as Lens (element)
+import Control.Lens (_2, element, filtered, folded, ifolded, over, set, toListOf, view, withIndex, (^..), (^?))
 import Data.Composition ((.:))
 import Data.Map.Strict ((!?))
 import qualified Data.Map.Strict as Map (fromList, union)
-import qualified Data.Set as Set (difference, fromList, toList)
 import qualified Data.Text as Text (breakOn, null)
 import qualified Text.Fuzzy as Fuzzy (Fuzzy(score, original), filter)
 
+import Ribosome.Data.List (indexesComplement)
+import Ribosome.Menu.Data.FilteredMenuItem (FilteredMenuItem(FilteredMenuItem))
+import qualified Ribosome.Menu.Data.FilteredMenuItem as FilteredMenuItem (index, item)
 import Ribosome.Menu.Data.Menu (Menu(Menu), MenuFilter(MenuFilter))
 import qualified Ribosome.Menu.Data.Menu as Menu (currentFilter, filtered, items, marked, selected)
 import Ribosome.Menu.Data.MenuAction (MenuAction)
@@ -19,13 +20,17 @@ import Ribosome.Menu.Data.MenuEvent (MenuEvent)
 import qualified Ribosome.Menu.Data.MenuEvent as MenuEvent (MenuEvent(..))
 import qualified Ribosome.Menu.Data.MenuEvent as QuitReason (QuitReason(..))
 import Ribosome.Menu.Data.MenuItem (MenuItem)
-import qualified Ribosome.Menu.Data.MenuItem as MenuItem (MenuItem(_text))
-import Ribosome.Menu.Data.MenuItemMatcher (MenuItemMatcher(MenuItemMatcher))
+import qualified Ribosome.Menu.Data.MenuItem as MenuItem (MenuItem(_text), text)
+import Ribosome.Menu.Data.MenuItemFilter (MenuItemFilter(MenuItemFilter))
 import Ribosome.Menu.Data.MenuUpdate (MenuUpdate(MenuUpdate))
 import Ribosome.Menu.Prompt.Data.Prompt (Prompt(Prompt))
 
 type MappingHandler m a i = Menu i -> Prompt -> m (MenuConsumerAction m a, Menu i)
 type Mappings m a i = Map Text (MappingHandler m a i)
+
+zipWithIndex :: [a] -> [(Int, a)]
+zipWithIndex =
+  toListOf $ ifolded . withIndex
 
 textContains :: Text -> Text -> Bool
 textContains needle haystack =
@@ -34,28 +39,30 @@ textContains needle haystack =
     search =
       not . Text.null . snd .: Text.breakOn
 
-substringMenuItemMatcher :: MenuItemMatcher a
+substringMenuItemMatcher :: MenuItemFilter a
 substringMenuItemMatcher =
-  MenuItemMatcher matcher
+  MenuItemFilter filt
   where
+    filt text =
+      uncurry FilteredMenuItem <$$> matcher text
     matcher text =
-      filter $ textContains text . MenuItem._text
+      toListOf $ ifolded . filtered (textContains text . view MenuItem.text) . withIndex
 
-fuzzyMenuItemMatcher :: MenuItemMatcher a
+fuzzyMenuItemMatcher :: MenuItemFilter a
 fuzzyMenuItemMatcher =
-  MenuItemMatcher matcher
+  MenuItemFilter matcher
   where
     matcher =
-      fmap Fuzzy.original . sortOn Fuzzy.score .: filtered
+      fmap (uncurry FilteredMenuItem . Fuzzy.original) . sortOn Fuzzy.score .: filtered
     filtered text items =
-      Fuzzy.filter text items "" "" MenuItem._text False
+      Fuzzy.filter text (items ^.. ifolded . withIndex) "" "" (view (_2 . MenuItem.text)) False
 
-menuItemsNonequal :: [MenuItem i] -> [MenuItem i] -> Bool
+menuItemsNonequal :: [FilteredMenuItem i] -> [FilteredMenuItem i] -> Bool
 menuItemsNonequal a b =
-  (MenuItem._text <$> a) /= (MenuItem._text <$> b)
+  (view FilteredMenuItem.index <$> a) /= (view FilteredMenuItem.index <$> b)
 
-updateFilter :: MenuItemMatcher i -> Text -> Menu i -> (Bool, Bool, MenuAction m a, Menu i)
-updateFilter (MenuItemMatcher matcher) text menu@(Menu items oldFiltered _ _ _ _) =
+updateFilter :: MenuItemFilter i -> Text -> Menu i -> (Bool, Bool, MenuAction m a, Menu i)
+updateFilter (MenuItemFilter matcher) text menu@(Menu items oldFiltered _ _ _ _) =
   (menuItemsNonequal filtered oldFiltered, False, MenuAction.Continue, update menu)
   where
     update =
@@ -63,11 +70,11 @@ updateFilter (MenuItemMatcher matcher) text menu@(Menu items oldFiltered _ _ _ _
     filtered =
       matcher text items
 
-reapplyFilter :: MenuItemMatcher i -> Menu i -> (Bool, Bool, MenuAction m a, Menu i)
+reapplyFilter :: MenuItemFilter i -> Menu i -> (Bool, Bool, MenuAction m a, Menu i)
 reapplyFilter matcher menu@(Menu _ _ _ _ (MenuFilter currentFilter) _) =
   updateFilter matcher currentFilter menu
 
-basicMenuTransform :: MenuItemMatcher i -> MenuEvent m a i -> Menu i -> (Bool, Bool, MenuAction m a, Menu i)
+basicMenuTransform :: MenuItemFilter i -> MenuEvent m a i -> Menu i -> (Bool, Bool, MenuAction m a, Menu i)
 basicMenuTransform matcher (MenuEvent.PromptChange _ (Prompt _ _ text)) =
   set _2 True . updateFilter matcher text
 basicMenuTransform _ (MenuEvent.Mapping _ _) =
@@ -85,7 +92,7 @@ resetSelection (Menu i f _ _ filt mi) =
 
 basicMenu ::
   Monad m =>
-  MenuItemMatcher i ->
+  MenuItemFilter i ->
   (MenuUpdate m a i -> m (MenuConsumerAction m a, Menu i)) ->
   MenuUpdate m a i ->
   m (MenuAction m a, Menu i)
@@ -174,9 +181,7 @@ menuToggleAll m@(Menu _ filtered _ marked _ _) _ =
   menuRender True newMenu
   where
     newMenu =
-      set Menu.marked (Set.toList . Set.difference allIndexes $ Set.fromList marked) m
-    allIndexes =
-      Set.fromList [0..length filtered - 1]
+      set Menu.marked (indexesComplement (length filtered) marked) m
 
 defaultMappings ::
   Monad m =>
@@ -240,7 +245,7 @@ menuReturn a =
 
 selectedMenuItem :: Menu i -> Maybe (MenuItem i)
 selectedMenuItem (Menu _ filtered selected _ _ _) =
-  filtered ^? Lens.element selected
+  filtered ^? element selected . FilteredMenuItem.item
 
 withSelectedMenuItem ::
   Monad m =>
@@ -265,7 +270,7 @@ markedMenuItemsOnly :: Menu i -> Maybe [MenuItem i]
 markedMenuItemsOnly (Menu _ _ _ [] _ _) =
   Nothing
 markedMenuItemsOnly (Menu _ filtered _ marked _ _) =
-  Just (filterIndexes marked filtered)
+  Just $ view FilteredMenuItem.item <$> filterIndexes marked filtered
 
 markedMenuItems :: Menu i -> Maybe [MenuItem i]
 markedMenuItems m =
@@ -322,3 +327,17 @@ traverseMarkedMenuItemsAndQuit_ ::
   m (MenuConsumerAction m (), Menu i)
 traverseMarkedMenuItemsAndQuit_ f m =
   first void <$> traverseMarkedMenuItems f m
+
+deleteByFilteredIndex :: [Int] -> Menu i -> Menu i
+deleteByFilteredIndex indexes menu@(Menu items filtered _ _ _ _) =
+  set Menu.items newItems . set Menu.filtered [] $ menu
+  where
+    newItems =
+      filterIndexes (indexesComplement (length items) unfilteredIndexes) items
+    unfilteredIndexes =
+      view FilteredMenuItem.index <$> filterIndexes indexes filtered
+
+
+deleteMarked :: Menu i -> Menu i
+deleteMarked menu =
+  deleteByFilteredIndex (view Menu.marked menu) menu

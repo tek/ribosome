@@ -5,13 +5,13 @@ module NvimMenuSpec (htf_thisModulesTests) where
 import Conduit (ConduitT, yield, yieldMany)
 import Control.Concurrent.Lifted (fork, killThread)
 import Control.Exception.Lifted (bracket)
-import Control.Lens ((^?))
-import qualified Control.Lens as Lens (element)
+import Control.Lens (element, (^?))
 import qualified Data.Map.Strict as Map (empty, fromList)
 import Test.Framework
 
 import Ribosome.Api.Input (syntheticInput)
 import Ribosome.Control.Monad.Ribo (Ribo)
+import qualified Ribosome.Menu.Data.FilteredMenuItem as FilteredMenuItem (item)
 import Ribosome.Menu.Data.Menu (Menu(Menu))
 import Ribosome.Menu.Data.MenuConsumerAction (MenuConsumerAction)
 import Ribosome.Menu.Data.MenuItem (MenuItem(MenuItem))
@@ -63,7 +63,7 @@ exec m@(Menu _ items' selected _ _ _) _ =
   menuReturn item m
   where
     item =
-      items' ^? Lens.element selected . MenuItem.text
+      items' ^? element selected . FilteredMenuItem.item . MenuItem.text
 
 promptConfig ::
   ConduitT () PromptEvent (Ribo () TestError) () ->
