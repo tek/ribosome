@@ -201,23 +201,38 @@ filterIndexes indexes =
     go _ _ result _ =
       result
 
-markedMenuItemsOnly :: Menu i -> Maybe [MenuItem i]
+markedIndexes :: Menu i -> [Int]
+markedIndexes (Menu _ _ selected [] _ _) =
+  [selected]
+markedIndexes (Menu _ _ _ marked _ _) =
+  marked
+
+menuItemsByIndexes :: [Int] -> Menu i -> [MenuItem i]
+menuItemsByIndexes indexes (Menu _ filtered _ _ _ _) =
+  view FilteredMenuItem.item <$> filterIndexes indexes filtered
+
+markedMenuItemsOnly :: Menu i -> Maybe (NonEmpty (MenuItem i))
 markedMenuItemsOnly (Menu _ _ _ [] _ _) =
   Nothing
 markedMenuItemsOnly (Menu _ filtered _ marked _ _) =
-  Just $ view FilteredMenuItem.item <$> filterIndexes marked filtered
+  nonEmpty $ view FilteredMenuItem.item <$> filterIndexes marked filtered
 
-markedMenuItems :: Menu i -> Maybe [MenuItem i]
+markedMenuItems :: Menu i -> Maybe (NonEmpty (MenuItem i))
 markedMenuItems m =
   markedMenuItemsOnly m <|> (pure <$> selectedMenuItem m)
 
 unmarkedMenuItems :: Menu i -> [MenuItem i]
-unmarkedMenuItems (Menu _ filtered _ marked _ _) =
-  view FilteredMenuItem.item <$> filterIndexes (indexesComplement (length filtered) marked) filtered
+unmarkedMenuItems menu@(Menu _ filtered selected [] _ _) =
+  menuItemsByIndexes (indexesComplement (length filtered) (indexes menu)) menu
+  where
+    indexes (Menu _ filtered selected [] _ _) =
+      [selected]
+    indexes (Menu _ filtered _ marked _ _) =
+      marked
 
 withMarkedMenuItems ::
   Monad m =>
-  ([MenuItem i] -> m a) ->
+  (NonEmpty (MenuItem i) -> m a) ->
   Menu i ->
   m (Maybe a)
 withMarkedMenuItems f m =
@@ -225,7 +240,7 @@ withMarkedMenuItems f m =
 
 withMarkedMenuItems_ ::
   Monad m =>
-  ([MenuItem i] -> m ()) ->
+  (NonEmpty (MenuItem i) -> m ()) ->
   Menu i ->
   m ()
 withMarkedMenuItems_ f m =
@@ -233,7 +248,7 @@ withMarkedMenuItems_ f m =
 
 actionWithMarkedMenuItems ::
   Monad m =>
-  (m [b] -> Menu i -> m (MenuConsumerAction m a, Menu i)) ->
+  (m (NonEmpty b) -> Menu i -> m (MenuConsumerAction m a, Menu i)) ->
   (MenuItem i -> m b) ->
   Menu i ->
   m (MenuConsumerAction m a, Menu i)
@@ -247,7 +262,7 @@ traverseMarkedMenuItems ::
   Monad m =>
   (MenuItem i -> m a) ->
   Menu i ->
-  m (Maybe [a])
+  m (Maybe (NonEmpty a))
 traverseMarkedMenuItems =
   withMarkedMenuItems . traverse
 
@@ -263,7 +278,7 @@ traverseMarkedMenuItemsAndQuit ::
   Monad m =>
   (MenuItem i -> m a) ->
   Menu i ->
-  m (MenuConsumerAction m [a], Menu i)
+  m (MenuConsumerAction m (NonEmpty a), Menu i)
 traverseMarkedMenuItemsAndQuit =
   actionWithMarkedMenuItems menuQuitWith
 
@@ -287,4 +302,4 @@ deleteByFilteredIndex indexes menu@(Menu items filtered _ _ _ _) =
 
 deleteMarked :: Menu i -> Menu i
 deleteMarked menu =
-  set Menu.selected 0 . set Menu.marked [] . deleteByFilteredIndex (view Menu.marked menu) $ menu
+  set Menu.selected 0 . set Menu.marked [] . deleteByFilteredIndex (markedIndexes menu) $ menu

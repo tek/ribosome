@@ -18,8 +18,9 @@ module Ribosome.Prelude (
   tuple,
   undefined,
   unit,
-  unsafeLog,
+  unsafeLogAnd,
   unsafeLogS,
+  unsafeLogSAnd,
   (<$$>),
 ) where
 
@@ -88,11 +89,17 @@ tuple ::
 tuple fa fb =
   (,) <$> fa <*> fb
 
-unsafeLogS :: Show a => a -> b -> b
-unsafeLogS a b = unsafePerformIO $ print a >> return b
+unsafeLogSAnd :: Show a => a -> b -> b
+unsafeLogSAnd a b =
+  unsafePerformIO $ print a >> return b
 
-unsafeLog :: Text -> b -> b
-unsafeLog a b = unsafePerformIO $ putStrLn a >> return b
+unsafeLogAnd :: Text -> b -> b
+unsafeLogAnd a b =
+  unsafePerformIO $ putStrLn a >> return b
+
+unsafeLogS :: Show a => a -> a
+unsafeLogS a =
+  unsafePerformIO $ print a >> return a
 
 modify ::
   ∀ s' s m .

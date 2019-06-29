@@ -226,7 +226,7 @@ itemsMulti =
 
 execMulti ::
   MonadIO m =>
-  MVar (Maybe [Text]) ->
+  MVar (Maybe (NonEmpty Text)) ->
   Menu Text ->
   Prompt ->
   m (MenuConsumerAction m a, Menu Text)
@@ -237,7 +237,7 @@ test_menuMultiMark :: IO ()
 test_menuMultiMark = do
   var <- newMVar Nothing
   _ <- menuTest (defaultMenu (Map.fromList [("cr", execMulti var)])) itemsMulti charsMulti
-  assertEqual (Just ["item3", "item4", "item5"]) =<< readMVar var
+  assertEqual (Just ("item3" :| ["item4", "item5"])) =<< readMVar var
 
 charsToggle :: [Text]
 charsToggle =
@@ -253,7 +253,7 @@ itemsToggle =
 
 execToggle ::
   MonadIO m =>
-  MVar (Maybe [Text]) ->
+  MVar (Maybe (NonEmpty Text)) ->
   Menu Text ->
   Prompt ->
   m (MenuConsumerAction m a, Menu Text)
