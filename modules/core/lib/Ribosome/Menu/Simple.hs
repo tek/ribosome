@@ -1,6 +1,7 @@
 module Ribosome.Menu.Simple where
 
-import Control.Lens (_2, element, filtered, folded, ifolded, over, set, toListOf, view, withIndex, (^..), (^?))
+import Control.Lens (_2, element, ifolded, over, set, toListOf, view, withIndex, (^..), (^?))
+import qualified Control.Lens as Lens (filtered)
 import Data.Composition ((.:))
 import Data.Map.Strict ((!?))
 import qualified Data.Map.Strict as Map (fromList, union)
@@ -20,7 +21,7 @@ import Ribosome.Menu.Data.MenuEvent (MenuEvent)
 import qualified Ribosome.Menu.Data.MenuEvent as MenuEvent (MenuEvent(..))
 import qualified Ribosome.Menu.Data.MenuEvent as QuitReason (QuitReason(..))
 import Ribosome.Menu.Data.MenuItem (MenuItem)
-import qualified Ribosome.Menu.Data.MenuItem as MenuItem (MenuItem(_text), text)
+import qualified Ribosome.Menu.Data.MenuItem as MenuItem (text)
 import Ribosome.Menu.Data.MenuItemFilter (MenuItemFilter(MenuItemFilter))
 import Ribosome.Menu.Data.MenuUpdate (MenuUpdate(MenuUpdate))
 import Ribosome.Menu.Prompt.Data.Prompt (Prompt(Prompt))
@@ -46,7 +47,7 @@ substringMenuItemMatcher =
     filt text =
       uncurry FilteredMenuItem <$$> matcher text
     matcher text =
-      toListOf $ ifolded . filtered (textContains text . view MenuItem.text) . withIndex
+      toListOf $ ifolded . Lens.filtered (textContains text . view MenuItem.text) . withIndex
 
 fuzzyMenuItemMatcher :: MenuItemFilter a
 fuzzyMenuItemMatcher =

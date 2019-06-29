@@ -4,7 +4,7 @@ module MenuSpec (htf_thisModulesTests) where
 
 import Conduit (ConduitT, yield, yieldMany)
 import Control.Concurrent.MVar.Lifted (modifyMVar_)
-import Control.Lens (mapped, over, view, (^.), (^..))
+import Control.Lens (view)
 import Control.Monad.Trans.Control (MonadBaseControl)
 import qualified Data.Map.Strict as Map (fromList)
 import Test.Framework
