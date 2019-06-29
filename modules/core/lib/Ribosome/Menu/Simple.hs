@@ -211,6 +211,10 @@ markedMenuItems :: Menu i -> Maybe [MenuItem i]
 markedMenuItems m =
   markedMenuItemsOnly m <|> (pure <$> selectedMenuItem m)
 
+unmarkedMenuItems :: Menu i -> [MenuItem i]
+unmarkedMenuItems (Menu _ filtered _ marked _ _) =
+  view FilteredMenuItem.item <$> filterIndexes (indexesComplement (length filtered) marked) filtered
+
 withMarkedMenuItems ::
   Monad m =>
   ([MenuItem i] -> m a) ->
