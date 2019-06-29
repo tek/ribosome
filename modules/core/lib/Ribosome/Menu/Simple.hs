@@ -9,6 +9,9 @@ import qualified Data.Text as Text (breakOn, null)
 import qualified Text.Fuzzy as Fuzzy (Fuzzy(score, original), filter)
 
 import Ribosome.Data.List (indexesComplement)
+import Ribosome.Menu.Data.BasicMenuAction (BasicMenuAction, BasicMenuChange)
+import qualified Ribosome.Menu.Data.BasicMenuAction as BasicMenuAction (BasicMenuAction(..))
+import qualified Ribosome.Menu.Data.BasicMenuAction as BasicMenuChange (BasicMenuChange(..))
 import Ribosome.Menu.Data.FilteredMenuItem (FilteredMenuItem(FilteredMenuItem))
 import qualified Ribosome.Menu.Data.FilteredMenuItem as FilteredMenuItem (index, item)
 import Ribosome.Menu.Data.Menu (Menu(Menu), MenuFilter(MenuFilter))
@@ -62,34 +65,63 @@ menuItemsNonequal :: [FilteredMenuItem i] -> [FilteredMenuItem i] -> Bool
 menuItemsNonequal a b =
   (view FilteredMenuItem.index <$> a) /= (view FilteredMenuItem.index <$> b)
 
-updateFilter :: MenuItemFilter i -> Text -> Menu i -> (Bool, Bool, MenuAction m a, Menu i)
-updateFilter (MenuItemFilter matcher) text menu@(Menu items oldFiltered _ _ _ _) =
-  (menuItemsNonequal filtered oldFiltered, False, MenuAction.Continue, update menu)
+updateFilter :: MenuItemFilter i -> Text -> Menu i -> (BasicMenuChange, Menu i)
+updateFilter (MenuItemFilter itemFilter) text menu@(Menu items oldFiltered _ _ _ _) =
+  (change, update menu)
   where
+    change =
+      if menuItemsNonequal filtered oldFiltered
+      then BasicMenuChange.Change
+      else BasicMenuChange.NoChange
     update =
       set Menu.filtered filtered . set Menu.currentFilter (MenuFilter text)
     filtered =
-      matcher text items
+      itemFilter text items
 
-reapplyFilter :: MenuItemFilter i -> Menu i -> (Bool, Bool, MenuAction m a, Menu i)
-reapplyFilter matcher menu@(Menu _ _ _ _ (MenuFilter currentFilter) _) =
-  updateFilter matcher currentFilter menu
+reapplyFilter :: MenuItemFilter i -> Menu i -> (BasicMenuChange, Menu i)
+reapplyFilter itemFilter menu@(Menu _ _ _ _ (MenuFilter currentFilter) _) =
+  updateFilter itemFilter currentFilter menu
 
-basicMenuTransform :: MenuItemFilter i -> MenuEvent m a i -> Menu i -> (Bool, Bool, MenuAction m a, Menu i)
+basicMenuTransform :: MenuItemFilter i -> MenuEvent m a i -> Menu i -> BasicMenuAction m a i
 basicMenuTransform matcher (MenuEvent.PromptChange _ (Prompt _ _ text)) =
-  set _2 True . updateFilter matcher text
+  BasicMenuAction.Continue BasicMenuChange.Reset . snd . updateFilter matcher text
 basicMenuTransform _ (MenuEvent.Mapping _ _) =
-  (False, False, MenuAction.Continue,)
+  BasicMenuAction.Continue BasicMenuChange.NoChange
 basicMenuTransform matcher (MenuEvent.NewItems items) =
-  reapplyFilter matcher . over Menu.items (++ items)
+  uncurry BasicMenuAction.Continue . reapplyFilter matcher . over Menu.items (++ items)
 basicMenuTransform _ (MenuEvent.Init _) =
-  (True, False, MenuAction.Continue,)
+  BasicMenuAction.Continue BasicMenuChange.Change
 basicMenuTransform _ (MenuEvent.Quit reason) =
-  (False, False, MenuAction.Quit reason,)
+  const $ BasicMenuAction.Quit reason
 
-resetSelection :: Menu i -> Menu i
-resetSelection (Menu i f _ _ filt mi) =
+resetSelection :: BasicMenuChange -> Menu i -> Menu i
+resetSelection BasicMenuChange.Reset (Menu i f _ _ filt mi) =
   Menu i f 0 [] filt mi
+resetSelection _ m =
+  m
+
+menuAction ::
+  MenuItemFilter i ->
+  Bool ->
+  MenuConsumerAction m a ->
+  Menu i ->
+  (MenuAction m a, Menu i)
+menuAction itemFilter _ MenuConsumerAction.Filter menu =
+  (MenuAction.Render True, uncurry resetSelection $ reapplyFilter itemFilter menu)
+menuAction _ True MenuConsumerAction.Continue menu =
+  (MenuAction.Render True, menu)
+menuAction _ False MenuConsumerAction.Continue menu =
+  (MenuAction.Continue, menu)
+menuAction _ _ (MenuConsumerAction.Execute thunk) menu =
+  (MenuAction.Execute thunk, menu)
+menuAction _ basicChanged (MenuConsumerAction.Render consumerChanged) menu =
+  (MenuAction.Render (basicChanged || consumerChanged), menu)
+menuAction _ _ (MenuConsumerAction.QuitWith ma) menu =
+  (MenuAction.Quit (QuitReason.Execute ma), menu)
+menuAction _ _ MenuConsumerAction.Quit menu =
+  (MenuAction.Quit QuitReason.Aborted, menu)
+menuAction _ _ (MenuConsumerAction.Return a) menu =
+  (MenuAction.Quit (QuitReason.Return a), menu)
 
 basicMenu ::
   Monad m =>
@@ -97,31 +129,18 @@ basicMenu ::
   (MenuUpdate m a i -> m (MenuConsumerAction m a, Menu i)) ->
   MenuUpdate m a i ->
   m (MenuAction m a, Menu i)
-basicMenu matcher consumer (MenuUpdate event menu) =
-  consumerAction action
+basicMenu itemFilter consumer (MenuUpdate event menu) =
+  basicAction basicTransform
   where
-    (changed, action, newMenu) =
-      handleReset $ basicMenuTransform matcher event menu
-    handleReset (c, True, a, new) =
-      (c, a, resetSelection new)
-    handleReset (c, False, a, n) =
-      (c, a, n)
-    consumerAction (MenuAction.Quit reason) =
-      return (MenuAction.Quit reason, menu)
-    consumerAction _ =
-      first menuAction <$> consumer (MenuUpdate event newMenu)
-    menuAction MenuConsumerAction.Continue =
-      if changed then MenuAction.Render True else MenuAction.Continue
-    menuAction (MenuConsumerAction.Execute thunk) =
-      MenuAction.Execute thunk
-    menuAction (MenuConsumerAction.Render consumerChanged) =
-      MenuAction.Render (changed || consumerChanged)
-    menuAction (MenuConsumerAction.QuitWith ma) =
-      MenuAction.Quit (QuitReason.Execute ma)
-    menuAction MenuConsumerAction.Quit =
-      MenuAction.Quit QuitReason.Aborted
-    menuAction (MenuConsumerAction.Return a) =
-      MenuAction.Quit (QuitReason.Return a)
+    basicTransform =
+      basicMenuTransform itemFilter event menu
+    basicAction (BasicMenuAction.Quit reason) =
+      pure (MenuAction.Quit reason, menu)
+    basicAction (BasicMenuAction.Continue change m) = do
+      (action, updatedMenu) <- consumerTransform (resetSelection change m)
+      return $ menuAction itemFilter (change /= BasicMenuChange.NoChange) action updatedMenu
+    consumerTransform newMenu =
+      consumer (MenuUpdate event newMenu)
 
 mappingConsumer ::
   Monad m =>
@@ -279,39 +298,47 @@ markedMenuItems m =
 
 withMarkedMenuItems ::
   Monad m =>
-  ([MenuItem i] -> m (MenuConsumerAction m a, Menu i)) ->
+  ([MenuItem i] -> m a) ->
   Menu i ->
-  m (MenuConsumerAction m a, Menu i)
+  m (Maybe a)
 withMarkedMenuItems f m =
-  maybe (menuContinue m) pure =<< traverse f (markedMenuItems m)
+  traverse f (markedMenuItems m)
 
-traverseMarkedMenuItemsWith ::
+withMarkedMenuItems_ ::
+  Monad m =>
+  ([MenuItem i] -> m ()) ->
+  Menu i ->
+  m ()
+withMarkedMenuItems_ f m =
+  traverse_ f (markedMenuItems m)
+
+actionWithMarkedMenuItems ::
   Monad m =>
   (m [b] -> Menu i -> m (MenuConsumerAction m a, Menu i)) ->
   (MenuItem i -> m b) ->
   Menu i ->
   m (MenuConsumerAction m a, Menu i)
-traverseMarkedMenuItemsWith next f m =
-  maybe (menuContinue m) pure =<< traverse run (markedMenuItems m)
+actionWithMarkedMenuItems next f m =
+  fromMaybe (MenuConsumerAction.Continue, m) <$> withMarkedMenuItems run m
   where
     run items =
       next (traverse f items) m
 
 traverseMarkedMenuItems ::
   Monad m =>
-  (MenuItem i -> m ()) ->
+  (MenuItem i -> m a) ->
   Menu i ->
-  m (MenuConsumerAction m a, Menu i)
+  m (Maybe [a])
 traverseMarkedMenuItems =
-  traverseMarkedMenuItemsWith (menuExecute . void)
+  withMarkedMenuItems . traverse
 
 traverseMarkedMenuItems_ ::
   Monad m =>
   (MenuItem i -> m ()) ->
   Menu i ->
-  m (MenuConsumerAction m (), Menu i)
-traverseMarkedMenuItems_ f m =
-  first void <$> traverseMarkedMenuItems f m
+  m ()
+traverseMarkedMenuItems_ =
+  withMarkedMenuItems_ . traverse_
 
 traverseMarkedMenuItemsAndQuit ::
   Monad m =>
@@ -319,15 +346,15 @@ traverseMarkedMenuItemsAndQuit ::
   Menu i ->
   m (MenuConsumerAction m [a], Menu i)
 traverseMarkedMenuItemsAndQuit =
-  traverseMarkedMenuItemsWith menuQuitWith
+  actionWithMarkedMenuItems menuQuitWith
 
 traverseMarkedMenuItemsAndQuit_ ::
   Monad m =>
   (MenuItem i -> m ()) ->
   Menu i ->
   m (MenuConsumerAction m (), Menu i)
-traverseMarkedMenuItemsAndQuit_ f m =
-  first void <$> traverseMarkedMenuItems f m
+traverseMarkedMenuItemsAndQuit_ f =
+  first void <$$> actionWithMarkedMenuItems menuQuitWith f
 
 deleteByFilteredIndex :: [Int] -> Menu i -> Menu i
 deleteByFilteredIndex indexes menu@(Menu items filtered _ _ _ _) =

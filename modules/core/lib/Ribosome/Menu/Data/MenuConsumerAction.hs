@@ -9,6 +9,8 @@ data MenuConsumerAction m a =
   |
   Execute (m ())
   |
+  Filter
+  |
   Render Bool
   |
   Return a

@@ -10,12 +10,8 @@ data MenuAction m a =
   Continue
   |
   Execute (m ())
-  -- |
-  -- Cursor Int
   |
   Render Bool
-  -- |
-  -- Submenu Text
 
 instance Show (MenuAction m a) where
   show (Quit r) =
