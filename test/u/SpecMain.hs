@@ -16,6 +16,7 @@ import {-@ HTF_TESTS @-} SettingSpec
 import {-@ HTF_TESTS @-} SyntaxSpec
 import {-@ HTF_TESTS @-} THSpec
 import {-@ HTF_TESTS @-} WatcherSpec
+import {-@ HTF_TESTS @-} WindowSpec
 
 main :: IO ()
 main = htfMain htf_importedTests

@@ -3,8 +3,10 @@ module Ribosome.Api.Window where
 import Ribosome.Control.Monad.Ribo (NvimE)
 import Ribosome.Nvim.Api.Data (Window)
 import Ribosome.Nvim.Api.IO (
+  nvimBufGetOption,
   nvimGetCurrentWin,
   nvimWinClose,
+  nvimWinGetBuf,
   nvimWinGetCursor,
   nvimWinSetCursor,
   vimCommand,
@@ -86,3 +88,27 @@ redraw ::
   m ()
 redraw =
   vimCommand "silent! redraw!"
+
+-- |A main window means here any non-window that may be used to edit a file, i.e. one with an empty 'buftype'.
+findMainWindow ::
+  NvimE e m =>
+  m (Maybe Window)
+findMainWindow =
+  listToMaybe <$> (filterM isFile =<< vimGetWindows)
+  where
+    isFile w = do
+      buf <- nvimWinGetBuf w
+      (("" :: Text) ==) <$> nvimBufGetOption buf "buftype"
+
+-- |Create a new window at the top if no existing window has empty 'buftype'.
+ensureMainWindow ::
+  NvimE e m =>
+  m Window
+ensureMainWindow =
+  maybe create pure =<< findMainWindow
+  where
+    create = do
+      vimCommand "aboveleft new"
+      win <- nvimGetCurrentWin
+      vimCommand "wincmd K"
+      return win
