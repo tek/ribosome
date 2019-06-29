@@ -222,12 +222,12 @@ markedMenuItems m =
   markedMenuItemsOnly m <|> (pure <$> selectedMenuItem m)
 
 unmarkedMenuItems :: Menu i -> [MenuItem i]
-unmarkedMenuItems menu@(Menu _ filtered selected [] _ _) =
-  menuItemsByIndexes (indexesComplement (length filtered) (indexes menu)) menu
+unmarkedMenuItems menu =
+  menuItemsByIndexes (indexesComplement (length (view Menu.filtered menu)) (indexes menu)) menu
   where
-    indexes (Menu _ filtered selected [] _ _) =
+    indexes (Menu _ _ selected [] _ _) =
       [selected]
-    indexes (Menu _ filtered _ marked _ _) =
+    indexes (Menu _ _ _ marked _ _) =
       marked
 
 withMarkedMenuItems ::
