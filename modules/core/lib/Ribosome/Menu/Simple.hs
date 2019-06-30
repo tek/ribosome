@@ -124,24 +124,35 @@ menuAction _ _ MenuConsumerAction.Quit menu =
 menuAction _ _ (MenuConsumerAction.Return a) menu =
   (MenuAction.Quit (QuitReason.Return a), menu)
 
+basicMenuAction ::
+  Monad m =>
+  MenuItemFilter i ->
+  (MenuUpdate m a i -> m (MenuConsumerAction m a, Menu i)) ->
+  MenuUpdate m a i ->
+  BasicMenuAction m a i ->
+  m (MenuAction m a, Menu i)
+basicMenuAction itemFilter consumer (MenuUpdate event menu) =
+  act
+  where
+    act (BasicMenuAction.Quit reason) =
+      pure (MenuAction.Quit reason, menu)
+    act (BasicMenuAction.Continue change m) = do
+      (action, updatedMenu) <- consumerTransform (resetSelection change m)
+      return $ menuAction itemFilter (change /= BasicMenuChange.NoChange) action updatedMenu
+    consumerTransform newMenu =
+      consumer (MenuUpdate event newMenu)
+
 basicMenu ::
   Monad m =>
   MenuItemFilter i ->
   (MenuUpdate m a i -> m (MenuConsumerAction m a, Menu i)) ->
   MenuUpdate m a i ->
   m (MenuAction m a, Menu i)
-basicMenu itemFilter consumer (MenuUpdate event menu) =
-  basicAction basicTransform
+basicMenu itemFilter consumer update@(MenuUpdate event menu) =
+  basicMenuAction itemFilter consumer update basicTransform
   where
     basicTransform =
       basicMenuTransform itemFilter event menu
-    basicAction (BasicMenuAction.Quit reason) =
-      pure (MenuAction.Quit reason, menu)
-    basicAction (BasicMenuAction.Continue change m) = do
-      (action, updatedMenu) <- consumerTransform (resetSelection change m)
-      return $ menuAction itemFilter (change /= BasicMenuChange.NoChange) action updatedMenu
-    consumerTransform newMenu =
-      consumer (MenuUpdate event newMenu)
 
 mappingConsumer ::
   Monad m =>
