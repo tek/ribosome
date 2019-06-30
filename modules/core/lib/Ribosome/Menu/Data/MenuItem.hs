@@ -5,6 +5,6 @@ data MenuItem a =
     _meta :: a,
     _text :: Text
   }
-  deriving (Eq, Show)
+  deriving (Eq, Show, Ord)
 
 makeClassy ''MenuItem
