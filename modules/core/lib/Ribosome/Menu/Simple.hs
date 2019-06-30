@@ -5,6 +5,7 @@ import qualified Control.Lens as Lens (filtered)
 import Data.Composition ((.:))
 import Data.Map.Strict ((!?))
 import qualified Data.Map.Strict as Map (fromList, union)
+import qualified Data.Ord as Ord (Down(Down))
 import qualified Data.Text as Text (breakOn, null)
 import qualified Text.Fuzzy as Fuzzy (Fuzzy(score, original), filter)
 
@@ -58,7 +59,7 @@ fuzzyMenuItemMatcher =
   MenuItemFilter matcher
   where
     matcher =
-      fmap (uncurry FilteredMenuItem . Fuzzy.original) . sortOn Fuzzy.score .: filtered
+      fmap (uncurry FilteredMenuItem . Fuzzy.original) . sortOn (Ord.Down . Fuzzy.score) .: filtered
     filtered text items =
       Fuzzy.filter text (items ^.. ifolded . withIndex) "" "" (view (_2 . MenuItem.text)) False
 
