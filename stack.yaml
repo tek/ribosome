@@ -1,4 +1,4 @@
-resolver: lts-12.26
+resolver: lts-13.27
 packages:
 - modules/core
 - modules/test
@@ -7,13 +7,14 @@ packages:
 # - ../chiasma
 # - ../nvim-hs
 extra-deps:
-- base-noprelude-4.11.1.0
+- base-noprelude-4.12.0.0
 - pretty-terminal-0.1.0.0
 - posix-pty-0.2.1.1
 - fuzzy-0.1.0.0
+- messagepack-0.5.4
 - github: neovimhaskell/nvim-hs
   commit: 8b1a38c18f530f65a17a7fda2a14c168a2663821
 - github: tek/cornea
-  commit: bfec0a44d0a32f281f9b02f6408f479aad511b21
+  commit: 43c649fa064fd5c90047a76829f353c51b3cde0a
 - github: tek/chiasma
-  commit: 107f46f68fdf0065a45e187eed4f0aced11fc7cf
+  commit: 25578d92b19beba962f8e163805a42da94715a8e

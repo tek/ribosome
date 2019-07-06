@@ -40,7 +40,7 @@ import System.Process.Typed (
   setStdin,
   setStdout,
   unsafeProcessHandle,
-  withProcess,
+  withProcessTerm,
   )
 import UnliftIO.Async (async, cancel, race)
 import UnliftIO.Exception (bracket, tryAny)
@@ -215,7 +215,7 @@ runEmbedded ::
   IO ()
 runEmbedded conf ribo thunk = do
   let pc = testNvimProcessConfig conf
-  withProcess pc $ runEmbeddedNvim conf ribo thunk
+  withProcessTerm pc $ runEmbeddedNvim conf ribo thunk
 
 unsafeEmbeddedSpec ::
   RpcHandler e env m =>
@@ -273,7 +273,7 @@ integrationSpec ::
   m () ->
   IO ()
 integrationSpec conf plugin@(Plugin env _) thunk =
-  withProcess (testNvimProcessConfig conf) run
+  withProcessTerm (testNvimProcessConfig conf) run
   where
     run prc = do
       nvimConf <- Internal.newConfig (pure Nothing) (pure env)

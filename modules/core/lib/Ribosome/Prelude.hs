@@ -32,11 +32,11 @@ import Data.Functor (void)
 import Data.Functor.Syntax ((<$$>))
 import GHC.Err (undefined)
 import GHC.IO.Unsafe (unsafePerformIO)
-import Relude hiding (undefined, Type, state, modify, gets, get, put)
+import Relude hiding (undefined, Type, state, modify, gets, get, put, hoistMaybe, hoistEither)
 
 dbg :: Monad m => Text -> m ()
 dbg msg = do
-  () <- return $ unsafePerformIO (putStrLn msg)
+  () <- return $ unsafePerformIO (putStrLn (toString msg))
   return ()
 
 dbgs :: Monad m => Show a => a -> m ()
@@ -69,7 +69,7 @@ unsafeLogSAnd a b =
 
 unsafeLogAnd :: Text -> b -> b
 unsafeLogAnd a b =
-  unsafePerformIO $ putStrLn a >> return b
+  unsafePerformIO $ putStrLn (toString a) >> return b
 
 unsafeLogS :: Show a => a -> a
 unsafeLogS a =

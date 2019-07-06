@@ -20,7 +20,7 @@ import Neovim.Plugin (Plugin(Plugin))
 import Neovim.Plugin.Internal (wrapPlugin)
 import Neovim.RPC.Common (SocketType(UnixSocket), createHandle, newRPCConfig)
 import System.FilePath ((</>))
-import System.Process.Typed (withProcess)
+import System.Process.Typed (withProcessTerm)
 import UnliftIO (throwString)
 import UnliftIO.Directory (doesPathExist)
 import UnliftIO.Exception (bracket)
@@ -224,7 +224,7 @@ runTmuxWithPlugin api conf plugin@(Plugin env _) thunk = do
   withTempDirectory socketDir "spec" runProc
   where
     runProc temp =
-      withProcess (testNvimProcessConfig conf) (run temp)
+      withProcessTerm (testNvimProcessConfig conf) (run temp)
     run temp prc = do
       nvimConf <- Internal.newConfig (pure Nothing) (pure env)
       bracket (acquire prc nvimConf temp) release (const $ runTest conf nvimConf thunk)

@@ -41,7 +41,7 @@ import System.IO
 -- >>> buffer 1 (CL.sourceList [1,2,3]) CL.consume
 -- [1,2,3]
 buffer :: (CCatable c1 c2 c3, CRunnable c3, RunConstraints c3 m)
-          => Int -- ^ Size of the bounded queue in memory.
+          => Natural -- ^ Size of the bounded queue in memory.
           -> c1 () x m ()
           -> c2 x Void m r
           -> m r
@@ -116,7 +116,7 @@ class CCatable c1 c2 (c3 :: * -> * -> (* -> *) -> * -> *) | c1 c2 -> c3 where
   --
   -- >>> runCConduit $ buffer' 1 (CL.sourceList [1,2,3]) CL.consume
   -- [1,2,3]
-  buffer' :: Int -- ^ Size of the bounded queue in memory
+  buffer' :: Natural -- ^ Size of the bounded queue in memory
              -> c1 i x m ()
              -> c2 x o m r
              -> c3 i o m r
@@ -135,7 +135,7 @@ class CCatable c1 c2 (c3 :: * -> * -> (* -> *) -> * -> *) | c1 c2 -> c3 where
 -- >>> runResourceT $ bufferToFile 1 Nothing "/tmp" (CL.sourceList [1,2,3]) CL.consume
 -- [1,2,3]
 bufferToFile :: (CFConduitLike c1, CFConduitLike c2, Serialize x, MonadBaseControl IO m, MonadIO m, MonadResource m, MonadThrow m)
-                => Int -- ^ Size of the bounded queue in memory
+                => Natural -- ^ Size of the bounded queue in memory
                 -> Maybe Int -- ^ Max elements to keep on disk at one time
                 -> FilePath -- ^ Directory to write temp files to
                 -> c1 () x m ()
@@ -166,7 +166,7 @@ bufferToFile bufsz dsksz tmpDir c1 c2 = runCConduit (bufferToFile' bufsz dsksz t
 -- :}
 -- "012"
 bufferToFile' :: (CFConduitLike c1, CFConduitLike c2, Serialize x)
-                 => Int -- ^ Size of the bounded queue in memory
+                 => Natural -- ^ Size of the bounded queue in memory
                  -> Maybe Int -- ^ Max elements to keep on disk at one time
                  -> FilePath -- ^ Directory to write temp files to
                  -> c1 i x m ()
@@ -251,7 +251,7 @@ instance CRunnable CFConduit where
 -- a buffering queue between them.
 data CConduit i o m r where
   Single :: ConduitT i o m r -> CConduit i o m r
-  Multiple :: Int -> ConduitT i x m () -> CConduit x o m r -> CConduit i o m r
+  Multiple :: Natural -> ConduitT i x m () -> CConduit x o m r -> CConduit i o m r
 
 -- C.C.A.L's link2 has the wrong type:  https://github.com/maoe/lifted-async/issues/16
 link2 :: MonadBase IO m => Async a -> Async b -> m ()
@@ -294,8 +294,8 @@ receiver chan = do
 -- a buffering queue and possibly a disk file between them.
 data CFConduit i o m r where
   FSingle :: ConduitT i o m r -> CFConduit i o m r
-  FMultiple :: Int -> ConduitT i x m () -> CFConduit x o m r -> CFConduit i o m r
-  FMultipleF :: (Serialize x) => Int -> Maybe Int -> FilePath -> ConduitT i x m () -> CFConduit x o m r -> CFConduit i o m r
+  FMultiple :: Natural -> ConduitT i x m () -> CFConduit x o m r -> CFConduit i o m r
+  FMultipleF :: (Serialize x) => Natural -> Maybe Int -> FilePath -> ConduitT i x m () -> CFConduit x o m r -> CFConduit i o m r
 
 class CFConduitLike a where
   asCFConduit :: a i o m r -> CFConduit i o m r

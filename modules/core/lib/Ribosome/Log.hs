@@ -63,7 +63,7 @@ errAs =
   logAs ERROR
 
 prefixed :: (MonadIO m, Show a) => Text -> a -> m ()
-prefixed prefix a = liftIO $ putStrLn $ prefix <> ": " <> show a
+prefixed prefix a = liftIO . putStrLn . toString $ prefix <> ": " <> show a
 
 logR ::
   Loggable a =>
