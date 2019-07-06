@@ -3,6 +3,7 @@ module Ribosome.Menu.Prompt.Run where
 import Conduit (ConduitT, await, awaitForever, evalStateC, yield, (.|))
 import Data.Conduit.Combinators (peek)
 import qualified Data.Text as Text (drop, dropEnd, length, splitAt)
+import Prelude hiding (state)
 
 import Ribosome.Control.Monad.Ribo (MonadRibo)
 import Ribosome.Log (logDebug)

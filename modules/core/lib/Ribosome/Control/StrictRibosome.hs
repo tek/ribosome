@@ -1,8 +1,7 @@
-{-# LANGUAGE TemplateHaskell #-}
-
 module Ribosome.Control.StrictRibosome where
 
 import Control.Lens (makeClassy)
+import Prelude hiding (state)
 
 import Ribosome.Control.Ribosome (RibosomeState)
 

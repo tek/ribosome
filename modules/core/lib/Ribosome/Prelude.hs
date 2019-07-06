@@ -1,11 +1,8 @@
 {-# LANGUAGE NoImplicitPrelude #-}
 
 module Ribosome.Prelude (
-  module Control.Monad.DeepError,
-  module Control.Monad.DeepState,
   module Control.Monad.Trans.Control,
-  module Data.DeepLenses,
-  module Data.DeepPrisms,
+  module Cornea,
   module Data.Default,
   module Data.Foldable,
   module Relude,
@@ -14,7 +11,6 @@ module Ribosome.Prelude (
   dbgm,
   makeClassy,
   mapLeft,
-  modify,
   tuple,
   undefined,
   unit,
@@ -25,30 +21,8 @@ module Ribosome.Prelude (
 ) where
 
 import Control.Lens (makeClassy)
-import Control.Monad.DeepError (
-  MonadDeepError(throwHoist),
-  catchAs,
-  catchAt,
-  hoistEither,
-  hoistEitherAs,
-  hoistMaybe,
-  ignoreError,
-  )
-import Control.Monad.DeepState (
-  MonadDeepState,
-  get,
-  getL,
-  gets,
-  getsL,
-  modifyL,
-  modifyM,
-  modifyM',
-  put,
-  setL,
-  stateM,
-  )
-import qualified Control.Monad.DeepState as DeepState (modify)
 import Control.Monad.Trans.Control (MonadBaseControl)
+import Cornea
 import Data.DeepLenses (deepLenses)
 import Data.DeepPrisms (deepPrisms)
 import Data.Default (Default(def))
@@ -100,11 +74,3 @@ unsafeLogAnd a b =
 unsafeLogS :: Show a => a -> a
 unsafeLogS a =
   unsafePerformIO $ print a >> return a
-
-modify ::
-  ∀ s' s m .
-  MonadDeepState s s' m =>
-  (s' -> s') ->
-  m ()
-modify =
-  DeepState.modify

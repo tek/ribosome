@@ -28,7 +28,7 @@ screenshot ::
   m (Maybe ([Text], [Text]))
 screenshot name record pane = do
   storage <- fixture "screenshots"
-  Chiasma.screenshot record storage (toString name) pane
+  Chiasma.screenshot record storage name pane
 
 assertScreenshot ::
   AssertM m =>

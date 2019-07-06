@@ -25,12 +25,12 @@ uautocmd ::
 uautocmd silent name =
   doautocmd silent $ "User " <> name
 
-withNoAutocmd ::
+eventignore ::
   NvimE e m =>
   MonadBaseControl IO m =>
   m a ->
   m a
-withNoAutocmd =
+eventignore =
   bracket getAndSet restore . const
   where
     getAndSet = do

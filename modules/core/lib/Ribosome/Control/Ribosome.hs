@@ -1,16 +1,12 @@
-{-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE DeriveAnyClass #-}
 
 module Ribosome.Control.Ribosome where
 
 import Control.Lens (makeClassy)
-import Control.Monad.IO.Class (MonadIO)
-import Data.Default (Default(def))
-import Data.Functor.Syntax ((<$$>))
 import Data.Map.Strict (Map)
 import Data.MessagePack (Object)
-import GHC.Generics (Generic)
-import UnliftIO.STM (TMVar, TMVar, newTMVarIO)
+import Prelude hiding (state)
+import Control.Concurrent.STM.TMVar (TMVar, TMVar, newTMVarIO)
 
 import Path (Abs, Dir, Path)
 import Ribosome.Data.Errors (Errors)
@@ -49,7 +45,7 @@ makeClassy ''Ribosome
 
 newRibosomeTMVar :: MonadIO m => s -> m (TMVar (RibosomeState s))
 newRibosomeTMVar s =
-  newTMVarIO (RibosomeState def s)
+  liftIO $ newTMVarIO (RibosomeState def s)
 
 newRibosome :: MonadIO m => Text -> s -> m (Ribosome s)
 newRibosome name' =

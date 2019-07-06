@@ -24,6 +24,6 @@ activateBufferMapping _ (Mapping (MappingIdent ident) lhs mode remap _) = do
   name <- pluginName
   vimCommand (unwords (cmdline name))
   where
-    cmdline name = [cmd, "<buffer>", lhs, ":call", func name <> "('" <> ident <> "')<cr>"]
+    cmdline name = [cmd, "<buffer>", lhs, ":silent call", func name <> "('" <> ident <> "')<cr>"]
     cmd = mapCommand mode remap
     func name = capitalize name <> "Mapping"

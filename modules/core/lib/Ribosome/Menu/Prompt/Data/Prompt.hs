@@ -1,6 +1,6 @@
-{-# LANGUAGE TemplateHaskell #-}
-
 module Ribosome.Menu.Prompt.Data.Prompt where
+
+import Prelude hiding (state)
 
 import Ribosome.Menu.Prompt.Data.PromptState (PromptState)
 

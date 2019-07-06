@@ -1,14 +1,9 @@
-{-# LANGUAGE TemplateHaskell #-}
 {-# OPTIONS_GHC -F -pgmF htfpp #-}
 
-module SyntaxSpec(
-  htf_thisModulesTests,
-) where
+module SyntaxSpec (htf_thisModulesTests) where
 
 import Chiasma.Data.TmuxError (TmuxError)
 import Chiasma.Test.Tmux (TmuxTestConf(..))
-import Data.DeepPrisms (deepPrisms)
-import Data.Default (def)
 import Test.Framework
 
 import Ribosome.Api.Buffer (setCurrentBufferContent)
@@ -46,7 +41,7 @@ syntaxSpec :: Ribo () SyntaxSpecError ()
 syntaxSpec = do
   setCurrentBufferContent ["function :: String -> Int", "function _ = 5"]
   _ <- executeSyntax syntax
-  sleep 0.5
+  sleep 1
   assertScreenshot "syntax" False 0
 
 test_syntax :: IO ()

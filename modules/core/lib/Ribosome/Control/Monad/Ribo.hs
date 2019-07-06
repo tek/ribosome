@@ -128,14 +128,11 @@ instance (Functor f, MonadDeepError e RpcError m, Nvim m, Monad m) => NvimE e (F
 
 instance MonadBaseControl IO (Ribo s e) where
     type StM (Ribo s e) a = Either e a
-
     liftBaseWith f =
       Ribo $ liftBaseWith $ \ q -> f (q . unRibo)
-
+    {-# INLINABLE liftBaseWith #-}
     restoreM =
       Ribo . restoreM
-
-    {-# INLINABLE liftBaseWith #-}
     {-# INLINABLE restoreM #-}
 
 instance RpcHandler e (Ribosome s) (Ribo s e) where
@@ -154,6 +151,16 @@ runRibo =
 runRiboE :: Ribo s e a -> ExceptT e (RNeovim s) a
 runRiboE =
   unRibo
+
+class PluginName m where
+  pluginName1 :: m Text
+
+instance PluginName IO where
+  pluginName1 = pure "io"
+
+instance PluginName (RNeovim s) where
+  pluginName1 =
+    asks (Lens.view Ribosome.name)
 
 class MonadIO m => MonadRibo m where
   pluginName :: m Text

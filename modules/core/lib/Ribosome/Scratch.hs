@@ -8,7 +8,7 @@ import Data.Foldable (traverse_)
 import qualified Data.Map.Strict as Map (empty)
 import Data.MessagePack (Object)
 
-import Ribosome.Api.Autocmd (withNoAutocmd)
+import Ribosome.Api.Autocmd (eventignore)
 import Ribosome.Api.Buffer (setBufferContent, wipeBuffer)
 import Ribosome.Api.Syntax (executeCurrentWindowSyntax)
 import Ribosome.Api.Tabpage (closeTabpage)
@@ -193,8 +193,8 @@ createScratch ::
 createScratch options = do
   logDebug @Text $ "creating new scratch `" <> show options <> "`"
   previous <- vimGetCurrentWindow
-  (buffer, window, tab) <- withNoAutocmd $ createScratchUi options
-  withNoAutocmd $ setupScratchIn buffer previous window tab options
+  (buffer, window, tab) <- eventignore $ createScratchUi options
+  eventignore $ setupScratchIn buffer previous window tab options
 
 updateScratch ::
   NvimE e m =>

@@ -1,3 +1,5 @@
+{-# OPTIONS_GHC -fno-warn-orphans #-}
+
 module Ribosome.Msgpack.Encode where
 
 import Data.Bifunctor (bimap)
@@ -117,3 +119,6 @@ instance (MsgpackEncode a, MsgpackEncode b) => MsgpackEncode (a, b) where
 
 instance MsgpackEncode (Path b t) where
   toMsgpack = ObjectString . encodeUtf8 . toFilePath
+
+instance IsString Object where
+  fromString = ObjectString . encodeUtf8
