@@ -62,7 +62,7 @@ getregAs list register =
 getreg ::
   NvimE e m =>
   Register ->
-  m (Either Text [Text])
+  m (Either [Text] Text)
 getreg register =
   withType =<< getregtype register
   where
