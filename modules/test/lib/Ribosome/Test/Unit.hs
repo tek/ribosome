@@ -1,9 +1,9 @@
 module Ribosome.Test.Unit where
 
-import Control.Monad.IO.Class (MonadIO)
-import Data.Default (def)
+import Control.Exception.Lifted (bracket_)
 import System.FilePath (takeDirectory, takeFileName, (</>))
-import System.Log.Logger (Priority(DEBUG), setLevel, updateGlobalLogger)
+import System.Log ()
+import System.Log.Logger (Priority(DEBUG, WARNING), setLevel, updateGlobalLogger)
 
 import Ribosome.Control.Monad.Ribo (MonadRibo, NvimE, pluginName)
 import Ribosome.Control.Ribosome (Ribosome)
@@ -70,15 +70,19 @@ fixtureContent = F.fixtureContent uPrefix
 
 withLogAs ::
   MonadIO m =>
+  MonadBaseControl IO m =>
   Text ->
   m a ->
   m a
-withLogAs name thunk = do
-  liftIO $ updateGlobalLogger (toString name) (setLevel DEBUG)
-  thunk
+withLogAs name =
+  bracket_ (logLevel DEBUG) (logLevel WARNING)
+  where
+    logLevel =
+      liftIO . updateGlobalLogger (toString name) . setLevel
 
 withLog ::
   MonadRibo m =>
+  MonadBaseControl IO m =>
   m a ->
   m a
 withLog thunk =
