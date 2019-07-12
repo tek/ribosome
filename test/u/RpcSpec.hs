@@ -2,8 +2,9 @@
 
 module RpcSpec (htf_thisModulesTests) where
 
+import qualified Data.List as List (lines)
 import qualified Data.Map.Strict as Map (empty)
--- import Language.Haskell.TH hiding (reportError)
+import Language.Haskell.TH hiding (reportError)
 import Neovim (CommandArguments, Plugin(..))
 import Test.Framework
 
@@ -82,6 +83,14 @@ handlerCmdMaybeArg ::
 handlerCmdMaybeArg _ =
   handler
 
+handlerCmdListArg ::
+  MonadRibo m =>
+  NvimE e m =>
+  [Text] ->
+  m Int
+handlerCmdListArg _ =
+  handler
+
 $(return [])
 
 handlers ::
@@ -94,9 +103,9 @@ handlers =
     $(rpcHandler (sync . cmd []) 'handlerCmdNoCmdArgs),
     $(rpcHandler (sync . cmd []) 'handlerCmdNoArgs),
     $(rpcHandler (sync . cmd []) 'handlerCmdOneArg),
-    $(rpcHandler (sync . cmd []) 'handlerCmdMaybeArg)
+    $(rpcHandler (sync . cmd []) 'handlerCmdMaybeArg),
+    $(rpcHandler (sync . cmd []) 'handlerCmdListArg)
     ]
-
 
 plugin :: IO (Plugin (Ribosome ()))
 plugin = do
@@ -134,6 +143,8 @@ rpcSpec = do
   successCommand "HandlerCmdOneArg a"
   successCommand "HandlerCmdMaybeArg a"
   successCommand "HandlerCmdMaybeArg"
+  successCommand "HandlerCmdListArg"
+  successCommand "HandlerCmdListArg a b c"
   failureCommand "HandlerCmdCmdArgs a b"
   failureCommand "HandlerCmdNoCmdArgs a b"
   failureCommand "HandlerCmdNoArgs a"
@@ -143,5 +154,8 @@ test_rpc :: IO ()
 test_rpc = do
   liftIO $ updateGlobalLogger "test" (setLevel DEBUG)
   plug <- plugin
-  -- traverse_ putStrLn $ take 1 $ lines $(stringE . pprint =<< rpcHandler (sync . cmd []) 'handlerCmdMaybeArg)
+  when debug $ traverse_ putStrLn . List.lines $ $(stringE . pprint =<< rpcHandler (sync . cmd []) 'handlerCmdListArg)
   integrationSpecDef plug rpcSpec
+  where
+    debug =
+      False

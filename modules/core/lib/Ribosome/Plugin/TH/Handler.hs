@@ -133,11 +133,18 @@ dispatchCase params dispatch =
   where
     resultCases = [successfulEvaluation, failedEvaluation]
 
-decodedCallSequence :: Name -> [ExpQ] -> ExpQ
-decodedCallSequence handlerName =
+handlerCall :: Name -> [ExpQ] -> ExpQ
+handlerCall handlerName =
   foldl decodeSeq [|pure $(varE handlerName)|]
   where
-    decodeSeq z a = infixApp z [|(<*>)|] [|fromMsgpack $(a)|]
+    decodeSeq z = infixApp z [|(<*>)|]
+
+decodedCallSequence :: Name -> [ExpQ] -> ExpQ
+decodedCallSequence handlerName vars =
+  handlerCall handlerName (decoded <$> vars)
+  where
+    decoded a =
+      [|fromMsgpack $(a)|]
 
 argsCase :: Name -> PatQ -> [Name] -> Q Match
 argsCase handlerName params paramNames =

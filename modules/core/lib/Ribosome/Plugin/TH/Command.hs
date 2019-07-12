@@ -21,6 +21,7 @@ import Ribosome.Plugin.TH.Handler (
   argsCase,
   decodedCallSequence,
   functionParamTypes,
+  handlerCall,
   lambdaNames,
   listParamsPattern,
   )
@@ -29,6 +30,8 @@ data CmdParamType =
   PrimParam
   |
   DataParam
+  |
+  ListParam
   deriving (Eq, Show)
 
 data CmdParams =
@@ -84,7 +87,8 @@ primDispatch extraCases rpcName argsName handlerName cmdArgsName paramNames hasA
       match (primArgPattern paramNames) (normalB $ decodedCallSequence handlerName vars) []
     invalidArgs =
       match wildP (normalB [|invalidArgCount $ $(nameLit) <> "(" <> show $(varE argsName) <> ")"|]) []
-    vars = varE <$> params
+    vars =
+      varE <$> params
     params =
       if hasArgsParam then cmdArgsName : paramNames else paramNames
     nameLit =
@@ -109,11 +113,30 @@ primDispatchMaybe ::
   [Name] ->
   Bool ->
   ExpQ
-primDispatchMaybe rpcName argsName handlerName =
+primDispatchMaybe rpcName argsName handlerName  =
   primDispatch [nothingCase] rpcName argsName handlerName
   where
     nothingCase =
       match (listP []) (normalB (appE [|pure|] (appE (varE handlerName) [|Nothing|]))) []
+
+primDispatchList ::
+  String ->
+  Name ->
+  Name ->
+  Name ->
+  [Name] ->
+  Bool ->
+  ExpQ
+primDispatchList _ argsName handlerName cmdArgsName _ hasArgsParam = do
+  listArgName <- newName "as"
+  caseE (varE argsName) [listCase listArgName]
+  where
+    listCase listArgName =
+      match (varP listArgName) (normalB $ handlerCall handlerName (params listArgName)) []
+    params listArgName =
+      if hasArgsParam then [[|fromMsgpack $(varE cmdArgsName)|], decodedList listArgName] else [decodedList listArgName]
+    decodedList listArgName =
+      [|traverse fromMsgpack $(varE listArgName)|]
 
 jsonDispatch ::
   Name ->
@@ -183,6 +206,8 @@ normalizeArgs (OnlyPrims 1) =
   [|normalizeArgsFlat|]
 normalizeArgs (OneParam _ PrimParam) =
   [|normalizeArgsFlat|]
+normalizeArgs (OneParam _ ListParam) =
+  [|normalizeArgsFlat|]
 normalizeArgs _ =
   [|normalizeArgsPlus|]
 
@@ -233,13 +258,15 @@ primCommand ::
   [Name] ->
   HandlerParams ->
   Bool ->
+  Bool ->
   ExpQ
-primCommand rpcName handlerName paramNames handlerPar isMaybe = do
+primCommand rpcName handlerName paramNames handlerPar isMaybe isL = do
   argsName <- newName "args"
   command rpcName handlerName paramNames handlerPar (varP argsName) (dispatch rpcName argsName)
   where
-    dispatch =
-      if isMaybe then primDispatchMaybe else primDispatchStrict
+    dispatch | isMaybe = primDispatchMaybe
+      | isL = primDispatchList
+      | otherwise = primDispatchStrict
 
 jsonCommand ::
   String ->
@@ -257,10 +284,10 @@ commandImplementation rpcName handlerName hps@(HandlerParams _ params) =
   forParams params
   where
     forParams ZeroParams =
-      primCommand rpcName handlerName [] hps False
+      primCommand rpcName handlerName [] hps False False
     forParams (OnlyPrims paramCount) = do
       paramNames <- lambdaNames paramCount
-      primCommand rpcName handlerName paramNames hps False
+      primCommand rpcName handlerName paramNames hps False False
     forParams (DataPlus paramCount) = do
       paramNames <- lambdaNames paramCount
       jsonCommand rpcName handlerName paramNames hps False
@@ -268,9 +295,10 @@ commandImplementation rpcName handlerName hps@(HandlerParams _ params) =
       jsonCommand rpcName handlerName [] hps isMaybe
     forParams (OneParam isMaybe PrimParam) = do
       paramNames <- lambdaNames 1
-      r <- primCommand rpcName handlerName paramNames hps isMaybe
-      -- when isMaybe (fail "boom")
-      return r
+      primCommand rpcName handlerName paramNames hps isMaybe False
+    forParams (OneParam isMaybe ListParam) = do
+      paramNames <- lambdaNames 1
+      primCommand rpcName handlerName paramNames hps isMaybe True
 
 isRecord :: Info -> Bool
 isRecord (TyConI (DataD _ _ _ _ [RecC _ _] _)) =
@@ -283,6 +311,12 @@ isJsonDecodable (ConT name) =
   isRecord <$> reify name
 isJsonDecodable _ =
   return False
+
+isList :: Type -> Bool
+isList (AppT ListT _) =
+  True
+isList _ =
+  False
 
 isMaybeType :: Name -> Q Bool
 isMaybeType tpe =
@@ -301,12 +335,18 @@ analyzeCmdParams =
     check [a] = do
       (isMaybe, tpe) <- analyzeMaybeCmdParam a
       isD <- isJsonDecodable tpe
-      return $ OneParam isMaybe (if isD then DataParam else PrimParam)
+      return $ OneParam isMaybe (singleParam isD (isList tpe))
     check (a : rest) = do
       isD <- isJsonDecodable a
       return $ if isD then DataPlus (length rest) else OnlyPrims (length rest + 1)
     check [] =
       return ZeroParams
+    singleParam _ True =
+      ListParam
+    singleParam True _ =
+      DataParam
+    singleParam _ _ =
+      PrimParam
 
 cmdNargs :: CmdParams -> CommandOption
 cmdNargs ZeroParams =
@@ -317,6 +357,8 @@ cmdNargs (OneParam False PrimParam) =
   CmdNargs "1"
 cmdNargs (OneParam True PrimParam) =
   CmdNargs "?"
+cmdNargs (OneParam _ ListParam) =
+  CmdNargs "*"
 cmdNargs _ =
   CmdNargs "+"
 
