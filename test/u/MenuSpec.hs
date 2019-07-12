@@ -20,7 +20,7 @@ import Ribosome.Menu.Data.MenuConfig (MenuConfig(MenuConfig))
 import Ribosome.Menu.Data.MenuConsumer (MenuConsumer(MenuConsumer))
 import Ribosome.Menu.Data.MenuConsumerAction (MenuConsumerAction)
 import qualified Ribosome.Menu.Data.MenuEvent as MenuEvent (MenuEvent(..))
-import Ribosome.Menu.Data.MenuItem (MenuItem(MenuItem))
+import Ribosome.Menu.Data.MenuItem (MenuItem(MenuItem), simpleMenuItem)
 import qualified Ribosome.Menu.Data.MenuItem as MenuItem (MenuItem(_text), text)
 import Ribosome.Menu.Data.MenuRenderEvent (MenuRenderEvent)
 import qualified Ribosome.Menu.Data.MenuRenderEvent as MenuRenderEvent (MenuRenderEvent(..))
@@ -57,7 +57,7 @@ menuItems ::
   [Text] ->
   ConduitT () [MenuItem Text] m ()
 menuItems =
-  yield . fmap (MenuItem "name")
+  yield . fmap (simpleMenuItem "name")
 
 storePrompt ::
   MonadBaseControl IO m =>
@@ -153,7 +153,7 @@ itemsTarget1 =
     ]
   where
     item =
-      MenuItem "name"
+      simpleMenuItem "name"
 
 test_strictMenuModeChange :: IO ()
 test_strictMenuModeChange = do
@@ -176,7 +176,7 @@ items2 =
 
 itemsTarget :: [MenuItem Text]
 itemsTarget =
-  [MenuItem "name" "long-item"]
+  [simpleMenuItem "name" "long-item"]
 
 test_strictMenuFilter :: IO ()
 test_strictMenuFilter = do
@@ -305,6 +305,8 @@ test_menuDeleteByFilteredIndex =
     menu =
       Menu items filtered 0 [] (MenuFilter "") Nothing
     items =
-      MenuItem () <$> ["1", "2", "3", "4", "5", "6", "7", "8"]
+      simpleMenuItem () <$> ["1", "2", "3", "4", "5", "6", "7", "8"]
     filtered =
-      uncurry FilteredMenuItem . second (MenuItem ()) <$> [(1, "2"), (3, "4"), (5, "6"), (7, "8")]
+      uncurry FilteredMenuItem . second menuItem <$> [(1, "2"), (3, "4"), (5, "6"), (7, "8")]
+    menuItem t =
+      MenuItem () t t

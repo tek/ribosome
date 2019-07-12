@@ -11,10 +11,11 @@ import Test.Framework
 
 import Ribosome.Api.Input (syntheticInput)
 import Ribosome.Control.Monad.Ribo (Ribo)
+import Ribosome.Menu.Action (menuReturn)
 import qualified Ribosome.Menu.Data.FilteredMenuItem as FilteredMenuItem (item)
 import Ribosome.Menu.Data.Menu (Menu(Menu))
 import Ribosome.Menu.Data.MenuConsumerAction (MenuConsumerAction)
-import Ribosome.Menu.Data.MenuItem (MenuItem(MenuItem))
+import Ribosome.Menu.Data.MenuItem (MenuItem, simpleMenuItem)
 import qualified Ribosome.Menu.Data.MenuItem as MenuItem (text)
 import Ribosome.Menu.Data.MenuResult (MenuResult)
 import qualified Ribosome.Menu.Data.MenuResult as MenuResult (MenuResult(..))
@@ -26,7 +27,6 @@ import Ribosome.Menu.Prompt.Nvim (getCharC, nvimPromptRenderer)
 import Ribosome.Menu.Prompt.Run (basicTransition)
 import Ribosome.Menu.Run (nvimMenu)
 import Ribosome.Menu.Simple (Mappings, defaultMenu)
-import Ribosome.Menu.Action (menuReturn)
 import Ribosome.Nvim.Api.IO (vimGetWindows)
 import Ribosome.System.Time (sleep)
 import Ribosome.Test.Tmux (tmuxSpecDef)
@@ -45,7 +45,7 @@ menuItems ::
   [Text] ->
   ConduitT () [MenuItem Text] m ()
 menuItems =
-  yield . fmap (MenuItem "name")
+  yield . fmap (simpleMenuItem "name")
 
 chars :: [Text]
 chars =
