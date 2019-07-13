@@ -129,3 +129,9 @@ bufferIsFile ::
   m Bool
 bufferIsFile buf =
   Text.null <$> bufferGetOption buf "buftype"
+
+bufferCount ::
+  NvimE e m =>
+  m Natural
+bufferCount =
+  fromIntegral . length <$> vimGetBuffers
