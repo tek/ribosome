@@ -99,7 +99,7 @@ test_nvimMenuStrict =
 
 nativeChars :: [Text]
 nativeChars =
-  ["i", "t", "e", "<esc>", "k", "k", "k", "<cr>"]
+  ["i", "t", "e", "<esc>", "k", "<c-k>", "k", "<cr>"]
 
 nvimMenuNativeSpec :: RiboT ()
 nvimMenuNativeSpec =

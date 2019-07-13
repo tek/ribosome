@@ -180,7 +180,14 @@ defaultMappings ::
   Monad m =>
   Mappings m a i
 defaultMappings =
-  Map.fromList [("k", menuCycle 1), ("j", menuCycle (-1)), ("space", menuToggle), ("*", menuToggleAll)]
+  Map.fromList [
+    ("k", menuCycle 1),
+    ("c-k", menuCycle 1),
+    ("j", menuCycle (-1)),
+    ("c-j", menuCycle (-1)),
+    ("space", menuToggle),
+    ("*", menuToggleAll)
+    ]
 
 defaultMenu ::
   Monad m =>
