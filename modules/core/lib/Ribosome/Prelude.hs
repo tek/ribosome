@@ -9,6 +9,8 @@ module Ribosome.Prelude (
   dbg,
   dbgs,
   dbgm,
+  dbgWith,
+  dbgmWith,
   makeClassy,
   mapLeft,
   tuple,
@@ -46,8 +48,26 @@ dbgs =
 dbgm :: Monad m => Show a => m a -> m a
 dbgm ma = do
   a <- ma
-  dbgs a
-  return a
+  a <$ dbgs a
+
+dbgWith ::
+  Monad m =>
+  Show b =>
+  (a -> b) ->
+  a ->
+  m a
+dbgWith f a =
+  a <$ dbgs (f a)
+
+dbgmWith ::
+  Monad m =>
+  Show b =>
+  (a -> b) ->
+  m a ->
+  m a
+dbgmWith f ma = do
+  a <- ma
+  a <$ dbgs (f a)
 
 unit ::
   Applicative f =>
