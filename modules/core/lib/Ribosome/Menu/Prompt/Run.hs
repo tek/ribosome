@@ -133,7 +133,8 @@ promptC config = do
 unprocessableChars :: [Text]
 unprocessableChars =
   [
-    "cr"
+    "cr",
+    "tab"
     ]
 
 unprocessable :: Text -> Bool
