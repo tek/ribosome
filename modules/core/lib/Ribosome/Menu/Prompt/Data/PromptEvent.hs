@@ -12,4 +12,6 @@ data PromptEvent =
   Interrupt
   |
   Error Text
+  |
+  Set Text
   deriving (Eq, Show)

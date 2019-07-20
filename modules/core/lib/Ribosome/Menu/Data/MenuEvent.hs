@@ -31,7 +31,7 @@ instance Show (QuitReason m a) where
 data MenuEvent m a i =
   Init Prompt
   |
-  PromptChange Text Prompt
+  PromptChange Prompt
   |
   Mapping Text Prompt
   |

@@ -101,3 +101,11 @@ menuToggleAll m@(Menu _ filtered _ marked _ _) _ =
   where
     newMenu =
       set Menu.marked (indexesComplement (length filtered) marked) m
+
+menuUpdatePrompt ::
+  Applicative m =>
+  Prompt ->
+  Menu i ->
+  m (MenuConsumerAction m a, Menu i)
+menuUpdatePrompt prompt =
+  pure . (MenuConsumerAction.UpdatePrompt prompt,)

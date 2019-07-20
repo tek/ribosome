@@ -67,7 +67,7 @@ storePrompt ::
 storePrompt prompts (MenuUpdate event menu) =
   check event
   where
-    check (MenuEvent.PromptChange _ prompt) =
+    check (MenuEvent.PromptChange prompt) =
       store prompt
     check (MenuEvent.Mapping _ prompt) =
       store prompt
@@ -90,10 +90,10 @@ render varItems (MenuRenderEvent.Render _ (Menu _ items _ _ _ _)) = do
 render _ (MenuRenderEvent.Quit _) =
   return ()
 
-type MenuTestM = StateT (StrictRibosome ()) IO
+type TestM = StateT (StrictRibosome ()) IO
 
 menuTest ::
-  (MenuUpdate MenuTestM a Text -> MenuTestM (MenuAction MenuTestM a, Menu Text)) ->
+  (ConduitT PromptEvent Void TestM () -> MenuUpdate TestM a Text -> TestM (MenuAction TestM a, Menu Text)) ->
   [Text] ->
   [Text] ->
   IO [[FilteredMenuItem Text]]
@@ -103,7 +103,7 @@ menuTest handler items chars = do
   readMVar itemsVar
   where
     conf itemsVar =
-      MenuConfig (menuItems items) (MenuConsumer handler) (render itemsVar) promptConfig def
+      MenuConfig (menuItems items) (MenuConsumer . handler) (render itemsVar) promptConfig def
     promptConfig =
       PromptConfig (promptInput chars) basicTransition noPromptRenderer True
 

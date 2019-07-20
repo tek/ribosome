@@ -1,5 +1,7 @@
 module Ribosome.Menu.Data.MenuConsumerAction where
 
+import Ribosome.Menu.Prompt.Data.Prompt (Prompt)
+
 data MenuConsumerAction m a =
   Quit
   |
@@ -14,4 +16,8 @@ data MenuConsumerAction m a =
   Render Bool
   |
   Return a
+  |
+  UpdatePrompt Prompt
+  -- |
+  -- Error Text
   deriving (Functor)

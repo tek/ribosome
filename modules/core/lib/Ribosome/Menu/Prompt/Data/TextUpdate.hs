@@ -8,4 +8,6 @@ data TextUpdate =
   DeleteLeft
   |
   DeleteRight
+  |
+  Set Text
   deriving (Eq, Show)
