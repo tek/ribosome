@@ -76,7 +76,7 @@ updatePrompt modes update (Prompt cursor state text) = do
     updatedText =
       updateText cursor text textUpdate
     newPrompt =
-      Prompt (updateCursor cursor text cursorUpdate) newState updatedText
+      Prompt (updateCursor cursor updatedText cursorUpdate) newState updatedText
   return (consumed, newPrompt)
 
 processPromptEvent ::
