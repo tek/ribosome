@@ -94,7 +94,7 @@ render _ (MenuRenderEvent.Quit _) =
 type TestM = StateT (StrictRibosome ()) (ResourceT IO)
 
 menuTest ::
-  (ConduitT PromptEvent Void TestM () -> MenuUpdate TestM a Text -> TestM (MenuAction TestM a, Menu Text)) ->
+  (MenuUpdate TestM a Text -> TestM (MenuAction TestM a, Menu Text)) ->
   [Text] ->
   [Text] ->
   IO [[FilteredMenuItem Text]]
@@ -104,7 +104,7 @@ menuTest handler items chars = do
   readMVar itemsVar
   where
     conf itemsVar =
-      MenuConfig (menuItems items) (MenuConsumer . handler) (render itemsVar) promptConfig def
+      MenuConfig (menuItems items) (MenuConsumer handler) (render itemsVar) promptConfig def
     promptConfig =
       PromptConfig (promptInput chars) basicTransition noPromptRenderer True
 

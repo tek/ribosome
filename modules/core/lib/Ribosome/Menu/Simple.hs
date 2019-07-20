@@ -1,6 +1,5 @@
 module Ribosome.Menu.Simple where
 
-import Conduit (ConduitT)
 import Control.Lens (_2, element, ifolded, over, set, toListOf, view, withIndex, (^..), (^?))
 import qualified Control.Lens as Lens (filtered)
 import Data.Composition ((.:))
@@ -31,7 +30,6 @@ import qualified Ribosome.Menu.Data.MenuItem as MenuItem (text)
 import Ribosome.Menu.Data.MenuItemFilter (MenuItemFilter(MenuItemFilter))
 import Ribosome.Menu.Data.MenuUpdate (MenuUpdate(MenuUpdate))
 import Ribosome.Menu.Prompt.Data.Prompt (Prompt(Prompt))
-import Ribosome.Menu.Prompt.Data.PromptEvent (PromptEvent)
 
 type MappingHandler m a i = Menu i -> Prompt -> m (MenuConsumerAction m a, Menu i)
 type Mappings m a i = Map Text (MappingHandler m a i)
@@ -151,10 +149,9 @@ basicMenu ::
   Monad m =>
   MenuItemFilter i ->
   (MenuUpdate m a i -> m (MenuConsumerAction m a, Menu i)) ->
-  ConduitT PromptEvent Void m () ->
   MenuUpdate m a i ->
   m (MenuAction m a, Menu i)
-basicMenu itemFilter consumer _ update@(MenuUpdate event menu) =
+basicMenu itemFilter consumer update@(MenuUpdate event menu) =
   basicMenuAction itemFilter consumer update basicTransform
   where
     basicTransform =
@@ -176,7 +173,6 @@ mappingConsumer _ (MenuUpdate _ menu) =
 simpleMenu ::
   Monad m =>
   Mappings m a i ->
-  ConduitT PromptEvent Void m () ->
   MenuUpdate m a i ->
   m (MenuAction m a, Menu i)
 simpleMenu =
@@ -198,7 +194,6 @@ defaultMappings =
 defaultMenu ::
   Monad m =>
   Mappings m a i ->
-  ConduitT PromptEvent Void m () ->
   MenuUpdate m a i ->
   m (MenuAction m a, Menu i)
 defaultMenu =

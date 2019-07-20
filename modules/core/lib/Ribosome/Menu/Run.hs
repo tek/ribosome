@@ -146,7 +146,7 @@ menuC (MenuConfig items handle render promptConfig maxItems) = do
     initial =
       set Menu.maxItems maxItems def
     menuHandler backchannel =
-      awaitForever . updateMenu backchannel $ handle backchannel
+      awaitForever . updateMenu backchannel $ handle
 
 runMenu ::
   MonadRibo m =>
@@ -174,7 +174,7 @@ nvimMenu ::
   MonadDeepError e DecodeError m =>
   ScratchOptions ->
   ConduitT () [MenuItem i] m () ->
-  (TMChan PromptEvent -> MenuUpdate m a i -> m (MenuAction m a, Menu i)) ->
+  (MenuUpdate m a i -> m (MenuAction m a, Menu i)) ->
   PromptConfig m ->
   Maybe Int ->
   m (MenuResult a)
@@ -183,7 +183,7 @@ nvimMenu options items handle promptConfig maxItems =
   where
     run scratch = do
       windowSetOption (scratchWindow scratch) "cursorline" (toMsgpack True)
-      runMenu $ MenuConfig items (MenuConsumer . handle) (render scratch) promptConfig maxItems
+      runMenu $ MenuConfig items (MenuConsumer handle) (render scratch) promptConfig maxItems
     render =
       renderNvimMenu options
     ensureSize =
@@ -200,7 +200,7 @@ strictNvimMenu ::
   MonadDeepError e DecodeError m =>
   ScratchOptions ->
   [MenuItem i] ->
-  (TMChan PromptEvent -> MenuUpdate m a i -> m (MenuAction m a, Menu i)) ->
+  (MenuUpdate m a i -> m (MenuAction m a, Menu i)) ->
   PromptConfig m ->
   Maybe Int ->
   m (MenuResult a)
