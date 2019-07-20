@@ -16,3 +16,5 @@ data MenuConfig m a i =
     _prompt :: PromptConfig m,
     _maxItems :: Maybe Int
   }
+
+makeClassy ''MenuConfig

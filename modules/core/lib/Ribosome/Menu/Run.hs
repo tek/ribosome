@@ -1,15 +1,15 @@
 module Ribosome.Menu.Run where
 
-import Conduit (ConduitT, await, awaitForever, mapC, yield, (.|))
+import Conduit (ConduitT, MonadResource, await, awaitForever, mapC, runConduit, yield, (.|))
 import Control.Exception.Lifted (bracket)
-import Control.Lens (over, set)
+import Control.Lens (over, set, view)
 import Control.Monad.Trans.Control (MonadBaseControl)
 import Data.Conduit.Combinators (iterM)
 import qualified Data.Conduit.Combinators as Conduit (last)
 import Data.Conduit.Lift (evalStateC)
 
 import Ribosome.Control.Monad.Ribo (MonadRibo, NvimE)
-import Ribosome.Data.Conduit (withMergedSources)
+import Ribosome.Data.Conduit (mergeSources)
 import Ribosome.Data.Scratch (scratchWindow)
 import Ribosome.Data.ScratchOptions (ScratchOptions)
 import qualified Ribosome.Data.ScratchOptions as ScratchOptions (size, syntax)
@@ -19,6 +19,7 @@ import qualified Ribosome.Menu.Data.Menu as Menu (maxItems)
 import Ribosome.Menu.Data.MenuAction (MenuAction)
 import qualified Ribosome.Menu.Data.MenuAction as MenuAction (MenuAction(..))
 import Ribosome.Menu.Data.MenuConfig (MenuConfig(MenuConfig))
+import qualified Ribosome.Menu.Data.MenuConfig as MenuConfig (prompt)
 import Ribosome.Menu.Data.MenuConsumer (MenuConsumer(MenuConsumer))
 import Ribosome.Menu.Data.MenuEvent (MenuEvent, QuitReason)
 import qualified Ribosome.Menu.Data.MenuEvent as MenuEvent (MenuEvent(..))
@@ -33,6 +34,7 @@ import Ribosome.Menu.Data.MenuUpdate (MenuUpdate(MenuUpdate))
 import Ribosome.Menu.Nvim (menuSyntax, renderNvimMenu)
 import Ribosome.Menu.Prompt.Data.Prompt (Prompt(Prompt))
 import Ribosome.Menu.Prompt.Data.PromptConfig (PromptConfig(PromptConfig))
+import qualified Ribosome.Menu.Prompt.Data.PromptConfig as PromptConfig (render)
 import Ribosome.Menu.Prompt.Data.PromptConsumed (PromptConsumed)
 import qualified Ribosome.Menu.Prompt.Data.PromptConsumed as PromptConsumed (PromptConsumed(..))
 import Ribosome.Menu.Prompt.Data.PromptConsumerUpdate (PromptConsumerUpdate(PromptConsumerUpdate))
@@ -40,7 +42,7 @@ import Ribosome.Menu.Prompt.Data.PromptEvent (PromptEvent)
 import qualified Ribosome.Menu.Prompt.Data.PromptEvent as PromptEvent (PromptEvent(..))
 import Ribosome.Menu.Prompt.Data.PromptRenderer (PromptRenderer(PromptRenderer))
 import qualified Ribosome.Menu.Prompt.Data.PromptState as PromptState (PromptState(..))
-import Ribosome.Menu.Prompt.Run (promptC, withPrompt)
+import Ribosome.Menu.Prompt.Run (promptC)
 import Ribosome.Msgpack.Encode (MsgpackEncode(toMsgpack))
 import Ribosome.Msgpack.Error (DecodeError)
 import Ribosome.Nvim.Api.IO (windowSetOption)
@@ -99,19 +101,6 @@ updateMenu (MenuConsumer consumer) input = do
     emit (MenuAction.Quit reason) =
       yield (MenuRenderEvent.Quit reason)
 
-menuSources ::
-  MonadRibo m =>
-  PromptConfig m ->
-  ConduitT () [MenuItem i] m () ->
-  [ConduitT () (Either PromptConsumerUpdate [MenuItem i]) m ()]
-menuSources promptConfig items =
-  [promptSource, itemSource]
-  where
-    promptSource =
-      promptC promptConfig .| mapC Left
-    itemSource =
-      items .| mapC Right
-
 menuTerminator ::
   Monad m =>
   ConduitT (MenuRenderEvent m a i) (QuitReason m a) m ()
@@ -138,32 +127,45 @@ menuResult QuitReason.NoOutput =
 menuResult QuitReason.Aborted =
   return MenuResult.Aborted
 
-runMenu ::
-  ∀ m a i .
+menuC ::
   MonadRibo m =>
+  MonadResource m =>
+  MonadBaseControl IO m =>
+  MenuConfig m a i ->
+  ConduitT () (QuitReason m a) m ()
+menuC (MenuConfig items handle render promptConfig@(PromptConfig _ _ promptRenderer _) maxItems) = do
+  (backchannel, source) <- lift $ promptC promptConfig
+  mergeSources 64 [source .| mapC Left, items .| mapC Right] .| consumer backchannel
+  where
+    consumer backchannel =
+      evalStateC initial (menuHandler backchannel) .| iterM render .| menuTerminator
+    initial =
+      set Menu.maxItems maxItems def
+    menuHandler =
+      awaitForever . updateMenu . handle
+
+runMenu ::
+  MonadRibo m =>
+  MonadResource m =>
   MonadBaseControl IO m =>
   MenuConfig m a i ->
   m (MenuResult a)
-runMenu (MenuConfig items handle render promptConfig@(PromptConfig _ _ promptRenderer _) maxItems) =
-  safePrompt promptRenderer
+runMenu config =
+  bracketPrompt (view (MenuConfig.prompt . PromptConfig.render) config)
   where
-    safePrompt (PromptRenderer acquire release _) =
+    bracketPrompt (PromptRenderer acquire release _) =
       bracket acquire release (const runForResult)
     runForResult =
-      menuResult =<< quitReason <$> withPrompt promptConfig run
-    run :: ConduitT PromptEvent Void m () -> ConduitT () PromptConsumerUpdate m () -> m (Maybe (QuitReason m a))
-    run backchannel source =
-      withMergedSources (consumer backchannel) 64 [source .| mapC Left, items .| mapC Right]
-    consumer backchannel =
-      evalStateC initial (awaitForever (updateMenu (handle backchannel))) .| iterM render .| menuTerminator .| Conduit.last
-    initial =
-      set Menu.maxItems maxItems def
+      menuResult =<< quitReason <$> run
+    run =
+      runConduit (menuC config .| Conduit.last)
     quitReason =
       fromMaybe QuitReason.NoOutput
 
 nvimMenu ::
   NvimE e m =>
   MonadRibo m =>
+  MonadResource m =>
   MonadBaseControl IO m =>
   MonadDeepError e DecodeError m =>
   ScratchOptions ->
@@ -189,6 +191,7 @@ strictNvimMenu ::
   NvimE e m =>
   MonadIO m =>
   MonadRibo m =>
+  MonadResource m =>
   MonadBaseControl IO m =>
   MonadDeepError e DecodeError m =>
   ScratchOptions ->

@@ -1,12 +1,18 @@
 module Ribosome.Data.Conduit where
 
-import Conduit (ConduitT, runConduit, yield, (.|))
+import Conduit (ConduitT, MonadResource, bracketP, runConduit, yield, (.|))
+import Control.Concurrent (forkIO)
 import Control.Concurrent.Lifted (fork, killThread)
 import Control.Concurrent.STM.TBMChan (TBMChan, closeTBMChan, newTBMChan, readTBMChan, writeTBMChan)
 import Control.Concurrent.STM.TMVar (TMVar, newTMVar)
 import Control.Exception.Lifted (bracket, finally)
-import Control.Monad.Trans.Control (MonadBaseControl)
+import Control.Monad (liftM)
+import Control.Monad.Base (MonadBase(..), liftBaseDefault)
+import Control.Monad.Trans.Control
+import Control.Monad.Trans.Resource (allocate, release)
 import qualified Data.Conduit.Combinators as Conduit (mapM_)
+import Data.Conduit.Internal (ConduitT(ConduitT, unConduitT), Pipe)
+import Data.Conduit.Internal hiding (yield, bracketP)
 
 import Ribosome.Control.Monad.Ribo (modifyTMVar)
 
@@ -45,6 +51,43 @@ sourceTerminated ::
 sourceTerminated var chan = do
   n <- modifyTMVar (subtract 1) var
   when (n == 0) (atomically $ closeTBMChan chan)
+
+mergeSourcesWith ::
+  MonadResource m =>
+  MonadBaseControl IO m =>
+  TMVar Int ->
+  TBMChan a ->
+  (ConduitT () a m () -> IO (StM m ())) ->
+  [ConduitT () a m ()] ->
+  ConduitT () a m ()
+mergeSourcesWith activeSources chan sourceRunner sources =
+  bracketP acquire release (const combinedSource)
+  where
+    acquire =
+      traverse (forkIO . start activeSources) sources
+    start activeSources source = do
+      sourceRunner source
+      sourceTerminated activeSources chan
+    release ids =
+      traverse_ killThread ids *>
+      atomically (closeTBMChan chan)
+    combinedSource =
+      sourceChan chan
+
+mergeSources ::
+  MonadResource m =>
+  MonadBaseControl IO m =>
+  Int ->
+  [ConduitT () a m ()] ->
+  ConduitT () a m ()
+mergeSources bound sources = do
+  activeSources <- atomically $ newTMVar (length sources)
+  chan <- atomically (newTBMChan bound)
+  embeddedRunner <- lift $ embed (embedSourceRunner chan)
+  mergeSourcesWith activeSources chan embeddedRunner sources
+  where
+    embedSourceRunner chan source = do
+      runConduit (source .| Conduit.mapM_ (atomically . writeTBMChan chan))
 
 withSourcesInChanAs ::
   MonadIO m =>

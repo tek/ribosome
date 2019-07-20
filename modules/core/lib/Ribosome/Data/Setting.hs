@@ -6,3 +6,7 @@ data Setting a =
     prefix :: Bool,
     fallback :: Maybe a
   }
+
+data GSetting a where
+  SettingWithoutDefault :: Text -> Bool -> GSetting a
+  SettingWithDefault :: Text -> Bool -> a -> GSetting a

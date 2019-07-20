@@ -14,3 +14,5 @@ data PromptConfig m =
     _render :: PromptRenderer m,
     _insert :: Bool
   }
+
+makeClassy ''PromptConfig

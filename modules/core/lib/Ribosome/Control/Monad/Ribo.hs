@@ -17,7 +17,7 @@ import Control.Monad.Trans.Control (MonadBaseControl(..))
 import Control.Monad.Trans.Except (ExceptT(ExceptT), runExceptT)
 import Control.Monad.Trans.Free (FreeT)
 import Control.Monad.Trans.Reader (ReaderT(ReaderT), runReaderT)
-import Control.Monad.Trans.Resource (runResourceT)
+import Control.Monad.Trans.Resource (MonadResource(..), runResourceT)
 import qualified Control.Monad.Trans.State.Strict as StateT (gets, modify)
 import Data.DeepLenses (DeepLenses(deepLens))
 import Data.DeepPrisms (DeepPrisms)
@@ -134,6 +134,9 @@ instance MonadBaseControl IO (Ribo s e) where
     restoreM =
       Ribo . restoreM
     {-# INLINABLE restoreM #-}
+
+instance MonadResource (Ribo s e) where
+    liftResourceT = Ribo . liftResourceT
 
 instance RpcHandler e (Ribosome s) (Ribo s e) where
   native = runRiboE

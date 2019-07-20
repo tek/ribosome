@@ -1,13 +1,13 @@
 module Ribosome.Menu.Prompt.Run where
 
-import Conduit (ConduitT, await, awaitForever, evalStateC, yield, (.|))
+import Conduit (ConduitT, MonadResource, await, awaitForever, bracketP, evalStateC, yield, (.|))
 import Data.Conduit.Combinators (peek)
 import Data.Conduit.TMChan (TMChan, closeTMChan, newTMChan, sinkTMChan, sourceTMChan)
 import qualified Data.Text as Text (drop, dropEnd, isPrefixOf, length, splitAt)
 import Prelude hiding (state)
 
 import Ribosome.Control.Monad.Ribo (MonadRibo)
-import Ribosome.Data.Conduit (withMergedSourcesAs)
+import Ribosome.Data.Conduit (mergeSources)
 import Ribosome.Log (logDebug)
 import Ribosome.Menu.Prompt.Data.CursorUpdate (CursorUpdate)
 import qualified Ribosome.Menu.Prompt.Data.CursorUpdate as CursorUpdate (CursorUpdate(..))
@@ -102,51 +102,33 @@ skippingRenderer render =
     renderIfIdle prompt Nothing =
       lift (render prompt)
 
-withPromptAndBackchannel ::
-  ∀ m a .
+promptWithBackchannel ::
   MonadRibo m =>
+  MonadResource m =>
   MonadBaseControl IO m =>
-  TMChan PromptEvent ->
   PromptConfig m ->
-  (ConduitT PromptEvent Void m () -> ConduitT () PromptConsumerUpdate m () -> m a) ->
-  m a
-withPromptAndBackchannel backchannel config@(PromptConfig source _ (PromptRenderer _ _ render) insert) use =
-  withMergedSourcesAs consumer 64 sources
+  TMChan PromptEvent ->
+  ConduitT () PromptConsumerUpdate m ()
+promptWithBackchannel config@(PromptConfig source _ (PromptRenderer _ _ render) insert) chan =
+  mergeSources 64 [sourceWithInit, sourceTMChan chan] .| process .| skippingRenderer render
   where
-    sources =
-      [sourceWithInit, sourceTMChan backchannel]
     sourceWithInit =
-      yield PromptEvent.Init *> source <* closeBackchannel
-    closeBackchannel =
-      lift . atomically $ closeTMChan backchannel
-    consumer :: ConduitT () PromptEvent m () -> m a
-    consumer events =
-      use (sinkTMChan backchannel) (events .| process .| skippingRenderer render)
+      yield PromptEvent.Init *> source <* atomically (closeTMChan chan)
     process =
       evalStateC (pristinePrompt insert) (awaitForever (processPromptEvent config))
-
-withPrompt ::
-  ∀ m a .
-  MonadRibo m =>
-  MonadBaseControl IO m =>
-  PromptConfig m ->
-  (ConduitT PromptEvent Void m () -> ConduitT () PromptConsumerUpdate m () -> m a) ->
-  m a
-withPrompt config use = do
-  backchannel <- atomically newTMChan
-  withPromptAndBackchannel backchannel config use
 
 promptC ::
   MonadRibo m =>
+  MonadResource m =>
+  MonadBaseControl IO m =>
   PromptConfig m ->
-  ConduitT () PromptConsumerUpdate m ()
-promptC config@(PromptConfig source _ (PromptRenderer _ _ render) insert) =
-  sourceWithInit .| process .| skippingRenderer render
+  m (ConduitT PromptEvent Void m (), ConduitT () PromptConsumerUpdate m ())
+promptC config = do
+  chan <- atomically newTMChan
+  return (sinkTMChan chan, bracketP (pure chan) release (promptWithBackchannel config))
   where
-    sourceWithInit =
-      yield PromptEvent.Init *> source
-    process =
-      evalStateC (pristinePrompt insert) (awaitForever (processPromptEvent config))
+    release chan =
+      atomically $ closeTMChan chan
 
 unprocessableChars :: [Text]
 unprocessableChars =

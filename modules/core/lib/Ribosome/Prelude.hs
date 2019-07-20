@@ -1,4 +1,5 @@
 {-# LANGUAGE NoImplicitPrelude #-}
+{-# LANGUAGE UndecidableInstances #-}
 
 module Ribosome.Prelude (
   module Control.Monad.Trans.Control,
@@ -23,7 +24,10 @@ module Ribosome.Prelude (
 ) where
 
 import Control.Lens (makeClassy)
-import Control.Monad.Trans.Control (MonadBaseControl)
+import Control.Monad.Base (MonadBase(..))
+import Control.Monad.Trans.Control (MonadBaseControl(..))
+import Control.Monad.Trans.Resource (runResourceT)
+import Control.Monad.Trans.Resource.Internal (ResourceT(ResourceT))
 import Cornea
 import Data.DeepLenses (deepLenses)
 import Data.DeepPrisms (deepPrisms)
@@ -94,3 +98,13 @@ unsafeLogAnd a b =
 unsafeLogS :: Show a => a -> a
 unsafeLogS a =
   unsafePerformIO $ print a >> return a
+
+instance MonadBase b m => MonadBase b (ResourceT m) where
+    liftBase = lift . liftBase
+
+instance MonadBaseControl b m => MonadBaseControl b (ResourceT m) where
+  type StM (ResourceT m) a = StM m a
+  liftBaseWith f = ResourceT $ \reader' ->
+      liftBaseWith $ \runInBase ->
+          f $ runInBase . (\(ResourceT r) -> r reader'  )
+  restoreM = ResourceT . const . restoreM

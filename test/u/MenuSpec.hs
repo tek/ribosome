@@ -6,6 +6,7 @@ import Conduit (ConduitT, yield, yieldMany)
 import Control.Concurrent.MVar.Lifted (modifyMVar_)
 import Control.Lens (view)
 import Control.Monad.Trans.Control (MonadBaseControl)
+import Control.Monad.Trans.Resource (ResourceT, runResourceT)
 import qualified Data.Map.Strict as Map (fromList)
 import Test.Framework
 
@@ -90,7 +91,7 @@ render varItems (MenuRenderEvent.Render _ (Menu _ items _ _ _ _)) = do
 render _ (MenuRenderEvent.Quit _) =
   return ()
 
-type TestM = StateT (StrictRibosome ()) IO
+type TestM = StateT (StrictRibosome ()) (ResourceT IO)
 
 menuTest ::
   (ConduitT PromptEvent Void TestM () -> MenuUpdate TestM a Text -> TestM (MenuAction TestM a, Menu Text)) ->
@@ -99,7 +100,7 @@ menuTest ::
   IO [[FilteredMenuItem Text]]
 menuTest handler items chars = do
   itemsVar <- newMVar []
-  void $ runMenu (conf itemsVar) `execStateT` def
+  void $ runResourceT $ runMenu (conf itemsVar) `execStateT` def
   readMVar itemsVar
   where
     conf itemsVar =
