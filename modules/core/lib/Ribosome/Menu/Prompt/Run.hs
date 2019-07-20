@@ -42,7 +42,7 @@ updateCursor current text =
     update CursorUpdate.Append =
       Text.length text + 1
     update (CursorUpdate.Index index) =
-      min textLength (max current index)
+      min textLength (max 0 index)
     update CursorUpdate.Unmodified =
       current
     textLength =
