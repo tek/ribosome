@@ -31,14 +31,22 @@ updateCursor current text =
   where
     update CursorUpdate.OneLeft | current > 0 =
       current - 1
-    update CursorUpdate.OneRight | current <= Text.length text =
+    update CursorUpdate.OneLeft =
+      current
+    update CursorUpdate.OneRight | current <= textLength =
       current + 1
+    update CursorUpdate.OneRight =
+      current
     update CursorUpdate.Prepend =
       0
     update CursorUpdate.Append =
       Text.length text + 1
-    update _ =
+    update (CursorUpdate.Index index) =
+      min textLength (max current index)
+    update CursorUpdate.Unmodified =
       current
+    textLength =
+      Text.length text
 
 updateText :: Int -> Text -> TextUpdate -> Text
 updateText cursor text =
