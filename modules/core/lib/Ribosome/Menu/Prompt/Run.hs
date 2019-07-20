@@ -73,8 +73,10 @@ updatePrompt ::
 updatePrompt modes update (Prompt cursor state text) = do
   (PromptUpdate newState cursorUpdate textUpdate consumed) <- modes update state
   let
+    updatedText =
+      updateText cursor text textUpdate
     newPrompt =
-      Prompt (updateCursor cursor text cursorUpdate) newState (updateText cursor text textUpdate)
+      Prompt (updateCursor cursor text cursorUpdate) newState updatedText
   return (consumed, newPrompt)
 
 processPromptEvent ::
