@@ -3,6 +3,7 @@ module Ribosome.Menu.Data.MenuAction where
 import qualified Text.Show as Show (show)
 
 import Ribosome.Menu.Data.MenuEvent (QuitReason)
+import Ribosome.Menu.Prompt.Data.Prompt (Prompt)
 
 data MenuAction m a =
   Quit (QuitReason m a)
@@ -12,6 +13,8 @@ data MenuAction m a =
   Execute (m ())
   |
   Render Bool
+  |
+  UpdatePrompt Prompt
 
 instance Show (MenuAction m a) where
   show (Quit r) =
@@ -22,3 +25,5 @@ instance Show (MenuAction m a) where
     "Execute"
   show (Render changed) =
     "Render(" <> show changed <> ")"
+  show (UpdatePrompt prompt) =
+    "UpdatePrompt(" <> show prompt <> ")"

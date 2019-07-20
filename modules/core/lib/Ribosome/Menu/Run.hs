@@ -1,6 +1,7 @@
 module Ribosome.Menu.Run where
 
 import Conduit (ConduitT, MonadResource, await, awaitForever, mapC, runConduit, yield, (.|))
+import Control.Concurrent.STM.TMChan (TMChan, writeTMChan)
 import Control.Exception.Lifted (bracket)
 import Control.Lens (over, set, view)
 import Control.Monad.Trans.Control (MonadBaseControl)
@@ -33,7 +34,7 @@ import qualified Ribosome.Menu.Data.MenuResult as MenuResult (MenuResult(..))
 import Ribosome.Menu.Data.MenuUpdate (MenuUpdate(MenuUpdate))
 import Ribosome.Menu.Nvim (menuSyntax, renderNvimMenu)
 import Ribosome.Menu.Prompt.Data.Prompt (Prompt(Prompt))
-import Ribosome.Menu.Prompt.Data.PromptConfig (PromptConfig(PromptConfig))
+import Ribosome.Menu.Prompt.Data.PromptConfig (PromptConfig)
 import qualified Ribosome.Menu.Prompt.Data.PromptConfig as PromptConfig (render)
 import Ribosome.Menu.Prompt.Data.PromptConsumed (PromptConsumed)
 import qualified Ribosome.Menu.Prompt.Data.PromptConsumed as PromptConsumed (PromptConsumed(..))
@@ -83,10 +84,11 @@ menuEvent =
 
 updateMenu ::
   MonadRibo m =>
+  TMChan PromptEvent ->
   MenuConsumer m a i ->
   Either PromptConsumerUpdate [MenuItem i] ->
   ConduitT (Either PromptConsumerUpdate [MenuItem i]) (MenuRenderEvent m a i) (StateT (Menu i) m) ()
-updateMenu (MenuConsumer consumer) input = do
+updateMenu backchannel (MenuConsumer consumer) input = do
   showDebug "menu update:" (MenuItem._text <$$> input)
   action <- lift . stateM $ lift . consumer . MenuUpdate (menuEvent input)
   showDebug "menu action:" action
@@ -98,6 +100,8 @@ updateMenu (MenuConsumer consumer) input = do
       lift $ lift thunk
     emit (MenuAction.Render changed) =
       yield . MenuRenderEvent.Render changed =<< get
+    emit (MenuAction.UpdatePrompt prompt) =
+      atomically $ writeTMChan backchannel (PromptEvent.Set prompt)
     emit (MenuAction.Quit reason) =
       yield (MenuRenderEvent.Quit reason)
 
@@ -133,7 +137,7 @@ menuC ::
   MonadBaseControl IO m =>
   MenuConfig m a i ->
   ConduitT () (QuitReason m a) m ()
-menuC (MenuConfig items handle render promptConfig@(PromptConfig _ _ promptRenderer _) maxItems) = do
+menuC (MenuConfig items handle render promptConfig maxItems) = do
   (backchannel, source) <- lift $ promptC promptConfig
   mergeSources 64 [source .| mapC Left, items .| mapC Right] .| consumer backchannel
   where
@@ -141,8 +145,8 @@ menuC (MenuConfig items handle render promptConfig@(PromptConfig _ _ promptRende
       evalStateC initial (menuHandler backchannel) .| iterM render .| menuTerminator
     initial =
       set Menu.maxItems maxItems def
-    menuHandler =
-      awaitForever . updateMenu . handle
+    menuHandler backchannel =
+      awaitForever . updateMenu backchannel $ handle backchannel
 
 runMenu ::
   MonadRibo m =>
@@ -170,7 +174,7 @@ nvimMenu ::
   MonadDeepError e DecodeError m =>
   ScratchOptions ->
   ConduitT () [MenuItem i] m () ->
-  (ConduitT PromptEvent Void m () -> MenuUpdate m a i -> m (MenuAction m a, Menu i)) ->
+  (TMChan PromptEvent -> MenuUpdate m a i -> m (MenuAction m a, Menu i)) ->
   PromptConfig m ->
   Maybe Int ->
   m (MenuResult a)
@@ -196,7 +200,7 @@ strictNvimMenu ::
   MonadDeepError e DecodeError m =>
   ScratchOptions ->
   [MenuItem i] ->
-  (ConduitT PromptEvent Void m () -> MenuUpdate m a i -> m (MenuAction m a, Menu i)) ->
+  (TMChan PromptEvent -> MenuUpdate m a i -> m (MenuAction m a, Menu i)) ->
   PromptConfig m ->
   Maybe Int ->
   m (MenuResult a)

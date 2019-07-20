@@ -1,5 +1,7 @@
 module Ribosome.Menu.Prompt.Data.PromptEvent where
 
+import Ribosome.Menu.Prompt.Data.Prompt (Prompt)
+
 data PromptEvent =
   Init
   |
@@ -13,5 +15,5 @@ data PromptEvent =
   |
   Error Text
   |
-  Set Text
+  Set Prompt
   deriving (Eq, Show)

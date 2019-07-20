@@ -126,8 +126,8 @@ menuAction _ _ MenuConsumerAction.Quit menu =
   (MenuAction.Quit QuitReason.Aborted, menu)
 menuAction _ _ (MenuConsumerAction.Return a) menu =
   (MenuAction.Quit (QuitReason.Return a), menu)
-menuAction _ _ (MenuConsumerAction.UpdatePrompt _) menu =
-  (MenuAction.Render True, menu)
+menuAction _ _ (MenuConsumerAction.UpdatePrompt prompt) menu =
+  (MenuAction.UpdatePrompt prompt, menu)
 
 basicMenuAction ::
   Monad m =>

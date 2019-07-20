@@ -2,7 +2,7 @@ module Ribosome.Menu.Prompt.Run where
 
 import Conduit (ConduitT, MonadResource, await, awaitForever, bracketP, evalStateC, yield, (.|))
 import Data.Conduit.Combinators (peek)
-import Data.Conduit.TMChan (TMChan, closeTMChan, newTMChan, sinkTMChan, sourceTMChan)
+import Data.Conduit.TMChan (TMChan, closeTMChan, newTMChan, sourceTMChan)
 import qualified Data.Text as Text (drop, dropEnd, isPrefixOf, length, splitAt)
 import Prelude hiding (state)
 
@@ -122,10 +122,10 @@ promptC ::
   MonadResource m =>
   MonadBaseControl IO m =>
   PromptConfig m ->
-  m (ConduitT PromptEvent Void m (), ConduitT () PromptConsumerUpdate m ())
+  m (TMChan PromptEvent, ConduitT () PromptConsumerUpdate m ())
 promptC config = do
   chan <- atomically newTMChan
-  return (sinkTMChan chan, bracketP (pure chan) release (promptWithBackchannel config))
+  return (chan, bracketP (pure chan) release (promptWithBackchannel config))
   where
     release chan =
       atomically $ closeTMChan chan
@@ -189,8 +189,8 @@ basicTransition ::
   PromptEvent ->
   PromptState ->
   m PromptUpdate
-basicTransition (PromptEvent.Set text) s =
-  return $ PromptUpdate s CursorUpdate.Append (TextUpdate.Set text) PromptConsumed.Yes
+basicTransition (PromptEvent.Set (Prompt cursor state text)) _ =
+  return $ PromptUpdate state (CursorUpdate.Index cursor) (TextUpdate.Set text) PromptConsumed.Yes
 basicTransition event PromptState.Normal =
   return $ basicTransitionNormal event
 basicTransition event PromptState.Insert =
