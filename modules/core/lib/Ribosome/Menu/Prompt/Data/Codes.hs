@@ -75,7 +75,8 @@ specialCodes =
     ("\x80KI", "k6"),
     ("\x80KJ", "k7"),
     ("\x80KK", "k8"),
-    ("\x80KL", "k9")
+    ("\x80KL", "k9"),
+    ("\EM", "c-y")
     ]
 
 specialNumCodes :: Map Int Text
