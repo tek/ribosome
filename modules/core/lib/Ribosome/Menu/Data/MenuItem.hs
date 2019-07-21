@@ -6,7 +6,7 @@ data MenuItem a =
     _text :: Text,
     _abbreviated :: Text
   }
-  deriving (Eq, Show, Ord)
+  deriving (Eq, Show, Ord, Functor)
 
 makeClassy ''MenuItem
 
