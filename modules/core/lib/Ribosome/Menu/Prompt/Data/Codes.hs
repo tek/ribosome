@@ -10,7 +10,7 @@ specialCodes =
   Map.fromList [
     ("\x80\xffX", "c-@"),
     ("\65533kb", "bs"),
-    ("\x80kB", "s-ta"),
+    ("\x80kB", "s-tab"),
     ("\x0", "c-k"),
     ("\x80kD", "del"),
     ("\x9B", "csi"),
@@ -81,7 +81,7 @@ specialCodes =
 specialNumCodes :: Map Int Text
 specialNumCodes =
   Map.fromList [
-    (9, "ta"),
+    (9, "tab"),
     (10, "c-j"),
     (11, "c-k"),
     (12, "fe"),
