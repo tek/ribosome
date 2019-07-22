@@ -4,7 +4,7 @@ import Ribosome.Control.Monad.Ribo (MonadRibo, NvimE, pluginName)
 import Ribosome.Data.Mapping (Mapping(Mapping), MappingIdent(MappingIdent))
 import Ribosome.Data.Text (capitalize)
 import Ribosome.Nvim.Api.Data (Buffer)
-import Ribosome.Nvim.Api.IO (vimCommand)
+import Ribosome.Nvim.Api.IO (bufferGetNumber, vimCommand, vimGetCurrentBuffer, vimSetCurrentBuffer)
 
 activateMapping :: Mapping -> m ()
 activateMapping _ =
@@ -20,10 +20,14 @@ activateBufferMapping ::
   Buffer ->
   Mapping ->
   m ()
-activateBufferMapping _ (Mapping (MappingIdent ident) lhs mode remap _) = do
+activateBufferMapping buffer (Mapping (MappingIdent ident) lhs mode remap _) = do
+  previous <- vimGetCurrentBuffer
   name <- pluginName
-  vimCommand (unwords (cmdline name))
+  number <- bufferGetNumber buffer
+  vimCommand (unwords (cmdline name number))
+  when (buffer /= previous) (vimSetCurrentBuffer previous)
   where
-    cmdline name = [cmd, "<buffer>", lhs, ":silent call", func name <> "('" <> ident <> "')<cr>"]
+    cmdline name number =
+      [show number, "bufdo ", cmd, "<buffer>", lhs, ":silent call", func name <> "('" <> ident <> "')<cr>"]
     cmd = mapCommand mode remap
     func name = capitalize name <> "Mapping"
