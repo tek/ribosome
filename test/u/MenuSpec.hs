@@ -27,7 +27,7 @@ import Ribosome.Menu.Data.MenuRenderEvent (MenuRenderEvent)
 import qualified Ribosome.Menu.Data.MenuRenderEvent as MenuRenderEvent (MenuRenderEvent(..))
 import Ribosome.Menu.Data.MenuUpdate (MenuUpdate(MenuUpdate))
 import Ribosome.Menu.Prompt.Data.Prompt (Prompt(Prompt))
-import Ribosome.Menu.Prompt.Data.PromptConfig (PromptConfig(PromptConfig))
+import Ribosome.Menu.Prompt.Data.PromptConfig (PromptConfig(PromptConfig), PromptFlag(StartInsert))
 import Ribosome.Menu.Prompt.Data.PromptEvent (PromptEvent)
 import qualified Ribosome.Menu.Prompt.Data.PromptEvent as PromptEvent (PromptEvent(..))
 import qualified Ribosome.Menu.Prompt.Data.PromptState as PromptState (PromptState(..))
@@ -106,7 +106,7 @@ menuTest handler items chars = do
     conf itemsVar =
       MenuConfig (menuItems items) (MenuConsumer handler) (render itemsVar) promptConfig def
     promptConfig =
-      PromptConfig (promptInput chars) basicTransition noPromptRenderer True
+      PromptConfig (promptInput chars) basicTransition noPromptRenderer [StartInsert]
 
 promptTest :: [Text] -> [Text] -> IO ([[FilteredMenuItem Text]], [Prompt])
 promptTest items chars = do

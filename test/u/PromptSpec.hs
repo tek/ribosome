@@ -7,7 +7,7 @@ import qualified Data.Conduit.Combinators as Conduit (last)
 import Test.Framework
 
 import Ribosome.Menu.Prompt.Data.Prompt (Prompt(Prompt))
-import Ribosome.Menu.Prompt.Data.PromptConfig (PromptConfig(PromptConfig))
+import Ribosome.Menu.Prompt.Data.PromptConfig (PromptConfig(PromptConfig), PromptFlag(StartInsert))
 import Ribosome.Menu.Prompt.Data.PromptConsumed (PromptConsumed(Yes))
 import Ribosome.Menu.Prompt.Data.PromptConsumerUpdate (PromptConsumerUpdate(PromptConsumerUpdate))
 import qualified Ribosome.Menu.Prompt.Data.PromptEvent as PromptEvent (PromptEvent(..))
@@ -26,7 +26,7 @@ promptSetSpec = do
     initialPrompt =
       Prompt 1 PromptState.Normal "abc"
     config =
-      PromptConfig (return ()) basicTransition noPromptRenderer True
+      PromptConfig (return ()) basicTransition noPromptRenderer [StartInsert]
     event =
       PromptEvent.Set (Prompt 10 PromptState.Normal text)
     text =

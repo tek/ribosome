@@ -12,7 +12,7 @@ import Ribosome.Log (logDebug)
 import Ribosome.Menu.Prompt.Data.CursorUpdate (CursorUpdate)
 import qualified Ribosome.Menu.Prompt.Data.CursorUpdate as CursorUpdate (CursorUpdate(..))
 import Ribosome.Menu.Prompt.Data.Prompt (Prompt(Prompt))
-import Ribosome.Menu.Prompt.Data.PromptConfig (PromptConfig(PromptConfig))
+import Ribosome.Menu.Prompt.Data.PromptConfig (PromptConfig(PromptConfig), PromptFlag, onlyInsert, startInsert)
 import Ribosome.Menu.Prompt.Data.PromptConsumed (PromptConsumed)
 import qualified Ribosome.Menu.Prompt.Data.PromptConsumed as PromptConsumed (PromptConsumed(..))
 import Ribosome.Menu.Prompt.Data.PromptConsumerUpdate (PromptConsumerUpdate(PromptConsumerUpdate))
@@ -85,9 +85,9 @@ processPromptEvent ::
   PromptConfig m ->
   PromptEvent ->
   ConduitT PromptEvent PromptConsumerUpdate (StateT Prompt m) ()
-processPromptEvent (PromptConfig _ modes (PromptRenderer _ _ render) _) event = do
+processPromptEvent (PromptConfig _ modes (PromptRenderer _ _ render) flags) event = do
   logDebug @Text $ "prompt event: " <> show event
-  consumed <- lift . stateM $ lift . updatePrompt modes event
+  consumed <- lift . stateM $ lift . updatePrompt (modes flags) event
   newPrompt <- get
   yield (PromptConsumerUpdate event newPrompt consumed)
   lift . lift . render $ newPrompt
@@ -119,13 +119,13 @@ promptWithBackchannel ::
   PromptConfig m ->
   TMChan PromptEvent ->
   ConduitT () PromptConsumerUpdate m ()
-promptWithBackchannel config@(PromptConfig source _ (PromptRenderer _ _ render) insert) chan =
+promptWithBackchannel config@(PromptConfig source _ (PromptRenderer _ _ render) _) chan =
   mergeSources 64 [sourceWithInit, sourceTMChan chan] .| process .| skippingRenderer render
   where
     sourceWithInit =
       yield PromptEvent.Init *> source <* atomically (closeTMChan chan)
     process =
-      evalStateC (pristinePrompt insert) (awaitForever (processPromptEvent config))
+      evalStateC (pristinePrompt (startInsert config)) (awaitForever (processPromptEvent config))
 
 promptC ::
   MonadRibo m =>
@@ -180,33 +180,40 @@ basicTransitionNormal _ =
   PromptUpdate PromptState.Normal CursorUpdate.Unmodified TextUpdate.Unmodified PromptConsumed.No
 
 basicTransitionInsert ::
+  [PromptFlag] ->
   PromptEvent ->
   PromptUpdate
-basicTransitionInsert (PromptEvent.Character "esc") =
-  PromptUpdate PromptState.Normal CursorUpdate.OneLeft TextUpdate.Unmodified PromptConsumed.Yes
-basicTransitionInsert (PromptEvent.Character "bs") =
-  PromptUpdate PromptState.Insert CursorUpdate.OneLeft TextUpdate.DeleteLeft PromptConsumed.Yes
-basicTransitionInsert (PromptEvent.Character c) | unprocessable c =
-  PromptUpdate PromptState.Insert CursorUpdate.Unmodified TextUpdate.Unmodified PromptConsumed.No
-basicTransitionInsert (PromptEvent.Character "space") =
-  PromptUpdate PromptState.Insert CursorUpdate.OneRight (TextUpdate.Insert " ") PromptConsumed.Yes
-basicTransitionInsert (PromptEvent.Character c) =
-  PromptUpdate PromptState.Insert CursorUpdate.OneRight (TextUpdate.Insert c) PromptConsumed.Yes
-basicTransitionInsert _ =
-  PromptUpdate PromptState.Insert CursorUpdate.Unmodified TextUpdate.Unmodified PromptConsumed.No
+basicTransitionInsert flags =
+  trans
+  where
+    trans (PromptEvent.Character "esc") | onlyInsert flags =
+      PromptUpdate PromptState.Quit CursorUpdate.Unmodified TextUpdate.Unmodified PromptConsumed.Yes
+    trans (PromptEvent.Character "esc") =
+      PromptUpdate PromptState.Normal CursorUpdate.OneLeft TextUpdate.Unmodified PromptConsumed.Yes
+    trans (PromptEvent.Character "bs") =
+      PromptUpdate PromptState.Insert CursorUpdate.OneLeft TextUpdate.DeleteLeft PromptConsumed.Yes
+    trans (PromptEvent.Character c) | unprocessable c =
+      PromptUpdate PromptState.Insert CursorUpdate.Unmodified TextUpdate.Unmodified PromptConsumed.No
+    trans (PromptEvent.Character "space") =
+      PromptUpdate PromptState.Insert CursorUpdate.OneRight (TextUpdate.Insert " ") PromptConsumed.Yes
+    trans (PromptEvent.Character c) =
+      PromptUpdate PromptState.Insert CursorUpdate.OneRight (TextUpdate.Insert c) PromptConsumed.Yes
+    trans _ =
+      PromptUpdate PromptState.Insert CursorUpdate.Unmodified TextUpdate.Unmodified PromptConsumed.No
 
 basicTransition ::
   Monad m =>
+  [PromptFlag] ->
   PromptEvent ->
   PromptState ->
   m PromptUpdate
-basicTransition (PromptEvent.Set (Prompt cursor state text)) _ =
+basicTransition _ (PromptEvent.Set (Prompt cursor state text)) _ =
   return $ PromptUpdate state (CursorUpdate.Index cursor) (TextUpdate.Set text) PromptConsumed.Yes
-basicTransition event PromptState.Normal =
+basicTransition _ event PromptState.Normal =
   return $ basicTransitionNormal event
-basicTransition event PromptState.Insert =
-  return $ basicTransitionInsert event
-basicTransition _ PromptState.Quit =
+basicTransition flags event PromptState.Insert =
+  return $ basicTransitionInsert flags event
+basicTransition _ _ PromptState.Quit =
   return $ PromptUpdate PromptState.Quit CursorUpdate.Unmodified TextUpdate.Unmodified PromptConsumed.No
 
 pristinePrompt :: Bool -> Prompt

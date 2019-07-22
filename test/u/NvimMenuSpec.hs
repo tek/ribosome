@@ -20,7 +20,7 @@ import qualified Ribosome.Menu.Data.MenuItem as MenuItem (text)
 import Ribosome.Menu.Data.MenuResult (MenuResult)
 import qualified Ribosome.Menu.Data.MenuResult as MenuResult (MenuResult(..))
 import Ribosome.Menu.Prompt.Data.Prompt (Prompt(Prompt))
-import Ribosome.Menu.Prompt.Data.PromptConfig (PromptConfig(PromptConfig))
+import Ribosome.Menu.Prompt.Data.PromptConfig (PromptConfig(PromptConfig), PromptFlag(StartInsert))
 import Ribosome.Menu.Prompt.Data.PromptEvent (PromptEvent)
 import qualified Ribosome.Menu.Prompt.Data.PromptEvent as PromptEvent (PromptEvent(..))
 import Ribosome.Menu.Prompt.Nvim (getCharC, nvimPromptRenderer)
@@ -70,7 +70,7 @@ promptConfig ::
   ConduitT () PromptEvent (Ribo () TestError) () ->
   PromptConfig (Ribo () TestError)
 promptConfig source =
-  PromptConfig source basicTransition nvimPromptRenderer True
+  PromptConfig source basicTransition nvimPromptRenderer [StartInsert]
 
 runNvimMenu ::
   Mappings (Ribo () TestError) a Text ->
