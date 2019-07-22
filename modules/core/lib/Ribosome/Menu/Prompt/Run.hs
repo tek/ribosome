@@ -189,17 +189,23 @@ basicTransitionInsert flags =
     trans (PromptEvent.Character "esc") | onlyInsert flags =
       PromptUpdate PromptState.Quit CursorUpdate.Unmodified TextUpdate.Unmodified PromptConsumed.Yes
     trans (PromptEvent.Character "esc") =
-      PromptUpdate PromptState.Normal CursorUpdate.OneLeft TextUpdate.Unmodified PromptConsumed.Yes
+      normal
+    trans (PromptEvent.Character "c-n") =
+      normal
     trans (PromptEvent.Character "bs") =
-      PromptUpdate PromptState.Insert CursorUpdate.OneLeft TextUpdate.DeleteLeft PromptConsumed.Yes
+      insert CursorUpdate.OneLeft TextUpdate.DeleteLeft PromptConsumed.Yes
     trans (PromptEvent.Character c) | unprocessable c =
-      PromptUpdate PromptState.Insert CursorUpdate.Unmodified TextUpdate.Unmodified PromptConsumed.No
+      insert CursorUpdate.Unmodified TextUpdate.Unmodified PromptConsumed.No
     trans (PromptEvent.Character "space") =
-      PromptUpdate PromptState.Insert CursorUpdate.OneRight (TextUpdate.Insert " ") PromptConsumed.Yes
+      insert CursorUpdate.OneRight (TextUpdate.Insert " ") PromptConsumed.Yes
     trans (PromptEvent.Character c) =
-      PromptUpdate PromptState.Insert CursorUpdate.OneRight (TextUpdate.Insert c) PromptConsumed.Yes
+      insert CursorUpdate.OneRight (TextUpdate.Insert c) PromptConsumed.Yes
     trans _ =
-      PromptUpdate PromptState.Insert CursorUpdate.Unmodified TextUpdate.Unmodified PromptConsumed.No
+      insert CursorUpdate.Unmodified TextUpdate.Unmodified PromptConsumed.No
+    insert =
+      PromptUpdate PromptState.Insert
+    normal =
+      PromptUpdate PromptState.Normal CursorUpdate.OneLeft TextUpdate.Unmodified PromptConsumed.Yes
 
 basicTransition ::
   Monad m =>

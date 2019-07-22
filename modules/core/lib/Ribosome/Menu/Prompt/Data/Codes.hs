@@ -86,6 +86,7 @@ specialNumCodes =
     (11, "c-k"),
     (12, "fe"),
     (13, "cr"),
+    (14, "c-n"),
     (25, "c-y"),
     (27, "esc"),
     (32, "space"),
