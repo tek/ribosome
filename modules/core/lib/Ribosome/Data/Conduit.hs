@@ -6,13 +6,8 @@ import Control.Concurrent.Lifted (fork, killThread)
 import Control.Concurrent.STM.TBMChan (TBMChan, closeTBMChan, newTBMChan, readTBMChan, writeTBMChan)
 import Control.Concurrent.STM.TMVar (TMVar, newTMVar)
 import Control.Exception.Lifted (bracket, finally)
-import Control.Monad (liftM)
-import Control.Monad.Base (MonadBase(..), liftBaseDefault)
-import Control.Monad.Trans.Control
-import Control.Monad.Trans.Resource (allocate, release)
+import Control.Monad.Trans.Control (embed)
 import qualified Data.Conduit.Combinators as Conduit (mapM_)
-import Data.Conduit.Internal (ConduitT(ConduitT, unConduitT), Pipe)
-import Data.Conduit.Internal hiding (yield, bracketP)
 
 import Ribosome.Control.Monad.Ribo (modifyTMVar)
 
@@ -64,9 +59,9 @@ mergeSourcesWith activeSources chan sourceRunner sources =
   bracketP acquire release (const combinedSource)
   where
     acquire =
-      traverse (forkIO . start activeSources) sources
-    start activeSources source = do
-      sourceRunner source
+      traverse (forkIO . start) sources
+    start source = do
+      void $ sourceRunner source
       sourceTerminated activeSources chan
     release ids =
       traverse_ killThread ids *>
@@ -86,7 +81,7 @@ mergeSources bound sources = do
   embeddedRunner <- lift $ embed (embedSourceRunner chan)
   mergeSourcesWith activeSources chan embeddedRunner sources
   where
-    embedSourceRunner chan source = do
+    embedSourceRunner chan source =
       runConduit (source .| Conduit.mapM_ (atomically . writeTBMChan chan))
 
 withSourcesInChanAs ::

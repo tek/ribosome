@@ -1,3 +1,4 @@
+{-# OPTIONS_GHC -fno-warn-orphans #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 {-# LANGUAGE UndecidableInstances #-}
 
@@ -26,7 +27,6 @@ module Ribosome.Prelude (
 import Control.Lens (makeClassy)
 import Control.Monad.Base (MonadBase(..))
 import Control.Monad.Trans.Control (MonadBaseControl(..))
-import Control.Monad.Trans.Resource (runResourceT)
 import Control.Monad.Trans.Resource.Internal (ResourceT(ResourceT))
 import Cornea
 import Data.DeepLenses (deepLenses)
