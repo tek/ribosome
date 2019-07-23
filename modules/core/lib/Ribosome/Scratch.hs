@@ -18,7 +18,7 @@ import Ribosome.Control.Ribosome (RibosomeInternal)
 import qualified Ribosome.Control.Ribosome as Ribosome (scratch)
 import Ribosome.Data.FloatOptions (FloatOptions)
 import Ribosome.Data.Scratch (Scratch(Scratch))
-import qualified Ribosome.Data.Scratch as Scratch (Scratch(scratchPrevious, scratchWindow))
+import qualified Ribosome.Data.Scratch as Scratch (Scratch(scratchPrevious, scratchWindow, scratchBuffer))
 import Ribosome.Data.ScratchOptions (ScratchOptions(ScratchOptions))
 import qualified Ribosome.Data.ScratchOptions as ScratchOptions (maxSize, name, resize, vertical)
 import Ribosome.Data.Text (capitalize)
@@ -313,3 +313,10 @@ scratchWindow ::
   m (Maybe Window)
 scratchWindow =
   fmap Scratch.scratchWindow <$$> lookupScratch
+
+scratchBuffer ::
+  MonadRibo m =>
+  Text ->
+  m (Maybe Buffer)
+scratchBuffer =
+  fmap Scratch.scratchBuffer <$$> lookupScratch
