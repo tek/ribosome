@@ -103,6 +103,13 @@ unloadBuffer =
     unload number =
       vimCommand ("silent! bunload! " <> show number)
 
+addBuffer ::
+  NvimE e m =>
+  Text ->
+  m ()
+addBuffer path =
+  vimCommand ("badd " <> path)
+
 buffersAndNames ::
   MonadIO m =>
   MonadDeepError e DecodeError m =>
