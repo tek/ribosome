@@ -45,8 +45,11 @@ setupMappingScratch ::
   MonadDeepError e DecodeError m =>
   m ()
 setupMappingScratch = do
-  _ <- showInScratch target (ScratchOptions False True False True True True Nothing Nothing Nothing [] [mapping] "buffi")
+  _ <- showInScratch target options
   return ()
+  where
+    options =
+      ScratchOptions False True False True True True False Nothing Nothing Nothing [] [mapping] "buffi"
 
 $(return [])
 

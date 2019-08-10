@@ -8,7 +8,7 @@ import Data.Foldable (traverse_)
 import qualified Data.Map.Strict as Map (empty)
 import Data.MessagePack (Object)
 
-import Ribosome.Api.Autocmd (eventignore)
+import Ribosome.Api.Autocmd (bufferAutocmd, eventignore)
 import Ribosome.Api.Buffer (setBufferContent, wipeBuffer)
 import Ribosome.Api.Syntax (executeCurrentWindowSyntax)
 import Ribosome.Api.Tabpage (closeTabpage)
@@ -156,9 +156,7 @@ setupDeleteAutocmd ::
   m ()
 setupDeleteAutocmd (Scratch name buffer _ _ _) = do
   pname <- capitalize <$> pluginName
-  number <- bufferGetNumber buffer
-  vimCommand "augroup RibosomeScratch"
-  vimCommand $ "autocmd RibosomeScratch BufDelete <buffer=" <> show number <> "> " <> deleteCall pname
+  bufferAutocmd buffer "RibosomeScratch" "BufDelete" (deleteCall pname)
   where
     deleteCall pname =
       "silent! call " <> pname <> "DeleteScratch('" <> name <> "')"

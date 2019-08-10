@@ -4,7 +4,8 @@ import Control.Exception.Lifted (bracket)
 
 import Ribosome.Control.Monad.Ribo (NvimE)
 import Ribosome.Msgpack.Encode (toMsgpack)
-import Ribosome.Nvim.Api.IO (vimCommand, vimGetOption, vimSetOption)
+import Ribosome.Nvim.Api.Data (Buffer)
+import Ribosome.Nvim.Api.IO (bufferGetNumber, vimCommand, vimGetOption, vimSetOption)
 
 doautocmd ::
   NvimE e m =>
@@ -39,3 +40,16 @@ eventignore =
       return previous
     restore =
       vimSetOption "eventignore"
+
+bufferAutocmd ::
+  NvimE e m =>
+  Buffer ->
+  Text ->
+  Text ->
+  Text ->
+  m ()
+bufferAutocmd buffer grp event cmd = do
+  number <- bufferGetNumber buffer
+  vimCommand $ "augroup " <> grp
+  vimCommand $ "autocmd " <> " " <> event <> " <buffer=" <> show number <> "> " <> cmd
+  vimCommand "augroup end"

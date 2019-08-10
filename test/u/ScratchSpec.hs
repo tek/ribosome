@@ -35,7 +35,7 @@ makeScratch ::
   MonadDeepError e DecodeError m =>
   m ()
 makeScratch =
-  void $ showInScratch target (ScratchOptions False True False True True True Nothing Nothing Nothing [] [] name)
+  void $ showInScratch target (ScratchOptions False True False True True True False Nothing Nothing Nothing [] [] name)
 
 floatOptions :: FloatOptions
 floatOptions =
@@ -51,7 +51,7 @@ makeFloatScratch =
   void $ showInScratch target options
   where
     options =
-      ScratchOptions False True False True True True (Just floatOptions) Nothing (Just 0) [] [] name
+      ScratchOptions False True False True True True False (Just floatOptions) Nothing (Just 0) [] [] name
 
 scratchCount ::
   MonadRibo m =>
