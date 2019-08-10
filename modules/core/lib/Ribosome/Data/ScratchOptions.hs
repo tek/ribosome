@@ -1,6 +1,7 @@
 module Ribosome.Data.ScratchOptions where
 
 import Control.Lens (set)
+import Prelude hiding (modify)
 
 import Ribosome.Data.FloatOptions (FloatOptions)
 import Ribosome.Data.Mapping (Mapping)
@@ -14,6 +15,7 @@ data ScratchOptions =
     _focus :: Bool,
     _resize :: Bool,
     _bottom :: Bool,
+    _modify :: Bool,
     _float :: Maybe FloatOptions,
     _size :: Maybe Int,
     _maxSize :: Maybe Int,
@@ -26,7 +28,7 @@ data ScratchOptions =
 makeClassy ''ScratchOptions
 
 defaultScratchOptions :: Text -> ScratchOptions
-defaultScratchOptions = ScratchOptions False False False False True True Nothing Nothing Nothing [] []
+defaultScratchOptions = ScratchOptions False False False False True True False Nothing Nothing Nothing [] []
 
 instance Default ScratchOptions where
   def = defaultScratchOptions "scratch"
@@ -50,3 +52,7 @@ scratchFloat =
 scratchSize :: Int -> ScratchOptions -> ScratchOptions
 scratchSize =
   set size . Just
+
+scratchModify :: ScratchOptions -> ScratchOptions
+scratchModify =
+  set modify True

@@ -20,7 +20,7 @@ import Ribosome.Data.FloatOptions (FloatOptions)
 import Ribosome.Data.Scratch (Scratch(Scratch))
 import qualified Ribosome.Data.Scratch as Scratch (Scratch(scratchPrevious, scratchWindow, scratchBuffer))
 import Ribosome.Data.ScratchOptions (ScratchOptions(ScratchOptions))
-import qualified Ribosome.Data.ScratchOptions as ScratchOptions (maxSize, name, resize, vertical)
+import qualified Ribosome.Data.ScratchOptions as ScratchOptions (maxSize, modify, name, resize, vertical)
 import Ribosome.Data.Text (capitalize)
 import Ribosome.Log (logDebug)
 import Ribosome.Mapping (activateBufferMapping)
@@ -119,7 +119,7 @@ createScratchUi ::
   NvimE e m =>
   ScratchOptions ->
   m (Buffer, Window, Maybe Tabpage)
-createScratchUi (ScratchOptions False vertical wrap _ _ bottom float size _ _ _ _) =
+createScratchUi (ScratchOptions False vertical wrap _ _ bottom _ float size _ _ _ _) =
   uncurry (,,Nothing) <$> createScratchWindow vertical wrap bottom float size
 createScratchUi _ =
   createScratchUiInTab
@@ -173,7 +173,7 @@ setupScratchIn ::
   Maybe Tabpage ->
   ScratchOptions ->
   m Scratch
-setupScratchIn buffer previous window tab (ScratchOptions _ _ _ focus _ _ _ _ _ syntax mappings name) = do
+setupScratchIn buffer previous window tab (ScratchOptions _ _ _ focus _ _ _ _ _ _ syntax mappings name) = do
   validBuffer <- setupScratchBuffer window buffer name
   traverse_ executeCurrentWindowSyntax syntax
   traverse_ (activateBufferMapping validBuffer) mappings
@@ -229,6 +229,22 @@ ensureScratch options = do
   f <- maybe createScratch updateScratch <$> lookupScratch (view ScratchOptions.name options)
   f options
 
+withModifiable ::
+  NvimE e m =>
+  Buffer ->
+  ScratchOptions ->
+  m a ->
+  m a
+withModifiable buffer options thunk =
+  if isWrite then thunk else wrap
+  where
+    isWrite =
+      view ScratchOptions.modify options
+    wrap =
+      update True *> thunk <* update False
+    update value =
+      bufferSetOption buffer "modifiable" (toMsgpack value)
+
 setScratchContent ::
   Foldable t =>
   NvimE e m =>
@@ -237,9 +253,7 @@ setScratchContent ::
   t Text ->
   m ()
 setScratchContent options (Scratch _ buffer win _ _) lines' = do
-  bufferSetOption buffer "modifiable" (toMsgpack True)
-  setBufferContent buffer (toList lines')
-  bufferSetOption buffer "modifiable" (toMsgpack False)
+  withModifiable buffer options $ setBufferContent buffer (toList lines')
   when (view ScratchOptions.resize options) (ignoreError @RpcError $ setSize win size)
   where
     size =
