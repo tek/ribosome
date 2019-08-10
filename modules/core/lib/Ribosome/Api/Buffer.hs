@@ -53,6 +53,10 @@ setBufferContent :: NvimE e m => Buffer -> [Text] -> m ()
 setBufferContent buffer =
   bufferSetLines buffer 0 (-1) False
 
+setBufferLine :: NvimE e m => Buffer -> Int -> Text -> m ()
+setBufferLine buffer line text =
+  bufferSetLines buffer line (line + 1) False [text]
+
 setCurrentBufferContent ::
   NvimE e m =>
   [Text] ->
