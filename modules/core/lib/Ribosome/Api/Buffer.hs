@@ -65,25 +65,43 @@ setCurrentBufferContent content = do
   buffer <- vimGetCurrentBuffer
   setBufferContent buffer content
 
+withBufferNumber ::
+  NvimE e m =>
+  (Int -> m ()) ->
+  Buffer ->
+  m ()
+withBufferNumber run buffer =
+  whenM (bufferIsValid buffer) (run =<< bufferGetNumber buffer)
+
 closeBuffer ::
   NvimE e m =>
   Buffer ->
   m ()
-closeBuffer buffer = do
-  valid <- bufferIsValid buffer
-  when valid $ do
-    number <- bufferGetNumber buffer
-    vimCommand ("silent! bdelete! " <> show number)
+closeBuffer =
+  withBufferNumber del
+  where
+    del number =
+      vimCommand ("silent! bdelete! " <> show number)
 
 wipeBuffer ::
   NvimE e m =>
   Buffer ->
   m ()
-wipeBuffer buffer = do
-  valid <- bufferIsValid buffer
-  when valid $ do
-    number <- bufferGetNumber buffer
-    vimCommand ("silent! bwipeout! " <> show number)
+wipeBuffer =
+  withBufferNumber wipe
+  where
+    wipe number =
+      vimCommand ("silent! bwipeout! " <> show number)
+
+unloadBuffer ::
+  NvimE e m =>
+  Buffer ->
+  m ()
+unloadBuffer =
+  withBufferNumber unload
+  where
+    unload number =
+      vimCommand ("silent! bunload! " <> show number)
 
 buffersAndNames ::
   MonadIO m =>
