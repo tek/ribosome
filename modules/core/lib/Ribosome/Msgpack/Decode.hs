@@ -89,9 +89,18 @@ instance (GMsgpackDecode f, GMsgpackDecode g) => GMsgpackDecode (f :+: g) where
 -- TODO use Proxy instead of undefined
 instance (Selector s, GMsgpackDecode f) => MsgpackDecodeProd (S1 s f) where
   msgpackDecodeRecord o =
-    M1 <$> maybe (gMissingKey key (ObjectMap o)) gMsgpackDecode (Util.lookupObjectMap key o)
+    M1 <$> maybe (gMissingKey key (ObjectMap o)) gMsgpackDecode lookup
     where
-      key = selName (undefined :: t s f p)
+      lookup =
+        Util.lookupObjectMap key o <|> lookupUnderscore
+      lookupUnderscore =
+        if hasUnderscore
+        then Util.lookupObjectMap (dropWhile ('_' ==) key) o
+        else Nothing
+      hasUnderscore =
+        take 1 key == "_"
+      key =
+        selName (undefined :: t s f p)
   msgpackDecodeProd (cur:rest) = do
     a <- gMsgpackDecode cur
     return (rest, M1 a)
