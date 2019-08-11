@@ -66,7 +66,8 @@ instance (GMsgpackEncode f, GMsgpackEncode g) => GMsgpackEncode (f :+: g) where
   gMsgpackEncode (R1 a) = gMsgpackEncode a
 
 instance (Selector s, GMsgpackEncode f) => MsgpackEncodeProd (S1 s f) where
-  msgpackEncodeRecord s@(M1 f) = [(selName s, gMsgpackEncode f)]
+  msgpackEncodeRecord s@(M1 f) =
+    [(dropWhile ('_' ==) (selName s), gMsgpackEncode f), (selName s, gMsgpackEncode f)]
   msgpackEncodeProd (M1 f) = [gMsgpackEncode f]
 
 instance MsgpackEncode a => GMsgpackEncode (K1 i a) where
