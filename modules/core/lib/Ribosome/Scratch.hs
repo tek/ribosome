@@ -29,6 +29,7 @@ import Ribosome.Msgpack.Encode (toMsgpack)
 import Ribosome.Msgpack.Error (DecodeError)
 import Ribosome.Nvim.Api.Data (Buffer, Tabpage, Window)
 import Ribosome.Nvim.Api.IO (
+  bufferGetName,
   bufferGetNumber,
   bufferSetName,
   bufferSetOption,
@@ -194,6 +195,17 @@ createScratch options = do
   (buffer, window, tab) <- eventignore $ createScratchUi options
   eventignore $ setupScratchIn buffer previous window tab options
 
+bufferStillLoaded ::
+  NvimE e m =>
+  Text ->
+  Buffer ->
+  m Bool
+bufferStillLoaded name buffer =
+  (&&) <$> loaded <*> loadedName
+  where
+    loaded = nvimBufIsLoaded buffer
+    loadedName = catchAs @RpcError False ((name ==) <$> bufferGetName buffer)
+
 updateScratch ::
   NvimE e m =>
   MonadRibo m =>
@@ -202,12 +214,16 @@ updateScratch ::
   Scratch ->
   ScratchOptions ->
   m Scratch
-updateScratch (Scratch name oldBuffer oldWindow _ oldTab) options = do
+updateScratch oldScratch@(Scratch name oldBuffer oldWindow _ _) options = do
   logDebug $ "updating existing scratch `" <> name <> "`"
-  previous <- vimGetCurrentWindow
-  winValid <- windowIsValid oldWindow
-  (buffer, window, tab) <- if winValid then return (oldBuffer, oldWindow, oldTab) else createScratchUi options
-  setupScratchIn buffer previous window tab options
+  ifM (windowIsValid oldWindow) attemptReuseWindow reset
+  where
+    attemptReuseWindow =
+      ifM (bufferStillLoaded name oldBuffer) (return oldScratch) closeAndReset
+    closeAndReset =
+      closeWindow oldWindow *> reset
+    reset =
+      createScratch options
 
 lookupScratch ::
   MonadRibo m =>
