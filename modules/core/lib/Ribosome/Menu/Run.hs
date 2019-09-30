@@ -60,8 +60,8 @@ promptEvent (PromptEvent.Character a) prompt PromptConsumed.No =
   MenuEvent.Mapping a prompt
 promptEvent (PromptEvent.Character _) prompt@(Prompt _ PromptState.Insert _) _ =
   MenuEvent.PromptChange prompt
-promptEvent (PromptEvent.Character a) prompt _ =
-  MenuEvent.Mapping a prompt
+promptEvent (PromptEvent.Character _) prompt PromptConsumed.Yes =
+  MenuEvent.PromptChange prompt
 promptEvent (PromptEvent.Set _) prompt _ =
   MenuEvent.PromptChange prompt
 promptEvent PromptEvent.Init prompt _ =
