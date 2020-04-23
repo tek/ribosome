@@ -40,6 +40,20 @@ packages:
   original:
     hackage: messagepack-0.5.4
 - completed:
+    size: 70648
+    url: https://github.com/neovimhaskell/nvim-hs/archive/6eb110f11a3875da1be9415515014d574834391b.tar.gz
+    cabal-file:
+      size: 7516
+      sha256: ce02fc6c087ba1e33efb932850654922fb85b1d9050341fc8249ed5b2486a03f
+    name: nvim-hs
+    version: 2.1.0.3
+    sha256: 6550fd22871e401b350ecee252d7678b47b3db65bbe33d1760581c2b684ab6df
+    pantry-tree:
+      size: 3892
+      sha256: 392cd8fba87f2705e6315e77ca0d375d6d8619cb86dfada1a5fa77cc38ad74a2
+  original:
+    url: https://github.com/neovimhaskell/nvim-hs/archive/6eb110f11a3875da1be9415515014d574834391b.tar.gz
+- completed:
     size: 7023
     url: https://github.com/tek/cornea/archive/43c649fa064fd5c90047a76829f353c51b3cde0a.tar.gz
     cabal-file:

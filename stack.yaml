@@ -13,7 +13,7 @@ extra-deps:
 - fuzzy-0.1.0.0
 - messagepack-0.5.4
 - github: neovimhaskell/nvim-hs
-  commit: c20824c0f98c7dcb64d6368b187db49fd0e10a4e
+  commit: 6eb110f11a3875da1be9415515014d574834391b
 - github: tek/cornea
   commit: 43c649fa064fd5c90047a76829f353c51b3cde0a
 - github: tek/chiasma
