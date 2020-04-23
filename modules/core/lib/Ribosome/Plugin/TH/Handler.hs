@@ -86,6 +86,8 @@ instance Lift CommandOption where
     [|CmdCount a|]
   lift CmdBang =
     [|CmdBang|]
+  lift (CmdComplete cs) =
+    [|(CmdComplete cs)|]
 
 instance Lift AutocmdOptions where
   lift (AutocmdOptions p n g) =

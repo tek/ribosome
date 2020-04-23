@@ -40,25 +40,11 @@ packages:
   original:
     hackage: messagepack-0.5.4
 - completed:
-    size: 69324
-    url: https://github.com/neovimhaskell/nvim-hs/archive/8b1a38c18f530f65a17a7fda2a14c168a2663821.tar.gz
-    cabal-file:
-      size: 7516
-      sha256: 6e2272d6cc39ae36418896b689e21d2cd88fb4f46ae9d86d9569015ad37ac45a
-    name: nvim-hs
-    version: 2.1.0.3
-    sha256: a4e81d51b2cdb45d8f086368ab07a539aecc733998c86c4b1a19654343cae263
-    pantry-tree:
-      size: 3828
-      sha256: 6a75bf4c4f23115916d8c7721dbd3ea1729099d6a285cced5a4660f01aa7a9a4
-  original:
-    url: https://github.com/neovimhaskell/nvim-hs/archive/8b1a38c18f530f65a17a7fda2a14c168a2663821.tar.gz
-- completed:
     size: 7023
     url: https://github.com/tek/cornea/archive/43c649fa064fd5c90047a76829f353c51b3cde0a.tar.gz
     cabal-file:
       size: 3070
-      sha256: 8a81897221709fb89b00efb28caf1846b37afa43dc5da0858fa46d560a521361
+      sha256: aa5cf817d7d5bbca448efec3c36f37ab4d6807729187f3a339c05e9ca520ad55
     name: cornea
     version: 0.2.2.0
     sha256: f0a56ef3fe63231757db4e7a12c1c902e8f0948d78aa2356c1d72337673ac9fe
@@ -72,7 +58,7 @@ packages:
     url: https://github.com/tek/chiasma/archive/25578d92b19beba962f8e163805a42da94715a8e.tar.gz
     cabal-file:
       size: 5755
-      sha256: d8b2ccb3392ec124156301ce7a1acc84e5f3e0f085201af1b388a0c474707a1b
+      sha256: 82c289bc61938947afd1a08496fd6ae11a77af73eabedaf26937b7e5b33aea15
     name: chiasma
     version: 0.1.0.0
     sha256: c239bc2ee2ee952dea5e6ecf859151d2c00bb0b72f034f7bfd07e62acfb1dad0
