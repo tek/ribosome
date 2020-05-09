@@ -8,12 +8,17 @@ import Control.Monad.Trans.Control (MonadBaseControl)
 import Data.Conduit.Combinators (iterM)
 import qualified Data.Conduit.Combinators as Conduit (last)
 import Data.Conduit.Lift (evalStateC)
+import qualified Data.Text as Text
 
+import Ribosome.Api.Window (closeWindow)
+import Ribosome.Config.Setting (settingOr)
+import qualified Ribosome.Config.Settings as Settings
 import Ribosome.Control.Monad.Ribo (MonadRibo, NvimE)
 import Ribosome.Data.Conduit (mergeSources)
 import Ribosome.Data.Scratch (scratchWindow)
 import Ribosome.Data.ScratchOptions (ScratchOptions)
 import qualified Ribosome.Data.ScratchOptions as ScratchOptions (size, syntax)
+import Ribosome.Data.WindowConfig (WindowConfig(WindowConfig))
 import Ribosome.Log (showDebug)
 import Ribosome.Menu.Data.Menu (Menu)
 import qualified Ribosome.Menu.Data.Menu as Menu (maxItems)
@@ -44,9 +49,11 @@ import qualified Ribosome.Menu.Prompt.Data.PromptEvent as PromptEvent (PromptEve
 import Ribosome.Menu.Prompt.Data.PromptRenderer (PromptRenderer(PromptRenderer))
 import qualified Ribosome.Menu.Prompt.Data.PromptState as PromptState (PromptState(..))
 import Ribosome.Menu.Prompt.Run (promptC)
+import Ribosome.Msgpack.Decode (fromMsgpack)
 import Ribosome.Msgpack.Encode (MsgpackEncode(toMsgpack))
 import Ribosome.Msgpack.Error (DecodeError)
-import Ribosome.Nvim.Api.IO (windowSetOption)
+import Ribosome.Nvim.Api.Data (Window)
+import Ribosome.Nvim.Api.IO (nvimWinGetConfig, vimGetWindows, windowSetOption)
 import Ribosome.Scratch (showInScratch)
 
 promptEvent ::
@@ -148,6 +155,26 @@ menuC (MenuConfig items handle render promptConfig maxItems) = do
     menuHandler backchannel =
       awaitForever . updateMenu backchannel $ handle
 
+isFloat ::
+  NvimE e m =>
+  MonadRibo m =>
+  Window ->
+  m Bool
+isFloat =
+  fmap (check . fromMsgpack . toMsgpack) . nvimWinGetConfig
+  where
+    check (Right (WindowConfig relative _ _)) =
+      not (Text.null relative)
+    check _ =
+      False
+
+closeFloats ::
+  NvimE e m =>
+  MonadRibo m =>
+  m ()
+closeFloats = do
+  traverse_ closeWindow =<< filterM isFloat =<< vimGetWindows
+
 runMenu ::
   MonadRibo m =>
   MonadResource m =>
@@ -178,7 +205,8 @@ nvimMenu ::
   PromptConfig m ->
   Maybe Int ->
   m (MenuResult a)
-nvimMenu options items handle promptConfig maxItems =
+nvimMenu options items handle promptConfig maxItems = do
+  whenM (settingOr True Settings.menuCloseFloats) closeFloats
   run =<< showInScratch [] (withSyntax (ensureSize options))
   where
     run scratch = do
