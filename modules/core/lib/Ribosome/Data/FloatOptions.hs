@@ -47,10 +47,11 @@ data FloatOptions =
     row :: Int,
     col :: Int,
     focusable :: Bool,
-    anchor :: FloatAnchor
+    anchor :: FloatAnchor,
+    bufpos :: Maybe (Int, Int)
   }
   deriving (Eq, Show, Generic, MsgpackEncode)
 
 instance Default FloatOptions where
   def =
-    FloatOptions def 30 10 1 1 False def
+    FloatOptions def 30 10 1 1 False def def
