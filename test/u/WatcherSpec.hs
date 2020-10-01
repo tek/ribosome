@@ -20,7 +20,7 @@ import TestError (RiboT, handleTestError)
 
 changed :: NvimE e m => Object -> m ()
 changed _ =
-  setVar "number" =<< (+(1 :: Int)) <$> vimGetVar "number"
+  setVar "number" =<< ((+) (1 :: Int)) <$> vimGetVar "number"
 
 varWatcherPlugin :: IO (Plugin (Ribosome ()))
 varWatcherPlugin = do

@@ -42,7 +42,7 @@ persistenceFile ::
 persistenceFile path = do
   file <- persistencePath path
   createDirIfMissing True (parent file)
-  addExtension "json" file
+  addExtension ".json" file
 
 persistStore ::
   MonadRibo m =>

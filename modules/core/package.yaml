@@ -74,6 +74,8 @@ dependencies:
 
 library:
   source-dirs: lib
+  other-modules:
+    - Prelude
 
 default-extensions:
 - BangPatterns

@@ -3,10 +3,8 @@
 module Ribosome.Data.FloatOptions where
 
 import qualified Data.Map as Map
-import GHC.Generics (from)
 
-import Ribosome.Msgpack.Decode (fromMsgpack)
-import Ribosome.Msgpack.Encode (MsgpackEncode(toMsgpack), gMsgpackEncode)
+import Ribosome.Msgpack.Encode (MsgpackEncode(toMsgpack))
 
 data FloatRelative =
   Editor
@@ -62,7 +60,7 @@ instance MsgpackEncode FloatOptions where
     where
       simple =
         [
-          ("relative", toMsgpack relative),
+          ("relative" :: Text, toMsgpack relative),
           ("width", toMsgpack width),
           ("height", toMsgpack height),
           ("row", toMsgpack row),

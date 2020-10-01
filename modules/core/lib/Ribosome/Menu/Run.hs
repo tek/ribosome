@@ -52,7 +52,7 @@ import Ribosome.Msgpack.Decode (fromMsgpack)
 import Ribosome.Msgpack.Encode (MsgpackEncode(toMsgpack))
 import Ribosome.Msgpack.Error (DecodeError)
 import Ribosome.Nvim.Api.Data (Window)
-import Ribosome.Nvim.Api.IO (nvimWinGetConfig, vimGetWindows, windowSetOption)
+import Ribosome.Nvim.Api.IO (nvimWinGetConfig, vimCallFunction, vimGetWindows, windowSetOption)
 import Ribosome.Scratch (showInScratch)
 
 promptEvent ::
@@ -205,6 +205,7 @@ nvimMenu ::
   Maybe Int ->
   m (MenuResult a)
 nvimMenu options items handle promptConfig maxItems = do
+  _ :: Int <- vimCallFunction "inputsave" []
   whenM (settingOr True Settings.menuCloseFloats) closeFloats
   run =<< showInScratch [] (withSyntax (ensureSize options))
   where

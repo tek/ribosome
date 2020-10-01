@@ -35,7 +35,10 @@ dependencies:
   - process
   - relude
   - resourcet
-  - ribosome
+  - name: ribosome
+    mixin:
+      - hiding (Ribosome.Prelude)
+      - (Ribosome.Prelude as Prelude)
   - text
   - transformers
   - typed-process
