@@ -2,7 +2,11 @@
 
 module Ribosome.Data.FloatOptions where
 
-import Ribosome.Msgpack.Encode (MsgpackEncode(toMsgpack))
+import qualified Data.Map as Map
+import GHC.Generics (from)
+
+import Ribosome.Msgpack.Decode (fromMsgpack)
+import Ribosome.Msgpack.Encode (MsgpackEncode(toMsgpack), gMsgpackEncode)
 
 data FloatRelative =
   Editor
@@ -50,7 +54,23 @@ data FloatOptions =
     anchor :: FloatAnchor,
     bufpos :: Maybe (Int, Int)
   }
-  deriving (Eq, Show, Generic, MsgpackEncode)
+  deriving (Eq, Show, Generic)
+
+instance MsgpackEncode FloatOptions where
+  toMsgpack FloatOptions {..} =
+    toMsgpack $ Map.fromList (simple ++ maybe [] (pure . ("bufpos",) . toMsgpack) bufpos)
+    where
+      simple =
+        [
+          ("relative", toMsgpack relative),
+          ("width", toMsgpack width),
+          ("height", toMsgpack height),
+          ("row", toMsgpack row),
+          ("col", toMsgpack col),
+          ("focusable", toMsgpack focusable),
+          ("anchor", toMsgpack anchor),
+          ("relative", toMsgpack relative)
+        ]
 
 instance Default FloatOptions where
   def =

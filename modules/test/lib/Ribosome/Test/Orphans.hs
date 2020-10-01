@@ -2,7 +2,6 @@
 
 module Ribosome.Test.Orphans where
 
-import Control.Monad.IO.Class (liftIO)
 import Control.Monad.IO.Unlift (withRunInIO)
 import Neovim (Neovim)
 import Test.Framework.AssertM (AssertM(..))

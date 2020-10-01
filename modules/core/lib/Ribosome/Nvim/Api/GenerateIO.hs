@@ -2,9 +2,6 @@
 
 module Ribosome.Nvim.Api.GenerateIO where
 
-import Control.Monad ((<=<))
-import Control.Monad.DeepError (MonadDeepError, hoistEither)
-import Data.Maybe (maybeToList)
 import Language.Haskell.TH
 import Language.Haskell.TH.Syntax
 import Neovim.API.Parser (NeovimType(SimpleType))

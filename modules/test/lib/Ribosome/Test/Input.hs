@@ -4,6 +4,7 @@ import Control.Concurrent.Lifted (fork, killThread)
 import Control.Exception.Lifted (bracket)
 
 import Ribosome.Api.Input (syntheticInput)
+import Ribosome.Control.Monad.Ribo (NvimE)
 
 withInput ::
   NvimE e m =>

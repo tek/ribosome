@@ -2,8 +2,6 @@ module Ribosome.Plugin.Watch where
 
 import Control.Lens (Lens')
 import qualified Control.Lens as Lens (at)
-import Control.Monad.DeepError (catchAt)
-import Data.Map.Strict (Map)
 import qualified Data.Map.Strict as Map (toList)
 import Data.MessagePack (Object(ObjectNil))
 

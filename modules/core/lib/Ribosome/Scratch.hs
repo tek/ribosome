@@ -2,9 +2,6 @@ module Ribosome.Scratch where
 
 import Control.Lens (Lens', set, view)
 import qualified Control.Lens as Lens (at)
-import Control.Monad (unless)
-import Data.Default (Default(def))
-import Data.Foldable (traverse_)
 import qualified Data.Map.Strict as Map (empty)
 import Data.MessagePack (Object)
 
@@ -101,7 +98,7 @@ createScratchWindow vertical wrap bottom float size = do
   windowSetOption win "cursorline" (toMsgpack True)
   windowSetOption win "colorcolumn" (toMsgpack ("" :: Text))
   windowSetOption win "foldmethod" (toMsgpack ("manual" :: Text))
-  windowSetOption win "conceallevel" (toMsgpack (3 :: Int))
+  windowSetOption win "conceallevel" (toMsgpack (2 :: Int))
   return (buffer, win)
   where
     createWindow =

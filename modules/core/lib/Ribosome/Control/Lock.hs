@@ -2,10 +2,7 @@ module Ribosome.Control.Lock where
 
 import Control.Exception.Lifted (finally)
 import qualified Control.Lens as Lens (at, view)
-import Control.Monad.IO.Class (MonadIO)
-import Control.Monad.Trans.Control (MonadBaseControl)
 import qualified Data.Map.Strict as Map (insert)
-import UnliftIO.STM (TMVar, newTMVarIO, putTMVar, takeTMVar, tryPutTMVar, tryTakeTMVar)
 
 import Ribosome.Control.Monad.Ribo (MonadRibo, pluginInternalL, pluginInternalModifyL)
 import Ribosome.Control.Ribosome (Locks)

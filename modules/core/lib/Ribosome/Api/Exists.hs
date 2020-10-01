@@ -1,8 +1,5 @@
 module Ribosome.Api.Exists where
 
-import Control.Monad.IO.Class (MonadIO)
-import Data.Default (Default(def))
-import Data.Either (isRight)
 import Data.Text.Prettyprint.Doc (viaShow, (<+>))
 import Neovim (
   AnsiStyle,

@@ -2,8 +2,6 @@
 
 module Ribosome.Nvim.Api.GenerateData where
 
-import Data.ByteString (ByteString)
-import Data.Int (Int64)
 import Data.MessagePack (Object(ObjectExt))
 import Language.Haskell.TH
 import Neovim.Plugin.Classes (FunctionName(F))

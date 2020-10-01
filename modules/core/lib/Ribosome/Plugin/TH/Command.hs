@@ -5,7 +5,6 @@ module Ribosome.Plugin.TH.Command where
 import Control.Exception (throw)
 import Data.Aeson (FromJSON, eitherDecodeStrict)
 import qualified Data.ByteString as ByteString (intercalate)
-import Data.Either.Combinators (mapLeft)
 import Data.MessagePack (Object(ObjectArray))
 import Data.Text.Prettyprint.Doc (Pretty(..))
 import Language.Haskell.TH

@@ -6,10 +6,6 @@ module Ribosome.Plugin (
   RpcDef(..),
 ) where
 
-import Control.Monad (join, (<=<))
-import Control.Monad.DeepError (MonadDeepError)
-import Control.Monad.Trans.Except (runExceptT)
-import Data.Default (def)
 import qualified Data.Map.Strict as Map ()
 import Data.MessagePack (Object(ObjectNil, ObjectBool))
 import Neovim.Context (Neovim)
@@ -25,10 +21,10 @@ import Neovim.Plugin.Internal (ExportedFunctionality(..), Plugin(..))
 import Ribosome.Control.Monad.Ribo (MonadRibo, NvimE)
 import Ribosome.Data.Mapping (MappingError)
 import Ribosome.Data.Text (capitalize)
+import Ribosome.Plugin.TH (rpcHandler, rpcHandlerDef)
 import Ribosome.Plugin.Builtin (deleteScratchRpc)
 import Ribosome.Plugin.Mapping (MappingHandler, handleMappingRequest)
 import Ribosome.Plugin.RpcHandler (RpcHandler(..))
-import Ribosome.Plugin.TH (rpcHandler, rpcHandlerDef)
 import Ribosome.Plugin.TH.Handler (
   RpcDef(RpcDef),
   RpcDefDetail(..),

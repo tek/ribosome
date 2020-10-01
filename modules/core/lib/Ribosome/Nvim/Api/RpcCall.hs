@@ -2,8 +2,6 @@
 
 module Ribosome.Nvim.Api.RpcCall where
 
-import Data.DeepPrisms (deepPrisms)
-import Data.Either.Combinators (mapLeft)
 import Data.MessagePack (Object)
 import Data.Text.Prettyprint.Doc (defaultLayoutOptions, layoutPretty)
 import Data.Text.Prettyprint.Doc.Render.Text (renderStrict)

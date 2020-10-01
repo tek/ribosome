@@ -1,14 +1,7 @@
 module Ribosome.Error.Report.Class where
 
 import qualified Data.Text as Text (pack)
-import GHC.Generics (
-  Generic,
-  K1(..),
-  M1(..),
-  Rep,
-  from,
-  (:+:)(..),
-  )
+import GHC.Generics (K1(..), M1(..), Rep, from, (:+:)(..))
 import System.Log.Logger (Priority(NOTICE, DEBUG))
 
 import Ribosome.Data.ErrorReport (ErrorReport(ErrorReport))

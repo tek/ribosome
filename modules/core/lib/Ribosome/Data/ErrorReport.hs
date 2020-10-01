@@ -7,7 +7,6 @@ module Ribosome.Data.ErrorReport(
   priority,
 ) where
 
-import Control.Lens (makeClassy)
 import System.Log (Priority)
 
 data ErrorReport =

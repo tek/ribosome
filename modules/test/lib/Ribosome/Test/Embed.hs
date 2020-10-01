@@ -3,8 +3,6 @@ module Ribosome.Test.Embed where
 import Control.Concurrent (forkIO)
 import Control.Monad.Trans.Resource (runResourceT)
 import qualified Data.Map.Strict as Map (fromList, toList, union)
-import Data.Maybe (fromMaybe)
-import GHC.IO.Handle (Handle)
 import Neovim (Neovim, Object)
 import Neovim.API.Text (vim_command)
 import qualified Neovim.Context.Internal as Internal (
@@ -44,8 +42,6 @@ import System.Process.Typed (
   )
 import UnliftIO.Async (async, cancel, race)
 import UnliftIO.Exception (bracket, tryAny)
-import UnliftIO.MVar (MVar)
-import UnliftIO.STM (putTMVar)
 
 import Ribosome.Api.Option (rtpCat)
 import Ribosome.Control.Monad.Ribo (NvimE)

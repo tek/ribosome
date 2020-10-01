@@ -2,8 +2,6 @@
 
 module Ribosome.Data.Syntax where
 
-import Data.Default (Default(def))
-import Data.Map.Strict (Map)
 import qualified Data.Map.Strict as Map (fromList)
 
 data SyntaxItemDetail =

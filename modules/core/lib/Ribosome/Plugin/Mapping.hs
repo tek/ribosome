@@ -1,7 +1,5 @@
 module Ribosome.Plugin.Mapping where
 
-import Control.Monad.DeepError (MonadDeepError(throwHoist))
-import Data.Foldable (find)
 import Data.MessagePack (Object(ObjectString, ObjectNil))
 
 import Ribosome.Data.Mapping (MappingError(InvalidArgs, NoSuchMapping), MappingIdent(MappingIdent))

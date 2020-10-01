@@ -1,13 +1,7 @@
-module Ribosome.Internal.IO(
-  retypeNeovim,
-  forkNeovim,
-) where
+module Ribosome.Internal.IO where
 
 import Control.Concurrent (forkIO)
-import Control.Monad.IO.Class (liftIO)
-import Control.Monad.Reader (ask, runReaderT, withReaderT)
 import Control.Monad.Trans.Resource (runResourceT)
-import Data.Functor (void)
 import Neovim.Context.Internal (Config(..), Neovim(..), retypeConfig, runNeovim)
 
 retypeNeovim :: (e0 -> e1) -> Neovim e1 a -> Neovim e0 a

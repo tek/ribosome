@@ -1,13 +1,8 @@
 module Ribosome.Error.Report where
 
-import Control.Monad ((<=<))
 import Control.Monad.Error.Class (MonadError)
-import Control.Monad.IO.Class (MonadIO, liftIO)
-import Control.Monad.Trans.Except (runExceptT)
-import Data.Foldable (traverse_)
-import Data.Functor (void)
 import qualified Data.Map.Strict as Map (alter)
-import Data.Text.Prettyprint.Doc (line, pretty, (<>))
+import Data.Text.Prettyprint.Doc (line, pretty)
 import Data.Text.Prettyprint.Doc.Render.Terminal (putDoc)
 import System.Log (Priority(NOTICE))
 

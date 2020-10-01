@@ -7,10 +7,7 @@ import Chiasma.Monad.Stream (runTmux)
 import Chiasma.Native.Api (TmuxNative(TmuxNative))
 import Chiasma.Test.Tmux (TmuxTestConf)
 import qualified Chiasma.Test.Tmux as Chiasma (tmuxGuiSpec, tmuxSpec, tmuxSpec')
-import Control.Monad.Trans.Except (runExceptT)
 import Data.DeepPrisms (DeepPrisms)
-import Data.Default (Default(def))
-import Data.Functor (void)
 import qualified Neovim.Context.Internal as Internal (
   StateTransition(Quit),
   newConfig,
@@ -29,12 +26,14 @@ import UnliftIO.Temporary (withTempDirectory)
 import Ribosome.Config.Setting (updateSetting)
 import Ribosome.Config.Settings (tmuxSocket)
 import Ribosome.Control.Concurrent.Wait (waitIOPredDef)
-import Ribosome.Control.Monad.Ribo (Ribo)
+import Ribosome.Control.Monad.Ribo (NvimE, Ribo)
 import Ribosome.Control.Ribosome (Ribosome(Ribosome), newRibosomeTMVar)
 import Ribosome.Error.Report.Class (ReportError)
+import Ribosome.Msgpack.Encode (toMsgpack)
 import Ribosome.Nvim.Api.IO (vimSetVar)
 import Ribosome.Nvim.Api.RpcCall (RpcError)
 import Ribosome.Plugin.RpcHandler (RpcHandler)
+import Ribosome.System.Time (sleep)
 import Ribosome.Test.Embed (
   Runner,
   TestConfig(..),

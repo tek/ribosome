@@ -5,13 +5,6 @@
 
 packages:
 - completed:
-    hackage: base-noprelude-4.12.0.0@sha256:dcd5ece10257f79fa16e207d558b31ab3467b205adae5d1976abdee28b1c8b4a,6845
-    pantry-tree:
-      size: 158
-      sha256: 1e4118716a2078385341d7df2f876b616744c3a8f945247766e60f48e32b3d1d
-  original:
-    hackage: base-noprelude-4.12.0.0
-- completed:
     hackage: pretty-terminal-0.1.0.0@sha256:e9135d86ebb2a8e3aaf5a79088de4628dbd49988388e0fbfc26c5ecb3c399ad9,1638
     pantry-tree:
       size: 385
@@ -42,9 +35,6 @@ packages:
 - completed:
     size: 70648
     url: https://github.com/neovimhaskell/nvim-hs/archive/6eb110f11a3875da1be9415515014d574834391b.tar.gz
-    cabal-file:
-      size: 7516
-      sha256: ce02fc6c087ba1e33efb932850654922fb85b1d9050341fc8249ed5b2486a03f
     name: nvim-hs
     version: 2.1.0.3
     sha256: 6550fd22871e401b350ecee252d7678b47b3db65bbe33d1760581c2b684ab6df
@@ -56,9 +46,6 @@ packages:
 - completed:
     size: 7023
     url: https://github.com/tek/cornea/archive/43c649fa064fd5c90047a76829f353c51b3cde0a.tar.gz
-    cabal-file:
-      size: 3070
-      sha256: aa5cf817d7d5bbca448efec3c36f37ab4d6807729187f3a339c05e9ca520ad55
     name: cornea
     version: 0.2.2.0
     sha256: f0a56ef3fe63231757db4e7a12c1c902e8f0948d78aa2356c1d72337673ac9fe
@@ -70,9 +57,6 @@ packages:
 - completed:
     size: 33101
     url: https://github.com/tek/chiasma/archive/25578d92b19beba962f8e163805a42da94715a8e.tar.gz
-    cabal-file:
-      size: 5755
-      sha256: 82c289bc61938947afd1a08496fd6ae11a77af73eabedaf26937b7e5b33aea15
     name: chiasma
     version: 0.1.0.0
     sha256: c239bc2ee2ee952dea5e6ecf859151d2c00bb0b72f034f7bfd07e62acfb1dad0
@@ -83,7 +67,7 @@ packages:
     url: https://github.com/tek/chiasma/archive/25578d92b19beba962f8e163805a42da94715a8e.tar.gz
 snapshots:
 - completed:
-    size: 500539
-    url: https://raw.githubusercontent.com/commercialhaskell/stackage-snapshots/master/lts/13/27.yaml
-    sha256: 690db832392afe55733b4c7023fd29b1b1c660ee42f1fb505b86b07394ca994e
-  original: lts-13.27
+    size: 532380
+    url: https://raw.githubusercontent.com/commercialhaskell/stackage-snapshots/master/lts/16/16.yaml
+    sha256: d6b004b095fe2a0b8b14fbc30014ee97e58843b9c9362ddb9244273dda62649e
+  original: lts-16.16

@@ -1,8 +1,5 @@
-module Ribosome.Test.Exists(
-  waitForPlugin,
-) where
+module Ribosome.Test.Exists where
 
-import Control.Monad.IO.Class (MonadIO)
 import Data.MessagePack (Object(ObjectInt))
 import Neovim (Neovim, toObject)
 import Neovim.API.Text (vim_call_function)

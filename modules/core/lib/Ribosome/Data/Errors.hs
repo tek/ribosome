@@ -9,11 +9,8 @@ module Ribosome.Data.Errors(
   report,
 ) where
 
-import Control.Lens (makeClassy)
-import Data.Default (Default)
-import Data.Map.Strict (Map)
 import qualified Data.Map.Strict as Map (toList)
-import Data.Text.Prettyprint.Doc (Doc, Pretty(..), align, line, vsep, (<+>), (<>))
+import Data.Text.Prettyprint.Doc (Doc, Pretty(..), align, line, vsep, (<+>))
 import Prelude hiding (error)
 
 import Ribosome.Data.ErrorReport (ErrorReport(ErrorReport))

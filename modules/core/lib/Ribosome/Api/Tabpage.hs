@@ -1,7 +1,5 @@
 module Ribosome.Api.Tabpage where
 
-import Control.Monad (when)
-
 import Ribosome.Control.Monad.Ribo (NvimE)
 import Ribosome.Nvim.Api.Data (Tabpage)
 import Ribosome.Nvim.Api.IO (nvimTabpageGetNumber, tabpageIsValid, vimCommand)

@@ -1,6 +1,5 @@
 module Ribosome.Plugin.RpcHandler where
 
-import Control.Monad.Trans.Except (ExceptT)
 import Neovim (Neovim)
 
 class RpcHandler e env m | m -> e env where

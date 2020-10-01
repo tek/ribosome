@@ -2,7 +2,6 @@ module Ribosome.Menu.Prompt.Nvim where
 
 import Conduit (ConduitT, yield)
 import Control.Exception.Lifted (bracket_)
-import Control.Monad.DeepError (ignoreError)
 import qualified Data.Text as Text (singleton, splitAt, uncons)
 
 import Ribosome.Api.Atomic (atomic)

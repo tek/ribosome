@@ -12,53 +12,55 @@ category: Neovim
 build-type: Simple
 
 dependencies:
-- MissingH
-- aeson
-- ansi-terminal
-- base-noprelude >= 4.7 && < 5
-- bytestring
-- chiasma
-- composition-extra
-- containers
-- cornea
-- conduit
-- data-default
-- deepseq
-- directory
-- either
-- exceptions
-- filepath
-- hslogger
-- lens
-- lifted-base
-- messagepack
-- monad-control
-- mtl
-- nvim-hs
-- path
-- pretty-terminal
-- prettyprinter
-- prettyprinter-ansi-terminal
-- process
-- relude
-- resourcet
-- safe
-- split
-- stm
-- template-haskell
-- text
-- th-abstraction
-- time
-- transformers
-- transformers-base
-- typed-process
-- unix
-- unliftio
-- unliftio-core
-- utf8-string
+  - HTF
+  - aeson
+  - ansi-terminal
+  - name: base
+    version: '>= 4 && < 5'
+    mixin:
+      hiding (Prelude)
+  - bytestring
+  - chiasma
+  - composition-extra
+  - containers
+  - cornea
+  - conduit
+  - data-default
+  - deepseq
+  - directory
+  - either
+  - exceptions
+  - filepath
+  - hslogger
+  - lens
+  - lifted-base
+  - messagepack
+  - monad-control
+  - mtl
+  - nvim-hs
+  - path
+  - pretty-terminal
+  - prettyprinter
+  - prettyprinter-ansi-terminal
+  - process
+  - relude
+  - resourcet
+  - safe
+  - split
+  - stm
+  - template-haskell
+  - text
+  - th-abstraction
+  - time
+  - transformers
+  - transformers-base
+  - typed-process
+  - unix
+  - unliftio
+  - unliftio-core
+  - utf8-string
 
 default-extensions:
-- AutoDeriveTypeable
 - BangPatterns
 - BinaryLiterals
 - ConstraintKinds
@@ -80,7 +82,6 @@ default-extensions:
 - InstanceSigs
 - KindSignatures
 - LambdaCase
-- MonadFailDesugaring
 - MultiParamTypeClasses
 - MultiWayIf
 - NamedFieldPuns

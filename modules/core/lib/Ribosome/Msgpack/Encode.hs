@@ -2,19 +2,13 @@
 
 module Ribosome.Msgpack.Encode where
 
-import Data.Bifunctor (bimap)
-import Data.ByteString (ByteString)
-import Data.Int (Int64)
-import Data.List.NonEmpty (NonEmpty)
 import qualified Data.List.NonEmpty as NonEmpty (toList)
-import Data.Map.Strict (Map)
 import qualified Data.Map.Strict as Map (fromList, toList)
 import Data.MessagePack (Object(..))
 import GHC.Generics (
   C1,
   Constructor,
   D1,
-  Generic,
   K1(..),
   M1(..),
   Rep,

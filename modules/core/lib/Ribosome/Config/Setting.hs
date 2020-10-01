@@ -2,11 +2,6 @@
 
 module Ribosome.Config.Setting where
 
-import Control.Monad.DeepError (MonadDeepError(throwHoist), catchAt)
-import Control.Monad.IO.Class (MonadIO)
-import Control.Monad.Trans.Except (runExceptT)
-import Data.DeepPrisms (deepPrisms)
-
 import Ribosome.Control.Monad.Ribo (MonadRibo, Nvim, NvimE, pluginName)
 import Ribosome.Data.Setting (Setting(Setting))
 import Ribosome.Data.SettingError (SettingError)

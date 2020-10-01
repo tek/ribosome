@@ -1,10 +1,6 @@
 module Ribosome.Control.Concurrent.Wait where
 
-import Control.Exception.Lifted (Exception, SomeException(..), try)
-import Control.Monad.IO.Class (MonadIO)
-import Control.Monad.Trans.Control (MonadBaseControl)
-import Data.Default (Default(def))
-import Data.Functor ((<&>))
+import Control.Exception.Lifted (try)
 import qualified Text.Show
 
 import Ribosome.System.Time (sleep)

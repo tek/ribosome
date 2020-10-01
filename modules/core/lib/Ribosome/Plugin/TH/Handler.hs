@@ -3,9 +3,6 @@
 module Ribosome.Plugin.TH.Handler where
 
 import Control.Exception (throw)
-import Control.Monad (replicateM)
-import Data.Functor ((<&>))
-import Data.Maybe (maybeToList)
 import Data.MessagePack (Object)
 import Data.Text.Prettyprint.Doc (Doc, Pretty(..))
 import Data.Text.Prettyprint.Doc.Render.Terminal (AnsiStyle)

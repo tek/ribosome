@@ -1,11 +1,9 @@
 module Ribosome.Persist where
 
 import Control.Exception (IOException, try)
-import Control.Monad (unless)
 import Control.Monad.Catch (MonadThrow)
-import Control.Monad.IO.Class (MonadIO, liftIO)
 import Data.Aeson (FromJSON, ToJSON, eitherDecodeFileStrict', encodeFile)
-import Path (Abs, Dir, File, Path, Rel, parent, parseAbsDir, parseRelDir, toFilePath, (<.>), (</>))
+import Path (Abs, Dir, File, Path, Rel, addExtension, parent, parseAbsDir, parseRelDir, toFilePath, (</>))
 import Path.IO (XdgDirectory(XdgCache), createDirIfMissing, doesFileExist, getXdgDir)
 
 import Ribosome.Config.Setting (setting)
@@ -44,7 +42,7 @@ persistenceFile ::
 persistenceFile path = do
   file <- persistencePath path
   createDirIfMissing True (parent file)
-  file <.> "json"
+  addExtension "json" file
 
 persistStore ::
   MonadRibo m =>

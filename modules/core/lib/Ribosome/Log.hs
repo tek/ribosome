@@ -1,10 +1,6 @@
 module Ribosome.Log where
 
-import Control.Monad.IO.Class (MonadIO, liftIO)
-import Data.ByteString (ByteString)
 import qualified Data.ByteString.UTF8 as ByteString (toString)
-import Data.Foldable (traverse_)
-import Data.Text (Text)
 import qualified Data.Text as Text (unpack)
 import System.Log.Logger (Priority(DEBUG, ERROR, INFO), logM)
 

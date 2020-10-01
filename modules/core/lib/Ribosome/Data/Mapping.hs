@@ -2,7 +2,6 @@
 
 module Ribosome.Data.Mapping where
 
-import Data.DeepPrisms (deepPrisms)
 import Data.MessagePack (Object)
 import Ribosome.Data.ErrorReport (ErrorReport(ErrorReport))
 import Ribosome.Error.Report.Class (ReportError(..))

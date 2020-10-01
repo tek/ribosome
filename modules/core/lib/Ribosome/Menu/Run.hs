@@ -4,7 +4,6 @@ import Conduit (ConduitT, MonadResource, await, awaitForever, mapC, runConduit, 
 import Control.Concurrent.STM.TMChan (TMChan, writeTMChan)
 import Control.Exception.Lifted (bracket)
 import Control.Lens (over, set, view)
-import Control.Monad.Trans.Control (MonadBaseControl)
 import Data.Conduit.Combinators (iterM)
 import qualified Data.Conduit.Combinators as Conduit (last)
 import Data.Conduit.Lift (evalStateC)

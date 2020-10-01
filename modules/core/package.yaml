@@ -12,70 +12,70 @@ category: Neovim
 build-type: Simple
 
 dependencies:
-- MissingH
-- aeson
-- ansi-terminal
-- base-noprelude >= 4.7 && < 5
-- bytestring
-- cereal
-- cereal-conduit
-- chiasma
-- composition
-- composition-extra
-- conduit
-- conduit-extra
-- containers
-- cornea
-- data-default
-- deepseq
-- directory
-- either
-- exceptions
-- filepath
-- free
-- fuzzy
-- hourglass
-- hslogger
-- lens
-- lifted-async
-- lifted-base
-- messagepack
-- monad-control
-- monad-loops
-- mtl
-- nvim-hs
-- path
-- path-io
-- pretty-terminal
-- prettyprinter
-- prettyprinter-ansi-terminal
-- process
-- relude
-- resourcet
-- safe
-- split
-- stm
-- stm-chans
-- stm-conduit
-- template-haskell
-- text
-- th-abstraction
-- time
-- transformers
-- transformers-base
-- typed-process
-- unix
-- unliftio
-- unliftio-core
-- utf8-string
+  - HTF
+  - aeson
+  - ansi-terminal
+  - name: base
+    version: '>= 4 && < 5'
+    mixin:
+      hiding (Prelude)
+  - bytestring
+  - cereal
+  - cereal-conduit
+  - chiasma
+  - composition
+  - composition-extra
+  - conduit
+  - conduit-extra
+  - containers
+  - cornea
+  - data-default
+  - deepseq
+  - directory
+  - either
+  - exceptions
+  - filepath
+  - free
+  - fuzzy
+  - hourglass
+  - hslogger
+  - lens
+  - lifted-async
+  - lifted-base
+  - messagepack
+  - monad-control
+  - monad-loops
+  - mtl
+  - nvim-hs
+  - path
+  - path-io
+  - pretty-terminal
+  - prettyprinter
+  - prettyprinter-ansi-terminal
+  - process
+  - relude
+  - resourcet
+  - safe
+  - split
+  - stm
+  - stm-chans
+  - stm-conduit
+  - template-haskell
+  - text
+  - th-abstraction
+  - time
+  - transformers
+  - transformers-base
+  - typed-process
+  - unix
+  - unliftio
+  - unliftio-core
+  - utf8-string
 
 library:
   source-dirs: lib
-  other-modules:
-    - Prelude
 
 default-extensions:
-- AutoDeriveTypeable
 - BangPatterns
 - BinaryLiterals
 - ConstraintKinds
@@ -99,7 +99,6 @@ default-extensions:
 - InstanceSigs
 - KindSignatures
 - LambdaCase
-- MonadFailDesugaring
 - MultiParamTypeClasses
 - MultiWayIf
 - NamedFieldPuns

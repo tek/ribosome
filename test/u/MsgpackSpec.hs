@@ -5,18 +5,14 @@
 
 module MsgpackSpec(htf_thisModulesTests) where
 
-import Data.Int (Int64)
-import Data.Map.Strict (Map)
 import qualified Data.Map.Strict as Map (fromList)
 import Data.MessagePack (Object(..))
-import Data.Text (Text)
 import Data.Text.Prettyprint.Doc (Doc, defaultLayoutOptions, layoutPretty)
 import Data.Text.Prettyprint.Doc.Render.Terminal (AnsiStyle, renderStrict)
-import GHC.Generics (Generic)
-import Path (Dir, Path, Rel, absfile, relfile)
+import Path (Abs, Dir, File, Path, Rel, absfile, relfile)
 import Test.Framework
 
-import Ribosome.Msgpack.Decode (MsgpackDecode(..))
+import Ribosome.Msgpack.Decode (MsgpackDecode(..), fromMsgpack)
 import Ribosome.Msgpack.Encode (MsgpackEncode(..))
 import qualified Ribosome.Msgpack.Util as Util (string)
 
@@ -151,7 +147,7 @@ encodedPath =
 
 test_decodePath :: IO ()
 test_decodePath =
-  assertEqual (Right [absfile|/path/to/file|]) (doc2Text $ fromMsgpack encodedPath)
+  assertEqual (Right [absfile|/path/to/file|]) (doc2Text $ fromMsgpack @(Path Abs File) encodedPath)
 
 test_failDecodePath :: IO ()
 test_failDecodePath =

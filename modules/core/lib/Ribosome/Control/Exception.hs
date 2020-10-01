@@ -1,7 +1,6 @@
 module Ribosome.Control.Exception where
 
 import Control.Exception.Lifted (IOException, catch, try)
-import Control.Monad.Trans.Control (MonadBaseControl)
 
 tryIO ::
   MonadBaseControl IO m =>

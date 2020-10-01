@@ -1,15 +1,11 @@
-module Ribosome.File(
-  canonicalPathWithHome,
-  canonicalPath,
-  canonicalPaths,
-) where
+module Ribosome.File where
 
-import Control.Monad.IO.Class (MonadIO, liftIO)
-import Data.String.Utils (replace)
+import qualified Data.Text as Text
 import System.Directory (canonicalizePath, getHomeDirectory)
 
 canonicalPathWithHome :: FilePath -> FilePath -> FilePath
-canonicalPathWithHome = replace "~"
+canonicalPathWithHome home path =
+  toString (Text.replace "~" (toText home) (toText path))
 
 canonicalPath :: MonadIO m => FilePath -> m FilePath
 canonicalPath path = do

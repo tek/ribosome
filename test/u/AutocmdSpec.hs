@@ -3,7 +3,6 @@
 
 module AutocmdSpec (htf_thisModulesTests) where
 
-import Data.Default (def)
 import Neovim (Plugin(..))
 import Test.Framework
 

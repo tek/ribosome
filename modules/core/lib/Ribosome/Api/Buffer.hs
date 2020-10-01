@@ -1,6 +1,5 @@
 module Ribosome.Api.Buffer where
 
-import Data.Bifunctor (second)
 import Data.MessagePack (Object)
 import qualified Data.Text as Text (null)
 import System.FilePath ((</>))

@@ -2,7 +2,6 @@
 
 module ScratchSpec (htf_thisModulesTests) where
 
-import Data.Default (def)
 import qualified Data.Map.Strict as Map (toList)
 import Neovim (Plugin(..))
 import Test.Framework
@@ -39,7 +38,7 @@ makeScratch =
 
 floatOptions :: FloatOptions
 floatOptions =
-  FloatOptions Cursor 30 2 1 1 True def
+  FloatOptions Cursor 30 2 1 1 True def Nothing
 
 makeFloatScratch ::
   NvimE e m =>

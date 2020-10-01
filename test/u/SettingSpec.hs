@@ -5,10 +5,6 @@ module SettingSpec(
   htf_thisModulesTests,
 ) where
 
-import Control.Monad.DeepError (catchAt)
-import Data.DeepPrisms (deepPrisms)
-import Data.Default (def)
-import Data.Functor (void)
 import Test.Framework
 
 import Ribosome.Config.Setting (setting, updateSetting)

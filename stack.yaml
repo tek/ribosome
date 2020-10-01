@@ -1,4 +1,4 @@
-resolver: lts-13.27
+resolver: lts-16.16
 packages:
 - modules/core
 - modules/test
@@ -7,7 +7,6 @@ packages:
 # - ../chiasma
 # - ../nvim-hs
 extra-deps:
-- base-noprelude-4.12.0.0
 - pretty-terminal-0.1.0.0
 - posix-pty-0.2.1.1
 - fuzzy-0.1.0.0

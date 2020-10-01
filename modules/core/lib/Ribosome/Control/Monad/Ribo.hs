@@ -3,27 +3,19 @@
 
 module Ribosome.Control.Monad.Ribo where
 
-import Control.Concurrent.STM.TMVar (putTMVar, readTMVar, takeTMVar)
 import Control.Exception.Lifted (onException)
 import Control.Lens (Lens')
 import qualified Control.Lens as Lens (mapMOf, over, view)
 import Control.Monad.Base (MonadBase(..))
 import Control.Monad.Catch (MonadCatch, MonadMask, MonadThrow)
 import Control.Monad.Error.Class (MonadError(..))
-import Control.Monad.Fail (MonadFail)
-import Control.Monad.IO.Class (MonadIO, liftIO)
-import Control.Monad.Reader.Class (MonadReader, asks)
-import Control.Monad.Trans.Control (MonadBaseControl(..))
-import Control.Monad.Trans.Except (ExceptT(ExceptT), runExceptT)
 import Control.Monad.Trans.Free (FreeT)
-import Control.Monad.Trans.Reader (ReaderT(ReaderT), runReaderT)
 import Control.Monad.Trans.Resource (MonadResource(..), runResourceT)
 import qualified Control.Monad.Trans.State.Strict as StateT (gets, modify)
 import Data.DeepLenses (DeepLenses(deepLens))
 import Data.DeepPrisms (DeepPrisms)
 import Neovim.Context.Internal (Neovim(..))
 import Ribosome.Plugin.RpcHandler (RpcHandler(..))
-import UnliftIO.STM (TMVar)
 
 import Ribosome.Control.Ribosome (Ribosome, RibosomeInternal, RibosomeState)
 import qualified Ribosome.Control.Ribosome as Ribosome (_errors, errors, name, state)

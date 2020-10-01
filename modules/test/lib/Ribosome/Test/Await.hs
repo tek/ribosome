@@ -2,10 +2,6 @@ module Ribosome.Test.Await where
 
 import Control.Exception (throw)
 import Control.Monad.Error.Class (MonadError, catchError)
-import Control.Monad.IO.Class (MonadIO)
-import Control.Monad.Trans.Class (lift)
-import Control.Monad.Trans.Control (MonadBaseControl)
-import Control.Monad.Trans.Except (ExceptT, runExceptT)
 import Test.Framework.AssertM (AssertM)
 
 import Ribosome.Control.Concurrent.Wait (WaitError(Thrown), waitIODef)

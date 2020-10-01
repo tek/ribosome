@@ -6,12 +6,8 @@ import Chiasma.Data.TmuxError (TmuxError)
 import Chiasma.Data.TmuxThunk (TmuxThunk)
 import qualified Chiasma.Test.Screenshot as Chiasma (screenshot)
 import Control.Monad.Catch (MonadMask)
-import Control.Monad.DeepError (MonadDeepError)
 import Control.Monad.Free.Class (MonadFree)
-import Control.Monad.IO.Class (MonadIO)
-import Data.Text (Text)
 import Test.Framework
-import Test.Framework.AssertM (AssertM(..))
 
 import Ribosome.Control.Monad.Ribo (MonadRibo, Nvim)
 import Ribosome.Orphans ()

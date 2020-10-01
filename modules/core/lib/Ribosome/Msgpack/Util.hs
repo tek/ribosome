@@ -1,7 +1,6 @@
 module Ribosome.Msgpack.Util where
 
-import Data.Bifunctor (first)
-import Data.Map.Strict (Map, (!?))
+import Data.Map.Strict ((!?))
 import qualified Data.Map.Strict as Map (fromList)
 import Data.MessagePack (Object(..))
 import Data.Text.Prettyprint.Doc (Doc, pretty, viaShow, (<+>))

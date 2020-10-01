@@ -1,11 +1,6 @@
 module Ribosome.Msgpack.Decode where
 
-import Control.Monad.DeepError (MonadDeepError, hoistEitherWith)
-import Data.ByteString (ByteString)
 import qualified Data.ByteString.UTF8 as ByteString (toString)
-import Data.Either.Combinators (mapLeft)
-import Data.Int (Int64)
-import Data.Map.Strict (Map)
 import qualified Data.Map.Strict as Map (empty, fromList, toList)
 import Data.MessagePack (Object(..))
 import Data.Text.Prettyprint.Doc (pretty, viaShow)
@@ -14,7 +9,6 @@ import GHC.Generics (
   C1,
   Constructor,
   D1,
-  Generic,
   K1(..),
   M1(..),
   Rep,

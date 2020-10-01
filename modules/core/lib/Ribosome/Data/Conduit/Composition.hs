@@ -14,9 +14,7 @@ import Control.Monad.Trans.Resource
 import qualified Data.Conduit.Binary as CB
 import qualified Data.Conduit.Cereal as C
 import qualified Data.Conduit.List as CL
-import Data.Foldable (forM_)
 import Data.Serialize
-import GHC.Exts (Constraint)
 import Prelude hiding (get, put)
 import System.Directory (removeFile)
 import System.IO

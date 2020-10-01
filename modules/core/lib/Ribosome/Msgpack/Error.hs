@@ -2,7 +2,6 @@
 
 module Ribosome.Msgpack.Error where
 
-import Data.DeepPrisms (deepPrisms)
 import System.Log.Logger (Priority(ERROR))
 
 import Data.Text.Prettyprint.Doc (defaultLayoutOptions, layoutPretty)

@@ -1,6 +1,5 @@
 module Ribosome.Test.File where
 
-import Control.Monad.IO.Class (MonadIO, liftIO)
 import qualified Data.ByteString as ByteString (readFile)
 import System.Directory (canonicalizePath, createDirectoryIfMissing, removePathForcibly)
 import System.FilePath ((</>))

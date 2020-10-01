@@ -1,10 +1,5 @@
-module Ribosome.Msgpack.NvimObject(
-  NO(..),
-  (-$),
-) where
+module Ribosome.Msgpack.NvimObject where
 
-import Control.DeepSeq (NFData)
-import GHC.Generics (Generic)
 import Neovim (NvimObject(..))
 import Ribosome.Msgpack.Decode (MsgpackDecode(..))
 import Ribosome.Msgpack.Encode (MsgpackEncode(..))

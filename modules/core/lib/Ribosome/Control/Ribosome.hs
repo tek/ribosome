@@ -2,9 +2,6 @@
 
 module Ribosome.Control.Ribosome where
 
-import Control.Concurrent.STM.TMVar (TMVar, TMVar, newTMVarIO)
-import Control.Lens (makeClassy)
-import Data.Map.Strict (Map)
 import Data.MessagePack (Object)
 import Prelude hiding (state)
 

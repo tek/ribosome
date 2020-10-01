@@ -3,10 +3,8 @@
 
 module Ribosome.Plugin.TH where
 
-import Data.Default (def)
-import Data.Maybe (fromMaybe, maybeToList)
 import qualified Data.Text as Text (unpack)
-import Language.Haskell.TH
+import Language.Haskell.TH (ExpQ, Lit(StringL), Name, listE, litE, nameBase)
 import Neovim.Plugin.Classes (
   AutocmdOptions,
   Synchronous(..),
