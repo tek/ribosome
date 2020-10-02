@@ -1,0 +1,78 @@
+cabal-version: 2.0
+
+-- This file has been generated from package.yaml by hpack version 0.34.2.
+--
+-- see: https://github.com/sol/hpack
+--
+-- hash: d01b054c1b357d5f762d7c35e2a8e42faff68197303018770fd1512ecf6f5377
+
+name:           ribosome-test
+version:        0.3.0.1
+synopsis:       test helpers for ribosome
+description:    Please see the README on GitHub at <https://github.com/tek/ribosome-hs>
+category:       Neovim
+homepage:       https://github.com/tek/ribosome-hs#readme
+bug-reports:    https://github.com/tek/ribosome-hs/issues
+author:         Torsten Schmits
+maintainer:     tek@tryp.io
+copyright:      2019 Torsten Schmits
+license:        OtherLicense
+license-file:   LICENSE
+build-type:     Simple
+
+source-repository head
+  type: git
+  location: https://github.com/tek/ribosome-hs
+
+library
+  exposed-modules:
+      Ribosome.Test.Await
+      Ribosome.Test.Embed
+      Ribosome.Test.Exists
+      Ribosome.Test.File
+      Ribosome.Test.Functional
+      Ribosome.Test.Input
+      Ribosome.Test.Orphans
+      Ribosome.Test.PreludeExport
+      Ribosome.Test.Screenshot
+      Ribosome.Test.Tmux
+      Ribosome.Test.Ui
+      Ribosome.Test.Unit
+  other-modules:
+      Paths_ribosome_test
+  hs-source-dirs:
+      lib
+  default-extensions: BangPatterns BinaryLiterals ConstraintKinds DataKinds DefaultSignatures DeriveDataTypeable DeriveFoldable DeriveFunctor DeriveGeneric DeriveTraversable DoAndIfThenElse EmptyDataDecls ExistentialQuantification FlexibleContexts FlexibleInstances FunctionalDependencies GADTs GeneralizedNewtypeDeriving InstanceSigs KindSignatures LambdaCase MultiParamTypeClasses MultiWayIf NamedFieldPuns OverloadedStrings PartialTypeSignatures PatternGuards PolyKinds RankNTypes RecordWildCards ScopedTypeVariables StandaloneDeriving TemplateHaskell TupleSections TypeApplications TypeFamilies TypeSynonymInstances UnicodeSyntax ViewPatterns
+  build-depends:
+      HTF
+    , base >=4 && <5
+    , bytestring
+    , chiasma
+    , containers
+    , cornea
+    , data-default
+    , directory
+    , exceptions
+    , filepath
+    , free
+    , hslogger
+    , lifted-base
+    , messagepack
+    , monad-control
+    , mtl
+    , nvim-hs
+    , process
+    , relude
+    , resourcet
+    , ribosome
+    , text
+    , transformers
+    , typed-process
+    , unix
+    , unliftio
+    , unliftio-core
+  mixins:
+      base hiding (Prelude)
+    , ribosome hiding (Ribosome.Prelude)
+    , ribosome (Ribosome.Prelude as Prelude)
+  default-language: Haskell2010

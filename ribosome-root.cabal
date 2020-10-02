@@ -1,0 +1,101 @@
+cabal-version: 2.0
+
+-- This file has been generated from package.yaml by hpack version 0.34.2.
+--
+-- see: https://github.com/sol/hpack
+--
+-- hash: 1872072f6dacdbba889bc7e2b6b579c11a3b9d51e18aff30899caf546e40c6e0
+
+name:           ribosome-root
+version:        0.3.0.1
+synopsis:       api extensions for nvim-hs
+description:    Please see the README on GitHub at <https://github.com/tek/ribosome>
+category:       Neovim
+homepage:       https://github.com/tek/ribosome#readme
+bug-reports:    https://github.com/tek/ribosome/issues
+author:         Torsten Schmits
+maintainer:     tek@tryp.io
+copyright:      2019 Torsten Schmits
+license:        OtherLicense
+license-file:   LICENSE
+build-type:     Simple
+
+source-repository head
+  type: git
+  location: https://github.com/tek/ribosome
+
+test-suite ribosome-unit
+  type: exitcode-stdio-1.0
+  main-is: SpecMain.hs
+  other-modules:
+      AutocmdSpec
+      MappingSpec
+      MenuSpec
+      MsgpackSpec
+      NvimMenuSpec
+      PromptSpec
+      RpcSpec
+      ScratchSpec
+      SettingSpec
+      SyntaxSpec
+      TestError
+      THSpec
+      WatcherSpec
+      WindowSpec
+      Paths_ribosome_root
+  hs-source-dirs:
+      test/u
+  default-extensions: BangPatterns BinaryLiterals ConstraintKinds DataKinds DefaultSignatures DeriveDataTypeable DeriveFoldable DeriveFunctor DeriveGeneric DeriveTraversable DoAndIfThenElse EmptyDataDecls ExistentialQuantification FlexibleContexts FlexibleInstances FunctionalDependencies GADTs GeneralizedNewtypeDeriving InstanceSigs KindSignatures LambdaCase MultiParamTypeClasses MultiWayIf NamedFieldPuns OverloadedStrings PartialTypeSignatures PatternGuards PolyKinds RankNTypes RecordWildCards ScopedTypeVariables StandaloneDeriving TemplateHaskell TupleSections TypeApplications TypeFamilies TypeSynonymInstances UnicodeSyntax ViewPatterns
+  ghc-options: -threaded -rtsopts -with-rtsopts=-N
+  build-depends:
+      HTF
+    , aeson
+    , ansi-terminal
+    , base >=4 && <5
+    , bytestring
+    , chiasma
+    , composition-extra
+    , conduit
+    , containers
+    , cornea
+    , data-default
+    , deepseq
+    , directory
+    , either
+    , exceptions
+    , filepath
+    , hslogger
+    , lens
+    , lifted-base
+    , messagepack
+    , monad-control
+    , mtl
+    , nvim-hs
+    , path
+    , pretty-terminal
+    , prettyprinter
+    , prettyprinter-ansi-terminal
+    , process
+    , relude
+    , resourcet
+    , ribosome
+    , ribosome-test
+    , safe
+    , split
+    , stm
+    , template-haskell
+    , text
+    , th-abstraction
+    , time
+    , transformers
+    , transformers-base
+    , typed-process
+    , unix
+    , unliftio
+    , unliftio-core
+    , utf8-string
+  mixins:
+      base hiding (Prelude)
+    , ribosome hiding (Ribosome.Prelude)
+    , ribosome (Ribosome.Prelude as Prelude)
+  default-language: Haskell2010
