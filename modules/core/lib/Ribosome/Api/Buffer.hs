@@ -25,7 +25,7 @@ import Ribosome.Nvim.Api.IO (
   vimGetCurrentBuffer,
   vimGetCurrentWindow,
   )
-import Ribosome.Nvim.Api.RpcCall (syncRpcCall)
+import Ribosome.Nvim.Api.RpcCall (RpcError, syncRpcCall)
 
 edit :: NvimE e m => FilePath -> m ()
 edit path = vimCommand $ "silent! edit " <> toText path
@@ -36,8 +36,9 @@ nvimCallBool =
 
 buflisted :: NvimE e m => Buffer -> m Bool
 buflisted buf = do
-  num <- bufferGetNumber buf
-  nvimCallBool "buflisted" [toMsgpack num]
+  catchAs @RpcError False do
+    num <- bufferGetNumber buf
+    nvimCallBool "buflisted" [toMsgpack num]
 
 bufferContent :: NvimE e m => Buffer -> m [Text]
 bufferContent buffer =
