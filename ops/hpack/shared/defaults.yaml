@@ -1,0 +1,47 @@
+<<: !include extensions.yaml
+
+dependencies:
+  - aeson
+  - name: base
+    version: '>= 4 && < 5'
+    mixin:
+      hiding (Prelude)
+  - bytestring
+  - chiasma
+  - composition
+  - composition-extra
+  - conduit
+  - containers
+  - cornea
+  - data-default
+  - directory
+  - either
+  - exceptions
+  - filepath
+  - free
+  - hslogger
+  - lens
+  - lifted-async
+  - lifted-base
+  - messagepack
+  - monad-control
+  - mtl
+  - nvim-hs
+  - path
+  - path-io
+  - prettyprinter
+  - prettyprinter-ansi-terminal
+  - process
+  - relude >= 0.7 && < 1.2
+  - resourcet
+  - template-haskell
+  - text
+  - transformers
+  - typed-process
+  - unix
+  - unliftio
+
+ghc-options:
+  - -Wall
+  - -Wredundant-constraints
+  - -Wsimplifiable-class-constraints

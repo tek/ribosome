@@ -1,0 +1,43 @@
+module Ribosome.Test.WindowTest where
+
+import Hedgehog ((===))
+import TestError (RiboTest)
+
+import Ribosome.Api.Window (ensureMainWindow)
+import Ribosome.Msgpack.Encode (toMsgpack)
+import Ribosome.Nvim.Api.Data (Window)
+import Ribosome.Nvim.Api.IO (bufferSetOption, vimCommand, vimGetCurrentBuffer, vimGetCurrentWindow, vimGetWindows)
+import Ribosome.Test.Run (UnitTest)
+import Ribosome.Test.Unit (unitSpecDef')
+
+setCurrentNofile :: RiboTest ()
+setCurrentNofile = do
+  buf <- vimGetCurrentBuffer
+  bufferSetOption buf "buftype" (toMsgpack ("nofile" :: Text))
+
+createNofile :: RiboTest Window
+createNofile = do
+  initialWindow <- vimGetCurrentWindow
+  vimCommand "new"
+  setCurrentNofile
+  return initialWindow
+
+findMainWindowExistingSpec :: RiboTest ()
+findMainWindowExistingSpec = do
+  initialWindow <- createNofile
+  (initialWindow ===) =<< ensureMainWindow
+
+test_findMainWindowExisting :: UnitTest
+test_findMainWindowExisting =
+  unitSpecDef' findMainWindowExistingSpec
+
+findMainWindowCreateSpec :: RiboTest ()
+findMainWindowCreateSpec = do
+  setCurrentNofile
+  void createNofile
+  void ensureMainWindow
+  (3 ===) =<< length <$> vimGetWindows
+
+test_findMainWindowCreate :: UnitTest
+test_findMainWindowCreate =
+  unitSpecDef' findMainWindowCreateSpec

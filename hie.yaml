@@ -1,0 +1,10 @@
+cradle:
+  cabal:
+    - path: "./packages/ribosome/lib"
+      component: "lib:ribosome"
+
+    - path: "./packages/ribosome-test/lib"
+      component: "lib:ribosome-test"
+
+    - path: "./packages/ribosome-test/test"
+      component: "ribosome-test:test:ribosome-unit"

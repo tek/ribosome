@@ -1,0 +1,36 @@
+name: ribosome
+synopsis: api extensions for nvim-hs
+<<: !include shared/meta.yaml
+defaults:
+  local: shared/defaults.yaml
+
+library:
+  source-dirs: lib
+  other-modules:
+    - Prelude
+  generated-other-modules:
+    Paths_ribosome
+
+extra-source-files:
+  - readme.md
+
+dependencies:
+  - ansi-terminal
+  - cereal
+  - cereal-conduit
+  - conduit-extra
+  - deepseq
+  - fuzzy
+  - hourglass
+  - monad-loops
+  - pretty-terminal
+  - safe
+  - split
+  - stm
+  - stm-chans
+  - stm-conduit
+  - th-abstraction
+  - time
+  - transformers-base
+  - unliftio-core
+  - utf8-string
