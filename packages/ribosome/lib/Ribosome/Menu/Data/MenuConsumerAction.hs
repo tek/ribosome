@@ -18,6 +18,4 @@ data MenuConsumerAction m a =
   Return a
   |
   UpdatePrompt Prompt
-  -- |
-  -- Error Text
   deriving (Functor)
