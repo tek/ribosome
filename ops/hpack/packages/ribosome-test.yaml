@@ -12,10 +12,6 @@ library:
 extra-source-files:
   - readme.md
 
-system-build-tools:
-  - neovim
-  - tmux
-
 dependencies:
   - hedgehog
   - name: ribosome

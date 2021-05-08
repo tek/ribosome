@@ -4,10 +4,10 @@ cabal-version: 2.2
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 950c3ed105e8651d5a08732a83d081c9b3b8952440fb9e5ed043d9b3d0ca9114
+-- hash: d204ea32a519247a24754414a535360674e998d19dd95ea48b7fd7d7ab1044dc
 
 name:           ribosome-test
-version:        0.3.0.1
+version:        0.4.0.0
 synopsis:       test helpers for ribosome
 description:    Please see the README on GitHub at <https://github.com/tek/ribosome>
 category:       Neovim
@@ -105,9 +105,6 @@ library
       UnicodeSyntax
       ViewPatterns
   ghc-options: -Wall -Wredundant-constraints -Wsimplifiable-class-constraints
-  build-tools:
-      neovim
-    , tmux
   build-depends:
       aeson
     , base ==4.*
@@ -235,9 +232,6 @@ test-suite ribosome-unit
       UnicodeSyntax
       ViewPatterns
   ghc-options: -Wall -Wredundant-constraints -Wsimplifiable-class-constraints -threaded -rtsopts -with-rtsopts=-N
-  build-tools:
-      neovim
-    , tmux
   build-depends:
       aeson
     , base ==4.*

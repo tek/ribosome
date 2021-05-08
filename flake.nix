@@ -1,5 +1,5 @@
 {
-  description = "tmux api";
+  description = "Haskell tmux Client";
 
   inputs = {
     hix.url = github:tek/hix;
@@ -14,6 +14,7 @@
       nvim-hs = only "8.6.5" (hackage "2.1.0.4" "1fpjrfgmbmkd2qi9mjfjkidgcf8cbqzpaqw36zy2fznm3qkhpss7");
       unliftio-core = only "8.6.5" (hackage "0.2.0.1" "06cbv2yx5a6qj4p1w91q299r0yxv96ms72xmjvkpm9ic06ikvzzq");
       ribosome = configure "--extra-prog-path=${pkgs.neovim}/bin";
+      ribosome-test = drv: drv.overrideAttrs (_: { buildInputs = [pkgs.neovim pkgs.tmux]; });
       posix-pty = only "8.6.5" (hackage "0.2.1.1" "0rwb7fj7134lc04dv9vn4j6nq0vadl2qhzlz63pd0an9vqmxw685");
     };
   in hix.flake {
