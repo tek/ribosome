@@ -47,7 +47,6 @@ sourceTerminated var chan = do
 
 mergeSourcesWith ::
   MonadResource m =>
-  MonadBaseControl IO m =>
   TMVar Int ->
   TBMChan a ->
   (ConduitT () a m () -> IO (StM m ())) ->

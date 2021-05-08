@@ -11,7 +11,7 @@ data Retry =
   deriving Show
 
 instance Default Retry where
-  def = Retry 30 0.1
+  def = Retry 20 0.25
 
 -- |Error description for 'waitIO'
 data WaitError e =

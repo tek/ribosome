@@ -119,9 +119,10 @@ killPid =
 
 killProcess :: Process i o e -> IO ()
 killProcess prc = do
-  let handle = unsafeProcessHandle prc
-  mayPid <- getPid handle
-  traverse_ killPid mayPid
+  void $ try @_ @SomeException do
+    let handle = unsafeProcessHandle prc
+    mayPid <- getPid handle
+    traverse_ killPid mayPid
 
 testNvimProcessConfig :: TestConfig -> ProcessConfig Handle Handle ()
 testNvimProcessConfig TestConfig {..} =

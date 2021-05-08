@@ -12,7 +12,12 @@ import Ribosome.Config.Settings (tmuxSocket)
 import Ribosome.Control.Monad.Ribo (MonadRibo, Nvim, Ribo)
 
 runTmux ::
-  (MonadIO m, MonadRibo m, MonadDeepError e TmuxError m, MonadMask m, Nvim m) =>
+  MonadIO m =>
+  MonadRibo m =>
+  MonadBaseControl IO m =>
+  MonadDeepError e TmuxError m =>
+  MonadMask m =>
+  Nvim m =>
   TmuxProg m a ->
   m a
 runTmux prog = do
@@ -20,7 +25,11 @@ runTmux prog = do
   Chiasma.runTmux (TmuxNative socket) prog
 
 runTmuxE ::
-  (MonadIO m, MonadRibo m, MonadMask m, Nvim m) =>
+  MonadIO m =>
+  MonadRibo m =>
+  MonadBaseControl IO m =>
+  MonadMask m =>
+  Nvim m =>
   TmuxProg (ExceptT TmuxError m) a ->
   m (Either TmuxError a)
 runTmuxE =

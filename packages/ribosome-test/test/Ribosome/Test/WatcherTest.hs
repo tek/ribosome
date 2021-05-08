@@ -30,9 +30,11 @@ varWatcherSpec :: RiboTest ()
 varWatcherSpec = do
   setVar "number" (10 :: Int)
   setVar "trigger" (5 :: Int)
+  await ((10 :: Int) ===) (vimGetVar "number")
   await ((5 :: Int) ===) (vimGetVar "trigger")
   doautocmd True "CmdlineLeave"
   doautocmd True "CmdlineLeave"
+  await ((11 :: Int) ===) (vimGetVar "number")
   setVar "trigger" (6 :: Int)
   await ((6 :: Int) ===) (vimGetVar "trigger")
   doautocmd True "CmdlineLeave"

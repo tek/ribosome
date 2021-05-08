@@ -30,6 +30,7 @@ assertScreenshot ::
   MonadIO m =>
   MonadRibo m =>
   MonadDeepError e TmuxError m =>
+  MonadBaseControl IO m =>
   MonadMask m =>
   Nvim m =>
   Text ->
