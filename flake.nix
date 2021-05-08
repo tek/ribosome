@@ -22,7 +22,7 @@
       ribosome = ./packages/ribosome;
       ribosome-test = ./packages/ribosome-test;
     };
-    main = "ribosome";
+    main = "ribosome-test";
     inherit overrides;
     compatOverrides = overrides;
     versionFile = "ops/hpack/shared/meta.yaml";
