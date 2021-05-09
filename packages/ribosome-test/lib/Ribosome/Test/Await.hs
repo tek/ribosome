@@ -6,6 +6,7 @@ import Control.Monad.Error.Class (MonadError (throwError), catchError)
 import Hedgehog.Internal.Property (mkTestT, runTestT, Failure, Journal)
 
 import Ribosome.Control.Concurrent.Wait (WaitError(Thrown, ConditionUnmet, NotStarted), waitIODef)
+import Hedgehog ((===))
 
 await ::
   ∀ e a b m .
@@ -35,3 +36,17 @@ await assertion acquire = do
       pure (mapLeft (Left . (,journal)) result)
     check' (Left e) = do
       pure (Left (Right e))
+
+awaitEqual ::
+  ∀ e a b m .
+  Eq b =>
+  Show b =>
+  MonadIO m =>
+  MonadError e m =>
+  MonadBaseControl IO m =>
+  b ->
+  (a -> b) ->
+  m a ->
+  TestT m ()
+awaitEqual target f =
+  await (\ a -> target === f a)
