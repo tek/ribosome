@@ -1,7 +1,7 @@
 module TestError where
 
 import Hedgehog (TestT)
-import Ribosome.Control.Monad.Ribo (Nvim, NvimE, Ribo)
+import Ribosome.Control.Monad.Ribo (Ribo)
 import Ribosome.Data.Mapping (MappingError)
 import Ribosome.Error.Report.Class (ReportError(..))
 import Ribosome.Log (showError)
@@ -23,5 +23,3 @@ handleTestError =
   showError "error in test:"
 
 type RiboTest a = TestT (Ribo () TestError) a
-
-instance (Nvim m, MonadDeepError TestError RpcError m) => NvimE TestError (TestT m) where
