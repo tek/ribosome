@@ -23,6 +23,5 @@ handleTestError =
   showError "error in test:"
 
 type RiboTest a = TestT (Ribo () TestError) a
-type RiboT a = Ribo () TestError a
 
 instance (Nvim m, MonadDeepError TestError RpcError m) => NvimE TestError (TestT m) where

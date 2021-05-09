@@ -4,7 +4,7 @@ cabal-version: 2.2
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 5149fd2775468552936c7de98962a22d9d92a598322a9cd7ace739c9f8bdb2c7
+-- hash: f8bb0586599cf5d3ee2220dd9fd90dfac10bf33a70454a8d41cdab94023eff0b
 
 name:           ribosome
 version:        0.4.0.0
@@ -28,6 +28,7 @@ source-repository head
 
 library
   exposed-modules:
+      Ribosome
       Ribosome.Api.Atomic
       Ribosome.Api.Autocmd
       Ribosome.Api.Buffer
