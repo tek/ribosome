@@ -49,3 +49,16 @@ awaitEqual ::
   TestT m ()
 awaitEqual target f =
   await (\ a -> target === f a)
+
+awaitEqual_ ::
+  ∀ e a m .
+  Eq a =>
+  Show a =>
+  MonadIO m =>
+  MonadError e m =>
+  MonadBaseControl IO m =>
+  a ->
+  m a ->
+  TestT m ()
+awaitEqual_ target =
+  awaitEqual target id
