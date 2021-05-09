@@ -17,7 +17,7 @@ import Ribosome.Nvim.Api.IO (vimCommand, vimGetVar)
 import Ribosome.Nvim.Api.RpcCall (RpcError)
 import Ribosome.Plugin (RpcDef, cmd, riboPlugin, rpcHandler, sync)
 import Ribosome.System.Time (sleep)
-import Ribosome.Test.Embed (integrationSpecDef)
+import Ribosome.Test.Embed (integrationTestDef)
 import Ribosome.Test.Run (UnitTest)
 
 handleError ::
@@ -128,8 +128,8 @@ failureCommand cmd' = do
     recoverRpc (_ :: RpcError) =
       return ()
 
-rpcSpec :: RiboTest ()
-rpcSpec = do
+rpcTest :: RiboTest ()
+rpcTest = do
   successCommand "HandlerCmdCmdArgs a b c"
   successCommand "HandlerCmdNoCmdArgs a b c"
   successCommand "HandlerCmdNoArgs"
@@ -148,7 +148,7 @@ test_rpc = do
   liftIO $ updateGlobalLogger "test" (setLevel DEBUG)
   plug <- liftIO plugin
   when debug $ traverse_ putStrLn . List.lines $ $(stringE . pprint =<< rpcHandler (sync . cmd []) 'handlerCmdListArg)
-  integrationSpecDef plug rpcSpec
+  integrationTestDef plug rpcTest
   where
     debug =
       False

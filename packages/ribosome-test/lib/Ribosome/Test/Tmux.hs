@@ -42,7 +42,7 @@ import Ribosome.Test.Embed (
   )
 import Ribosome.Test.Orphans ()
 import Ribosome.Test.Run (UnitTest)
-import Ribosome.Test.Unit (uSpec)
+import Ribosome.Test.Unit (uTest)
 
 type RiboTesting e env m n =
   (
@@ -96,7 +96,7 @@ runGui ::
 runGui api temp conf ribo specThunk =
   runSocketNvimHs conf ribo specThunk =<< liftIO (startNvimInTmux api temp)
 
-unsafeGuiSpec ::
+unsafeGuiTest ::
   RiboTesting e env m n =>
   TmuxNative ->
   FilePath ->
@@ -105,7 +105,7 @@ unsafeGuiSpec ::
   env ->
   n a ->
   m a
-unsafeGuiSpec api temp runner conf s specThunk =
+unsafeGuiTest api temp runner conf s specThunk =
   runGui api temp conf s $ runner conf specThunk
 
 unsafeGuiSpecR ::
@@ -120,20 +120,20 @@ unsafeGuiSpecR ::
 unsafeGuiSpecR api temp runner conf s specThunk = do
   tv <- newRibosomeTMVar s
   let ribo = Ribosome (tcPluginName conf) tv
-  unsafeGuiSpec api temp runner conf ribo specThunk
+  unsafeGuiTest api temp runner conf ribo specThunk
 
-guiSpec ::
+guiTest ::
   RiboTesting e (Ribosome env) m n =>
   TestConfig ->
   TmuxNative ->
   env ->
   n a ->
   m a
-guiSpec conf api env specThunk = do
+guiTest conf api env specThunk = do
   withSystemTempDir run
   where
     run tempdir =
-      unsafeGuiSpecR api tempdir uSpec conf env specThunk
+      unsafeGuiSpecR api tempdir uTest conf env specThunk
 
 withTmux ::
   Nvim m =>
@@ -147,15 +147,15 @@ withTmux thunk (TmuxNative (Just socket)) =
 withTmux _ _ =
   throwText "no socket in test tmux"
 
-tmuxSpec ::
+tmuxTest ::
   RiboTesting e (Ribosome env) m n =>
   TestConfig ->
   env ->
   TestT n a ->
   TestT m a
-tmuxSpec conf env specThunk =
+tmuxTest conf env specThunk =
   inTestT specThunk \ th ->
-    Chiasma.tmuxSpec \ api -> guiSpec conf api env (withTmux th api)
+    Chiasma.tmuxSpec \ api -> guiTest conf api env (withTmux th api)
 
 tmuxSpec' ::
   RiboTesting e (Ribosome env) m n =>
@@ -167,7 +167,7 @@ tmuxSpec' ::
 tmuxSpec' tmuxConf conf env specThunk =
   inTestT specThunk \ th ->
     Chiasma.tmuxSpec' tmuxConf \ api ->
-      guiSpec conf api env (withTmux th api)
+      guiTest conf api env (withTmux th api)
 
 tmuxSpecDef ::
   Default s =>
@@ -176,18 +176,18 @@ tmuxSpecDef ::
   TestT (Ribo s e) () ->
   UnitTest
 tmuxSpecDef =
-  tmuxSpec def def
+  tmuxTest def def
 
-tmuxGuiSpec ::
+tmuxGuiTest ::
   RiboTesting e (Ribosome env) m n =>
   TestConfig ->
   env ->
   TestT n a ->
   TestT m a
-tmuxGuiSpec conf env specThunk =
+tmuxGuiTest conf env specThunk =
   inTestT specThunk \ th ->
     Chiasma.tmuxGuiSpec \ api ->
-      guiSpec conf api env (withTmux th api)
+      guiTest conf api env (withTmux th api)
 
 tmuxGuiSpecDef ::
   Default env =>
@@ -195,7 +195,7 @@ tmuxGuiSpecDef ::
   TestT n a ->
   TestT m a
 tmuxGuiSpecDef =
-  tmuxGuiSpec def def
+  tmuxGuiTest def def
 
 withTmuxInt ::
   NvimE e m =>

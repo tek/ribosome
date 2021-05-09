@@ -11,7 +11,7 @@ import Ribosome.Nvim.Api.IO (vimCommand, vimGetVar, vimSetVar)
 import Ribosome.Orphans ()
 import Ribosome.Plugin (autocmd, riboPlugin, rpcHandler)
 import Ribosome.Test.Await (await)
-import Ribosome.Test.Embed (integrationSpecDef)
+import Ribosome.Test.Embed (integrationTestDef)
 import Ribosome.Test.Orphans ()
 import Ribosome.Test.Run (UnitTest)
 
@@ -38,12 +38,12 @@ autocmdPlugin = do
   where
     funcs = [$(rpcHandler (autocmd "BufWritePre") 'testAuto)]
 
-autocmdSpec :: RiboTest ()
-autocmdSpec = do
+autocmdTest :: RiboTest ()
+autocmdTest = do
   () <- vimCommand "doautocmd BufWritePre"
   await (result ===) (vimGetVar varName)
 
 test_autocmd :: UnitTest
 test_autocmd = do
   plug <- liftIO autocmdPlugin
-  integrationSpecDef plug autocmdSpec
+  integrationTestDef plug autocmdTest

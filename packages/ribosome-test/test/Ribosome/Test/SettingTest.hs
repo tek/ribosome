@@ -10,7 +10,7 @@ import Ribosome.Data.SettingError (SettingError)
 import Ribosome.Error.Report.Class (ReportError(..))
 import Ribosome.Nvim.Api.RpcCall (RpcError)
 import Ribosome.Test.Run (UnitTest)
-import Ribosome.Test.Unit (unitSpec)
+import Ribosome.Test.Unit (unitTest)
 
 data SettingSpecError =
   Sett SettingError
@@ -26,18 +26,18 @@ deepPrisms ''SettingSpecError
 sett :: Setting Int
 sett = Setting "name" True Nothing
 
-settingSuccessSpec :: TestT (Ribo s SettingSpecError) ()
-settingSuccessSpec = do
+settingSuccessTest :: TestT (Ribo s SettingSpecError) ()
+settingSuccessTest = do
   updateSetting sett 5
   r <- lift (setting sett)
   5 === r
 
 test_settingSuccess :: UnitTest
 test_settingSuccess =
-  unitSpec def () settingSuccessSpec
+  unitTest def () settingSuccessTest
 
-settingFailSpec :: TestT (Ribo s SettingSpecError) ()
-settingFailSpec = do
+settingFailTest :: TestT (Ribo s SettingSpecError) ()
+settingFailTest = do
   ea <- lift (catchAt catch $ Right <$> result)
   void $ evalEither (swapEither ea)
   where
@@ -48,4 +48,4 @@ settingFailSpec = do
 
 test_settingFail :: UnitTest
 test_settingFail =
-  unitSpec def () settingFailSpec
+  unitTest def () settingFailTest

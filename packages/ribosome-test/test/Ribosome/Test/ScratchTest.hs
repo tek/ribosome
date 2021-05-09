@@ -16,7 +16,7 @@ import Ribosome.Nvim.Api.IO (vimCallFunction, vimCommand)
 import Ribosome.Plugin (riboPlugin, rpcHandler, rpcHandlerDef, sync)
 import Ribosome.Scratch (showInScratch)
 import Ribosome.Test.Await (await)
-import Ribosome.Test.Embed (integrationSpecDef)
+import Ribosome.Test.Embed (integrationTestDef)
 import Ribosome.Test.Run (UnitTest)
 
 target :: [Text]
@@ -66,8 +66,8 @@ scratchPlugin = do
   where
     funcs = [$(rpcHandlerDef 'makeScratch), $(rpcHandlerDef 'makeFloatScratch), $(rpcHandler sync 'scratchCount)]
 
-scratchSpec :: Text -> RiboTest ()
-scratchSpec fun = do
+scratchTest :: Text -> RiboTest ()
+scratchTest fun = do
   () <- vimCallFunction fun []
   await ((1 :: Int) ===) scratches
   await (target ===) currentBufferContent
@@ -76,20 +76,20 @@ scratchSpec fun = do
   where
     scratches = vimCallFunction "ScratchCount" []
 
-regularScratchSpec :: RiboTest ()
-regularScratchSpec =
-  scratchSpec "MakeScratch"
+regularScratchTest :: RiboTest ()
+regularScratchTest =
+  scratchTest "MakeScratch"
 
 test_regularScratch :: UnitTest
 test_regularScratch = do
   plug <- liftIO scratchPlugin
-  integrationSpecDef plug regularScratchSpec
+  integrationTestDef plug regularScratchTest
 
-floatScratchSpec :: RiboTest ()
-floatScratchSpec =
-  scratchSpec "MakeFloatScratch"
+floatScratchTest :: RiboTest ()
+floatScratchTest =
+  scratchTest "MakeFloatScratch"
 
 test_floatScratch :: UnitTest
 test_floatScratch = do
   plug <- liftIO scratchPlugin
-  integrationSpecDef plug floatScratchSpec
+  integrationTestDef plug floatScratchTest

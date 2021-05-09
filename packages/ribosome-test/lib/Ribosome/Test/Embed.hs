@@ -248,7 +248,7 @@ runEmbedded conf ribo thunk = do
   let pc = testNvimProcessConfig conf
   withProcessWait pc $ runEmbeddedNvim conf ribo thunk
 
-unsafeEmbeddedSpec ::
+unsafeEmbeddedTest ::
   MonadIO m =>
   MonadFail m =>
   MonadBaseControl IO m =>
@@ -259,7 +259,7 @@ unsafeEmbeddedSpec ::
   env ->
   n a ->
   m a
-unsafeEmbeddedSpec runner conf s spec =
+unsafeEmbeddedTest runner conf s spec =
   runEmbedded conf s $ runner conf spec
 
 unsafeEmbeddedSpecR ::
@@ -276,7 +276,7 @@ unsafeEmbeddedSpecR ::
 unsafeEmbeddedSpecR runner conf env spec = do
   tv <- newRibosomeTMVar env
   let ribo = Ribosome (tcPluginName conf) tv
-  unsafeEmbeddedSpec runner conf ribo spec
+  unsafeEmbeddedTest runner conf ribo spec
 
 runPlugin ::
   MonadIO m =>
@@ -310,7 +310,7 @@ inTestT ::
 inTestT ma f =
   mkTestT (f (runTestT ma))
 
-integrationSpec ::
+integrationTest ::
   ∀ n m e env a .
   NvimE e n =>
   MonadIO n =>
@@ -323,7 +323,7 @@ integrationSpec ::
   Plugin env ->
   TestT n a ->
   TestT m a
-integrationSpec conf plugin@(Plugin env _) thunk =
+integrationTest conf plugin@(Plugin env _) thunk =
   inTestT thunk \ na ->
     withProcessTerm (testNvimProcessConfig conf) (run na)
   where
@@ -336,7 +336,7 @@ integrationSpec conf plugin@(Plugin env _) thunk =
     release transitions =
       tryPutMVar transitions Internal.Quit *> sleep 0.5
 
-integrationSpecDef ::
+integrationTestDef ::
   NvimE e n =>
   MonadIO m =>
   MonadIO n =>
@@ -347,5 +347,5 @@ integrationSpecDef ::
   Plugin env ->
   TestT n a ->
   TestT m a
-integrationSpecDef =
-  integrationSpec def
+integrationTestDef =
+  integrationTest def

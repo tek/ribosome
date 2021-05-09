@@ -83,37 +83,37 @@ mappings :: Mappings (Ribo () TestError) (Maybe Text) Text
 mappings =
   Map.fromList [("cr", exec)]
 
-nvimMenuSpec ::
+nvimMenuTest ::
   ConduitT () PromptEvent (Ribo () TestError) () ->
   RiboTest ()
-nvimMenuSpec =
+nvimMenuTest =
   (MenuResult.Return (Just "item4") ===) <=< lift . runNvimMenu mappings
 
-nvimMenuPureSpec :: RiboTest ()
-nvimMenuPureSpec =
-  nvimMenuSpec (promptInput chars)
+nvimMenuPureTest :: RiboTest ()
+nvimMenuPureTest =
+  nvimMenuTest (promptInput chars)
 
 test_nvimMenuPure :: UnitTest
 test_nvimMenuPure =
-  tmuxSpecDef nvimMenuPureSpec
+  tmuxSpecDef nvimMenuPureTest
 
 nativeChars :: [Text]
 nativeChars =
   ["i", "t", "e", "<esc>", "k", "<c-k>", "k", "<cr>"]
 
-nvimMenuNativeSpec :: RiboTest ()
-nvimMenuNativeSpec =
-  bracket (fork input) killThread (const $ nvimMenuSpec (getCharC 0.1))
+nvimMenuNativeTest :: RiboTest ()
+nvimMenuNativeTest =
+  bracket (fork input) killThread (const $ nvimMenuTest (getCharC 0.1))
   where
     input =
       syntheticInput (Just 0.2) nativeChars
 
 test_nvimMenuNative :: UnitTest
 test_nvimMenuNative =
-  tmuxSpecDef nvimMenuNativeSpec
+  tmuxSpecDef nvimMenuNativeTest
 
-nvimMenuInterruptSpec :: RiboTest ()
-nvimMenuInterruptSpec = do
+nvimMenuInterruptTest :: RiboTest ()
+nvimMenuInterruptTest = do
   (MenuResult.Aborted ===) =<< spec
   (1 ===) =<< length <$> vimGetWindows
   where
@@ -127,7 +127,7 @@ nvimMenuInterruptSpec = do
 
 test_nvimMenuInterrupt :: UnitTest
 test_nvimMenuInterrupt =
-  tmuxSpecDef nvimMenuInterruptSpec
+  tmuxSpecDef nvimMenuInterruptTest
 
 returnPrompt ::
   MonadIO m =>
@@ -141,8 +141,8 @@ navChars :: [Text]
 navChars =
   ["i", "t", "e", "m", "1", "<bs>", "<esc>", "h", "h", "h", "h", "h", "x", "a", "o", "<cr>"]
 
-nvimMenuNavSpec :: RiboTest ()
-nvimMenuNavSpec =
+nvimMenuNavTest :: RiboTest ()
+nvimMenuNavTest =
   (MenuResult.Return "toem" ===) =<< lift run
   where
     run =
@@ -152,7 +152,7 @@ nvimMenuNavSpec =
 
 test_nvimMenuNav :: UnitTest
 test_nvimMenuNav =
-  tmuxSpecDef nvimMenuNavSpec
+  tmuxSpecDef nvimMenuNavTest
 
 test_nvimMenu :: TestTree
 test_nvimMenu =

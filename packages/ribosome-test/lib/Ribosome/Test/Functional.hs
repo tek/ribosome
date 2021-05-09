@@ -10,7 +10,7 @@ module Ribosome.Test.Functional where
 -- import System.FilePath (takeDirectory, takeFileName, (</>))
 
 -- import Ribosome.Control.Ribo (Ribo)
--- import Ribosome.Test.Embed (TestConfig(..), setupPluginEnv, unsafeEmbeddedSpec)
+-- import Ribosome.Test.Embed (TestConfig(..), setupPluginEnv, unsafeEmbeddedTest)
 -- import Ribosome.Test.Exists (waitForPlugin)
 -- import qualified Ribosome.Test.File as F (fixture, tempDir)
 
@@ -33,8 +33,8 @@ module Ribosome.Test.Functional where
 --   vim_command' cmd
 --   waitForPlugin tcPluginName 0.1 3
 
--- fSpec :: TestConfig -> Neovim env () -> Neovim env ()
--- fSpec conf spec = startPlugin conf >> spec
+-- fTest :: TestConfig -> Neovim env () -> Neovim env ()
+-- fTest conf spec = startPlugin conf >> spec
 
 -- showLog' :: Text -> IO ()
 -- showLog' output = do
@@ -55,9 +55,9 @@ module Ribosome.Test.Functional where
 --       [] -> return ()
 --       o -> showLog' o
 
--- functionalSpec :: TestConfig -> Ribo () () -> IO ()
--- functionalSpec conf spec =
---   finally (unsafeEmbeddedSpec fSpec conf () spec) (showLog conf)
+-- functionalTest :: TestConfig -> Ribo () () -> IO ()
+-- functionalTest conf spec =
+--   finally (unsafeEmbeddedTest fTest conf () spec) (showLog conf)
 
 -- fPrefix :: Text
 -- fPrefix = "f"

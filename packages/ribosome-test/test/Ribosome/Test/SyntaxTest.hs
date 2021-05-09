@@ -36,8 +36,8 @@ syntax =
   Syntax [syntaxMatch "TestColons" "::"] [syntaxHighlight "TestColons"
     [("cterm", "reverse"), ("ctermfg", "1"), ("gui", "reverse"), ("guifg", "#dc322f")]] []
 
-syntaxSpec :: TestT (Ribo () SyntaxSpecError) ()
-syntaxSpec = do
+syntaxTest :: TestT (Ribo () SyntaxSpecError) ()
+syntaxTest = do
   lift (setCurrentBufferContent ["function :: String -> Int", "function _ = 5"])
   _ <- lift (executeSyntax syntax)
   sleep 1
@@ -45,4 +45,4 @@ syntaxSpec = do
 
 test_syntax :: UnitTest
 test_syntax =
-  tmuxSpec' def { ttcWidth = 300, ttcHeight = 51, ttcGui = False } (defaultTestConfig "syntax") def syntaxSpec
+  tmuxSpec' def { ttcWidth = 300, ttcHeight = 51, ttcGui = False } (defaultTestConfig "syntax") def syntaxTest

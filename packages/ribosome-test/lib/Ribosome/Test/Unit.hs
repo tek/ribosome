@@ -18,12 +18,12 @@ import Ribosome.Test.Orphans ()
 uPrefix :: Text
 uPrefix = "test"
 
-uSpec :: (MonadIO m, NvimE e m) => Runner m
-uSpec conf spec = do
+uTest :: (MonadIO m, NvimE e m) => Runner m
+uTest conf spec = do
   setupPluginEnv conf
   spec
 
-unitSpec ::
+unitTest ::
   MonadIO n =>
   MonadIO m =>
   NvimE e' n =>
@@ -35,8 +35,8 @@ unitSpec ::
   env ->
   TestT n a ->
   TestT m a
-unitSpec cfg env t = do
-  mkTestT (unsafeEmbeddedSpecR uSpec cfg env (runTestT t))
+unitTest cfg env t = do
+  mkTestT (unsafeEmbeddedSpecR uTest cfg env (runTestT t))
 
 unitSpecDef ::
   MonadIO n =>
@@ -50,7 +50,7 @@ unitSpecDef ::
   TestT n a ->
   TestT m a
 unitSpecDef =
-  unitSpec def
+  unitTest def
 
 unitSpecDef' ::
   MonadIO n =>

@@ -1,12 +1,11 @@
 module Ribosome.Test.Await where
 
-import Hedgehog (TestT)
 import Control.Exception (throw)
 import Control.Monad.Error.Class (MonadError (throwError), catchError)
-import Hedgehog.Internal.Property (mkTestT, runTestT, Failure, Journal)
+import Hedgehog (TestT, (===))
+import Hedgehog.Internal.Property (Failure, Journal, mkTestT, runTestT)
 
 import Ribosome.Control.Concurrent.Wait (WaitError(Thrown, ConditionUnmet, NotStarted), waitIODef)
-import Hedgehog ((===))
 
 await ::
   ∀ e a b m .

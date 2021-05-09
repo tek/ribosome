@@ -16,8 +16,8 @@ import Ribosome.Menu.Prompt.Run (basicTransition, noPromptRenderer, processPromp
 import Ribosome.Test.Run (UnitTest)
 import Ribosome.Test.Unit (unitSpecDef')
 
-promptSetSpec :: TestT (Ribo () TestError) ()
-promptSetSpec = do
+promptSetTest :: TestT (Ribo () TestError) ()
+promptSetTest = do
   update <- runConduit $ yield event .| exec .| Conduit.last
   Just target === update
   where
@@ -36,4 +36,4 @@ promptSetSpec = do
 
 test_promptSet :: UnitTest
 test_promptSet =
-  unitSpecDef' promptSetSpec
+  unitSpecDef' promptSetTest

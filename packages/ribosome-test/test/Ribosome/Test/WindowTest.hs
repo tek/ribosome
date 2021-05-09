@@ -22,17 +22,17 @@ createNofile = do
   setCurrentNofile
   return initialWindow
 
-findMainWindowExistingSpec :: RiboTest ()
-findMainWindowExistingSpec = do
+findMainWindowExistingTest :: RiboTest ()
+findMainWindowExistingTest = do
   initialWindow <- createNofile
   (initialWindow ===) =<< ensureMainWindow
 
 test_findMainWindowExisting :: UnitTest
 test_findMainWindowExisting =
-  unitSpecDef' findMainWindowExistingSpec
+  unitSpecDef' findMainWindowExistingTest
 
-findMainWindowCreateSpec :: RiboTest ()
-findMainWindowCreateSpec = do
+findMainWindowCreateTest :: RiboTest ()
+findMainWindowCreateTest = do
   setCurrentNofile
   void createNofile
   void ensureMainWindow
@@ -40,4 +40,4 @@ findMainWindowCreateSpec = do
 
 test_findMainWindowCreate :: UnitTest
 test_findMainWindowCreate =
-  unitSpecDef' findMainWindowCreateSpec
+  unitSpecDef' findMainWindowCreateTest

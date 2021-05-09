@@ -13,7 +13,7 @@ import Ribosome.Control.Ribosome (Ribosome, newRibosome)
 import Ribosome.Nvim.Api.IO (vimGetVar)
 import Ribosome.Plugin (riboPlugin)
 import Ribosome.Test.Await (await)
-import Ribosome.Test.Embed (integrationSpecDef)
+import Ribosome.Test.Embed (integrationTestDef)
 import Ribosome.Test.Orphans ()
 import Ribosome.Test.Run (UnitTest)
 
@@ -26,8 +26,8 @@ varWatcherPlugin = do
   env <- newRibosome "varwatcher" ()
   return $ riboPlugin "varwatcher" env [] [] handleTestError (Map.singleton "trigger" changed)
 
-varWatcherSpec :: RiboTest ()
-varWatcherSpec = do
+varWatcherTest :: RiboTest ()
+varWatcherTest = do
   setVar "number" (10 :: Int)
   setVar "trigger" (5 :: Int)
   await ((10 :: Int) ===) (vimGetVar "number")
@@ -43,4 +43,4 @@ varWatcherSpec = do
 test_varWatcher :: UnitTest
 test_varWatcher = do
   plug <- liftIO varWatcherPlugin
-  integrationSpecDef plug varWatcherSpec
+  integrationTestDef plug varWatcherTest

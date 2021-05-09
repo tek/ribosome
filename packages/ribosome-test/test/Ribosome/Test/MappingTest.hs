@@ -17,7 +17,7 @@ import Ribosome.Plugin (riboPlugin, rpcHandlerDef)
 import Ribosome.Plugin.Mapping (MappingHandler, mappingHandler)
 import Ribosome.Scratch (showInScratch)
 import Ribosome.Test.Await (await)
-import Ribosome.Test.Embed (integrationSpecDef)
+import Ribosome.Test.Embed (integrationTestDef)
 import Ribosome.Test.Orphans ()
 import Ribosome.Test.Run (UnitTest)
 
@@ -58,8 +58,8 @@ mappingPlugin = do
   where
     funcs = [$(rpcHandlerDef 'setupMappingScratch)]
 
-mappingSpec :: RiboTest ()
-mappingSpec = do
+mappingTest :: RiboTest ()
+mappingTest = do
   () <- vimCallFunction "SetupMappingScratch" []
   await (target ===) currentBufferContent
   nvimFeedkeys "a" "x" False
@@ -68,4 +68,4 @@ mappingSpec = do
 test_mapping :: UnitTest
 test_mapping = do
   plug <- liftIO mappingPlugin
-  integrationSpecDef plug mappingSpec
+  integrationTestDef plug mappingTest
