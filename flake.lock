@@ -5,11 +5,11 @@
         "hix": "hix"
       },
       "locked": {
-        "lastModified": 1620679249,
-        "narHash": "sha256-/Rqm13nMTG89EgufmNTawLEmhZNbVHNI6xwPnCEX9p0=",
+        "lastModified": 1620690609,
+        "narHash": "sha256-azXkftXbdgN84+ejqyqM27u/5L7C+ewfsXx/vwPWtB0=",
         "owner": "tek",
         "repo": "chiasma",
-        "rev": "4308cb4ef3a633b36f44787178b5415f5f5a3e8d",
+        "rev": "2807fb84014e2e57e4ddb6390323c8e73deacf88",
         "type": "github"
       },
       "original": {
