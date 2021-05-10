@@ -30,7 +30,7 @@ import Ribosome.Menu.Simple (Mappings, defaultMenu)
 import Ribosome.Nvim.Api.IO (vimGetWindows)
 import Ribosome.System.Time (sleep)
 import Ribosome.Test.Run (UnitTest, unitTest)
-import Ribosome.Test.Tmux (tmuxSpecDef)
+import Ribosome.Test.Tmux (tmuxTestDef)
 
 promptInput ::
   MonadIO m =>
@@ -95,7 +95,7 @@ nvimMenuPureTest =
 
 test_nvimMenuPure :: UnitTest
 test_nvimMenuPure =
-  tmuxSpecDef nvimMenuPureTest
+  tmuxTestDef nvimMenuPureTest
 
 nativeChars :: [Text]
 nativeChars =
@@ -110,7 +110,7 @@ nvimMenuNativeTest =
 
 test_nvimMenuNative :: UnitTest
 test_nvimMenuNative =
-  tmuxSpecDef nvimMenuNativeTest
+  tmuxTestDef nvimMenuNativeTest
 
 nvimMenuInterruptTest :: RiboTest ()
 nvimMenuInterruptTest = do
@@ -127,7 +127,7 @@ nvimMenuInterruptTest = do
 
 test_nvimMenuInterrupt :: UnitTest
 test_nvimMenuInterrupt =
-  tmuxSpecDef nvimMenuInterruptTest
+  tmuxTestDef nvimMenuInterruptTest
 
 returnPrompt ::
   MonadIO m =>
@@ -152,7 +152,7 @@ nvimMenuNavTest =
 
 test_nvimMenuNav :: UnitTest
 test_nvimMenuNav =
-  tmuxSpecDef nvimMenuNavTest
+  tmuxTestDef nvimMenuNavTest
 
 test_nvimMenu :: TestTree
 test_nvimMenu =

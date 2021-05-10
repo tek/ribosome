@@ -14,7 +14,7 @@ import qualified Ribosome.Menu.Prompt.Data.PromptEvent as PromptEvent (PromptEve
 import qualified Ribosome.Menu.Prompt.Data.PromptState as PromptState (PromptState(..))
 import Ribosome.Menu.Prompt.Run (basicTransition, noPromptRenderer, processPromptEvent)
 import Ribosome.Test.Run (UnitTest)
-import Ribosome.Test.Unit (unitSpecDef')
+import Ribosome.Test.Unit (unitTestDef')
 
 promptSetTest :: TestT (Ribo () TestError) ()
 promptSetTest = do
@@ -36,4 +36,4 @@ promptSetTest = do
 
 test_promptSet :: UnitTest
 test_promptSet =
-  unitSpecDef' promptSetTest
+  unitTestDef' promptSetTest

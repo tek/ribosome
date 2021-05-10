@@ -4,11 +4,11 @@ cabal-version: 2.2
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: f8bb0586599cf5d3ee2220dd9fd90dfac10bf33a70454a8d41cdab94023eff0b
+-- hash: d6292a3198d53eb9d9466f6ac9b60b9f4080c2b4ea06386c097814ee7058c9d2
 
 name:           ribosome
 version:        0.4.0.0
-synopsis:       api extensions for nvim-hs
+synopsis:       High Level Neovim Plugin Framework
 description:    Please see the README on GitHub at <https://github.com/tek/ribosome>
 category:       Neovim
 homepage:       https://github.com/tek/ribosome#readme

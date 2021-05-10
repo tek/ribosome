@@ -262,7 +262,7 @@ unsafeEmbeddedTest ::
 unsafeEmbeddedTest runner conf s spec =
   runEmbedded conf s $ runner conf spec
 
-unsafeEmbeddedSpecR ::
+unsafeEmbeddedTestR ::
   MonadIO m =>
   MonadFail m =>
   ReportError e =>
@@ -273,7 +273,7 @@ unsafeEmbeddedSpecR ::
   env ->
   n a ->
   m a
-unsafeEmbeddedSpecR runner conf env spec = do
+unsafeEmbeddedTestR runner conf env spec = do
   tv <- newRibosomeTMVar env
   let ribo = Ribosome (tcPluginName conf) tv
   unsafeEmbeddedTest runner conf ribo spec

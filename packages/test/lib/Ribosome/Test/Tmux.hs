@@ -6,7 +6,7 @@ import Chiasma.Data.TmuxId (PaneId(PaneId))
 import Chiasma.Monad.Stream (runTmux)
 import Chiasma.Native.Api (TmuxNative(TmuxNative))
 import Chiasma.Test.Tmux (TmuxTestConf, withSystemTempDir)
-import qualified Chiasma.Test.Tmux as Chiasma (tmuxGuiSpec, tmuxSpec, tmuxSpec')
+import qualified Chiasma.Test.Tmux as Chiasma (tmuxGuiTest, tmuxTest, tmuxTest')
 import Control.Exception.Lifted (bracket)
 import Data.DeepPrisms (DeepPrisms)
 import Hedgehog (TestT)
@@ -108,7 +108,7 @@ unsafeGuiTest ::
 unsafeGuiTest api temp runner conf s specThunk =
   runGui api temp conf s $ runner conf specThunk
 
-unsafeGuiSpecR ::
+unsafeGuiTestR ::
   RiboTesting e (Ribosome env) m n =>
   TmuxNative ->
   FilePath ->
@@ -117,7 +117,7 @@ unsafeGuiSpecR ::
   env ->
   n a ->
   m a
-unsafeGuiSpecR api temp runner conf s specThunk = do
+unsafeGuiTestR api temp runner conf s specThunk = do
   tv <- newRibosomeTMVar s
   let ribo = Ribosome (tcPluginName conf) tv
   unsafeGuiTest api temp runner conf ribo specThunk
@@ -133,7 +133,7 @@ guiTest conf api env specThunk = do
   withSystemTempDir run
   where
     run tempdir =
-      unsafeGuiSpecR api tempdir uTest conf env specThunk
+      unsafeGuiTestR api tempdir uTest conf env specThunk
 
 withTmux ::
   Nvim m =>
@@ -155,27 +155,27 @@ tmuxTest ::
   TestT m a
 tmuxTest conf env specThunk =
   inTestT specThunk \ th ->
-    Chiasma.tmuxSpec \ api -> guiTest conf api env (withTmux th api)
+    Chiasma.tmuxTest \ api -> guiTest conf api env (withTmux th api)
 
-tmuxSpec' ::
+tmuxTest' ::
   RiboTesting e (Ribosome env) m n =>
   TmuxTestConf ->
   TestConfig ->
   env ->
   TestT n a ->
   TestT m a
-tmuxSpec' tmuxConf conf env specThunk =
+tmuxTest' tmuxConf conf env specThunk =
   inTestT specThunk \ th ->
-    Chiasma.tmuxSpec' tmuxConf \ api ->
+    Chiasma.tmuxTest' tmuxConf \ api ->
       guiTest conf api env (withTmux th api)
 
-tmuxSpecDef ::
+tmuxTestDef ::
   Default s =>
   ReportError e =>
   DeepPrisms e RpcError =>
   TestT (Ribo s e) () ->
   UnitTest
-tmuxSpecDef =
+tmuxTestDef =
   tmuxTest def def
 
 tmuxGuiTest ::
@@ -186,15 +186,15 @@ tmuxGuiTest ::
   TestT m a
 tmuxGuiTest conf env specThunk =
   inTestT specThunk \ th ->
-    Chiasma.tmuxGuiSpec \ api ->
+    Chiasma.tmuxGuiTest \ api ->
       guiTest conf api env (withTmux th api)
 
-tmuxGuiSpecDef ::
+tmuxGuiTestDef ::
   Default env =>
   RiboTesting e (Ribosome env) m n =>
   TestT n a ->
   TestT m a
-tmuxGuiSpecDef =
+tmuxGuiTestDef =
   tmuxGuiTest def def
 
 withTmuxInt ::
@@ -233,14 +233,14 @@ runTmuxWithPlugin api conf plugin@(Plugin env _) thunk = do
     logError (SomeException e) =
       failWith Nothing ("runTmuxWithPlugin: nvim process failed with: " <> show e)
 
-tmuxIntegrationSpecDef ::
+tmuxIntegrationTestDef ::
   RiboTesting e env m n =>
   Text ->
   Plugin env ->
   TestT n a ->
   TestT m a
-tmuxIntegrationSpecDef name plugin specThunk =
-  Chiasma.tmuxGuiSpec run
+tmuxIntegrationTestDef name plugin specThunk =
+  Chiasma.tmuxGuiTest run
   where
     run api =
       runTmuxWithPlugin api def plugin (inTestT specThunk \ th -> withTmuxInt name th api)

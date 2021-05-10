@@ -1,15 +1,13 @@
 name: ribosome
-synopsis: api extensions for nvim-hs
+synopsis: High Level Neovim Plugin Framework
 <<: !include shared/meta.yaml
 defaults:
   local: shared/defaults.yaml
 
 library:
   source-dirs: lib
-  other-modules:
-    - Prelude
-  generated-other-modules:
-    Paths_ribosome
+  other-modules: Prelude
+  generated-other-modules: Paths_ribosome
 
 extra-source-files:
   - readme.md

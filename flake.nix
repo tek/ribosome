@@ -1,13 +1,11 @@
 {
-  description = "Haskell tmux Client";
+  description = "High Level Neovim Plugin Framework";
 
-  inputs = {
-    hix.url = github:tek/hix;
-    chiasma.url = github:tek/chiasma;
-  };
+  inputs.chiasma.url = github:tek/chiasma;
 
-  outputs = { hix, chiasma, ... }:
+  outputs = { chiasma, ... }:
   let
+    inherit (chiasma.inputs) hix;
     overrides = { hackage, source, only, configure, pkgs, ... }: {
       chiasma = source.package chiasma "chiasma";
       cornea = hackage "0.4.0.0" "1w9rkf6f861kknkskywb8fczlk7az8m56i3hvmg6a5inpvqf6p7i";
@@ -21,7 +19,7 @@
     base = ./.;
     packages = {
       ribosome = ./packages/ribosome;
-      ribosome-test = ./packages/ribosome-test;
+      ribosome-test = ./packages/test;
     };
     main = "ribosome-test";
     inherit overrides;

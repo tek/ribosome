@@ -11,7 +11,7 @@ import Ribosome.Control.Monad.Ribo (MonadRibo, NvimE, pluginName)
 import Ribosome.Control.Ribosome (Ribosome)
 import Ribosome.Error.Report.Class (ReportError)
 import Ribosome.Plugin.RpcHandler (RpcHandler)
-import Ribosome.Test.Embed (Runner, TestConfig(..), setupPluginEnv, unsafeEmbeddedSpecR)
+import Ribosome.Test.Embed (Runner, TestConfig(..), setupPluginEnv, unsafeEmbeddedTestR)
 import qualified Ribosome.Test.File as F (fixture, fixtureContent, tempDir)
 import Ribosome.Test.Orphans ()
 
@@ -36,9 +36,9 @@ unitTest ::
   TestT n a ->
   TestT m a
 unitTest cfg env t = do
-  mkTestT (unsafeEmbeddedSpecR uTest cfg env (runTestT t))
+  mkTestT (unsafeEmbeddedTestR uTest cfg env (runTestT t))
 
-unitSpecDef ::
+unitTestDef ::
   MonadIO n =>
   MonadIO m =>
   NvimE e' n =>
@@ -49,10 +49,10 @@ unitSpecDef ::
   env ->
   TestT n a ->
   TestT m a
-unitSpecDef =
+unitTestDef =
   unitTest def
 
-unitSpecDef' ::
+unitTestDef' ::
   MonadIO n =>
   MonadIO m =>
   NvimE e' n =>
@@ -62,8 +62,8 @@ unitSpecDef' ::
   RpcHandler e (Ribosome ()) n =>
   TestT n a ->
   TestT m a
-unitSpecDef' =
-  unitSpecDef ()
+unitTestDef' =
+  unitTestDef ()
 
 tempDir :: MonadIO m => FilePath -> m FilePath
 tempDir = F.tempDir uPrefix

@@ -8,7 +8,7 @@ import Ribosome.Msgpack.Encode (toMsgpack)
 import Ribosome.Nvim.Api.Data (Window)
 import Ribosome.Nvim.Api.IO (bufferSetOption, vimCommand, vimGetCurrentBuffer, vimGetCurrentWindow, vimGetWindows)
 import Ribosome.Test.Run (UnitTest)
-import Ribosome.Test.Unit (unitSpecDef')
+import Ribosome.Test.Unit (unitTestDef')
 
 setCurrentNofile :: RiboTest ()
 setCurrentNofile = do
@@ -29,7 +29,7 @@ findMainWindowExistingTest = do
 
 test_findMainWindowExisting :: UnitTest
 test_findMainWindowExisting =
-  unitSpecDef' findMainWindowExistingTest
+  unitTestDef' findMainWindowExistingTest
 
 findMainWindowCreateTest :: RiboTest ()
 findMainWindowCreateTest = do
@@ -40,4 +40,4 @@ findMainWindowCreateTest = do
 
 test_findMainWindowCreate :: UnitTest
 test_findMainWindowCreate =
-  unitSpecDef' findMainWindowCreateTest
+  unitTestDef' findMainWindowCreateTest

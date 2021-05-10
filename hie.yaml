@@ -3,8 +3,8 @@ cradle:
     - path: "./packages/ribosome/lib"
       component: "lib:ribosome"
 
-    - path: "./packages/ribosome-test/lib"
+    - path: "./packages/test/lib"
       component: "lib:ribosome-test"
 
-    - path: "./packages/ribosome-test/test"
+    - path: "./packages/test/test"
       component: "ribosome-test:test:ribosome-unit"

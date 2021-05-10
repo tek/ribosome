@@ -1,9 +1,9 @@
 module Ribosome.Test.SyntaxTest where
 
-import TestError (TestError)
-import Hedgehog (TestT)
 import Chiasma.Data.TmuxError (TmuxError)
 import Chiasma.Test.Tmux (TmuxTestConf(..))
+import Hedgehog (TestT)
+import TestError (TestError)
 
 import Ribosome.Api.Buffer (setCurrentBufferContent)
 import Ribosome.Api.Syntax (executeSyntax)
@@ -18,16 +18,16 @@ import Ribosome.System.Time (sleep)
 import Ribosome.Test.Embed (defaultTestConfig)
 import Ribosome.Test.Run (UnitTest)
 import Ribosome.Test.Screenshot (awaitScreenshot)
-import Ribosome.Test.Tmux (tmuxSpec')
+import Ribosome.Test.Tmux (tmuxTest')
 
-data SyntaxSpecError =
+data SyntaxTestError =
   Test TestError
   |
   Tmux TmuxError
 
-deepPrisms ''SyntaxSpecError
+deepPrisms ''SyntaxTestError
 
-instance ReportError SyntaxSpecError where
+instance ReportError SyntaxTestError where
   errorReport _ =
     undefined
 
@@ -36,7 +36,7 @@ syntax =
   Syntax [syntaxMatch "TestColons" "::"] [syntaxHighlight "TestColons"
     [("cterm", "reverse"), ("ctermfg", "1"), ("gui", "reverse"), ("guifg", "#dc322f")]] []
 
-syntaxTest :: TestT (Ribo () SyntaxSpecError) ()
+syntaxTest :: TestT (Ribo () SyntaxTestError) ()
 syntaxTest = do
   lift (setCurrentBufferContent ["function :: String -> Int", "function _ = 5"])
   _ <- lift (executeSyntax syntax)
@@ -45,4 +45,4 @@ syntaxTest = do
 
 test_syntax :: UnitTest
 test_syntax =
-  tmuxSpec' def { ttcWidth = 300, ttcHeight = 51, ttcGui = False } (defaultTestConfig "syntax") def syntaxTest
+  tmuxTest' def { ttcWidth = 300, ttcHeight = 51, ttcGui = False } (defaultTestConfig "syntax") def syntaxTest

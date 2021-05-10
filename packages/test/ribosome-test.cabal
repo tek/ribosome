@@ -4,11 +4,11 @@ cabal-version: 2.2
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: d204ea32a519247a24754414a535360674e998d19dd95ea48b7fd7d7ab1044dc
+-- hash: 19813cf18ae7c5c68febab37ff0dc49ab8b7a67e41f047f7e739f26275a09be7
 
 name:           ribosome-test
 version:        0.4.0.0
-synopsis:       test helpers for ribosome
+synopsis:       High Level Neovim Plugin Framework, Tests
 description:    Please see the README on GitHub at <https://github.com/tek/ribosome>
 category:       Neovim
 homepage:       https://github.com/tek/ribosome#readme

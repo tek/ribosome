@@ -1,5 +1,5 @@
 name: ribosome-test
-synopsis: test helpers for ribosome
+synopsis: High Level Neovim Plugin Framework, Tests
 <<: !include shared/meta.yaml
 defaults:
   local: shared/defaults.yaml
