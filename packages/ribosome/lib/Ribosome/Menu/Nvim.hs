@@ -4,23 +4,26 @@ import Control.Lens (view)
 import qualified Data.Map as Map (fromList)
 import qualified Data.Text as Text (cons, snoc)
 
-import Ribosome.Api.Window (redraw, setLine)
+import Ribosome.Api.Window (redraw, restoreView, saveView, setLine)
 import Ribosome.Control.Monad.Ribo (MonadRibo, NvimE)
 import Ribosome.Data.List (mapSelectors)
-import Ribosome.Data.Scratch (Scratch(scratchWindow))
+import Ribosome.Data.Scratch (Scratch (scratchWindow))
 import Ribosome.Data.ScratchOptions (ScratchOptions)
 import Ribosome.Data.Syntax (
-  HiLink(..),
-  Syntax(Syntax),
-  SyntaxItem(..),
+  HiLink (..),
+  Syntax (Syntax),
+  SyntaxItem (..),
   syntaxMatch,
   )
+import qualified Ribosome.Data.WindowView as WindowView (WindowView (..))
+import Ribosome.Data.WindowView (PartialWindowView (PartialWindowView))
 import Ribosome.Log (logDebug)
 import qualified Ribosome.Menu.Data.FilteredMenuItem as FilteredMenuItem (item)
-import Ribosome.Menu.Data.Menu (Menu(Menu))
+import Ribosome.Menu.Data.Menu (Menu (Menu))
 import qualified Ribosome.Menu.Data.MenuItem as MenuItem (abbreviated)
 import Ribosome.Menu.Data.MenuRenderEvent (MenuRenderEvent)
-import qualified Ribosome.Menu.Data.MenuRenderEvent as MenuRenderEvent (MenuRenderEvent(..))
+import qualified Ribosome.Menu.Data.MenuRenderEvent as MenuRenderEvent (MenuRenderEvent (..))
+import Ribosome.Nvim.Api.IO (nvimSetCurrentWin, nvimWinGetHeight)
 import Ribosome.Scratch (killScratch, setScratchContent)
 
 marker :: Char
@@ -63,10 +66,13 @@ renderNvimMenu ::
   m ()
 renderNvimMenu _ scratch (MenuRenderEvent.Quit _) =
   killScratch scratch
-renderNvimMenu options scratch (MenuRenderEvent.Render changed (Menu _ allItems selected marked _ maxItems)) =
-  when changed (setScratchContent options scratch (reverse text)) *>
-  logDebug @Text logMsg *>
-  updateCursor *>
+renderNvimMenu options scratch (MenuRenderEvent.Render changed (Menu _ allItems selected marked _ maxItems)) = do
+  when changed (setScratchContent options scratch (reverse text))
+  logDebug @Text logMsg
+  updateCursor
+  nvimSetCurrentWin win
+  height <- nvimWinGetHeight win
+  adjustTopline height
   redraw
   where
     lineNumber =
@@ -78,6 +84,17 @@ renderNvimMenu options scratch (MenuRenderEvent.Render changed (Menu _ allItems 
     limit =
       maybe id take maxItems
     updateCursor =
-      setLine (scratchWindow scratch) lineNumber
+      setLine win lineNumber
+    win =
+      scratchWindow scratch
     logMsg =
       "updating menu cursor to line " <> show lineNumber <> "; " <> show selected <> "/" <> show (length items)
+    adjustTopline height = do
+      when (lineNumber > lastTopline) do
+        topline <- WindowView.topline <$> saveView
+        when (topline - 1 > lastTopline) do
+          restoreView (PartialWindowView Nothing (Just (lastTopline + 1)))
+          updateCursor
+      where
+        lastTopline =
+          length items - height

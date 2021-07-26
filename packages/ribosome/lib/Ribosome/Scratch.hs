@@ -14,9 +14,9 @@ import Ribosome.Control.Monad.Ribo (MonadRibo, NvimE, pluginInternalL, pluginInt
 import Ribosome.Control.Ribosome (RibosomeInternal)
 import qualified Ribosome.Control.Ribosome as Ribosome (scratch)
 import Ribosome.Data.FloatOptions (FloatOptions)
-import Ribosome.Data.Scratch (Scratch(Scratch))
-import qualified Ribosome.Data.Scratch as Scratch (Scratch(scratchPrevious, scratchWindow, scratchBuffer))
-import Ribosome.Data.ScratchOptions (ScratchOptions(ScratchOptions))
+import Ribosome.Data.Scratch (Scratch (Scratch))
+import qualified Ribosome.Data.Scratch as Scratch (Scratch (scratchBuffer, scratchPrevious, scratchWindow))
+import Ribosome.Data.ScratchOptions (ScratchOptions (ScratchOptions))
 import qualified Ribosome.Data.ScratchOptions as ScratchOptions (maxSize, modify, name, resize, vertical)
 import Ribosome.Data.Text (capitalize)
 import Ribosome.Log (logDebug)
@@ -265,16 +265,16 @@ setScratchContent ::
   m ()
 setScratchContent options (Scratch _ buffer win _ _) lines' = do
   withModifiable buffer options $ setBufferContent buffer (toList lines')
-  when (view ScratchOptions.resize options) (ignoreError @RpcError $ setSize win size)
+  when (options ^. ScratchOptions.resize) (ignoreError @RpcError (setSize win size))
   where
     size =
       max 1 calculateSize
     calculateSize =
       if vertical then fromMaybe 50 maxSize else min (length lines') (fromMaybe 30 maxSize)
     maxSize =
-      view ScratchOptions.maxSize options
+      options ^. ScratchOptions.maxSize
     vertical =
-      view ScratchOptions.vertical options
+      options ^. ScratchOptions.vertical
     setSize =
       if vertical then windowSetWidth else windowSetHeight
 

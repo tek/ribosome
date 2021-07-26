@@ -2,6 +2,7 @@
 {-# LANGUAGE NoImplicitPrelude #-}
 
 module Ribosome.Prelude (
+  module Control.Lens,
   module Control.Monad.Trans.Control,
   module Cornea,
   module Data.Default,
@@ -12,7 +13,6 @@ module Ribosome.Prelude (
   dbgm,
   dbgWith,
   dbgmWith,
-  makeClassy,
   mapLeft,
   tuple,
   undefined,
@@ -24,12 +24,12 @@ module Ribosome.Prelude (
   (<$$>),
 ) where
 
-import Control.Lens (makeClassy)
-import Control.Monad.Base (MonadBase(..))
-import Control.Monad.Trans.Control (MonadBaseControl(..))
-import Control.Monad.Trans.Resource.Internal (ResourceT(ResourceT))
+import Control.Lens (makeClassy, (%~), (.~), (?~), (^.))
+import Control.Monad.Base (MonadBase (..))
+import Control.Monad.Trans.Control (MonadBaseControl (..))
+import Control.Monad.Trans.Resource.Internal (ResourceT (ResourceT))
 import Cornea
-import Data.Default (Default(def))
+import Data.Default (Default (def))
 import Data.Either.Combinators (mapLeft)
 import Data.Foldable (foldl, traverse_)
 import Data.Functor.Syntax ((<$$>))

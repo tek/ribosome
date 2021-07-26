@@ -1,6 +1,8 @@
 module Ribosome.Api.Window where
 
 import Ribosome.Control.Monad.Ribo (NvimE)
+import Ribosome.Data.WindowView (PartialWindowView, WindowView)
+import Ribosome.Msgpack.Encode (toMsgpack)
 import Ribosome.Nvim.Api.Data (Window)
 import Ribosome.Nvim.Api.IO (
   nvimBufGetOption,
@@ -9,6 +11,7 @@ import Ribosome.Nvim.Api.IO (
   nvimWinGetBuf,
   nvimWinGetCursor,
   nvimWinSetCursor,
+  vimCallFunction,
   vimCommand,
   vimGetWindows,
   vimSetCurrentWindow,
@@ -116,3 +119,16 @@ ensureMainWindow =
       return win
     focus w =
       w <$ vimSetCurrentWindow w
+
+saveView ::
+  NvimE e m =>
+  m WindowView
+saveView =
+  vimCallFunction "winsaveview" []
+
+restoreView ::
+  NvimE e m =>
+  PartialWindowView ->
+  m ()
+restoreView view =
+  vimCallFunction "winrestview" [toMsgpack view]

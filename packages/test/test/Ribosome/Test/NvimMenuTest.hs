@@ -11,18 +11,19 @@ import TestError (RiboTest, TestError)
 
 import Ribosome.Api.Input (syntheticInput)
 import Ribosome.Control.Monad.Ribo (Ribo)
+import Ribosome.Data.ScratchOptions (ScratchOptions (_maxSize))
 import Ribosome.Menu.Action (menuReturn)
 import qualified Ribosome.Menu.Data.FilteredMenuItem as FilteredMenuItem (item)
-import Ribosome.Menu.Data.Menu (Menu(Menu))
+import Ribosome.Menu.Data.Menu (Menu (Menu))
 import Ribosome.Menu.Data.MenuConsumerAction (MenuConsumerAction)
 import Ribosome.Menu.Data.MenuItem (MenuItem, simpleMenuItem)
 import qualified Ribosome.Menu.Data.MenuItem as MenuItem (text)
 import Ribosome.Menu.Data.MenuResult (MenuResult)
-import qualified Ribosome.Menu.Data.MenuResult as MenuResult (MenuResult(..))
-import Ribosome.Menu.Prompt.Data.Prompt (Prompt(Prompt))
-import Ribosome.Menu.Prompt.Data.PromptConfig (PromptConfig(PromptConfig), PromptFlag(StartInsert))
+import qualified Ribosome.Menu.Data.MenuResult as MenuResult (MenuResult (..))
+import Ribosome.Menu.Prompt.Data.Prompt (Prompt (Prompt))
+import Ribosome.Menu.Prompt.Data.PromptConfig (PromptConfig (PromptConfig), PromptFlag (StartInsert))
 import Ribosome.Menu.Prompt.Data.PromptEvent (PromptEvent)
-import qualified Ribosome.Menu.Prompt.Data.PromptEvent as PromptEvent (PromptEvent(..))
+import qualified Ribosome.Menu.Prompt.Data.PromptEvent as PromptEvent (PromptEvent (..))
 import Ribosome.Menu.Prompt.Nvim (getCharC, nvimPromptRenderer)
 import Ribosome.Menu.Prompt.Run (basicTransition)
 import Ribosome.Menu.Run (nvimMenu)
@@ -77,7 +78,7 @@ runNvimMenu ::
   ConduitT () PromptEvent (Ribo () TestError) () ->
   Ribo () TestError (MenuResult a)
 runNvimMenu maps source =
-  nvimMenu def (menuItems items) (defaultMenu maps) (promptConfig source) Nothing
+  nvimMenu def { _maxSize = Just 4 } (menuItems items) (defaultMenu maps) (promptConfig source) Nothing
 
 mappings :: Mappings (Ribo () TestError) (Maybe Text) Text
 mappings =

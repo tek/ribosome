@@ -4,7 +4,7 @@ cabal-version: 2.2
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: d6292a3198d53eb9d9466f6ac9b60b9f4080c2b4ea06386c097814ee7058c9d2
+-- hash: dfa19787f0070800938aa49f47d0fe432f3ea6bbdba563d96996926c34368195
 
 name:           ribosome
 version:        0.4.0.0
@@ -78,6 +78,7 @@ library
       Ribosome.Data.Syntax
       Ribosome.Data.Text
       Ribosome.Data.WindowConfig
+      Ribosome.Data.WindowView
       Ribosome.Error.Report
       Ribosome.Error.Report.Class
       Ribosome.File
