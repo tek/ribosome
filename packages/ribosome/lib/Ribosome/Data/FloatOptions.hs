@@ -2,7 +2,7 @@ module Ribosome.Data.FloatOptions where
 
 import qualified Data.Map as Map
 
-import Ribosome.Msgpack.Encode (MsgpackEncode(toMsgpack))
+import Ribosome.Msgpack.Encode (MsgpackEncode (toMsgpack))
 
 data FloatRelative =
   Editor
@@ -39,6 +39,36 @@ instance MsgpackEncode FloatAnchor where
 instance Default FloatAnchor where
   def = NW
 
+data FloatBorder =
+  None
+  |
+  Single
+  |
+  Double
+  |
+  Rounded
+  |
+  Solid
+  |
+  Shadow
+  |
+  Manual [Text]
+  deriving (Eq, Show, Generic)
+
+instance MsgpackEncode FloatBorder where
+  toMsgpack = \case
+    None -> toMsgpack @Text "none"
+    Single -> toMsgpack @Text "single"
+    Double -> toMsgpack @Text "double"
+    Rounded -> toMsgpack @Text "rounded"
+    Solid -> toMsgpack @Text "solid"
+    Shadow -> toMsgpack @Text "shadow"
+    Manual chars -> toMsgpack chars
+
+instance Default FloatBorder where
+  def =
+    Rounded
+
 data FloatOptions =
   FloatOptions {
     relative :: FloatRelative,
@@ -48,7 +78,9 @@ data FloatOptions =
     col :: Int,
     focusable :: Bool,
     anchor :: FloatAnchor,
-    bufpos :: Maybe (Int, Int)
+    bufpos :: Maybe (Int, Int),
+    border :: FloatBorder,
+    noautocmd :: Bool
   }
   deriving (Eq, Show, Generic)
 
@@ -65,9 +97,11 @@ instance MsgpackEncode FloatOptions where
           ("col", toMsgpack col),
           ("focusable", toMsgpack focusable),
           ("anchor", toMsgpack anchor),
-          ("relative", toMsgpack relative)
+          ("relative", toMsgpack relative),
+          ("border", toMsgpack border),
+          ("noautocmd", toMsgpack noautocmd)
         ]
 
 instance Default FloatOptions where
   def =
-    FloatOptions def 30 10 1 1 False def def
+    FloatOptions def 30 10 1 1 False def def def False

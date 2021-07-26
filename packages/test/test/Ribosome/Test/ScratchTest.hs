@@ -37,7 +37,7 @@ makeScratch =
 
 floatOptions :: FloatOptions
 floatOptions =
-  FloatOptions Cursor 30 2 1 1 True def Nothing
+  FloatOptions Cursor 30 2 1 1 True def Nothing def False
 
 makeFloatScratch ::
   NvimE e m =>
