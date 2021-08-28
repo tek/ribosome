@@ -55,11 +55,11 @@ syntaxItemCmd (SyntaxItem detail options params) =
 
 highlightCmd :: Highlight -> [Text]
 highlightCmd (Highlight group' values) =
-  ["highlight", group', joinEquals values]
+  ["highlight", "default", group', joinEquals values]
 
 hilinkCmd :: HiLink -> [Text]
 hilinkCmd (HiLink group' target) =
-  ["highlight", "link", group', target]
+  ["highlight", "default", "link", group', target]
 
 syntaxCmds :: Syntax -> [[Text]]
 syntaxCmds (Syntax items highlights hilinks) =
