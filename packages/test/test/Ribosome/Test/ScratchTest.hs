@@ -2,15 +2,15 @@ module Ribosome.Test.ScratchTest where
 
 import qualified Data.Map.Strict as Map (toList)
 import Hedgehog ((===))
-import Neovim (Plugin(..))
+import Neovim (Plugin (..))
 import TestError (RiboTest, handleTestError)
 
 import Ribosome.Api.Buffer (currentBufferContent)
 import Ribosome.Control.Monad.Ribo (MonadRibo, NvimE, pluginInternalL)
 import Ribosome.Control.Ribosome (Ribosome, newRibosome)
 import qualified Ribosome.Control.Ribosome as Ribosome (scratch)
-import Ribosome.Data.FloatOptions (FloatOptions(FloatOptions), FloatRelative(Cursor))
-import Ribosome.Data.ScratchOptions (ScratchOptions(ScratchOptions))
+import Ribosome.Data.FloatOptions (FloatOptions (FloatOptions), FloatRelative (Cursor))
+import Ribosome.Data.ScratchOptions (ScratchOptions (ScratchOptions))
 import Ribosome.Msgpack.Error (DecodeError)
 import Ribosome.Nvim.Api.IO (vimCallFunction, vimCommand)
 import Ribosome.Plugin (riboPlugin, rpcHandler, rpcHandlerDef, sync)
@@ -33,7 +33,7 @@ makeScratch ::
   MonadDeepError e DecodeError m =>
   m ()
 makeScratch =
-  void $ showInScratch target (ScratchOptions False True False True True True False Nothing Nothing Nothing [] [] name)
+  void $ showInScratch target (ScratchOptions False True False True True True False Nothing Nothing Nothing [] [] Nothing name)
 
 floatOptions :: FloatOptions
 floatOptions =
@@ -49,7 +49,7 @@ makeFloatScratch =
   void $ showInScratch target options
   where
     options =
-      ScratchOptions False True False True True True False (Just floatOptions) Nothing (Just 0) [] [] name
+      ScratchOptions False True False True True True False (Just floatOptions) Nothing (Just 0) [] [] Nothing name
 
 scratchCount ::
   MonadRibo m =>

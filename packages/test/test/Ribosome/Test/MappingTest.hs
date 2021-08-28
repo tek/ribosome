@@ -47,7 +47,7 @@ setupMappingScratch = do
   return ()
   where
     options =
-      ScratchOptions False True False True True True False Nothing Nothing Nothing [] [mapping] "buffi"
+      ScratchOptions False True False True True True False Nothing Nothing Nothing [] [mapping] Nothing "buffi"
 
 $(return [])
 

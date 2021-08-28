@@ -21,6 +21,7 @@ data ScratchOptions =
     _maxSize :: Maybe Int,
     _syntax :: [Syntax],
     _mappings :: [Mapping],
+    _filetype :: Maybe Text,
     _name :: Text
   }
   deriving (Eq, Show)
@@ -28,7 +29,7 @@ data ScratchOptions =
 makeClassy ''ScratchOptions
 
 defaultScratchOptions :: Text -> ScratchOptions
-defaultScratchOptions = ScratchOptions False False False False True True False Nothing Nothing Nothing [] []
+defaultScratchOptions = ScratchOptions False False False False True True False Nothing Nothing Nothing [] [] Nothing
 
 instance Default ScratchOptions where
   def = defaultScratchOptions "scratch"

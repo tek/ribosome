@@ -117,16 +117,22 @@ createScratchUi ::
   NvimE e m =>
   ScratchOptions ->
   m (Buffer, Window, Maybe Tabpage)
-createScratchUi (ScratchOptions False vertical wrap _ _ bottom _ float size _ _ _ _) =
+createScratchUi (ScratchOptions False vertical wrap _ _ bottom _ float size _ _ _ _ _) =
   uncurry (,,Nothing) <$> createScratchWindow vertical wrap bottom float size
 createScratchUi _ =
   createScratchUiInTab
 
-configureScratchBuffer :: NvimE e m => Buffer -> Text -> m ()
-configureScratchBuffer buffer name = do
+configureScratchBuffer ::
+  NvimE e m =>
+  Buffer ->
+  Maybe Text ->
+  Text ->
+  m ()
+configureScratchBuffer buffer ft name = do
   bufferSetOption buffer "bufhidden" (toMsgpack ("wipe" :: Text))
   bufferSetOption buffer "buftype" (toMsgpack ("nofile" :: Text))
   bufferSetOption buffer "swapfile" (toMsgpack False)
+  traverse_ (bufferSetOption buffer "filetype" . toMsgpack) ft
   bufferSetName buffer name
 
 setupScratchBuffer ::
@@ -134,13 +140,14 @@ setupScratchBuffer ::
   MonadRibo m =>
   Window ->
   Buffer ->
+  Maybe Text ->
   Text ->
   m Buffer
-setupScratchBuffer window buffer name = do
+setupScratchBuffer window buffer ft name = do
   valid <- nvimBufIsLoaded buffer
   logDebug @Text $ (if valid then "" else "in") <> "valid scratch buffer"
   validBuffer <- if valid then return buffer else windowGetBuffer window
-  configureScratchBuffer validBuffer name
+  configureScratchBuffer validBuffer ft name
   return validBuffer
 
 scratchLens :: Text -> Lens' RibosomeInternal (Maybe Scratch)
@@ -169,8 +176,8 @@ setupScratchIn ::
   Maybe Tabpage ->
   ScratchOptions ->
   m Scratch
-setupScratchIn buffer previous window tab (ScratchOptions _ _ _ focus _ _ _ _ _ _ syntax mappings name) = do
-  validBuffer <- setupScratchBuffer window buffer name
+setupScratchIn buffer previous window tab (ScratchOptions _ _ _ focus _ _ _ _ _ _ syntax mappings ft name) = do
+  validBuffer <- setupScratchBuffer window buffer ft name
   traverse_ executeCurrentWindowSyntax syntax
   traverse_ (activateBufferMapping validBuffer) mappings
   unless focus $ vimSetCurrentWindow previous
