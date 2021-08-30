@@ -124,11 +124,11 @@
         "thax": "thax_2"
       },
       "locked": {
-        "lastModified": 1630091683,
-        "narHash": "sha256-YYi9H93yo5EtRfbQaZpfQHruQyQmweEz5FFd7hyzlYk=",
+        "lastModified": 1630341227,
+        "narHash": "sha256-oKT2tAGZpYByn2PP1Bikc6bpIF4q8Lfw1SLyGouPFxY=",
         "owner": "tek",
         "repo": "hix",
-        "rev": "101abd9298075d7e047aa56733067af4f576829d",
+        "rev": "7c73e44089d0e84d5587ce49b093378d8c03dd23",
         "type": "github"
       },
       "original": {
