@@ -4,7 +4,7 @@ cabal-version: 2.2
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: dfa19787f0070800938aa49f47d0fe432f3ea6bbdba563d96996926c34368195
+-- hash: ff144c66ce1fc6ab0b94083ce321cde5dce1ba5cff10212b32917fa4403c900b
 
 name:           ribosome
 version:        0.4.0.0
@@ -232,6 +232,7 @@ library
     , filepath
     , free
     , fuzzy
+    , fuzzyfind
     , hourglass
     , hslogger
     , lens

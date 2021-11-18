@@ -1,6 +1,6 @@
 module Ribosome.Data.RegisterType where
 
-import Data.Text.Prettyprint.Doc (Pretty(..))
+import Prettyprinter (Pretty(..))
 
 import Ribosome.Msgpack.Decode (MsgpackDecode(..), msgpackFromString)
 import Ribosome.Msgpack.Encode (MsgpackEncode(..))

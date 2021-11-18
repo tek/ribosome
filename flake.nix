@@ -6,11 +6,14 @@
 
   outputs = { hix, chiasma, ... }:
   let
-    overrides = { hackage, source, only, configure, pkgs, ... }: {
+    overrides = { hackage, source, configure, pkgs, transform_, ... }: {
       chiasma = source.package chiasma "chiasma";
       cornea = hackage "0.4.0.0" "1w9rkf6f861kknkskywb8fczlk7az8m56i3hvmg6a5inpvqf6p7i";
+      fuzzyfind = hackage "3.0.0" "1aba9rxxdi6sv0z6qgwyq87fnqqhncqakvrbph0fvppd0lnajaac";
       ribosome = configure "--extra-prog-path=${pkgs.neovim}/bin";
-      ribosome-test = drv: drv.overrideAttrs (old: { buildInputs = old.buildInputs ++ [pkgs.neovim pkgs.tmux]; });
+      ribosome-test = transform_ (drv: drv.overrideAttrs (old: {
+        buildInputs = old.buildInputs ++ [pkgs.neovim pkgs.tmux pkgs.rxvt-unicode];
+      }));
     };
   in hix.flake {
     base = ./.;
@@ -20,11 +23,8 @@
     };
     main = "ribosome-test";
     inherit overrides;
-    compatOverrides = overrides;
     versionFile = "ops/hpack/shared/meta.yaml";
-    runConfig = p: {
-      extraShellInputs = [p.pkgs.neovim];
-    };
-    ghcid.easy-hls = false;
+    runConfig = p: { buildInputs = [p.pkgs.neovim]; };
+    compat = false;
   };
 }

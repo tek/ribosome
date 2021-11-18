@@ -1,6 +1,6 @@
 module Ribosome.Menu.Data.Menu where
 
-import Data.DeepLenses (DeepLenses(..))
+import Data.DeepLenses (DeepLenses (..))
 
 import Ribosome.Menu.Data.FilteredMenuItem (FilteredMenuItem)
 import Ribosome.Menu.Data.MenuItem (MenuItem)
@@ -18,7 +18,7 @@ data Menu a =
     _filtered :: [FilteredMenuItem a],
     _selected :: Int,
     _marked :: [Int],
-    _currentFilter :: MenuFilter,
+    _currentQuery :: MenuFilter,
     _maxItems :: Maybe Int
   }
   deriving (Eq, Show, Generic, Default)

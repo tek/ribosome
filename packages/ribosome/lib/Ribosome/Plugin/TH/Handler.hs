@@ -4,8 +4,8 @@ module Ribosome.Plugin.TH.Handler where
 
 import Control.Exception (throw)
 import Data.MessagePack (Object)
-import Data.Text.Prettyprint.Doc (Doc, Pretty(..))
-import Data.Text.Prettyprint.Doc.Render.Terminal (AnsiStyle)
+import Prettyprinter (Doc, Pretty(..))
+import Prettyprinter.Render.Terminal (AnsiStyle)
 import Language.Haskell.TH
 import Language.Haskell.TH.Syntax (Lift(..))
 import Neovim.Exceptions (NeovimException(ErrorMessage))

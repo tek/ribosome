@@ -1,8 +1,8 @@
 module Ribosome.Nvim.Api.RpcCall where
 
 import Data.MessagePack (Object)
-import Data.Text.Prettyprint.Doc (defaultLayoutOptions, layoutPretty)
-import Data.Text.Prettyprint.Doc.Render.Text (renderStrict)
+import Prettyprinter (defaultLayoutOptions, layoutPretty)
+import Prettyprinter.Render.Text (renderStrict)
 import Neovim (Neovim)
 import Neovim.Exceptions (NeovimException)
 import Neovim.Plugin.Classes (FunctionName)

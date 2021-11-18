@@ -3,7 +3,7 @@ module Ribosome.Msgpack.Decode where
 import qualified Data.ByteString.UTF8 as ByteString (toString)
 import qualified Data.Map.Strict as Map (empty, fromList, toList)
 import Data.MessagePack (Object(..))
-import Data.Text.Prettyprint.Doc (pretty, viaShow)
+import Prettyprinter (pretty, viaShow)
 import GHC.Float (double2Float, float2Double)
 import GHC.Generics (
   C1,

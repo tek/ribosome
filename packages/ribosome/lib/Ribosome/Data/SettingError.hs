@@ -1,7 +1,7 @@
 module Ribosome.Data.SettingError where
 
-import Data.Text.Prettyprint.Doc (Doc)
-import Data.Text.Prettyprint.Doc.Render.Terminal (AnsiStyle)
+import Prettyprinter (Doc)
+import Prettyprinter.Render.Terminal (AnsiStyle)
 import System.Log (Priority(NOTICE))
 
 import Ribosome.Data.ErrorReport (ErrorReport(..))

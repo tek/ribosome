@@ -1,7 +1,7 @@
 module Ribosome.Internal.NvimObject where
 
 import Data.Map.Strict ((!?))
-import Data.Text.Prettyprint.Doc (pretty, (<+>))
+import Prettyprinter (pretty, (<+>))
 import Neovim (AnsiStyle, Doc, NvimObject, Object(ObjectString), fromObject)
 
 deriveString :: (Text -> a) -> Object -> Either (Doc AnsiStyle) a

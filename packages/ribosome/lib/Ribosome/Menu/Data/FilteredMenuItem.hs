@@ -1,6 +1,6 @@
 module Ribosome.Menu.Data.FilteredMenuItem where
 
-import Ribosome.Menu.Data.MenuItem (MenuItem)
+import Ribosome.Menu.Data.MenuItem (MenuItem (_abbreviated))
 
 data FilteredMenuItem a =
   FilteredMenuItem {
@@ -10,3 +10,7 @@ data FilteredMenuItem a =
   deriving (Eq, Show)
 
 makeClassy ''FilteredMenuItem
+
+instance Eq a => Ord (FilteredMenuItem a) where
+  compare =
+    comparing _index <> comparing (_abbreviated . _item)

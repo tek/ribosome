@@ -1,8 +1,8 @@
 module Ribosome.Error.Report where
 
 import qualified Data.Map.Strict as Map (alter)
-import Data.Text.Prettyprint.Doc (line, pretty)
-import Data.Text.Prettyprint.Doc.Render.Terminal (putDoc)
+import Prettyprinter (line, pretty)
+import Prettyprinter.Render.Terminal (putDoc)
 import System.Log (Priority(NOTICE))
 
 import Ribosome.Api.Echo (echom)

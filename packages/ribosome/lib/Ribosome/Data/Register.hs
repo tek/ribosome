@@ -2,7 +2,7 @@ module Ribosome.Data.Register where
 
 import Data.Char (isAlpha, isNumber)
 import qualified Data.Text as Text (singleton)
-import Data.Text.Prettyprint.Doc (Doc, Pretty(..))
+import Prettyprinter (Doc, Pretty(..))
 
 import Ribosome.Msgpack.Decode (MsgpackDecode(..), msgpackFromString)
 import Ribosome.Msgpack.Encode (MsgpackEncode(..))

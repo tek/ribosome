@@ -2,9 +2,9 @@ module Ribosome.Msgpack.Util where
 
 import Data.Map.Strict ((!?))
 import qualified Data.Map.Strict as Map (fromList)
-import Data.MessagePack (Object(..))
-import Data.Text.Prettyprint.Doc (Doc, pretty, viaShow, (<+>))
-import Data.Text.Prettyprint.Doc.Render.Terminal (AnsiStyle)
+import Data.MessagePack (Object (..))
+import Prettyprinter (Doc, pretty, viaShow, (<+>))
+import Prettyprinter.Render.Terminal (AnsiStyle)
 
 type Err = Doc AnsiStyle
 

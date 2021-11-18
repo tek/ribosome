@@ -8,10 +8,10 @@ module Ribosome.Data.Errors(
 ) where
 
 import qualified Data.Map.Strict as Map (toList)
-import Data.Text.Prettyprint.Doc (Doc, Pretty(..), align, line, vsep, (<+>))
 import Prelude hiding (error)
+import Prettyprinter (Doc, Pretty (..), align, line, vsep, (<+>))
 
-import Ribosome.Data.ErrorReport (ErrorReport(ErrorReport))
+import Ribosome.Data.ErrorReport (ErrorReport (ErrorReport))
 
 newtype ComponentName =
   ComponentName Text

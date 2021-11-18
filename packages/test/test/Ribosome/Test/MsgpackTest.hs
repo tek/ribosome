@@ -2,8 +2,8 @@ module Ribosome.Test.MsgpackTest where
 
 import qualified Data.Map.Strict as Map (fromList)
 import Data.MessagePack (Object(..))
-import Data.Text.Prettyprint.Doc (Doc, defaultLayoutOptions, layoutPretty)
-import Data.Text.Prettyprint.Doc.Render.Terminal (AnsiStyle, renderStrict)
+import Prettyprinter (Doc, defaultLayoutOptions, layoutPretty)
+import Prettyprinter.Render.Terminal (AnsiStyle, renderStrict)
 import Hedgehog ((===))
 import Path (Abs, Dir, File, Path, Rel, absfile, relfile)
 import Test.Tasty (TestTree, testGroup)

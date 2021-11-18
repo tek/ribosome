@@ -6,7 +6,7 @@ import Control.Exception (throw)
 import Data.Aeson (FromJSON, eitherDecodeStrict)
 import qualified Data.ByteString as ByteString (intercalate)
 import Data.MessagePack (Object(ObjectArray))
-import Data.Text.Prettyprint.Doc (Pretty(..))
+import Prettyprinter (Pretty(..))
 import Language.Haskell.TH
 import Neovim.Exceptions (NeovimException(ErrorMessage))
 import Neovim.Plugin.Classes (CommandArguments, CommandOption(..), Synchronous, mkCommandOptions)

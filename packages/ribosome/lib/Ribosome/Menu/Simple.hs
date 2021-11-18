@@ -1,35 +1,34 @@
 module Ribosome.Menu.Simple where
 
-import Control.Lens (_2, element, ifolded, over, set, toListOf, view, withIndex, (^..), (^?))
+import Control.Lens (element, ifolded, set, toListOf, view, withIndex, (^?))
 import qualified Control.Lens as Lens (filtered)
 import Data.Composition ((.:))
 import Data.Map.Strict ((!?))
 import qualified Data.Map.Strict as Map (fromList, union)
-import qualified Data.Ord as Ord (Down(Down))
 import qualified Data.Text as Text (breakOn, null)
-import qualified Text.Fuzzy as Fuzzy (Fuzzy(score, original), filter)
+import Text.FuzzyFind (Alignment (Alignment), Score, bestMatch)
 
 import Ribosome.Data.List (indexesComplement)
 import Ribosome.Menu.Action (menuContinue, menuCycle, menuQuitWith, menuToggle, menuToggleAll)
 import Ribosome.Menu.Data.BasicMenuAction (BasicMenuAction, BasicMenuChange)
-import qualified Ribosome.Menu.Data.BasicMenuAction as BasicMenuAction (BasicMenuAction(..))
-import qualified Ribosome.Menu.Data.BasicMenuAction as BasicMenuChange (BasicMenuChange(..))
-import Ribosome.Menu.Data.FilteredMenuItem (FilteredMenuItem(FilteredMenuItem))
+import qualified Ribosome.Menu.Data.BasicMenuAction as BasicMenuAction (BasicMenuAction (..))
+import qualified Ribosome.Menu.Data.BasicMenuAction as BasicMenuChange (BasicMenuChange (..))
+import Ribosome.Menu.Data.FilteredMenuItem (FilteredMenuItem (FilteredMenuItem))
 import qualified Ribosome.Menu.Data.FilteredMenuItem as FilteredMenuItem (index, item)
-import Ribosome.Menu.Data.Menu (Menu(Menu), MenuFilter(MenuFilter))
-import qualified Ribosome.Menu.Data.Menu as Menu (currentFilter, filtered, items, marked, selected)
+import Ribosome.Menu.Data.Menu (Menu (Menu), MenuFilter (MenuFilter))
+import qualified Ribosome.Menu.Data.Menu as Menu (currentQuery, filtered, items, marked, selected)
 import Ribosome.Menu.Data.MenuAction (MenuAction)
-import qualified Ribosome.Menu.Data.MenuAction as MenuAction (MenuAction(..))
+import qualified Ribosome.Menu.Data.MenuAction as MenuAction (MenuAction (..))
 import Ribosome.Menu.Data.MenuConsumerAction (MenuConsumerAction)
-import qualified Ribosome.Menu.Data.MenuConsumerAction as MenuConsumerAction (MenuConsumerAction(..))
+import qualified Ribosome.Menu.Data.MenuConsumerAction as MenuConsumerAction (MenuConsumerAction (..))
 import Ribosome.Menu.Data.MenuEvent (MenuEvent)
-import qualified Ribosome.Menu.Data.MenuEvent as MenuEvent (MenuEvent(..))
-import qualified Ribosome.Menu.Data.MenuEvent as QuitReason (QuitReason(..))
-import Ribosome.Menu.Data.MenuItem (MenuItem)
+import qualified Ribosome.Menu.Data.MenuEvent as MenuEvent (MenuEvent (..))
+import qualified Ribosome.Menu.Data.MenuEvent as QuitReason (QuitReason (..))
+import Ribosome.Menu.Data.MenuItem (MenuItem (MenuItem))
 import qualified Ribosome.Menu.Data.MenuItem as MenuItem (text)
-import Ribosome.Menu.Data.MenuItemFilter (MenuItemFilter(MenuItemFilter))
-import Ribosome.Menu.Data.MenuUpdate (MenuUpdate(MenuUpdate))
-import Ribosome.Menu.Prompt.Data.Prompt (Prompt(Prompt))
+import Ribosome.Menu.Data.MenuItemFilter (MenuItemFilter (MenuItemFilter))
+import Ribosome.Menu.Data.MenuUpdate (MenuUpdate (MenuUpdate))
+import Ribosome.Menu.Prompt.Data.Prompt (Prompt (Prompt))
 
 type MappingHandler m a i = Menu i -> Prompt -> m (MenuConsumerAction m a, Menu i)
 type Mappings m a i = Map Text (MappingHandler m a i)
@@ -49,26 +48,33 @@ substringMenuItemMatcher :: MenuItemFilter a
 substringMenuItemMatcher =
   MenuItemFilter filt
   where
-    filt text =
-      uncurry FilteredMenuItem <$$> matcher text
-    matcher text =
-      toListOf $ ifolded . Lens.filtered (textContains text . view MenuItem.text) . withIndex
+    filt query =
+      fmap (uncurry FilteredMenuItem) <$> matcher query
+    matcher query =
+      toListOf $ ifolded . Lens.filtered (textContains query . view MenuItem.text) . withIndex
+
+filterFuzzy ::
+  String ->
+  [MenuItem a] ->
+  [(Down Score, FilteredMenuItem a)]
+filterFuzzy query items =
+  mapMaybe (uncurry match) (zip [0..] items)
+  where
+    match index item@(MenuItem _ (toString -> text) _) = do
+      Alignment score _ <- bestMatch query text
+      pure (Down score, (FilteredMenuItem index item))
 
 fuzzyMenuItemMatcher :: MenuItemFilter a
 fuzzyMenuItemMatcher =
-  MenuItemFilter matcher
-  where
-    matcher =
-      fmap (uncurry FilteredMenuItem . Fuzzy.original) . sortOn (Ord.Down . Fuzzy.score) .: filtered
-    filtered text items =
-      Fuzzy.filter text (items ^.. ifolded . withIndex) "" "" (view (_2 . MenuItem.text)) False
+  MenuItemFilter \ (toString -> query) items ->
+    snd <$> sortOn fst (filterFuzzy query items)
 
 menuItemsNonequal :: [FilteredMenuItem i] -> [FilteredMenuItem i] -> Bool
 menuItemsNonequal a b =
   (view FilteredMenuItem.index <$> a) /= (view FilteredMenuItem.index <$> b)
 
 updateFilter :: MenuItemFilter i -> Text -> Menu i -> (BasicMenuChange, Menu i)
-updateFilter (MenuItemFilter itemFilter) text menu@(Menu items oldFiltered _ _ _ _) =
+updateFilter (MenuItemFilter itemFilter) query menu@(Menu items oldFiltered _ _ _ _) =
   (change, update menu)
   where
     change =
@@ -76,21 +82,21 @@ updateFilter (MenuItemFilter itemFilter) text menu@(Menu items oldFiltered _ _ _
       then BasicMenuChange.Change
       else BasicMenuChange.NoChange
     update =
-      set Menu.filtered filtered . set Menu.currentFilter (MenuFilter text)
+      set Menu.filtered filtered . set Menu.currentQuery (MenuFilter query)
     filtered =
-      itemFilter text items
+      itemFilter query items
 
 reapplyFilter :: MenuItemFilter i -> Menu i -> (BasicMenuChange, Menu i)
-reapplyFilter itemFilter menu@(Menu _ _ _ _ (MenuFilter currentFilter) _) =
-  updateFilter itemFilter currentFilter menu
+reapplyFilter itemFilter menu@(Menu _ _ _ _ (MenuFilter currentQuery) _) =
+  updateFilter itemFilter currentQuery menu
 
 basicMenuTransform :: MenuItemFilter i -> MenuEvent m a i -> Menu i -> BasicMenuAction m a i
-basicMenuTransform matcher (MenuEvent.PromptChange (Prompt _ _ text)) =
-  BasicMenuAction.Continue BasicMenuChange.Reset . snd . updateFilter matcher text
+basicMenuTransform matcher (MenuEvent.PromptChange (Prompt _ _ query)) =
+  BasicMenuAction.Continue BasicMenuChange.Reset . snd . updateFilter matcher query
 basicMenuTransform _ (MenuEvent.Mapping _ _) =
   BasicMenuAction.Continue BasicMenuChange.NoChange
 basicMenuTransform matcher (MenuEvent.NewItems items) =
-  uncurry BasicMenuAction.Continue . reapplyFilter matcher . over Menu.items (++ items)
+  uncurry BasicMenuAction.Continue . reapplyFilter matcher . (Menu.items %~ (items ++))
 basicMenuTransform _ (MenuEvent.Init _) =
   BasicMenuAction.Continue BasicMenuChange.Change
 basicMenuTransform _ (MenuEvent.Quit reason) =
