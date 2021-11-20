@@ -11,7 +11,7 @@ import Ribosome.Data.Conduit (mergeSources)
 import Ribosome.Log (logDebug)
 import Ribosome.Menu.Prompt.Data.CursorUpdate (CursorUpdate)
 import qualified Ribosome.Menu.Prompt.Data.CursorUpdate as CursorUpdate (CursorUpdate(..))
-import Ribosome.Menu.Prompt.Data.Prompt (Prompt(Prompt))
+import Ribosome.Menu.Prompt.Data.Prompt (Prompt(Prompt), PromptChange (PromptRandom, PromptAppend, PromptUnappend))
 import Ribosome.Menu.Prompt.Data.PromptConfig (PromptConfig(PromptConfig), PromptFlag, onlyInsert, startInsert)
 import Ribosome.Menu.Prompt.Data.PromptConsumed (PromptConsumed)
 import qualified Ribosome.Menu.Prompt.Data.PromptConsumed as PromptConsumed (PromptConsumed(..))
@@ -64,19 +64,30 @@ updateText cursor text =
       newText
     (pre, post) = Text.splitAt cursor text
 
+updateLastChange ::
+  Text ->
+  Text ->
+  PromptChange
+updateLastChange old new =
+  if Text.length old + 1 == Text.length new && Text.isPrefixOf old new
+  then PromptAppend
+  else if Text.length new + 1 == Text.length old && Text.isPrefixOf new old
+  then PromptUnappend
+  else PromptRandom
+
 updatePrompt ::
   Monad m =>
   (PromptEvent -> PromptState -> m PromptUpdate) ->
   PromptEvent ->
   Prompt ->
   m (PromptConsumed, Prompt)
-updatePrompt modes update (Prompt cursor state text) = do
+updatePrompt modes update (Prompt cursor state text _) = do
   (PromptUpdate newState cursorUpdate textUpdate consumed) <- modes update state
   let
     updatedText =
       updateText cursor text textUpdate
     newPrompt =
-      Prompt (updateCursor cursor updatedText cursorUpdate) newState updatedText
+      Prompt (updateCursor cursor updatedText cursorUpdate) newState updatedText (updateLastChange text updatedText)
   return (consumed, newPrompt)
 
 processPromptEvent ::
@@ -213,7 +224,7 @@ basicTransition ::
   PromptEvent ->
   PromptState ->
   m PromptUpdate
-basicTransition _ (PromptEvent.Set (Prompt cursor state text)) _ =
+basicTransition _ (PromptEvent.Set (Prompt cursor state text _)) _ =
   return $ PromptUpdate state (CursorUpdate.Index cursor) (TextUpdate.Set text) PromptConsumed.Yes
 basicTransition _ event PromptState.Normal =
   return $ basicTransitionNormal event
@@ -224,7 +235,7 @@ basicTransition _ _ PromptState.Quit =
 
 pristinePrompt :: Bool -> Prompt
 pristinePrompt insert =
-  Prompt 0 (if insert then PromptState.Insert else PromptState.Normal) ""
+  Prompt 0 (if insert then PromptState.Insert else PromptState.Normal) "" PromptRandom
 
 noPromptRenderer ::
   Applicative m =>

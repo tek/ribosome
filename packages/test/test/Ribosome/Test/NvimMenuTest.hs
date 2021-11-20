@@ -14,7 +14,8 @@ import Ribosome.Control.Monad.Ribo (Ribo)
 import Ribosome.Data.ScratchOptions (ScratchOptions (_maxSize))
 import Ribosome.Menu.Action (menuReturn)
 import qualified Ribosome.Menu.Data.FilteredMenuItem as FilteredMenuItem (item)
-import Ribosome.Menu.Data.Menu (Menu (Menu))
+import qualified Ribosome.Menu.Data.Menu as Menu
+import Ribosome.Menu.Data.Menu (Menu, current)
 import Ribosome.Menu.Data.MenuConsumerAction (MenuConsumerAction)
 import Ribosome.Menu.Data.MenuItem (MenuItem, simpleMenuItem)
 import qualified Ribosome.Menu.Data.MenuItem as MenuItem (text)
@@ -61,11 +62,11 @@ exec ::
   Menu Text ->
   Prompt ->
   m (MenuConsumerAction m (Maybe Text), Menu Text)
-exec m@(Menu _ items' selected _ _ _) _ =
+exec m _ =
   menuReturn item m
   where
     item =
-      items' ^? element selected . FilteredMenuItem.item . MenuItem.text
+      (m ^. current) ^? element (m ^. Menu.selected) . FilteredMenuItem.item . MenuItem.text
 
 promptConfig ::
   ConduitT () PromptEvent (Ribo () TestError) () ->
@@ -135,7 +136,7 @@ returnPrompt ::
   Menu Text ->
   Prompt ->
   m (MenuConsumerAction m Text, Menu Text)
-returnPrompt m (Prompt _ _ text) =
+returnPrompt m (Prompt _ _ text _) =
   menuReturn text m
 
 navChars :: [Text]

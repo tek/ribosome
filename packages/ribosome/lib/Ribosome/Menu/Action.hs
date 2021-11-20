@@ -1,12 +1,10 @@
 module Ribosome.Menu.Action where
 
-import Control.Lens (over, set)
-
 import Ribosome.Data.List (indexesComplement)
-import Ribosome.Menu.Data.Menu (Menu(Menu))
-import qualified Ribosome.Menu.Data.Menu as Menu (marked, selected)
+import qualified Ribosome.Menu.Data.Menu as Menu
+import Ribosome.Menu.Data.Menu (Menu (Menu), current)
 import Ribosome.Menu.Data.MenuConsumerAction (MenuConsumerAction)
-import qualified Ribosome.Menu.Data.MenuConsumerAction as MenuConsumerAction (MenuConsumerAction(..))
+import qualified Ribosome.Menu.Data.MenuConsumerAction as MenuConsumerAction (MenuConsumerAction (..))
 import Ribosome.Menu.Prompt.Data.Prompt (Prompt)
 
 menuContinue ::
@@ -68,24 +66,24 @@ menuCycle ::
   Menu i ->
   Prompt ->
   m (MenuConsumerAction m a, Menu i)
-menuCycle offset m@(Menu _ filtered _ _ _ maxItems) _ =
-  menuRender False (over Menu.selected add m)
+menuCycle offset m _ =
+  menuRender False (m & Menu.selected %~ add)
   where
     count =
-      maybe id min maxItems (length filtered)
-    add current =
-      if count == 0 then 0 else (current + offset) `mod` count
+      maybe id min (m ^. Menu.maxItems) (length (m ^. current))
+    add currentCount =
+      if count == 0 then 0 else (currentCount + offset) `mod` count
 
 menuToggle ::
   Monad m =>
   Menu i ->
   Prompt ->
   m (MenuConsumerAction m a, Menu i)
-menuToggle m@(Menu _ _ selected marked _ _) prompt =
+menuToggle m@(Menu _ _ _ selected marked _ _) prompt =
   menuRender True . snd =<< menuCycle 1 newMenu prompt
   where
     newMenu =
-      set Menu.marked newMarked m
+      m & Menu.marked .~ newMarked
     newMarked =
       if length removed == length marked then selected : marked else removed
     removed =
@@ -96,11 +94,11 @@ menuToggleAll ::
   Menu i ->
   Prompt ->
   m (MenuConsumerAction m a, Menu i)
-menuToggleAll m@(Menu _ filtered _ marked _ _) _ =
+menuToggleAll m@(Menu _ filtered _ _ marked _ _) _ =
   menuRender True newMenu
   where
     newMenu =
-      set Menu.marked (indexesComplement (length filtered) marked) m
+      m & Menu.marked .~ indexesComplement (length filtered) marked
 
 menuUpdatePrompt ::
   Applicative m =>

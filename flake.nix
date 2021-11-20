@@ -24,7 +24,7 @@
     main = "ribosome-test";
     inherit overrides;
     versionFile = "ops/hpack/shared/meta.yaml";
-    runConfig = p: { buildInputs = [p.pkgs.neovim]; };
+    shellConfig = p: { buildInputs = [p.pkgs.neovim]; };
     compat = false;
   };
 }

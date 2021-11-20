@@ -12,11 +12,11 @@ import Ribosome.Control.Monad.Ribo (MonadRibo, NvimE)
 import Ribosome.Data.Text (escapeQuotes)
 import Ribosome.Menu.Prompt.Data.Codes (decodeInputChar, decodeInputNum)
 import Ribosome.Menu.Prompt.Data.InputEvent (InputEvent)
-import qualified Ribosome.Menu.Prompt.Data.InputEvent as InputEvent (InputEvent(..))
-import Ribosome.Menu.Prompt.Data.Prompt (Prompt(Prompt))
+import qualified Ribosome.Menu.Prompt.Data.InputEvent as InputEvent (InputEvent (..))
+import Ribosome.Menu.Prompt.Data.Prompt (Prompt (Prompt))
 import Ribosome.Menu.Prompt.Data.PromptEvent (PromptEvent)
-import qualified Ribosome.Menu.Prompt.Data.PromptEvent as PromptEvent (PromptEvent(..))
-import Ribosome.Menu.Prompt.Data.PromptRenderer (PromptRenderer(PromptRenderer))
+import qualified Ribosome.Menu.Prompt.Data.PromptEvent as PromptEvent (PromptEvent (..))
+import Ribosome.Menu.Prompt.Data.PromptRenderer (PromptRenderer (PromptRenderer))
 import Ribosome.Msgpack.Encode (toMsgpack)
 import Ribosome.Msgpack.Error (DecodeError)
 import qualified Ribosome.Nvim.Api.Data as ApiData (vimCommand)
@@ -88,7 +88,7 @@ nvimRenderPrompt ::
   MonadDeepError e DecodeError m =>
   Prompt ->
   m ()
-nvimRenderPrompt (Prompt cursor _ text) =
+nvimRenderPrompt (Prompt cursor _ text _) =
   void $ atomic calls
   where
     calls = syncRpcCall . ApiData.vimCommand <$> ("silent! redraw!" : (fragments >>= uncurry promptFragment))
@@ -160,7 +160,7 @@ newtype NvimPromptResources =
   NvimPromptResources {
     _guicursor :: Text
   }
-  deriving (Eq, Show)
+  deriving stock (Eq, Show)
 
 nvimAcquire ::
   NvimE e m =>

@@ -44,4 +44,7 @@ dependencies:
 ghc-options:
   - -Wall
   - -Wredundant-constraints
-  - -Wsimplifiable-class-constraints
+  - -Wincomplete-uni-patterns
+  - -Wmissing-deriving-strategies
+  - -Widentities
+  - -Wunused-packages

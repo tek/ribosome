@@ -12,4 +12,4 @@ data PromptUpdate =
     _text :: TextUpdate,
     _consumed :: PromptConsumed
   }
-  deriving (Eq, Show)
+  deriving stock (Eq, Show)

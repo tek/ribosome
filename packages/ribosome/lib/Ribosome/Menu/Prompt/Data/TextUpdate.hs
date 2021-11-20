@@ -10,4 +10,4 @@ data TextUpdate =
   DeleteRight
   |
   Set Text
-  deriving (Eq, Show)
+  deriving stock (Eq, Show)

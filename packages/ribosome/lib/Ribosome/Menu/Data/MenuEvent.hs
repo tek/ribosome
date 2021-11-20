@@ -38,4 +38,4 @@ data MenuEvent m a i =
   NewItems [MenuItem i]
   |
   Quit (QuitReason m a)
-  deriving Show
+  deriving stock Show

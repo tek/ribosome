@@ -4,7 +4,7 @@ cabal-version: 2.2
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: ff144c66ce1fc6ab0b94083ce321cde5dce1ba5cff10212b32917fa4403c900b
+-- hash: cba196ac48d5fe39dca12504631c8a6c0e986c9608b6fa63cef99b76d87db291
 
 name:           ribosome
 version:        0.4.0.0
@@ -87,6 +87,7 @@ library
       Ribosome.Log
       Ribosome.Mapping
       Ribosome.Menu.Action
+      Ribosome.Menu.BasicTransform
       Ribosome.Menu.Data.BasicMenuAction
       Ribosome.Menu.Data.FilteredMenuItem
       Ribosome.Menu.Data.Menu
@@ -209,7 +210,7 @@ library
       UndecidableInstances
       UnicodeSyntax
       ViewPatterns
-  ghc-options: -Wall -Wredundant-constraints -Wsimplifiable-class-constraints
+  ghc-options: -Wall -Wredundant-constraints -Wincomplete-uni-patterns -Wmissing-deriving-strategies -Widentities -Wunused-packages
   build-depends:
       aeson
     , ansi-terminal

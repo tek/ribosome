@@ -4,7 +4,7 @@ cabal-version: 2.2
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 19813cf18ae7c5c68febab37ff0dc49ab8b7a67e41f047f7e739f26275a09be7
+-- hash: 48e82920d2a0da5ff55d5ee473c9cc0e0d4889f71fe385d219571cd622103343
 
 name:           ribosome-test
 version:        0.4.0.0
@@ -104,7 +104,7 @@ library
       UndecidableInstances
       UnicodeSyntax
       ViewPatterns
-  ghc-options: -Wall -Wredundant-constraints -Wsimplifiable-class-constraints
+  ghc-options: -Wall -Wredundant-constraints -Wincomplete-uni-patterns -Wmissing-deriving-strategies -Widentities -Wunused-packages
   build-depends:
       aeson
     , base ==4.*
@@ -231,7 +231,7 @@ test-suite ribosome-unit
       UndecidableInstances
       UnicodeSyntax
       ViewPatterns
-  ghc-options: -Wall -Wredundant-constraints -Wsimplifiable-class-constraints -threaded -rtsopts -with-rtsopts=-N
+  ghc-options: -Wall -Wredundant-constraints -Wincomplete-uni-patterns -Wmissing-deriving-strategies -Widentities -Wunused-packages -threaded -rtsopts -with-rtsopts=-N
   build-depends:
       aeson
     , base ==4.*

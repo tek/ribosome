@@ -12,4 +12,4 @@ data CursorUpdate =
   Prepend
   |
   Index Int
-  deriving (Eq, Show)
+  deriving stock (Eq, Show)

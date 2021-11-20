@@ -4,4 +4,4 @@ data PromptConsumed =
   Yes
   |
   No
-  deriving (Eq, Show)
+  deriving stock (Eq, Show)

@@ -10,32 +10,32 @@ import Test.Tasty (TestTree, testGroup)
 
 import Ribosome.Control.StrictRibosome (StrictRibosome)
 import Ribosome.Menu.Action (menuContinue, menuExecute, menuQuit)
-import Ribosome.Menu.Data.FilteredMenuItem (FilteredMenuItem(FilteredMenuItem))
+import Ribosome.Menu.BasicTransform (fuzzyMenuItemMatcher)
+import Ribosome.Menu.Data.FilteredMenuItem (FilteredMenuItem (FilteredMenuItem))
 import qualified Ribosome.Menu.Data.FilteredMenuItem as FilteredMenuItem (item)
-import Ribosome.Menu.Data.Menu (Menu(Menu), MenuFilter(MenuFilter))
+import Ribosome.Menu.Data.Menu (Menu (Menu), MenuFilter (MenuFilter), current)
 import qualified Ribosome.Menu.Data.Menu as Menu (items)
 import Ribosome.Menu.Data.MenuAction (MenuAction)
-import Ribosome.Menu.Data.MenuConfig (MenuConfig(MenuConfig))
-import Ribosome.Menu.Data.MenuConsumer (MenuConsumer(MenuConsumer))
+import Ribosome.Menu.Data.MenuConfig (MenuConfig (MenuConfig))
+import Ribosome.Menu.Data.MenuConsumer (MenuConsumer (MenuConsumer))
 import Ribosome.Menu.Data.MenuConsumerAction (MenuConsumerAction)
-import qualified Ribosome.Menu.Data.MenuEvent as MenuEvent (MenuEvent(..))
-import Ribosome.Menu.Data.MenuItem (MenuItem(MenuItem), simpleMenuItem)
-import qualified Ribosome.Menu.Data.MenuItem as MenuItem (MenuItem(_text), text)
+import qualified Ribosome.Menu.Data.MenuEvent as MenuEvent (MenuEvent (..))
+import Ribosome.Menu.Data.MenuItem (MenuItem (MenuItem), simpleMenuItem)
+import qualified Ribosome.Menu.Data.MenuItem as MenuItem (MenuItem (_text), text)
 import Ribosome.Menu.Data.MenuRenderEvent (MenuRenderEvent)
-import qualified Ribosome.Menu.Data.MenuRenderEvent as MenuRenderEvent (MenuRenderEvent(..))
-import Ribosome.Menu.Data.MenuUpdate (MenuUpdate(MenuUpdate))
-import Ribosome.Menu.Prompt.Data.Prompt (Prompt(Prompt))
-import Ribosome.Menu.Prompt.Data.PromptConfig (PromptConfig(PromptConfig), PromptFlag(StartInsert))
+import qualified Ribosome.Menu.Data.MenuRenderEvent as MenuRenderEvent (MenuRenderEvent (..))
+import Ribosome.Menu.Data.MenuUpdate (MenuUpdate (MenuUpdate))
+import Ribosome.Menu.Prompt.Data.Prompt (Prompt (Prompt), PromptChange (PromptAppend, PromptRandom))
+import Ribosome.Menu.Prompt.Data.PromptConfig (PromptConfig (PromptConfig), PromptFlag (StartInsert))
 import Ribosome.Menu.Prompt.Data.PromptEvent (PromptEvent)
-import qualified Ribosome.Menu.Prompt.Data.PromptEvent as PromptEvent (PromptEvent(..))
-import qualified Ribosome.Menu.Prompt.Data.PromptState as PromptState (PromptState(..))
+import qualified Ribosome.Menu.Prompt.Data.PromptEvent as PromptEvent (PromptEvent (..))
+import qualified Ribosome.Menu.Prompt.Data.PromptState as PromptState (PromptState (..))
 import Ribosome.Menu.Prompt.Run (basicTransition, noPromptRenderer)
 import Ribosome.Menu.Run (runMenu)
 import Ribosome.Menu.Simple (
   basicMenu,
   defaultMenu,
   deleteByFilteredIndex,
-  fuzzyMenuItemMatcher,
   markedMenuItems,
   markedMenuItemsOnly,
   selectedMenuItem,
@@ -84,8 +84,8 @@ render ::
   MVar [[FilteredMenuItem Text]] ->
   MenuRenderEvent m a Text ->
   m ()
-render varItems (MenuRenderEvent.Render _ (Menu _ items _ _ _ _)) = do
-  modifyMVar_ varItems (return . (items :))
+render varItems (MenuRenderEvent.Render _ menu) = do
+  modifyMVar_ varItems (pure . ((menu ^. current) :))
   sleep 0.01
 render _ (MenuRenderEvent.Quit _) =
   return ()
@@ -115,14 +115,14 @@ promptTest items chars = do
 
 promptsTarget1 :: [Prompt]
 promptsTarget1 =
-  uncurry one' <$> [
-    (1, PromptState.Insert),
-    (0, PromptState.Normal),
-    (0, PromptState.Normal),
-    (1, PromptState.Insert)
+  one' <$> [
+    (1, PromptState.Insert, PromptAppend),
+    (0, PromptState.Normal, PromptRandom),
+    (0, PromptState.Normal, PromptRandom),
+    (1, PromptState.Insert, PromptRandom)
     ]
   where
-    one' c s = Prompt c s "i"
+    one' (c, s, ch) = Prompt c s "i" ch
 
 items1 :: [Text]
 items1 =
@@ -200,8 +200,8 @@ exec ::
   Menu Text ->
   Prompt ->
   m (MenuConsumerAction m a, Menu Text)
-exec var m@(Menu _ items _ _ _ _) _ =
-  swapMVar var (view (FilteredMenuItem.item . MenuItem.text) <$> items) *> menuQuit m
+exec var m _ =
+  swapMVar var (view (FilteredMenuItem.item . MenuItem.text) <$> (m ^. current)) *> menuQuit m
 
 test_pureMenuExecute :: UnitTest
 test_pureMenuExecute = do
@@ -303,7 +303,7 @@ test_menuDeleteByFilteredIndex =
     target =
       ["1", "2", "3", "5", "7", "8"]
     menu =
-      Menu items filtered 0 [] (MenuFilter "") Nothing
+      Menu items (Just filtered) [] 0 [] (MenuFilter "") Nothing
     items =
       simpleMenuItem () <$> ["1", "2", "3", "4", "5", "6", "7", "8"]
     filtered =

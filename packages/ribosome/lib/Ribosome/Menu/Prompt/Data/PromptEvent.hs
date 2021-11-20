@@ -16,4 +16,4 @@ data PromptEvent =
   Error Text
   |
   Set Prompt
-  deriving (Eq, Show)
+  deriving stock (Eq, Show)

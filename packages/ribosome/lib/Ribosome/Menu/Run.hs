@@ -17,39 +17,39 @@ import Ribosome.Data.Conduit (mergeSources)
 import Ribosome.Data.Scratch (scratchWindow)
 import Ribosome.Data.ScratchOptions (ScratchOptions)
 import qualified Ribosome.Data.ScratchOptions as ScratchOptions (size, syntax)
-import Ribosome.Data.WindowConfig (WindowConfig(WindowConfig))
+import Ribosome.Data.WindowConfig (WindowConfig (WindowConfig))
 import Ribosome.Log (showDebug)
 import Ribosome.Menu.Data.Menu (Menu)
 import qualified Ribosome.Menu.Data.Menu as Menu (maxItems)
 import Ribosome.Menu.Data.MenuAction (MenuAction)
-import qualified Ribosome.Menu.Data.MenuAction as MenuAction (MenuAction(..))
-import Ribosome.Menu.Data.MenuConfig (MenuConfig(MenuConfig))
+import qualified Ribosome.Menu.Data.MenuAction as MenuAction (MenuAction (..))
+import Ribosome.Menu.Data.MenuConfig (MenuConfig (MenuConfig))
 import qualified Ribosome.Menu.Data.MenuConfig as MenuConfig (prompt)
-import Ribosome.Menu.Data.MenuConsumer (MenuConsumer(MenuConsumer))
+import Ribosome.Menu.Data.MenuConsumer (MenuConsumer (MenuConsumer))
 import Ribosome.Menu.Data.MenuEvent (MenuEvent, QuitReason)
-import qualified Ribosome.Menu.Data.MenuEvent as MenuEvent (MenuEvent(..))
-import qualified Ribosome.Menu.Data.MenuEvent as QuitReason (QuitReason(..))
+import qualified Ribosome.Menu.Data.MenuEvent as MenuEvent (MenuEvent (..))
+import qualified Ribosome.Menu.Data.MenuEvent as QuitReason (QuitReason (..))
 import Ribosome.Menu.Data.MenuItem (MenuItem)
-import qualified Ribosome.Menu.Data.MenuItem as MenuItem (MenuItem(_text))
+import qualified Ribosome.Menu.Data.MenuItem as MenuItem (MenuItem (_text))
 import Ribosome.Menu.Data.MenuRenderEvent (MenuRenderEvent)
-import qualified Ribosome.Menu.Data.MenuRenderEvent as MenuRenderEvent (MenuRenderEvent(..))
+import qualified Ribosome.Menu.Data.MenuRenderEvent as MenuRenderEvent (MenuRenderEvent (..))
 import Ribosome.Menu.Data.MenuResult (MenuResult)
-import qualified Ribosome.Menu.Data.MenuResult as MenuResult (MenuResult(..))
-import Ribosome.Menu.Data.MenuUpdate (MenuUpdate(MenuUpdate))
+import qualified Ribosome.Menu.Data.MenuResult as MenuResult (MenuResult (..))
+import Ribosome.Menu.Data.MenuUpdate (MenuUpdate (MenuUpdate))
 import Ribosome.Menu.Nvim (menuSyntax, renderNvimMenu)
-import Ribosome.Menu.Prompt.Data.Prompt (Prompt(Prompt))
+import Ribosome.Menu.Prompt.Data.Prompt (Prompt (Prompt))
 import Ribosome.Menu.Prompt.Data.PromptConfig (PromptConfig)
 import qualified Ribosome.Menu.Prompt.Data.PromptConfig as PromptConfig (render)
 import Ribosome.Menu.Prompt.Data.PromptConsumed (PromptConsumed)
-import qualified Ribosome.Menu.Prompt.Data.PromptConsumed as PromptConsumed (PromptConsumed(..))
-import Ribosome.Menu.Prompt.Data.PromptConsumerUpdate (PromptConsumerUpdate(PromptConsumerUpdate))
+import qualified Ribosome.Menu.Prompt.Data.PromptConsumed as PromptConsumed (PromptConsumed (..))
+import Ribosome.Menu.Prompt.Data.PromptConsumerUpdate (PromptConsumerUpdate (PromptConsumerUpdate))
 import Ribosome.Menu.Prompt.Data.PromptEvent (PromptEvent)
-import qualified Ribosome.Menu.Prompt.Data.PromptEvent as PromptEvent (PromptEvent(..))
-import Ribosome.Menu.Prompt.Data.PromptRenderer (PromptRenderer(PromptRenderer))
-import qualified Ribosome.Menu.Prompt.Data.PromptState as PromptState (PromptState(..))
+import qualified Ribosome.Menu.Prompt.Data.PromptEvent as PromptEvent (PromptEvent (..))
+import Ribosome.Menu.Prompt.Data.PromptRenderer (PromptRenderer (PromptRenderer))
+import qualified Ribosome.Menu.Prompt.Data.PromptState as PromptState (PromptState (..))
 import Ribosome.Menu.Prompt.Run (promptC)
 import Ribosome.Msgpack.Decode (fromMsgpack)
-import Ribosome.Msgpack.Encode (MsgpackEncode(toMsgpack))
+import Ribosome.Msgpack.Encode (MsgpackEncode (toMsgpack))
 import Ribosome.Msgpack.Error (DecodeError)
 import Ribosome.Nvim.Api.Data (Window)
 import Ribosome.Nvim.Api.IO (nvimWinGetConfig, vimCallFunction, vimGetWindows, windowSetOption)
@@ -60,11 +60,11 @@ promptEvent ::
   Prompt ->
   PromptConsumed ->
   MenuEvent m a i
-promptEvent _ (Prompt _ PromptState.Quit _) _ =
+promptEvent _ (Prompt _ PromptState.Quit _ _) _ =
   MenuEvent.Quit QuitReason.Aborted
 promptEvent (PromptEvent.Character a) prompt PromptConsumed.No =
   MenuEvent.Mapping a prompt
-promptEvent (PromptEvent.Character _) prompt@(Prompt _ PromptState.Insert _) _ =
+promptEvent (PromptEvent.Character _) prompt@(Prompt _ PromptState.Insert _ _) _ =
   MenuEvent.PromptChange prompt
 promptEvent (PromptEvent.Character _) prompt PromptConsumed.Yes =
   MenuEvent.PromptChange prompt

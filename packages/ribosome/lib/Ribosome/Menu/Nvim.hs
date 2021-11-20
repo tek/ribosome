@@ -19,7 +19,7 @@ import qualified Ribosome.Data.WindowView as WindowView (WindowView (..))
 import Ribosome.Data.WindowView (PartialWindowView (PartialWindowView))
 import Ribosome.Log (logDebug)
 import qualified Ribosome.Menu.Data.FilteredMenuItem as FilteredMenuItem (item)
-import Ribosome.Menu.Data.Menu (Menu (Menu))
+import Ribosome.Menu.Data.Menu (Menu (Menu), current)
 import qualified Ribosome.Menu.Data.MenuItem as MenuItem (abbreviated)
 import Ribosome.Menu.Data.MenuRenderEvent (MenuRenderEvent)
 import qualified Ribosome.Menu.Data.MenuRenderEvent as MenuRenderEvent (MenuRenderEvent (..))
@@ -66,7 +66,7 @@ renderNvimMenu ::
   m ()
 renderNvimMenu _ scratch (MenuRenderEvent.Quit _) =
   killScratch scratch
-renderNvimMenu options scratch (MenuRenderEvent.Render changed (Menu _ allItems selected marked _ maxItems)) = do
+renderNvimMenu options scratch (MenuRenderEvent.Render changed menu@(Menu _ _ _ selected marked _ maxItems)) = do
   when changed (setScratchContent options scratch (reverse text))
   logDebug @Text logMsg
   updateCursor
@@ -80,7 +80,7 @@ renderNvimMenu options scratch (MenuRenderEvent.Render changed (Menu _ allItems 
     text =
       withMarks marked (view (FilteredMenuItem.item . MenuItem.abbreviated) <$> items)
     items =
-      limit allItems
+      limit (menu ^. current)
     limit =
       maybe id take maxItems
     updateCursor =

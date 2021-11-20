@@ -6,6 +6,6 @@ data PromptState =
   Normal
   |
   Quit
-  deriving (Eq, Show)
+  deriving stock (Eq, Show)
 
 deepLenses ''PromptState
