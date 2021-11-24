@@ -15,14 +15,14 @@ import Ribosome.Data.ErrorReport (ErrorReport (ErrorReport))
 
 newtype ComponentName =
   ComponentName Text
-  deriving (Eq, Ord, Show)
+  deriving stock (Eq, Ord, Show)
 
 data Error =
   Error {
     _timestamp :: Int,
     _report :: ErrorReport
   }
-  deriving (Eq, Show)
+  deriving stock (Eq, Show)
 
 makeClassy ''Error
 
@@ -34,7 +34,7 @@ newtype Errors =
   Errors {
     _componentErrors :: Map ComponentName [Error]
     }
-  deriving (Eq, Show)
+  deriving stock (Eq, Show)
   deriving newtype Default
 
 makeClassy ''Errors

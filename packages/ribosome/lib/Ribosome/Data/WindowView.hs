@@ -8,14 +8,16 @@ data WindowView =
     lnum :: Int,
     topline :: Int
   }
-  deriving (Eq, Show, Generic, MsgpackDecode, MsgpackEncode)
+  deriving stock (Eq, Show, Generic)
+  deriving anyclass (MsgpackEncode, MsgpackDecode)
 
 data PartialWindowView =
   PartialWindowView {
     lnum :: Maybe Int,
     topline :: Maybe Int
   }
-  deriving (Eq, Show, Generic, MsgpackDecode, MsgpackEncode)
+  deriving stock (Eq, Show, Generic)
+  deriving anyclass (MsgpackEncode, MsgpackDecode)
 
 class AsPartialWindowView a where
   asPartialWindowView :: a -> PartialWindowView

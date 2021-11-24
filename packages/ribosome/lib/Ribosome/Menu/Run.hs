@@ -1,19 +1,17 @@
 module Ribosome.Menu.Run where
 
-import Conduit (ConduitT, MonadResource, await, awaitForever, mapC, runConduit, yield, (.|))
 import Control.Concurrent.STM.TMChan (TMChan, writeTMChan)
 import Control.Exception.Lifted (bracket)
-import Control.Lens (over, set, view)
-import Data.Conduit.Combinators (iterM)
-import qualified Data.Conduit.Combinators as Conduit (last)
-import Data.Conduit.Lift (evalStateC)
+import Control.Lens (over)
+import Control.Monad.Catch (MonadCatch)
 import qualified Data.Text as Text
+import qualified Streamly.Internal.Data.Stream.IsStream as Streamly
+import Streamly.Prelude (SerialT)
 
 import Ribosome.Api.Window (closeWindow)
 import Ribosome.Config.Setting (settingOr)
 import qualified Ribosome.Config.Settings as Settings
 import Ribosome.Control.Monad.Ribo (MonadRibo, NvimE)
-import Ribosome.Data.Conduit (mergeSources)
 import Ribosome.Data.Scratch (scratchWindow)
 import Ribosome.Data.ScratchOptions (ScratchOptions)
 import qualified Ribosome.Data.ScratchOptions as ScratchOptions (size, syntax)
@@ -47,7 +45,7 @@ import Ribosome.Menu.Prompt.Data.PromptEvent (PromptEvent)
 import qualified Ribosome.Menu.Prompt.Data.PromptEvent as PromptEvent (PromptEvent (..))
 import Ribosome.Menu.Prompt.Data.PromptRenderer (PromptRenderer (PromptRenderer))
 import qualified Ribosome.Menu.Prompt.Data.PromptState as PromptState (PromptState (..))
-import Ribosome.Menu.Prompt.Run (promptC)
+import Ribosome.Menu.Prompt.Run (promptStream)
 import Ribosome.Msgpack.Decode (fromMsgpack)
 import Ribosome.Msgpack.Encode (MsgpackEncode (toMsgpack))
 import Ribosome.Msgpack.Error (DecodeError)
@@ -93,34 +91,31 @@ updateMenu ::
   TMChan PromptEvent ->
   MenuConsumer m a i ->
   Either PromptConsumerUpdate [MenuItem i] ->
-  ConduitT (Either PromptConsumerUpdate [MenuItem i]) (MenuRenderEvent m a i) (StateT (Menu i) m) ()
+  SerialT (StateT (Menu i) m) (MenuRenderEvent m a i)
 updateMenu backchannel (MenuConsumer consumer) input = do
-  showDebug "menu update:" (MenuItem._text <$$> input)
+  showDebug "menu update:" (fmap MenuItem._text <$> input)
   action <- lift . stateM $ lift . consumer . MenuUpdate (menuEvent input)
   showDebug "menu action:" action
-  emit action
-  where
-    emit MenuAction.Continue =
-      return ()
-    emit (MenuAction.Execute thunk) =
-      lift $ lift thunk
-    emit (MenuAction.Render changed) =
-      yield . MenuRenderEvent.Render changed =<< get
-    emit (MenuAction.UpdatePrompt prompt) =
-      atomically $ writeTMChan backchannel (PromptEvent.Set prompt)
-    emit (MenuAction.Quit reason) =
-      yield (MenuRenderEvent.Quit reason)
+  case action of
+    MenuAction.Continue ->
+      Streamly.nil
+    MenuAction.Execute thunk ->
+      Streamly.nilM (lift thunk)
+    MenuAction.Render changed ->
+      Streamly.fromEffect (gets (MenuRenderEvent.Render changed))
+    MenuAction.UpdatePrompt prompt ->
+      Streamly.nilM (atomically (writeTMChan backchannel (PromptEvent.Set prompt)))
+    MenuAction.Quit reason ->
+      Streamly.fromPure (MenuRenderEvent.Quit reason)
 
 menuTerminator ::
-  Monad m =>
-  ConduitT (MenuRenderEvent m a i) (QuitReason m a) m ()
-menuTerminator =
-  traverse_ check =<< await
-  where
-    check (MenuRenderEvent.Quit reason) =
-      yield reason
-    check _ =
-      menuTerminator
+  MenuRenderEvent m a i ->
+  Maybe (QuitReason m a)
+menuTerminator = \case
+  MenuRenderEvent.Quit reason ->
+    Just reason
+  _ ->
+    Nothing
 
 menuResult ::
   Monad m =>
@@ -137,22 +132,26 @@ menuResult QuitReason.NoOutput =
 menuResult QuitReason.Aborted =
   return MenuResult.Aborted
 
-menuC ::
+menuMain ::
   MonadRibo m =>
-  MonadResource m =>
+  MonadCatch m =>
   MonadBaseControl IO m =>
   MenuConfig m a i ->
-  ConduitT () (QuitReason m a) m ()
-menuC (MenuConfig items handle render promptConfig maxItems) = do
-  (backchannel, source) <- lift $ promptC promptConfig
-  mergeSources 64 [source .| mapC Left, items .| mapC Right] .| consumer backchannel
+  m (QuitReason m a)
+menuMain (MenuConfig items handle render promptConfig maxItems) = do
+  (backchannel, promptEvents) <- promptStream promptConfig
+  let
+    source =
+      Streamly.parallel (Left <$> promptEvents) (Right <$> items)
+  Streamly.headElse QuitReason.NoOutput (Streamly.mapMaybe menuTerminator (consumer backchannel source))
   where
-    consumer backchannel =
-      evalStateC initial (menuHandler backchannel) .| iterM render .| menuTerminator
+    consumer backchannel source =
+      Streamly.trace render $
+      Streamly.evalStateT (pure initial) (menuHandler backchannel =<< Streamly.liftInner source)
     initial =
-      set Menu.maxItems maxItems def
+      def & Menu.maxItems .~ maxItems
     menuHandler backchannel =
-      awaitForever . updateMenu backchannel $ handle
+      updateMenu backchannel handle
 
 isFloat ::
   NvimE e m =>
@@ -174,30 +173,26 @@ closeFloats = do
 
 runMenu ::
   MonadRibo m =>
-  MonadResource m =>
+  MonadCatch m =>
   MonadBaseControl IO m =>
   MenuConfig m a i ->
   m (MenuResult a)
 runMenu config =
-  bracketPrompt (view (MenuConfig.prompt . PromptConfig.render) config)
+  bracketPrompt (config ^. MenuConfig.prompt . PromptConfig.render)
   where
     bracketPrompt (PromptRenderer acquire release _) =
-      bracket acquire release (const runForResult)
-    runForResult =
-      menuResult =<< quitReason <$> run
+      bracket acquire release (const run)
     run =
-      runConduit (menuC config .| Conduit.last)
-    quitReason =
-      fromMaybe QuitReason.NoOutput
+      menuResult =<< menuMain config
 
 nvimMenu ::
   NvimE e m =>
   MonadRibo m =>
-  MonadResource m =>
+  MonadCatch m =>
   MonadBaseControl IO m =>
   MonadDeepError e DecodeError m =>
   ScratchOptions ->
-  ConduitT () [MenuItem i] m () ->
+  SerialT m [MenuItem i] ->
   (MenuUpdate m a i -> m (MenuAction m a, Menu i)) ->
   PromptConfig m ->
   Maybe Int ->
@@ -220,7 +215,7 @@ nvimMenu options items handle promptConfig maxItems = do
 strictNvimMenu ::
   NvimE e m =>
   MonadRibo m =>
-  MonadResource m =>
+  MonadCatch m =>
   MonadBaseControl IO m =>
   MonadDeepError e DecodeError m =>
   ScratchOptions ->
@@ -230,7 +225,7 @@ strictNvimMenu ::
   Maybe Int ->
   m (MenuResult a)
 strictNvimMenu options items =
-  nvimMenu (ensureSize options) (yield items)
+  nvimMenu (ensureSize options) (Streamly.fromPure items)
   where
     ensureSize =
       over ScratchOptions.size (<|> Just (length items))

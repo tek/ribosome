@@ -4,7 +4,7 @@ cabal-version: 2.2
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 48e82920d2a0da5ff55d5ee473c9cc0e0d4889f71fe385d219571cd622103343
+-- hash: ab72a043cf33aa777ad19cfd8319532291f3b51e97253f8a07d983f3363b9739
 
 name:           ribosome-test
 version:        0.4.0.0
@@ -110,12 +110,8 @@ library
     , base ==4.*
     , bytestring
     , chiasma
-    , composition
-    , composition-extra
-    , conduit
     , containers
     , cornea
-    , data-default
     , directory
     , either
     , exceptions
@@ -131,11 +127,10 @@ library
     , mtl
     , nvim-hs
     , path
-    , path-io
     , prettyprinter
     , prettyprinter-ansi-terminal
     , process
-    , relude >=0.7 && <1.2
+    , relude >=0.7
     , resourcet
     , ribosome
     , tasty
@@ -235,45 +230,24 @@ test-suite ribosome-unit
   build-depends:
       aeson
     , base ==4.*
-    , bytestring
     , chiasma
-    , composition
-    , composition-extra
-    , conduit
     , containers
     , cornea
-    , data-default
-    , directory
     , either
-    , exceptions
-    , filepath
-    , free
     , hedgehog
     , hslogger
     , lens
-    , lifted-async
     , lifted-base
     , messagepack
-    , monad-control
-    , mtl
     , nvim-hs
     , path
-    , path-io
     , prettyprinter
     , prettyprinter-ansi-terminal
-    , process
-    , relude >=0.7 && <1.2
-    , resourcet
     , ribosome
     , ribosome-test
+    , streamly
     , tasty
-    , tasty-hedgehog
     , template-haskell
-    , text
-    , transformers
-    , typed-process
-    , unix
-    , unliftio
   mixins:
       base hiding (Prelude)
     , ribosome hiding (Ribosome.Prelude)

@@ -19,15 +19,15 @@ data RpcCall =
     rpcCallName :: FunctionName,
     rpcCallArgs :: [Object]
   }
-  deriving (Eq, Show)
+  deriving stock (Eq, Show)
 
 newtype AsyncRpcCall =
   AsyncRpcCall { asyncRpcCall :: RpcCall }
-  deriving (Eq, Show)
+  deriving stock (Eq, Show)
 
 newtype SyncRpcCall =
   SyncRpcCall { syncRpcCall :: RpcCall }
-  deriving (Eq, Show)
+  deriving stock (Eq, Show)
 
 data RpcError =
   Decode Err
@@ -35,7 +35,7 @@ data RpcError =
   Nvim RpcCall NeovimException
   |
   Atomic Text
-  deriving Show
+  deriving stock (Show)
 
 deepPrisms ''RpcError
 

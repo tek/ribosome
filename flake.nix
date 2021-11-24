@@ -14,6 +14,7 @@
       ribosome-test = transform_ (drv: drv.overrideAttrs (old: {
         buildInputs = old.buildInputs ++ [pkgs.neovim pkgs.tmux pkgs.rxvt-unicode];
       }));
+      streamly = hackage "0.8.0" "0vy2lkljizlhpbpbybmg9jcmj2g4s1aaqd2dzy5c0y0n4rgwxask";
     };
   in hix.flake {
     base = ./.;
@@ -24,7 +25,7 @@
     main = "ribosome-test";
     inherit overrides;
     versionFile = "ops/hpack/shared/meta.yaml";
-    shellConfig = p: { buildInputs = [p.pkgs.neovim]; };
+    shellConfig = p: { buildInputs = [p.pkgs.neovim p.pkgs.tmux p.pkgs.rxvt-unicode]; };
     compat = false;
   };
 }

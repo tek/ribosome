@@ -7,7 +7,7 @@ import System.Log (Priority(NOTICE, ERROR))
 
 newtype MappingIdent =
   MappingIdent Text
-  deriving (Eq, Show)
+  deriving stock (Eq, Show)
 
 data Mapping =
   Mapping {
@@ -17,13 +17,13 @@ data Mapping =
     mappingRemap :: Bool,
     mappingBuffer :: Bool
   }
-  deriving (Eq, Show)
+  deriving stock (Eq, Show)
 
 data MappingError =
   NoSuchMapping MappingIdent
   |
   InvalidArgs [Object]
-  deriving (Eq, Show)
+  deriving stock (Eq, Show)
 
 deepPrisms ''MappingError
 

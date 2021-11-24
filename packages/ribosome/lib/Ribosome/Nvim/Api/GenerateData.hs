@@ -1,14 +1,47 @@
 module Ribosome.Nvim.Api.GenerateData where
 
-import Data.MessagePack (Object(ObjectExt))
-import Language.Haskell.TH
-import Neovim.Plugin.Classes (FunctionName(F))
+import Data.MessagePack (Object (ObjectExt))
+import Language.Haskell.TH (
+  Bang (Bang),
+  ClauseQ,
+  DecQ,
+  DecsQ,
+  DerivClause (DerivClause),
+  DerivStrategy (StockStrategy),
+  Name,
+  SourceStrictness (SourceStrict),
+  SourceUnpackedness (NoSourceUnpackedness),
+  Type (AppT, ArrowT, ConT),
+  appE,
+  appT,
+  clause,
+  conE,
+  conP,
+  conT,
+  dataD,
+  funD,
+  instanceD,
+  integerL,
+  listE,
+  litE,
+  litP,
+  mkName,
+  nameBase,
+  newName,
+  normalB,
+  normalC,
+  sigD,
+  stringL,
+  varE,
+  varP,
+  )
+import Neovim.Plugin.Classes (FunctionName (F))
 
 import Ribosome.Msgpack.Decode (MsgpackDecode)
 import Ribosome.Msgpack.Encode (MsgpackEncode)
 import Ribosome.Msgpack.Util (illegalType)
-import Ribosome.Nvim.Api.Generate (FunctionData(FunctionData), generateFromApi)
-import Ribosome.Nvim.Api.RpcCall (AsyncRpcCall(..), RpcCall(..), SyncRpcCall(..))
+import Ribosome.Nvim.Api.Generate (FunctionData (FunctionData), generateFromApi)
+import Ribosome.Nvim.Api.RpcCall (AsyncRpcCall (..), RpcCall (..), SyncRpcCall (..))
 
 dataSig :: [Type] -> Name -> Bool -> DecQ
 dataSig types name async = do
@@ -35,7 +68,7 @@ extData name =
   dataD (return []) name [] Nothing [ctor] (deriv ["Eq", "Show"])
   where
     ctor = normalC name [(Bang NoSourceUnpackedness SourceStrict,) <$> [t|ByteString|]]
-    deriv = return . return . DerivClause Nothing . (ConT . mkName <$>)
+    deriv = return . return . DerivClause (Just StockStrategy) . (ConT . mkName <$>)
 
 decClause :: Name -> Int64 -> ClauseQ
 decClause name number = do

@@ -296,8 +296,7 @@ showInScratch ::
   m Scratch
 showInScratch lines' options = do
   scratch <- ensureScratch options
-  setScratchContent options scratch lines'
-  return scratch
+  scratch <$ setScratchContent options scratch lines'
 
 showInScratchDef ::
   Foldable t =>

@@ -62,7 +62,7 @@ type Runner m = ∀ a . TestConfig -> m a -> m a
 
 newtype Vars =
   Vars (Map Text Object)
-  deriving (Eq, Show)
+  deriving stock (Eq, Show)
   deriving newtype (Default, Semigroup, Monoid)
 
 -- |left biased

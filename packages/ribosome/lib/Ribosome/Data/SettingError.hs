@@ -11,7 +11,7 @@ data SettingError =
   Decode Text (Doc AnsiStyle)
   |
   Unset Text
-  deriving Show
+  deriving stock (Show)
 
 deepPrisms ''SettingError
 

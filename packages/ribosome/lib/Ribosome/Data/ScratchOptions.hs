@@ -24,7 +24,7 @@ data ScratchOptions =
     _filetype :: Maybe Text,
     _name :: Text
   }
-  deriving (Eq, Show)
+  deriving stock (Eq, Show)
 
 makeClassy ''ScratchOptions
 

@@ -1,11 +1,12 @@
 module Ribosome.Test.NvimMenuTest where
 
-import Conduit (ConduitT, yield, yieldMany)
 import Control.Concurrent.Lifted (fork, killThread)
 import Control.Exception.Lifted (bracket)
 import Control.Lens (element, (^?))
 import qualified Data.Map.Strict as Map (empty, fromList)
 import Hedgehog ((===))
+import qualified Streamly.Prelude as Streamly
+import Streamly.Prelude (SerialT)
 import Test.Tasty (TestTree, testGroup)
 import TestError (RiboTest, TestError)
 
@@ -25,7 +26,7 @@ import Ribosome.Menu.Prompt.Data.Prompt (Prompt (Prompt))
 import Ribosome.Menu.Prompt.Data.PromptConfig (PromptConfig (PromptConfig), PromptFlag (StartInsert))
 import Ribosome.Menu.Prompt.Data.PromptEvent (PromptEvent)
 import qualified Ribosome.Menu.Prompt.Data.PromptEvent as PromptEvent (PromptEvent (..))
-import Ribosome.Menu.Prompt.Nvim (getCharC, nvimPromptRenderer)
+import Ribosome.Menu.Prompt.Nvim (getCharStream, nvimPromptRenderer)
 import Ribosome.Menu.Prompt.Run (basicTransition)
 import Ribosome.Menu.Run (nvimMenu)
 import Ribosome.Menu.Simple (Mappings, defaultMenu)
@@ -37,17 +38,16 @@ import Ribosome.Test.Tmux (tmuxTestDef)
 promptInput ::
   MonadIO m =>
   [Text] ->
-  ConduitT () PromptEvent m ()
+  SerialT m PromptEvent
 promptInput chars' = do
   lift $ sleep 0.1
-  yieldMany (PromptEvent.Character <$> chars')
+  Streamly.fromList (PromptEvent.Character <$> chars')
 
 menuItems ::
-  Monad m =>
   [Text] ->
-  ConduitT () [MenuItem Text] m ()
+  SerialT m [MenuItem Text]
 menuItems =
-  yield . fmap (simpleMenuItem "name")
+  Streamly.fromPure . fmap (simpleMenuItem "name")
 
 chars :: [Text]
 chars =
@@ -69,14 +69,14 @@ exec m _ =
       (m ^. current) ^? element (m ^. Menu.selected) . FilteredMenuItem.item . MenuItem.text
 
 promptConfig ::
-  ConduitT () PromptEvent (Ribo () TestError) () ->
+  SerialT (Ribo () TestError) PromptEvent ->
   PromptConfig (Ribo () TestError)
 promptConfig source =
   PromptConfig source basicTransition nvimPromptRenderer [StartInsert]
 
 runNvimMenu ::
   Mappings (Ribo () TestError) a Text ->
-  ConduitT () PromptEvent (Ribo () TestError) () ->
+  SerialT (Ribo () TestError) PromptEvent ->
   Ribo () TestError (MenuResult a)
 runNvimMenu maps source =
   nvimMenu def { _maxSize = Just 4 } (menuItems items) (defaultMenu maps) (promptConfig source) Nothing
@@ -86,7 +86,7 @@ mappings =
   Map.fromList [("cr", exec)]
 
 nvimMenuTest ::
-  ConduitT () PromptEvent (Ribo () TestError) () ->
+  SerialT (Ribo () TestError) PromptEvent ->
   RiboTest ()
 nvimMenuTest =
   (MenuResult.Return (Just "item4") ===) <=< lift . runNvimMenu mappings
@@ -105,7 +105,7 @@ nativeChars =
 
 nvimMenuNativeTest :: RiboTest ()
 nvimMenuNativeTest =
-  bracket (fork input) killThread (const $ nvimMenuTest (getCharC 0.1))
+  bracket (fork input) killThread (const $ nvimMenuTest (getCharStream 0.1))
   where
     input =
       syntheticInput (Just 0.2) nativeChars
@@ -123,7 +123,7 @@ nvimMenuInterruptTest = do
     spec =
       lift (bracket (fork input) killThread (const run))
     run =
-      nvimMenu def (menuItems items) (defaultMenu Map.empty) (promptConfig (getCharC 0.1)) Nothing
+      nvimMenu def (menuItems items) (defaultMenu Map.empty) (promptConfig (getCharStream 0.1)) Nothing
     input =
       syntheticInput (Just 0.2) ["<c-c>", "<cr>"]
 
@@ -148,7 +148,7 @@ nvimMenuNavTest =
   (MenuResult.Return "toem" ===) =<< lift run
   where
     run =
-      bracket (fork input) killThread (const $ runNvimMenu (Map.fromList [("cr", returnPrompt)]) (getCharC 0.1))
+      bracket (fork input) killThread (const $ runNvimMenu (Map.fromList [("cr", returnPrompt)]) (getCharStream 0.1))
     input =
       syntheticInput (Just 0.2) navChars
 

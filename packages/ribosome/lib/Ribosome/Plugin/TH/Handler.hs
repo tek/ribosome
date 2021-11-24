@@ -4,19 +4,19 @@ module Ribosome.Plugin.TH.Handler where
 
 import Control.Exception (throw)
 import Data.MessagePack (Object)
-import Prettyprinter (Doc, Pretty(..))
-import Prettyprinter.Render.Terminal (AnsiStyle)
 import Language.Haskell.TH
-import Language.Haskell.TH.Syntax (Lift(..))
-import Neovim.Exceptions (NeovimException(ErrorMessage))
+import Language.Haskell.TH.Syntax (Lift (..))
+import Neovim.Exceptions (NeovimException (ErrorMessage))
 import Neovim.Plugin.Classes (
-  AutocmdOptions(AutocmdOptions),
-  CommandOption(..),
+  AutocmdOptions (AutocmdOptions),
+  CommandOption (..),
   CommandOptions,
-  RangeSpecification(..),
-  Synchronous(..),
+  RangeSpecification (..),
+  Synchronous (..),
   )
-import qualified Text.Show as Show (Show(show))
+import Prettyprinter (Doc, Pretty (..))
+import Prettyprinter.Render.Terminal (AnsiStyle)
+import qualified Text.Show as Show (Show (show))
 
 import Ribosome.Msgpack.Decode (fromMsgpack)
 import Ribosome.Msgpack.Encode (toMsgpack)
@@ -29,7 +29,7 @@ data RpcHandlerConfig =
     rhcAutocmd :: Maybe Text,
     rhcAutocmdOptions :: Maybe AutocmdOptions
   }
-  deriving (Eq, Show)
+  deriving stock (Eq, Show)
 
 defaultRpcHandlerConfig :: RpcHandlerConfig
 defaultRpcHandlerConfig =
@@ -45,7 +45,7 @@ data RpcDefDetail =
     raSync :: Synchronous,
     raOptions :: AutocmdOptions
     }
-  deriving Show
+  deriving stock (Show)
 
 data RpcDef m =
   RpcDef {
@@ -58,13 +58,13 @@ instance Show (RpcDef m) where
   show (RpcDef d n _) =
     "RpcDef" <> show (d, n)
 
-deriving instance Lift Synchronous
+deriving stock instance Lift Synchronous
 
-deriving instance Lift RangeSpecification
+deriving stock instance Lift RangeSpecification
 
-deriving instance Lift CommandOption
+deriving stock instance Lift CommandOption
 
-deriving instance Lift AutocmdOptions
+deriving stock instance Lift AutocmdOptions
 
 unfoldFunctionParams :: Type -> [Type]
 unfoldFunctionParams (ForallT _ _ t) =

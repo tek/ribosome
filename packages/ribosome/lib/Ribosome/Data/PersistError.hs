@@ -12,7 +12,7 @@ data PersistError =
   NoSuchFile FilePath
   |
   Decode FilePath Text
-  deriving (Eq, Show)
+  deriving stock (Eq, Show)
 
 deepPrisms ''PersistError
 

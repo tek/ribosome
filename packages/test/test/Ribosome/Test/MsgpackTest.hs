@@ -1,21 +1,21 @@
 module Ribosome.Test.MsgpackTest where
 
 import qualified Data.Map.Strict as Map (fromList)
-import Data.MessagePack (Object(..))
-import Prettyprinter (Doc, defaultLayoutOptions, layoutPretty)
-import Prettyprinter.Render.Terminal (AnsiStyle, renderStrict)
+import Data.MessagePack (Object (..))
 import Hedgehog ((===))
 import Path (Abs, Dir, File, Path, Rel, absfile, relfile)
+import Prettyprinter (Doc, defaultLayoutOptions, layoutPretty)
+import Prettyprinter.Render.Terminal (AnsiStyle, renderStrict)
 import Test.Tasty (TestTree, testGroup)
 
-import Ribosome.Msgpack.Decode (MsgpackDecode(..), fromMsgpack)
-import Ribosome.Msgpack.Encode (MsgpackEncode(..))
+import Ribosome.Msgpack.Decode (MsgpackDecode (..), fromMsgpack)
+import Ribosome.Msgpack.Encode (MsgpackEncode (..))
 import qualified Ribosome.Msgpack.Util as Util (string)
 import Ribosome.Test.Run (UnitTest, unitTest)
 
 newtype NT =
   NT Text
-  deriving (Eq, Show, Generic)
+  deriving stock (Eq, Show, Generic)
   deriving newtype (MsgpackEncode, MsgpackDecode)
 
 data Blob =
@@ -25,11 +25,13 @@ data Blob =
     key6 :: NT,
     key7 :: (Int, String)
   }
-  deriving (Eq, Show, Generic, MsgpackEncode, MsgpackDecode)
+  deriving stock (Eq, Show, Generic)
+  deriving anyclass (MsgpackEncode, MsgpackDecode)
 
 data Prod =
   Prod Text Int
-  deriving (Eq, Show, Generic, MsgpackEncode, MsgpackDecode)
+  deriving stock (Eq, Show, Generic)
+  deriving anyclass (MsgpackEncode, MsgpackDecode)
 
 data Dat =
   Dat {
@@ -37,7 +39,8 @@ data Dat =
     key2 :: Bool,
     key3 :: Maybe Prod
   }
-  deriving (Eq, Show, Generic, MsgpackEncode, MsgpackDecode)
+  deriving stock (Eq, Show, Generic)
+  deriving anyclass (MsgpackEncode, MsgpackDecode)
 
 dat :: Dat
 dat = Dat (Blob [[1, 2], [3]] (Map.fromList [(1, "1"), (2, "2")]) (NT "nt") (91, "pair")) False (Just $ Prod "dat" 27)
@@ -90,7 +93,8 @@ data Nope =
     present :: Int,
     absent :: Maybe Int
   }
-  deriving (Eq, Show, Generic, MsgpackDecode)
+  deriving stock (Eq, Show, Generic)
+  deriving anyclass (MsgpackDecode)
 
 encodedNope :: Object
 encodedNope =
@@ -114,7 +118,8 @@ data ST =
     stName :: Text,
     stDesc :: Text
   }
-  deriving (Eq, Show, Generic, MsgpackEncode, MsgpackDecode)
+  deriving stock (Eq, Show, Generic)
+  deriving anyclass (MsgpackEncode, MsgpackDecode)
 
 sumName :: Text
 sumName =

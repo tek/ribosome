@@ -1,11 +1,11 @@
 module Ribosome.Test.MenuTest where
 
-import Conduit (ConduitT, yield, yieldMany)
 import Control.Concurrent.MVar.Lifted (modifyMVar_)
 import Control.Lens (view)
-import Control.Monad.Trans.Resource (ResourceT, runResourceT)
 import qualified Data.Map.Strict as Map (fromList)
 import Hedgehog ((===))
+import qualified Streamly.Prelude as Streamly
+import Streamly.Prelude (SerialT)
 import Test.Tasty (TestTree, testGroup)
 
 import Ribosome.Control.StrictRibosome (StrictRibosome)
@@ -47,17 +47,16 @@ import Ribosome.Test.Run (UnitTest, unitTest)
 promptInput ::
   MonadIO m =>
   [Text] ->
-  ConduitT () PromptEvent m ()
+  SerialT m PromptEvent
 promptInput chars = do
   lift $ sleep 0.1
-  yieldMany (PromptEvent.Character <$> chars)
+  Streamly.fromList (PromptEvent.Character <$> chars)
 
 menuItems ::
-  Monad m =>
   [Text] ->
-  ConduitT () [MenuItem Text] m ()
+  SerialT m [MenuItem Text]
 menuItems =
-  yield . fmap (simpleMenuItem "name")
+  Streamly.fromPure . fmap (simpleMenuItem "name")
 
 storePrompt ::
   MonadBaseControl IO m =>
@@ -90,7 +89,7 @@ render varItems (MenuRenderEvent.Render _ menu) = do
 render _ (MenuRenderEvent.Quit _) =
   return ()
 
-type TestM = StateT (StrictRibosome ()) (ResourceT IO)
+type TestM = StateT (StrictRibosome ()) IO
 
 menuTest ::
   (MenuUpdate TestM a Text -> TestM (MenuAction TestM a, Menu Text)) ->
@@ -99,7 +98,7 @@ menuTest ::
   IO [[FilteredMenuItem Text]]
 menuTest handler items chars = do
   itemsVar <- newMVar []
-  void $ runResourceT $ runMenu (conf itemsVar) `execStateT` def
+  _ <- evalStateT (runMenu (conf itemsVar)) def
   readMVar itemsVar
   where
     conf itemsVar =

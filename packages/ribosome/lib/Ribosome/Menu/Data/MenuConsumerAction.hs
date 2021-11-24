@@ -18,4 +18,4 @@ data MenuConsumerAction m a =
   Return a
   |
   UpdatePrompt Prompt
-  deriving (Functor)
+  deriving stock (Functor)

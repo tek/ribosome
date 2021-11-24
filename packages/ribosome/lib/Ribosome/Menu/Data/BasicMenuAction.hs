@@ -9,10 +9,10 @@ data BasicMenuChange =
   Change
   |
   Reset
-  deriving (Eq, Show)
+  deriving stock (Eq, Show)
 
 data BasicMenuAction m a i =
   Continue BasicMenuChange (Menu i)
   |
   Quit (QuitReason m a)
-  deriving (Show)
+  deriving stock (Show)

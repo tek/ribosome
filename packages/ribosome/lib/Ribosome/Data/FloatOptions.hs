@@ -10,7 +10,7 @@ data FloatRelative =
   Win
   |
   Cursor
-  deriving (Eq, Show)
+  deriving stock (Eq, Show)
 
 instance MsgpackEncode FloatRelative where
   toMsgpack Editor = toMsgpack ("editor" :: Text)
@@ -28,7 +28,7 @@ data FloatAnchor =
   SW
   |
   SE
-  deriving (Eq, Show)
+  deriving stock (Eq, Show)
 
 instance MsgpackEncode FloatAnchor where
   toMsgpack NW = toMsgpack ("NW" :: Text)
@@ -53,7 +53,7 @@ data FloatBorder =
   Shadow
   |
   Manual [Text]
-  deriving (Eq, Show, Generic)
+  deriving stock (Eq, Show, Generic)
 
 instance MsgpackEncode FloatBorder where
   toMsgpack = \case
@@ -82,7 +82,7 @@ data FloatOptions =
     border :: FloatBorder,
     noautocmd :: Bool
   }
-  deriving (Eq, Show, Generic)
+  deriving stock (Eq, Show, Generic)
 
 instance MsgpackEncode FloatOptions where
   toMsgpack FloatOptions {..} =

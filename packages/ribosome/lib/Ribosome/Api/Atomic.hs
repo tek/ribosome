@@ -16,7 +16,7 @@ data AtomicStatus =
   Failure Text
   |
   Success
-  deriving (Eq, Show)
+  deriving stock (Eq, Show)
 
 instance MsgpackDecode AtomicStatus where
   fromMsgpack ObjectNil =

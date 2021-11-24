@@ -3,7 +3,7 @@ module Ribosome.Data.RiboError where
 import Ribosome.Data.Mapping (MappingError)
 import Ribosome.Data.PersistError (PersistError)
 import Ribosome.Data.SettingError (SettingError)
-import Ribosome.Error.Report.Class (ReportError(..))
+import Ribosome.Error.Report.Class (ReportError (..))
 import Ribosome.Msgpack.Error (DecodeError)
 import Ribosome.Nvim.Api.RpcCall (RpcError)
 
@@ -17,6 +17,7 @@ data RiboError =
   Persist PersistError
   |
   Setting SettingError
-  deriving (Show, Generic, ReportError)
+  deriving stock (Show, Generic)
+  deriving anyclass (ReportError)
 
 deepPrisms ''RiboError

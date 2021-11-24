@@ -1,13 +1,28 @@
 module Ribosome.Nvim.Api.Generate where
 
+-- import Control.Exception (catch)
 import Data.Char (toUpper)
 import qualified Data.Map.Strict as Map (fromList, lookup)
 import Data.MessagePack (Object)
-import Language.Haskell.TH
+import Language.Haskell.TH (
+  Dec,
+  DecsQ,
+  Name,
+  Q,
+  Type,
+  TypeQ,
+  appT,
+  conT,
+  listT,
+  mkName,
+  newName,
+  runIO,
+  tupleT,
+  )
 import Neovim.API.Parser (
-  NeovimAPI(functions),
-  NeovimFunction(NeovimFunction),
-  NeovimType(NestedType, SimpleType, Void),
+  NeovimAPI (functions),
+  NeovimFunction (NeovimFunction),
+  NeovimType (NestedType, SimpleType, Void),
   customTypes,
   parseAPI,
   )
@@ -52,8 +67,8 @@ data FunctionData =
     names :: [Name],
     types :: [Type],
     returnType :: NeovimType
-    }
-  deriving (Eq, Show)
+  }
+  deriving stock (Eq, Show)
 
 functionData :: NeovimFunction -> Q FunctionData
 functionData (NeovimFunction name parameters _ async returnType) = do

@@ -69,10 +69,10 @@ menuCycle ::
 menuCycle offset m _ =
   menuRender False (m & Menu.selected %~ add)
   where
-    count =
-      maybe id min (m ^. Menu.maxItems) (length (m ^. current))
     add currentCount =
       if count == 0 then 0 else (currentCount + offset) `mod` count
+    count =
+      maybe id min (m ^. Menu.maxItems) (length (m ^. current))
 
 menuToggle ::
   Monad m =>
@@ -94,11 +94,13 @@ menuToggleAll ::
   Menu i ->
   Prompt ->
   m (MenuConsumerAction m a, Menu i)
-menuToggleAll m@(Menu _ filtered _ _ marked _ _) _ =
+menuToggleAll m@(Menu _ (Just filtered) _ _ marked _ _) _ =
   menuRender True newMenu
   where
     newMenu =
       m & Menu.marked .~ indexesComplement (length filtered) marked
+menuToggleAll m _ =
+  menuContinue m
 
 menuUpdatePrompt ::
   Applicative m =>

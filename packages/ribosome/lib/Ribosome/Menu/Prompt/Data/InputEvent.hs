@@ -10,4 +10,4 @@ data InputEvent =
   Interrupt
   |
   Error Text
-  deriving (Eq, Show)
+  deriving stock (Eq, Show)

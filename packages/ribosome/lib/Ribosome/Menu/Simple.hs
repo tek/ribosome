@@ -1,6 +1,6 @@
 module Ribosome.Menu.Simple where
 
-import Control.Lens (element, set, view, (^?))
+import Control.Lens (element, set, (^?))
 import Data.Map.Strict ((!?))
 import qualified Data.Map.Strict as Map (fromList, union)
 
@@ -12,7 +12,7 @@ import qualified Ribosome.Menu.Data.BasicMenuAction as BasicMenuAction (BasicMen
 import qualified Ribosome.Menu.Data.BasicMenuAction as BasicMenuChange (BasicMenuChange (..))
 import qualified Ribosome.Menu.Data.FilteredMenuItem as FilteredMenuItem
 import Ribosome.Menu.Data.FilteredMenuItem (FilteredMenuItem)
-import Ribosome.Menu.Data.Menu (Menu (Menu), current)
+import Ribosome.Menu.Data.Menu (Menu (Menu), current, numVisible)
 import qualified Ribosome.Menu.Data.Menu as Menu (filtered, items, marked, selected)
 import Ribosome.Menu.Data.MenuAction (MenuAction)
 import qualified Ribosome.Menu.Data.MenuAction as MenuAction (MenuAction (..))
@@ -41,7 +41,7 @@ menuAction ::
   Menu i ->
   (MenuAction m a, Menu i)
 menuAction itemFilter _ MenuConsumerAction.Filter menu =
-  (MenuAction.Render True, uncurry resetSelection $ reapplyFilter itemFilter menu)
+  (MenuAction.Render True, uncurry resetSelection (reapplyFilter itemFilter menu))
 menuAction _ True MenuConsumerAction.Continue menu =
   (MenuAction.Render True, menu)
 menuAction _ False MenuConsumerAction.Continue menu =
@@ -133,7 +133,7 @@ defaultMenu =
 
 selectedMenuItem :: Menu i -> Maybe (MenuItem i)
 selectedMenuItem menu =
-  (menu ^. current) ^? element (menu ^. Menu.selected) . FilteredMenuItem.item
+  menu ^? current . element (menu ^. Menu.selected) . FilteredMenuItem.item
 
 withSelectedMenuItem ::
   Monad m =>
@@ -158,8 +158,8 @@ filteredByIndex ::
   [Int] ->
   Menu i ->
   Maybe (NonEmpty (FilteredMenuItem i))
-filteredByIndex indexes (Menu _ _ filtered _ _ _ _) = do
-  latest <- listToMaybe filtered
+filteredByIndex indexes (Menu _ filtered _ _ _ _ _) = do
+  latest <- filtered
   nonEmpty (filterIndexes indexes latest)
 
 itemsByFilteredIndex ::
@@ -192,7 +192,7 @@ markedMenuItems m =
 
 unmarkedMenuItems :: Menu i -> [MenuItem i]
 unmarkedMenuItems menu =
-  menuItemsByIndexes (indexesComplement (length (view Menu.filtered menu)) (indexes menu)) menu
+  menuItemsByIndexes (indexesComplement (numVisible menu) (indexes menu)) menu
   where
     indexes (Menu _ _ _ selected [] _ _) =
       [selected]

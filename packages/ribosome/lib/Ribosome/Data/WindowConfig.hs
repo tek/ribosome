@@ -9,5 +9,5 @@ data WindowConfig =
      focusable :: Bool,
      external :: Bool
   }
-  deriving (Eq, Show, Generic)
+  deriving stock (Eq, Show, Generic)
   deriving anyclass (MsgpackEncode, MsgpackDecode)

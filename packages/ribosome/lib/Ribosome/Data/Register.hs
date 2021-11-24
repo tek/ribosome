@@ -15,7 +15,7 @@ data Register =
   Special Text
   |
   Empty
-  deriving (Eq, Show, Generic)
+  deriving stock (Eq, Show, Generic)
 
 instance IsString Register where
   fromString "" =

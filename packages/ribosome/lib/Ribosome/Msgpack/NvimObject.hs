@@ -6,7 +6,7 @@ import Ribosome.Msgpack.Encode (MsgpackEncode(..))
 
 newtype NO a =
   NO { unNO :: a }
-  deriving (Eq, Show, Generic)
+  deriving stock (Eq, Show, Generic)
   deriving newtype (NFData)
 
 instance (MsgpackEncode a, MsgpackDecode a, NFData a) => NvimObject (NO a) where

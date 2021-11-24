@@ -8,7 +8,7 @@ import Ribosome.System.Time (sleep)
 -- |Specifies the maximum number of retries and the interval in seconds for 'waitIO'.
 data Retry =
   Retry Int Double
-  deriving Show
+  deriving stock (Show)
 
 instance Default Retry where
   def = Retry 20 0.25

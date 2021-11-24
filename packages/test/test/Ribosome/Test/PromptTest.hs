@@ -1,8 +1,7 @@
 module Ribosome.Test.PromptTest where
 
-import Conduit (awaitForever, evalStateC, runConduit, yield, (.|))
-import qualified Data.Conduit.Combinators as Conduit (last)
 import Hedgehog (TestT, (===))
+import qualified Streamly.Internal.Data.Stream.IsStream as Streamly
 import TestError (TestError)
 
 import Ribosome.Control.Monad.Ribo (Ribo)
@@ -18,15 +17,15 @@ import Ribosome.Test.Unit (unitTestDef')
 
 promptSetTest :: TestT (Ribo () TestError) ()
 promptSetTest = do
-  update <- runConduit $ yield event .| exec .| Conduit.last
+  update <- Streamly.last (exec (Streamly.fromPure event))
   Just target === update
   where
     exec =
-      evalStateC initialPrompt (awaitForever (processPromptEvent config))
+      Streamly.evalStateT (pure initialPrompt) . Streamly.mapM (processPromptEvent config)
     initialPrompt =
       Prompt 1 PromptState.Normal "abc" def
     config =
-      PromptConfig (return ()) basicTransition noPromptRenderer [StartInsert]
+      PromptConfig Streamly.nil basicTransition noPromptRenderer [StartInsert]
     event =
       PromptEvent.Set (Prompt 10 PromptState.Normal text def)
     text =

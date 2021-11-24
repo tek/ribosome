@@ -10,4 +10,4 @@ data MenuResult a =
   Aborted
   |
   Return a
-  deriving (Eq, Show)
+  deriving stock (Eq, Show)

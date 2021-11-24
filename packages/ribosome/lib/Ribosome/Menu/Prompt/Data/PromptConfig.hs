@@ -1,22 +1,22 @@
 module Ribosome.Menu.Prompt.Data.PromptConfig where
 
-import Conduit (ConduitT)
 import Control.Lens (view)
 
 import Ribosome.Menu.Prompt.Data.PromptEvent (PromptEvent)
 import Ribosome.Menu.Prompt.Data.PromptRenderer (PromptRenderer)
 import Ribosome.Menu.Prompt.Data.PromptState (PromptState)
 import Ribosome.Menu.Prompt.Data.PromptUpdate (PromptUpdate)
+import Streamly.Prelude (SerialT)
 
 data PromptFlag =
   StartInsert
   |
   OnlyInsert
-  deriving (Eq, Show)
+  deriving stock (Eq, Show)
 
 data PromptConfig m =
   PromptConfig {
-    _source :: ConduitT () PromptEvent m (),
+    _source :: SerialT m PromptEvent,
     _modes :: [PromptFlag] -> PromptEvent -> PromptState -> m PromptUpdate,
     _render :: PromptRenderer m,
     _flags :: [PromptFlag]

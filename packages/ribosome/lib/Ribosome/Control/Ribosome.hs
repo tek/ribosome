@@ -1,9 +1,9 @@
 module Ribosome.Control.Ribosome where
 
 import Data.MessagePack (Object)
+import Path (Abs, Dir, Path)
 import Prelude hiding (state)
 
-import Path (Abs, Dir, Path)
 import Ribosome.Data.Errors (Errors)
 import Ribosome.Data.Scratch (Scratch)
 
@@ -17,7 +17,8 @@ data RibosomeInternal =
     _watchedVariables :: Map Text Object,
     _projectDir :: Maybe (Path Abs Dir)
   }
-  deriving (Generic, Default)
+  deriving stock (Generic)
+  deriving anyclass (Default)
 
 makeClassy ''RibosomeInternal
 
@@ -26,7 +27,8 @@ data RibosomeState s =
     _internal :: RibosomeInternal,
     _public :: s
   }
-  deriving (Generic, Default)
+  deriving stock (Generic)
+  deriving anyclass (Default)
 
 makeClassy ''RibosomeState
 

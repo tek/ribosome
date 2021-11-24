@@ -9,6 +9,7 @@ import Ribosome.Nvim.Api.GenerateData (generateData)
 
 data LuaRef =
   LuaRef Int64
-  deriving (Generic, MsgpackDecode, MsgpackEncode)
+  deriving stock (Generic)
+  deriving anyclass (MsgpackDecode, MsgpackEncode)
 
 generateData

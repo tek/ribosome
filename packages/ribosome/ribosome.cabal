@@ -4,7 +4,7 @@ cabal-version: 2.2
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: cba196ac48d5fe39dca12504631c8a6c0e986c9608b6fa63cef99b76d87db291
+-- hash: f4d694dd501149ee8dde73a6e346201c1a86fff45ca8d64d89a96a454429252e
 
 name:           ribosome
 version:        0.4.0.0
@@ -58,8 +58,6 @@ library
       Ribosome.Control.Monad.Ribo
       Ribosome.Control.Ribosome
       Ribosome.Control.StrictRibosome
-      Ribosome.Data.Conduit
-      Ribosome.Data.Conduit.Composition
       Ribosome.Data.ErrorReport
       Ribosome.Data.Errors
       Ribosome.Data.FloatOptions
@@ -74,6 +72,7 @@ library
       Ribosome.Data.ScratchOptions
       Ribosome.Data.Setting
       Ribosome.Data.SettingError
+      Ribosome.Data.Stream
       Ribosome.Data.String
       Ribosome.Data.Syntax
       Ribosome.Data.Text
@@ -213,16 +212,11 @@ library
   ghc-options: -Wall -Wredundant-constraints -Wincomplete-uni-patterns -Wmissing-deriving-strategies -Widentities -Wunused-packages
   build-depends:
       aeson
-    , ansi-terminal
     , base ==4.*
     , bytestring
-    , cereal
-    , cereal-conduit
     , chiasma
     , composition
     , composition-extra
-    , conduit
-    , conduit-extra
     , containers
     , cornea
     , data-default
@@ -232,38 +226,30 @@ library
     , exceptions
     , filepath
     , free
-    , fuzzy
-    , fuzzyfind
+    , fuzzyfind >=3
     , hourglass
     , hslogger
     , lens
-    , lifted-async
     , lifted-base
     , messagepack
     , monad-control
-    , monad-loops
     , mtl
     , nvim-hs
     , path
     , path-io
-    , pretty-terminal
     , prettyprinter
     , prettyprinter-ansi-terminal
-    , process
-    , relude >=0.7 && <1.2
+    , relude >=0.7
     , resourcet
-    , safe
-    , split
     , stm
     , stm-chans
-    , stm-conduit
+    , streamly >=0.8
     , template-haskell
     , text
     , th-abstraction
     , time
     , transformers
     , transformers-base
-    , typed-process
     , unix
     , unliftio
     , unliftio-core

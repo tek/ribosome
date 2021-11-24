@@ -41,3 +41,7 @@ push new m =
 current :: Contravariant f => Optic' (->) f (Menu a) [FilteredMenuItem a]
 current =
   to (fold . _filtered)
+
+numVisible :: Menu a -> Int
+numVisible =
+  maybe 0 length . _filtered

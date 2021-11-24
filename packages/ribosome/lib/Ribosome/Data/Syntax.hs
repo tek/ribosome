@@ -26,7 +26,7 @@ data SyntaxItemDetail =
   Verbatim {
     verbatimCommand :: Text
   }
-  deriving (Eq, Show)
+  deriving stock (Eq, Show)
 
 data SyntaxItem =
   SyntaxItem {
@@ -34,7 +34,7 @@ data SyntaxItem =
     siOptions :: [Text],
     siParams :: Map Text Text
   }
-  deriving (Eq, Show)
+  deriving stock (Eq, Show)
 
 syntaxItem :: SyntaxItemDetail -> SyntaxItem
 syntaxItem detail =
@@ -65,7 +65,7 @@ data Highlight =
     hiGroup :: Text,
     hiValues :: Map Text Text
   }
-  deriving (Eq, Show)
+  deriving stock (Eq, Show)
 
 syntaxHighlight :: Text -> [(Text, Text)] -> Highlight
 syntaxHighlight group' =
@@ -76,7 +76,7 @@ data HiLink =
     hlGroup :: Text,
     hlTarget :: Text
   }
-  deriving (Eq, Show)
+  deriving stock (Eq, Show)
 
 data Syntax =
   Syntax {
@@ -84,4 +84,5 @@ data Syntax =
      syntaxHighlights :: [Highlight],
      syntaxHiLinks :: [HiLink]
   }
-  deriving (Eq, Show, Generic, Default)
+  deriving stock (Eq, Show, Generic)
+  deriving anyclass (Default)

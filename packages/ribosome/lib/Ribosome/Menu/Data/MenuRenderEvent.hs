@@ -7,4 +7,4 @@ data MenuRenderEvent m a i =
   Render Bool (Menu i)
   |
   Quit (QuitReason m a)
-  deriving Show
+  deriving stock (Show)

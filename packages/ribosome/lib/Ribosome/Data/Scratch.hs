@@ -10,4 +10,4 @@ data Scratch =
     scratchPrevious :: Window,
     scratchTab :: Maybe Tabpage
   }
-  deriving (Eq, Show)
+  deriving stock (Eq, Show)

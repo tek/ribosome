@@ -1,29 +1,32 @@
 module Ribosome.Menu.Prompt.Run where
 
-import Conduit (ConduitT, MonadResource, await, awaitForever, bracketP, evalStateC, yield, (.|))
-import Data.Conduit.Combinators (peek)
-import Data.Conduit.TMChan (TMChan, closeTMChan, newTMChan, sourceTMChan)
+import Control.Concurrent.STM.TMChan (TMChan, closeTMChan, newTMChan)
+import Control.Monad.Catch (MonadCatch)
 import qualified Data.Text as Text (drop, dropEnd, isPrefixOf, length, splitAt)
 import Prelude hiding (state)
+import qualified Streamly.Data.Fold as Fold
+import qualified Streamly.Internal.Data.Stream.IsStream as Streamly
+import Streamly.Prelude (SerialT, parallel)
 
 import Ribosome.Control.Monad.Ribo (MonadRibo)
-import Ribosome.Data.Conduit (mergeSources)
+import Ribosome.Data.Stream (chanStream)
 import Ribosome.Log (logDebug)
 import Ribosome.Menu.Prompt.Data.CursorUpdate (CursorUpdate)
-import qualified Ribosome.Menu.Prompt.Data.CursorUpdate as CursorUpdate (CursorUpdate(..))
-import Ribosome.Menu.Prompt.Data.Prompt (Prompt(Prompt), PromptChange (PromptRandom, PromptAppend, PromptUnappend))
-import Ribosome.Menu.Prompt.Data.PromptConfig (PromptConfig(PromptConfig), PromptFlag, onlyInsert, startInsert)
+import qualified Ribosome.Menu.Prompt.Data.CursorUpdate as CursorUpdate (CursorUpdate (..))
+import Ribosome.Menu.Prompt.Data.Prompt (Prompt (Prompt), PromptChange (PromptAppend, PromptRandom, PromptUnappend))
+import Ribosome.Menu.Prompt.Data.PromptConfig (PromptConfig (PromptConfig), PromptFlag, onlyInsert, startInsert)
 import Ribosome.Menu.Prompt.Data.PromptConsumed (PromptConsumed)
-import qualified Ribosome.Menu.Prompt.Data.PromptConsumed as PromptConsumed (PromptConsumed(..))
-import Ribosome.Menu.Prompt.Data.PromptConsumerUpdate (PromptConsumerUpdate(PromptConsumerUpdate))
+import qualified Ribosome.Menu.Prompt.Data.PromptConsumed as PromptConsumed (PromptConsumed (..))
+import qualified Ribosome.Menu.Prompt.Data.PromptConsumerUpdate as PromptConsumerUpdate
+import Ribosome.Menu.Prompt.Data.PromptConsumerUpdate (PromptConsumerUpdate (PromptConsumerUpdate))
 import Ribosome.Menu.Prompt.Data.PromptEvent (PromptEvent)
-import qualified Ribosome.Menu.Prompt.Data.PromptEvent as PromptEvent (PromptEvent(..))
-import Ribosome.Menu.Prompt.Data.PromptRenderer (PromptRenderer(PromptRenderer))
+import qualified Ribosome.Menu.Prompt.Data.PromptEvent as PromptEvent (PromptEvent (..))
+import Ribosome.Menu.Prompt.Data.PromptRenderer (PromptRenderer (PromptRenderer))
 import Ribosome.Menu.Prompt.Data.PromptState (PromptState)
-import qualified Ribosome.Menu.Prompt.Data.PromptState as PromptState (PromptState(..))
-import Ribosome.Menu.Prompt.Data.PromptUpdate (PromptUpdate(PromptUpdate))
+import qualified Ribosome.Menu.Prompt.Data.PromptState as PromptState (PromptState (..))
+import Ribosome.Menu.Prompt.Data.PromptUpdate (PromptUpdate (PromptUpdate))
 import Ribosome.Menu.Prompt.Data.TextUpdate (TextUpdate)
-import qualified Ribosome.Menu.Prompt.Data.TextUpdate as TextUpdate (TextUpdate(..))
+import qualified Ribosome.Menu.Prompt.Data.TextUpdate as TextUpdate (TextUpdate (..))
 
 updateCursor :: Int -> Text -> CursorUpdate -> Int
 updateCursor current text =
@@ -88,68 +91,48 @@ updatePrompt modes update (Prompt cursor state text _) = do
       updateText cursor text textUpdate
     newPrompt =
       Prompt (updateCursor cursor updatedText cursorUpdate) newState updatedText (updateLastChange text updatedText)
-  return (consumed, newPrompt)
+  pure (consumed, newPrompt)
 
 processPromptEvent ::
   MonadIO m =>
   MonadRibo m =>
   PromptConfig m ->
   PromptEvent ->
-  ConduitT PromptEvent PromptConsumerUpdate (StateT Prompt m) ()
-processPromptEvent (PromptConfig _ modes (PromptRenderer _ _ render) flags) event = do
+  StateT Prompt m PromptConsumerUpdate
+processPromptEvent (PromptConfig _ modes _ flags) event = do
   logDebug @Text $ "prompt event: " <> show event
-  consumed <- lift . stateM $ lift . updatePrompt (modes flags) event
+  consumed <- stateM $ lift . updatePrompt (modes flags) event
   newPrompt <- get
-  yield (PromptConsumerUpdate event newPrompt consumed)
-  lift . lift . render $ newPrompt
-
-skippingRenderer ::
-  Monad m =>
-  (Prompt -> m ()) ->
-  ConduitT PromptConsumerUpdate PromptConsumerUpdate m ()
-skippingRenderer render =
-  go
-  where
-    go =
-      check =<< await
-    check (Just next@(PromptConsumerUpdate _ prompt _)) = do
-      yield next
-      renderIfIdle prompt =<< peek
-      go
-    check Nothing =
-      return ()
-    renderIfIdle _ (Just _) =
-      return ()
-    renderIfIdle prompt Nothing =
-      lift (render prompt)
+  pure (PromptConsumerUpdate event newPrompt consumed)
+  -- lift . lift . render $ newPrompt
 
 promptWithBackchannel ::
   MonadRibo m =>
-  MonadResource m =>
+  MonadCatch m =>
   MonadBaseControl IO m =>
   PromptConfig m ->
   TMChan PromptEvent ->
-  ConduitT () PromptConsumerUpdate m ()
-promptWithBackchannel config@(PromptConfig source _ (PromptRenderer _ _ render) _) chan =
-  mergeSources 64 [sourceWithInit, sourceTMChan chan] .| process .| skippingRenderer render
+  SerialT m PromptConsumerUpdate
+promptWithBackchannel config@(PromptConfig source _ (PromptRenderer _ _ render) _) backchannel =
+  Streamly.tapAsync (Fold.drainBy (render . PromptConsumerUpdate._prompt)) $
+  process $
+  Streamly.liftInner $
+  parallel sourceWithInit (chanStream backchannel)
   where
     sourceWithInit =
-      yield PromptEvent.Init *> source <* atomically (closeTMChan chan)
+      Streamly.finally (atomically (closeTMChan backchannel)) (Streamly.cons PromptEvent.Init source)
     process =
-      evalStateC (pristinePrompt (startInsert config)) (awaitForever (processPromptEvent config))
+      Streamly.evalStateT (pure (pristinePrompt (startInsert config))) . Streamly.mapM (processPromptEvent config)
 
-promptC ::
+promptStream ::
   MonadRibo m =>
-  MonadResource m =>
+  MonadCatch m =>
   MonadBaseControl IO m =>
   PromptConfig m ->
-  m (TMChan PromptEvent, ConduitT () PromptConsumerUpdate m ())
-promptC config = do
+  m (TMChan PromptEvent, SerialT m PromptConsumerUpdate)
+promptStream config = do
   chan <- atomically newTMChan
-  return (chan, bracketP (pure chan) release (promptWithBackchannel config))
-  where
-    release chan =
-      atomically $ closeTMChan chan
+  pure (chan, Streamly.finally (atomically (closeTMChan chan)) (promptWithBackchannel config chan))
 
 unprocessableChars :: [Text]
 unprocessableChars =
@@ -225,13 +208,13 @@ basicTransition ::
   PromptState ->
   m PromptUpdate
 basicTransition _ (PromptEvent.Set (Prompt cursor state text _)) _ =
-  return $ PromptUpdate state (CursorUpdate.Index cursor) (TextUpdate.Set text) PromptConsumed.Yes
+  pure $ PromptUpdate state (CursorUpdate.Index cursor) (TextUpdate.Set text) PromptConsumed.Yes
 basicTransition _ event PromptState.Normal =
-  return $ basicTransitionNormal event
+  pure $ basicTransitionNormal event
 basicTransition flags event PromptState.Insert =
-  return $ basicTransitionInsert flags event
+  pure $ basicTransitionInsert flags event
 basicTransition _ _ PromptState.Quit =
-  return $ PromptUpdate PromptState.Quit CursorUpdate.Unmodified TextUpdate.Unmodified PromptConsumed.No
+  pure $ PromptUpdate PromptState.Quit CursorUpdate.Unmodified TextUpdate.Unmodified PromptConsumed.No
 
 pristinePrompt :: Bool -> Prompt
 pristinePrompt insert =

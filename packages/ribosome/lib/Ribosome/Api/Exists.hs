@@ -11,7 +11,7 @@ import Ribosome.System.Time (epochSeconds, sleep)
 
 data Retry =
   Retry Int Double
-  deriving Show
+  deriving stock (Show)
 
 instance Default Retry where
   def = Retry 3 0.1

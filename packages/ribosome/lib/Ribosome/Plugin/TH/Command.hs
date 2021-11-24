@@ -31,7 +31,7 @@ data CmdParamType =
   DataParam
   |
   ListParam
-  deriving (Eq, Show)
+  deriving stock (Eq, Show)
 
 data CmdParams =
   ZeroParams
@@ -41,14 +41,14 @@ data CmdParams =
   OnlyPrims Int
   |
   DataPlus Int
-  deriving (Eq, Show)
+  deriving stock (Eq, Show)
 
 data HandlerParams =
   HandlerParams {
     handlerHasArgsParam :: Bool,
     handlerCmdParams :: CmdParams
     }
-  deriving (Eq, Show)
+  deriving stock (Eq, Show)
 
 colon :: Name
 colon =

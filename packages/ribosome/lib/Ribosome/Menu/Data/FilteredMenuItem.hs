@@ -7,7 +7,7 @@ data FilteredMenuItem a =
     _index :: Int,
     _item :: MenuItem a
   }
-  deriving (Eq, Show)
+  deriving stock (Eq, Show)
 
 makeClassy ''FilteredMenuItem
 

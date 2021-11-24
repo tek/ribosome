@@ -9,7 +9,7 @@ import Data.Aeson (FromJSON)
 -- import Data.Default (def)
 import GHC.Generics (Generic)
 import Language.Haskell.TH
-import Neovim (Plugin(..))
+import Neovim (Plugin (..))
 -- import TestError (handleTestError)
 
 -- import Ribosome.Control.Ribosome (Ribosome, newRibosome)
@@ -24,7 +24,8 @@ data Par =
     parA :: Int,
     parB :: Int
   }
-  deriving (Eq, Show, Generic, MsgpackDecode, MsgpackEncode, FromJSON)
+  deriving stock (Eq, Show, Generic)
+  deriving anyclass (MsgpackDecode, MsgpackEncode, FromJSON)
 
 handler :: Text -> m ()
 handler =

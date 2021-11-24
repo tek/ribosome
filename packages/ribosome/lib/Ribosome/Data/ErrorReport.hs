@@ -13,6 +13,6 @@ data ErrorReport =
     _log :: [Text],
     _priority :: Priority
   }
-  deriving (Eq, Show)
+  deriving stock (Eq, Show)
 
 makeClassy ''ErrorReport

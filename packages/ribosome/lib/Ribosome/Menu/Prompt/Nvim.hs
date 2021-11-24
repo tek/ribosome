@@ -1,8 +1,9 @@
 module Ribosome.Menu.Prompt.Nvim where
 
-import Conduit (ConduitT, yield)
 import Control.Exception.Lifted (bracket_)
 import qualified Data.Text as Text (singleton, splitAt, uncons)
+import qualified Streamly.Prelude as Streamly
+import Streamly.Prelude (SerialT)
 
 import Ribosome.Api.Atomic (atomic)
 import Ribosome.Api.Function (defineFunction)
@@ -56,23 +57,23 @@ getChar =
     event (Left num) =
       maybe (InputEvent.Unexpected num) InputEvent.Character <$> decodeInputNum num
 
-getCharC ::
+getCharStream ::
   NvimE e m =>
   MonadRibo m =>
   MonadBaseControl IO m =>
   Double ->
-  ConduitT () PromptEvent m ()
-getCharC interval =
+  SerialT m PromptEvent
+getCharStream interval =
   recurse
   where
     recurse =
       translate =<< lift getChar
     translate (InputEvent.Character a) =
-      yield (PromptEvent.Character a) *> recurse
+      Streamly.cons (PromptEvent.Character a) recurse
     translate InputEvent.Interrupt =
-      yield PromptEvent.Interrupt
+      Streamly.fromPure PromptEvent.Interrupt
     translate (InputEvent.Error e) =
-      yield (PromptEvent.Error e)
+      Streamly.fromPure (PromptEvent.Error e)
     translate InputEvent.NoInput =
       sleep interval *> recurse
     translate (InputEvent.Unexpected _) =

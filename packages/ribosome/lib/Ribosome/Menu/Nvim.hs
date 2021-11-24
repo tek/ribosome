@@ -7,7 +7,7 @@ import qualified Data.Text as Text (cons, snoc)
 import Ribosome.Api.Window (redraw, restoreView, saveView, setLine)
 import Ribosome.Control.Monad.Ribo (MonadRibo, NvimE)
 import Ribosome.Data.List (mapSelectors)
-import Ribosome.Data.Scratch (Scratch (scratchWindow))
+import Ribosome.Data.Scratch (Scratch (scratchWindow), scratchBuffer)
 import Ribosome.Data.ScratchOptions (ScratchOptions)
 import Ribosome.Data.Syntax (
   HiLink (..),
@@ -23,7 +23,7 @@ import Ribosome.Menu.Data.Menu (Menu (Menu), current)
 import qualified Ribosome.Menu.Data.MenuItem as MenuItem (abbreviated)
 import Ribosome.Menu.Data.MenuRenderEvent (MenuRenderEvent)
 import qualified Ribosome.Menu.Data.MenuRenderEvent as MenuRenderEvent (MenuRenderEvent (..))
-import Ribosome.Nvim.Api.IO (nvimSetCurrentWin, nvimWinGetHeight)
+import Ribosome.Nvim.Api.IO (nvimBufIsLoaded, nvimSetCurrentWin, nvimWinGetHeight)
 import Ribosome.Scratch (killScratch, setScratchContent)
 
 marker :: Char
@@ -66,14 +66,15 @@ renderNvimMenu ::
   m ()
 renderNvimMenu _ scratch (MenuRenderEvent.Quit _) =
   killScratch scratch
-renderNvimMenu options scratch (MenuRenderEvent.Render changed menu@(Menu _ _ _ selected marked _ maxItems)) = do
-  when changed (setScratchContent options scratch (reverse text))
-  logDebug @Text logMsg
-  updateCursor
-  nvimSetCurrentWin win
-  height <- nvimWinGetHeight win
-  adjustTopline height
-  redraw
+renderNvimMenu options scratch (MenuRenderEvent.Render changed menu@(Menu _ _ _ selected marked _ maxItems)) =
+  whenM (nvimBufIsLoaded (scratchBuffer scratch)) do
+    when changed (setScratchContent options scratch (reverse text))
+    logDebug @Text logMsg
+    updateCursor
+    nvimSetCurrentWin win
+    height <- nvimWinGetHeight win
+    adjustTopline height
+    redraw
   where
     lineNumber =
       max 0 $ length items - selected - 1

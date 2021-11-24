@@ -3,7 +3,7 @@ module TestError where
 import Hedgehog (TestT)
 import Ribosome.Control.Monad.Ribo (Ribo)
 import Ribosome.Data.Mapping (MappingError)
-import Ribosome.Error.Report.Class (ReportError(..))
+import Ribosome.Error.Report.Class (ReportError)
 import Ribosome.Log (showError)
 import Ribosome.Msgpack.Error (DecodeError)
 import Ribosome.Nvim.Api.RpcCall (RpcError)
@@ -14,7 +14,8 @@ data TestError =
   Decode DecodeError
   |
   Mapping MappingError
-  deriving (Show, Generic, ReportError)
+  deriving stock (Show, Generic)
+  deriving anyclass (ReportError)
 
 deepPrisms ''TestError
 

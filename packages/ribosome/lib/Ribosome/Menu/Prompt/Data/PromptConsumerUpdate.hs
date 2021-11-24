@@ -10,4 +10,4 @@ data PromptConsumerUpdate =
     _prompt :: Prompt,
     _consumed :: PromptConsumed
   }
-  deriving (Eq, Show)
+  deriving stock (Eq, Show)

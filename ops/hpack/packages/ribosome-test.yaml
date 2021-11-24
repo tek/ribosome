@@ -8,18 +8,47 @@ library:
   source-dirs: lib
   generated-other-modules:
     Paths_ribosome_test
+  dependencies:
+    - name: ribosome
+      mixin:
+        - hiding (Ribosome.Prelude)
+        - (Ribosome.Prelude as Prelude)
+    - aeson
+    - bytestring
+    - chiasma
+    - containers
+    - cornea
+    - directory
+    - either
+    - exceptions
+    - filepath
+    - free
+    - hedgehog
+    - hslogger
+    - lens
+    - lifted-async
+    - lifted-base
+    - messagepack
+    - monad-control
+    - mtl
+    - nvim-hs
+    - path
+    - prettyprinter
+    - prettyprinter-ansi-terminal
+    - process
+    - relude >= 0.7
+    - resourcet
+    - tasty
+    - tasty-hedgehog
+    - template-haskell
+    - text
+    - transformers
+    - typed-process
+    - unix
+    - unliftio
 
 extra-source-files:
   - readme.md
-
-dependencies:
-  - hedgehog
-  - name: ribosome
-    mixin:
-      - hiding (Ribosome.Prelude)
-      - (Ribosome.Prelude as Prelude)
-  - tasty
-  - tasty-hedgehog
 
 tests:
   ribosome-unit:
@@ -34,4 +63,21 @@ tests:
         mixin:
           - hiding (Ribosome.Prelude)
           - (Ribosome.Prelude as Prelude)
+      - aeson
+      - chiasma
+      - containers
+      - cornea
+      - either
+      - hedgehog
+      - hslogger
+      - lens
+      - lifted-base
+      - messagepack
+      - nvim-hs
+      - path
+      - prettyprinter
+      - prettyprinter-ansi-terminal
       - ribosome-test
+      - streamly
+      - tasty
+      - template-haskell

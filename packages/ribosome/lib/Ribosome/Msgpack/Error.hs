@@ -1,16 +1,16 @@
 module Ribosome.Msgpack.Error where
 
-import System.Log.Logger (Priority(ERROR))
-
 import Prettyprinter (defaultLayoutOptions, layoutPretty)
 import Prettyprinter.Render.Text (renderStrict)
-import Ribosome.Data.ErrorReport (ErrorReport(ErrorReport))
-import Ribosome.Error.Report.Class (ReportError(..))
+import System.Log.Logger (Priority (ERROR))
+
+import Ribosome.Data.ErrorReport (ErrorReport (ErrorReport))
+import Ribosome.Error.Report.Class (ReportError (..))
 import Ribosome.Msgpack.Util (Err)
 
 newtype DecodeError =
   Failed Err
-  deriving Show
+  deriving stock (Show)
 
 deepPrisms ''DecodeError
 

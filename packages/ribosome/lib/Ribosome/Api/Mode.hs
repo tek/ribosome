@@ -12,7 +12,7 @@ data NvimMode =
   Insert
   |
   Other Text
-  deriving (Eq, Show)
+  deriving stock (Eq, Show)
 
 instance IsString NvimMode where
   fromString "n" = Normal
