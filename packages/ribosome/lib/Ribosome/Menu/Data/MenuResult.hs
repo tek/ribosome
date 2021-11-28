@@ -1,13 +1,9 @@
 module Ribosome.Menu.Data.MenuResult where
 
 data MenuResult a =
-  NoOutput
-  |
-  Error Text
-  |
-  Executed
+  Success a
   |
   Aborted
   |
-  Return a
-  deriving stock (Eq, Show)
+  Error Text
+  deriving stock (Eq, Show, Functor)

@@ -8,3 +8,6 @@ cradle:
 
     - path: "./packages/test/test"
       component: "ribosome-test:test:ribosome-unit"
+
+    - path: "./packages/test/benchmark"
+      component: "ribosome-test:benchmark:ribosome-bench"

@@ -8,8 +8,9 @@ import Ribosome.Test.NvimMenuTest (test_nvimMenu)
 import Ribosome.Test.PromptTest (test_promptSet)
 import Ribosome.Test.RpcTest (test_rpc)
 import Ribosome.Test.Run (unitTest)
-import Ribosome.Test.ScratchTest (test_regularScratch, test_floatScratch)
-import Ribosome.Test.SettingTest (test_settingSuccess, test_settingFail)
+import Ribosome.Test.ScratchTest (test_floatScratch, test_regularScratch)
+import Ribosome.Test.SettingTest (test_settingFail, test_settingSuccess)
+import Ribosome.Test.StreamTest (test_mapMAcc)
 -- import Ribosome.Test.SyntaxTest (test_syntax)
 import Ribosome.Test.THTest ()
 import Ribosome.Test.WatcherTest (test_varWatcher)
@@ -34,7 +35,8 @@ tests =
     -- unitTest "syntax" test_syntax,
     unitTest "variable watcher" test_varWatcher,
     unitTest "find the existing main window" test_findMainWindowExisting,
-    unitTest "create the main window" test_findMainWindowCreate
+    unitTest "create the main window" test_findMainWindowCreate,
+    unitTest "mapMAcc stream combinator" test_mapMAcc
   ]
 
 main :: IO ()

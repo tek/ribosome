@@ -1,27 +1,24 @@
 module Ribosome.Menu.Prompt.Nvim where
 
-import Control.Exception.Lifted (bracket_)
+import Control.Concurrent.Async.Lifted (race)
 import qualified Data.Text as Text (singleton, splitAt, uncons)
-import qualified Streamly.Prelude as Streamly
-import Streamly.Prelude (SerialT)
+import qualified Streamly.Prelude as Stream
 
 import Ribosome.Api.Atomic (atomic)
-import Ribosome.Api.Function (defineFunction)
-import Ribosome.Api.Variable (setVar)
 import Ribosome.Api.Window (redraw)
 import Ribosome.Control.Monad.Ribo (MonadRibo, NvimE)
 import Ribosome.Data.Text (escapeQuotes)
 import Ribosome.Menu.Prompt.Data.Codes (decodeInputChar, decodeInputNum)
 import Ribosome.Menu.Prompt.Data.InputEvent (InputEvent)
 import qualified Ribosome.Menu.Prompt.Data.InputEvent as InputEvent (InputEvent (..))
-import Ribosome.Menu.Prompt.Data.Prompt (Prompt (Prompt))
-import Ribosome.Menu.Prompt.Data.PromptEvent (PromptEvent)
-import qualified Ribosome.Menu.Prompt.Data.PromptEvent as PromptEvent (PromptEvent (..))
+import Ribosome.Menu.Prompt.Data.Prompt (Prompt (Prompt), PromptText (PromptText))
+import Ribosome.Menu.Prompt.Data.PromptConfig (PromptInput (PromptInput))
+import qualified Ribosome.Menu.Prompt.Data.PromptInputEvent as PromptInputEvent (PromptInputEvent (..))
 import Ribosome.Menu.Prompt.Data.PromptRenderer (PromptRenderer (PromptRenderer))
 import Ribosome.Msgpack.Encode (toMsgpack)
 import Ribosome.Msgpack.Error (DecodeError)
 import qualified Ribosome.Nvim.Api.Data as ApiData (vimCommand)
-import Ribosome.Nvim.Api.IO (vimCallFunction, vimCommand, vimCommandOutput, vimGetOption, vimSetOption)
+import Ribosome.Nvim.Api.IO (nvimInput, vimCallFunction, vimCommand, vimCommandOutput, vimGetOption, vimSetOption)
 import Ribosome.Nvim.Api.RpcCall (RpcError, syncRpcCall)
 import Ribosome.System.Time (sleep)
 
@@ -34,26 +31,26 @@ quitCharOrd =
   ord quitChar
 
 getChar ::
+  MonadIO m =>
   NvimE e m =>
   MonadBaseControl IO m =>
+  MVar () ->
   m InputEvent
-getChar =
-  catchAs @RpcError InputEvent.Interrupt request
+getChar quit =
+  catchAs @RpcError InputEvent.Interrupt consume
   where
-    request =
-      ifM peek consume (return InputEvent.NoInput)
-    peek =
-      (/= (0 :: Int)) <$> getchar True
     consume =
-      event =<< getchar False
-    getchar peek' =
-      vimCallFunction "getchar" [toMsgpack peek']
+      either pure event =<< race waitQuit (getchar [])
+    waitQuit =
+      readMVar quit *> getchar [True] $> InputEvent.Interrupt
+    getchar =
+      vimCallFunction "getchar" . fmap toMsgpack
     event (Right c) =
-      return $ InputEvent.Character (fromMaybe c (decodeInputChar c))
+      pure $ InputEvent.Character (fromMaybe c (decodeInputChar c))
     event (Left 0) =
-      return InputEvent.NoInput
+      pure InputEvent.NoInput
     event (Left num) | num == quitCharOrd =
-      return InputEvent.Interrupt
+      pure InputEvent.Interrupt
     event (Left num) =
       maybe (InputEvent.Unexpected num) InputEvent.Character <$> decodeInputNum num
 
@@ -62,22 +59,24 @@ getCharStream ::
   MonadRibo m =>
   MonadBaseControl IO m =>
   Double ->
-  SerialT m PromptEvent
+  PromptInput m
 getCharStream interval =
-  recurse
-  where
-    recurse =
-      translate =<< lift getChar
-    translate (InputEvent.Character a) =
-      Streamly.cons (PromptEvent.Character a) recurse
-    translate InputEvent.Interrupt =
-      Streamly.fromPure PromptEvent.Interrupt
-    translate (InputEvent.Error e) =
-      Streamly.fromPure (PromptEvent.Error e)
-    translate InputEvent.NoInput =
-      sleep interval *> recurse
-    translate (InputEvent.Unexpected _) =
-      recurse
+  PromptInput \ quit -> do
+    let
+      run =
+        check =<< Stream.fromEffect (getChar quit)
+      check = \case
+        InputEvent.Character a ->
+          Stream.cons (PromptInputEvent.Character a) run
+        InputEvent.Interrupt ->
+          Stream.fromPure PromptInputEvent.Interrupt
+        InputEvent.Error e ->
+          Stream.fromPure (PromptInputEvent.Error e)
+        InputEvent.NoInput ->
+          Stream.before (sleep interval) run
+        InputEvent.Unexpected _ ->
+          run
+    run
 
 promptFragment :: Text -> Text -> [Text]
 promptFragment hl text =
@@ -89,7 +88,7 @@ nvimRenderPrompt ::
   MonadDeepError e DecodeError m =>
   Prompt ->
   m ()
-nvimRenderPrompt (Prompt cursor _ text _) =
+nvimRenderPrompt (Prompt cursor _ (PromptText text)) =
   void $ atomic calls
   where
     calls = syncRpcCall . ApiData.vimCommand <$> ("silent! redraw!" : (fragments >>= uncurry promptFragment))
@@ -115,48 +114,6 @@ loopVarName :: Text
 loopVarName =
   "ribosome_menu_looping"
 
-defineLoopFunction ::
-  NvimE e m =>
-  m ()
-defineLoopFunction =
-  defineFunction loopFunctionName [] lns
-  where
-    lns =
-      [
-        "echo ''",
-        "while g:" <> loopVarName,
-        "try",
-        "sleep 5m",
-        "catch /^Vim:Interrupt$/",
-        "silent! call feedkeys('" <> Text.singleton quitChar <> "')",
-        "endtry",
-        "endwhile"
-        ]
-
-startLoop ::
-  NvimE e m =>
-  m ()
-startLoop = do
-  defineLoopFunction
-  setVar loopVarName True
-  vimCommand $ "call feedkeys(\":call " <> loopFunctionName <> "()\\<cr>\")"
-
--- FIXME need to wait for the loop to stop before deleting the function
-killLoop ::
-  NvimE e m =>
-  m ()
-killLoop = do
-  setVar loopVarName False
-  ignoreError @RpcError $ vimCommand $ "delfunction! " <> loopFunctionName
-
-promptBlocker ::
-  NvimE e m =>
-  MonadBaseControl IO m =>
-  m a ->
-  m a
-promptBlocker =
-  bracket_ startLoop killLoop
-
 newtype NvimPromptResources =
   NvimPromptResources {
     _guicursor :: Text
@@ -172,21 +129,22 @@ nvimAcquire = do
   res <- NvimPromptResources <$> vimGetOption "guicursor"
   vimSetOption "guicursor" (toMsgpack ("a:hor20" :: Text))
   () <- vimCallFunction "inputsave" []
-  startLoop
-  return res
+  pure res
 
 nvimRelease ::
+  MonadIO m =>
   NvimE e m =>
   NvimPromptResources ->
   m ()
 nvimRelease (NvimPromptResources gc) = do
+  nvimInput "<esc>"
   vimSetOption "guicursor" (toMsgpack gc)
   redraw
   vimCommand "echon ''"
-  () <- vimCallFunction "inputrestore" []
-  killLoop
+  vimCallFunction "inputrestore" []
 
 nvimPromptRenderer ::
+  MonadIO m =>
   NvimE e m =>
   MonadDeepError e DecodeError m =>
   PromptRenderer m

@@ -1,29 +1,41 @@
 module Ribosome.Menu.Data.MenuAction where
 
-import qualified Text.Show as Show (show)
+import Text.Show (showParen, showString, showsPrec)
 
-import Ribosome.Menu.Data.MenuEvent (QuitReason)
+import qualified Ribosome.Menu.Data.MenuResult as MenuResult
+import Ribosome.Menu.Data.MenuResult (MenuResult)
 import Ribosome.Menu.Prompt.Data.Prompt (Prompt)
 
 data MenuAction m a =
-  Quit (QuitReason m a)
-  |
   Continue
   |
-  Execute (m ())
-  |
-  Render Bool
+  Render
   |
   UpdatePrompt Prompt
+  |
+  Quit (m (MenuResult a))
+  deriving stock (Functor)
 
 instance Show (MenuAction m a) where
-  show (Quit r) =
-    "Quit(" <> show r <> ")"
-  show Continue =
-    "Continue"
-  show (Execute _) =
-    "Execute"
-  show (Render changed) =
-    "Render(" <> show changed <> ")"
-  show (UpdatePrompt prompt) =
-    "UpdatePrompt(" <> show prompt <> ")"
+  showsPrec d = \case
+    Continue ->
+      showString "Continue"
+    Render ->
+      showString "Render"
+    UpdatePrompt prompt ->
+      showParen (d > 10) [exon|UpdatePrompt #{showsPrec 11 prompt}|]
+    Quit _ ->
+      showString "Quit"
+
+success ::
+  Applicative m =>
+  m a ->
+  MenuAction m a
+success =
+  Quit . fmap MenuResult.Success
+
+abort ::
+  Applicative m =>
+  MenuAction m a
+abort =
+  Quit (pure MenuResult.Aborted)

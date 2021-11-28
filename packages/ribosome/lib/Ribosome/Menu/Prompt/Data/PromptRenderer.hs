@@ -4,7 +4,7 @@ import Ribosome.Menu.Prompt.Data.Prompt (Prompt)
 
 data PromptRenderer m =
   ∀ a. PromptRenderer {
-    _acquire :: m a,
-    _release :: a -> m (),
-    _render :: Prompt -> m ()
+    acquire :: m a,
+    release :: a -> m (),
+    render :: Prompt -> m ()
   }

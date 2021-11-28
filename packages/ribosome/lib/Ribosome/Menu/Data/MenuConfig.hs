@@ -4,16 +4,17 @@ import Streamly.Prelude (SerialT)
 
 import Ribosome.Menu.Data.MenuConsumer (MenuConsumer)
 import Ribosome.Menu.Data.MenuItem (MenuItem)
-import Ribosome.Menu.Data.MenuRenderEvent (MenuRenderEvent)
+import Ribosome.Menu.Data.MenuItemFilter (MenuItemFilter)
+import Ribosome.Menu.Data.MenuRenderer (MenuRenderer)
 import Ribosome.Menu.Prompt.Data.PromptConfig (PromptConfig)
 
-data MenuConfig m a i =
+data MenuConfig m i a =
   MenuConfig {
-    _items :: SerialT m [MenuItem i],
-    _handle :: MenuConsumer m a i,
-    _render :: MenuRenderEvent m a i -> m (),
-    _prompt :: PromptConfig m,
-    _maxItems :: Maybe Int
+    _items :: SerialT m (MenuItem i),
+    _itemFilter :: MenuItemFilter i,
+    _consumer :: MenuConsumer m i a,
+    _render :: MenuRenderer m i,
+    _prompt :: PromptConfig m
   }
 
 makeClassy ''MenuConfig

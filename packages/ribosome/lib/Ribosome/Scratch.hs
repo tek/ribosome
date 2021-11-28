@@ -13,7 +13,7 @@ import Ribosome.Api.Window (closeWindow)
 import Ribosome.Control.Monad.Ribo (MonadRibo, NvimE, pluginInternalL, pluginInternalModify, pluginName)
 import Ribosome.Control.Ribosome (RibosomeInternal)
 import qualified Ribosome.Control.Ribosome as Ribosome (scratch)
-import Ribosome.Data.FloatOptions (FloatOptions)
+import Ribosome.Data.FloatOptions (FloatOptions, enter)
 import Ribosome.Data.Scratch (Scratch (Scratch))
 import qualified Ribosome.Data.Scratch as Scratch (Scratch (scratchBuffer, scratchPrevious, scratchWindow))
 import Ribosome.Data.ScratchOptions (ScratchOptions (ScratchOptions))
@@ -74,14 +74,23 @@ floatConfig ::
 floatConfig =
   fromRight Map.empty . fromMsgpack . toMsgpack
 
+createFloatWith ::
+  NvimE e m =>
+  Bool ->
+  Bool ->
+  FloatOptions ->
+  m (Buffer, Window)
+createFloatWith listed scratch options = do
+  buffer <- nvimCreateBuf listed scratch
+  window <- nvimOpenWin buffer (enter options) (floatConfig options)
+  return (buffer, window)
+
 createFloat ::
   NvimE e m =>
   FloatOptions ->
   m (Buffer, Window)
-createFloat options = do
-  buffer <- nvimCreateBuf True True
-  window <- nvimOpenWin buffer True (floatConfig options)
-  return (buffer, window)
+createFloat =
+  createFloatWith True True
 
 createScratchWindow ::
   NvimE e m =>
@@ -99,6 +108,7 @@ createScratchWindow vertical wrap bottom float size = do
   windowSetOption win "colorcolumn" (toMsgpack ("" :: Text))
   windowSetOption win "foldmethod" (toMsgpack ("manual" :: Text))
   windowSetOption win "conceallevel" (toMsgpack (2 :: Int))
+  windowSetOption win "concealcursor" (toMsgpack ("nvic" :: Text))
   return (buffer, win)
   where
     createWindow =

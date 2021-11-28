@@ -1,47 +1,48 @@
 module Ribosome.Menu.Data.Menu where
 
-import Control.Lens (Optic', to)
 import Data.DeepLenses (DeepLenses (..))
+import Data.Trie (Trie)
+import Prelude hiding (state)
 
-import Ribosome.Menu.Data.FilteredMenuItem (FilteredMenuItem)
-import Ribosome.Menu.Data.MenuItem (MenuItem)
+import Ribosome.Menu.Data.CursorIndex (CursorIndex)
+import Ribosome.Menu.Data.Entry (Entries)
+import Ribosome.Menu.Data.MenuData (
+  HasMenuCursor (menuCursor),
+  HasMenuItems (menuItems),
+  MenuCursor (MenuCursor),
+  MenuItems (MenuItems),
+  MenuQuery,
+  )
+import Ribosome.Menu.Data.MenuItem (Items)
+import qualified Ribosome.Menu.Prompt.Data.Prompt as Prompt
+import Ribosome.Menu.Prompt.Data.Prompt (HasPrompt, Prompt)
 
-newtype MenuFilter =
-  MenuFilter Text
-  deriving stock (Eq, Show)
-
-instance Default MenuFilter where
-  def = MenuFilter ""
-
-data Menu a =
+data Menu i =
   Menu {
-    _items :: [MenuItem a],
-    _filtered :: Maybe [FilteredMenuItem a],
-    _history :: [[FilteredMenuItem a]],
-    _selected :: Int,
-    _marked :: [Int],
-    _currentQuery :: MenuFilter,
-    _maxItems :: Maybe Int
+    _items :: MenuItems i,
+    _cursor :: MenuCursor,
+    _prompt :: Prompt
   }
   deriving stock (Eq, Show, Generic)
   deriving anyclass (Default)
 
 makeClassy ''Menu
 
-instance DeepLenses (Menu a) (Menu a) where
+instance DeepLenses (Menu i) (Menu i) where
   deepLens = id
 
-push ::
-  [FilteredMenuItem a] ->
-  Menu a ->
-  Menu a
-push new m =
-  m { _filtered = Just new, _history = foldMap pure (_filtered m) ++ _history m }
+instance HasMenuItems (Menu i) i where
+  menuItems =
+    items
 
-current :: Contravariant f => Optic' (->) f (Menu a) [FilteredMenuItem a]
-current =
-  to (fold . _filtered)
+instance HasMenuCursor (Menu i) where
+  menuCursor =
+    cursor
 
-numVisible :: Menu a -> Int
-numVisible =
-  maybe 0 length . _filtered
+instance HasPrompt (Menu i) where
+  prompt =
+    prompt
+
+consMenu :: Items i -> Entries i -> Trie (Entries i) -> Int -> MenuQuery -> Bool -> CursorIndex -> Prompt -> Menu i
+consMenu it en hist cnt curr dir curs =
+  Menu (MenuItems it en hist cnt curr dir) (MenuCursor curs)

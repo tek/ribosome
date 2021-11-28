@@ -1,111 +1,127 @@
 module Ribosome.Menu.Action where
 
-import Ribosome.Data.List (indexesComplement)
-import qualified Ribosome.Menu.Data.Menu as Menu
-import Ribosome.Menu.Data.Menu (Menu (Menu), current)
-import Ribosome.Menu.Data.MenuConsumerAction (MenuConsumerAction)
-import qualified Ribosome.Menu.Data.MenuConsumerAction as MenuConsumerAction (MenuConsumerAction (..))
+import Control.Lens (to, use, (%=))
+
+import Ribosome.Menu.Combinators (numVisible, overEntries)
+import Ribosome.Menu.Data.CursorIndex (CursorIndex (CursorIndex))
+import qualified Ribosome.Menu.Data.Entry as Entry
+import qualified Ribosome.Menu.Data.MenuAction as MenuAction
+import Ribosome.Menu.Data.MenuAction (MenuAction)
+import Ribosome.Menu.Data.MenuConsumer (MenuWidget)
+import Ribosome.Menu.Data.MenuData (cursor, entries)
+import Ribosome.Menu.Data.MenuState (MenuM, menuRead, menuWrite)
 import Ribosome.Menu.Prompt.Data.Prompt (Prompt)
 
-menuContinue ::
+act ::
   Applicative m =>
-  Menu i ->
-  m (MenuConsumerAction m a, Menu i)
-menuContinue =
-  pure . (MenuConsumerAction.Continue,)
+  MenuAction m1 a ->
+  m (Maybe (MenuAction m1 a))
+act =
+  pure . Just
 
-menuExecute ::
+menuIgnore ::
   Applicative m =>
-  m () ->
-  Menu i ->
-  m (MenuConsumerAction m a, Menu i)
-menuExecute thunk =
-  pure . (MenuConsumerAction.Execute thunk,)
+  m (Maybe (MenuAction m1 a))
+menuIgnore =
+  pure Nothing
+
+menuOk ::
+  Applicative m =>
+  m (Maybe (MenuAction m1 a))
+menuOk =
+  pure (Just MenuAction.Continue)
 
 menuRender ::
   Applicative m =>
-  Bool ->
-  Menu i ->
-  m (MenuConsumerAction m a, Menu i)
-menuRender changed =
-  pure . (MenuConsumerAction.Render changed,)
+  m (Maybe (MenuAction m1 a))
+menuRender =
+  act MenuAction.Render
 
 menuQuit ::
   Applicative m =>
-  Menu i ->
-  m (MenuConsumerAction m a, Menu i)
+  Applicative m1 =>
+  m (Maybe (MenuAction m1 a))
 menuQuit =
-  pure . (MenuConsumerAction.Quit,)
+  act MenuAction.abort
 
-menuQuitWith ::
+menuSuccess ::
   Applicative m =>
-  m a ->
-  Menu i ->
-  m (MenuConsumerAction m a, Menu i)
-menuQuitWith next =
-  pure . (MenuConsumerAction.QuitWith next,)
+  Applicative m1 =>
+  m1 a ->
+  m (Maybe (MenuAction m1 a))
+menuSuccess ma =
+  act (MenuAction.success ma)
 
-menuReturn ::
+menuResult ::
   Applicative m =>
+  Applicative m1 =>
   a ->
-  Menu i ->
-  m (MenuConsumerAction m a, Menu i)
-menuReturn a =
-  pure . (MenuConsumerAction.Return a,)
+  m (Maybe (MenuAction m1 a))
+menuResult =
+  menuSuccess . pure
 
-menuFilter ::
-  Applicative m =>
-  Menu i ->
-  m (MenuConsumerAction m a, Menu i)
-menuFilter =
-  pure . (MenuConsumerAction.Filter,)
-
-menuCycle ::
+cycleMenu ::
   Monad m =>
   Int ->
-  Menu i ->
-  Prompt ->
-  m (MenuConsumerAction m a, Menu i)
-menuCycle offset m _ =
-  menuRender False (m & Menu.selected %~ add)
-  where
-    add currentCount =
-      if count == 0 then 0 else (currentCount + offset) `mod` count
-    count =
-      maybe id min (m ^. Menu.maxItems) (length (m ^. current))
+  MenuM m i ()
+cycleMenu offset = do
+  count <- use (to numVisible)
+  cursor %= \ currentCount -> if count == 0 then 0 else (currentCount + fromIntegral offset) `mod` fromIntegral count
+
+menuModify ::
+  MonadIO m =>
+  MonadBaseControl IO m =>
+  MenuM m i () ->
+  MenuWidget m i a
+menuModify action = do
+  menuWrite action
+  menuRender
+
+menuNavigate ::
+  MonadIO m =>
+  MonadBaseControl IO m =>
+  MenuM m i () ->
+  MenuWidget m i a
+menuNavigate action = do
+  menuRead action
+  menuRender
+
+menuCycle ::
+  MonadIO m =>
+  MonadBaseControl IO m =>
+  Int ->
+  MenuWidget m i a
+menuCycle offset =
+  menuNavigate (cycleMenu offset)
+
+toggleSelected ::
+  Monad m =>
+  MenuM m i ()
+toggleSelected = do
+  CursorIndex cur <- use cursor
+  entries %= overEntries \ index ->
+    if index == cur
+    then Entry.selected %~ not
+    else id
+  cycleMenu 1
 
 menuToggle ::
-  Monad m =>
-  Menu i ->
-  Prompt ->
-  m (MenuConsumerAction m a, Menu i)
-menuToggle m@(Menu _ _ _ selected marked _ _) prompt =
-  menuRender True . snd =<< menuCycle 1 newMenu prompt
-  where
-    newMenu =
-      m & Menu.marked .~ newMarked
-    newMarked =
-      if length removed == length marked then selected : marked else removed
-    removed =
-      filter (selected /=) marked
+  MonadIO m =>
+  MonadBaseControl IO m =>
+  MenuWidget m i a
+menuToggle =
+  menuModify toggleSelected
 
 menuToggleAll ::
-  Monad m =>
-  Menu i ->
-  Prompt ->
-  m (MenuConsumerAction m a, Menu i)
-menuToggleAll m@(Menu _ (Just filtered) _ _ marked _ _) _ =
-  menuRender True newMenu
-  where
-    newMenu =
-      m & Menu.marked .~ indexesComplement (length filtered) marked
-menuToggleAll m _ =
-  menuContinue m
+  MonadIO m =>
+  MonadBaseControl IO m =>
+  MenuWidget m i a
+menuToggleAll =
+  menuModify $ entries %= overEntries (const (Entry.selected %~ not))
 
 menuUpdatePrompt ::
-  Applicative m =>
+  Monad (t m) =>
   Prompt ->
-  Menu i ->
-  m (MenuConsumerAction m a, Menu i)
+  t m (Maybe (MenuAction m a))
 menuUpdatePrompt prompt =
-  pure . (MenuConsumerAction.UpdatePrompt prompt,)
+  act (MenuAction.UpdatePrompt prompt)

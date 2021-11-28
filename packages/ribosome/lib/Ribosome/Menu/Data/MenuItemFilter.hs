@@ -1,7 +1,12 @@
 module Ribosome.Menu.Data.MenuItemFilter where
 
-import Ribosome.Menu.Data.FilteredMenuItem (FilteredMenuItem)
-import Ribosome.Menu.Data.MenuItem (MenuItem)
+import Ribosome.Menu.Data.Entry (Entries, Entry)
+import Ribosome.Menu.Data.MenuItem (Items, MenuItem)
+import Ribosome.Menu.Data.MenuData (MenuQuery)
 
-newtype MenuItemFilter a =
-  MenuItemFilter (Text -> [MenuItem a] -> [FilteredMenuItem a])
+data MenuItemFilter a =
+  MenuItemFilter {
+    match :: Text -> Int -> MenuItem a -> Maybe (Int, Entry a),
+    initial :: MenuQuery -> Items a -> Entries a,
+    refine :: MenuQuery -> Entries a -> Entries a
+  }

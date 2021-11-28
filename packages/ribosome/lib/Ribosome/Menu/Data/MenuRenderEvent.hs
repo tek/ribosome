@@ -1,10 +1,7 @@
 module Ribosome.Menu.Data.MenuRenderEvent where
 
-import Ribosome.Menu.Data.Menu (Menu)
-import Ribosome.Menu.Data.MenuEvent (QuitReason)
-
-data MenuRenderEvent m a i =
-  Render Bool (Menu i)
+data MenuRenderEvent =
+  Render
   |
-  Quit (QuitReason m a)
+  Quit
   deriving stock (Show)

@@ -4,8 +4,4 @@ data PromptState =
   Insert
   |
   Normal
-  |
-  Quit
   deriving stock (Eq, Show)
-
-deepLenses ''PromptState

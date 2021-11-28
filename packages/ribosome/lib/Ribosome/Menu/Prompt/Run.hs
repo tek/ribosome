@@ -1,30 +1,44 @@
 module Ribosome.Menu.Prompt.Run where
 
+import Control.Concurrent.Lifted (modifyMVar)
 import Control.Concurrent.STM.TMChan (TMChan, closeTMChan, newTMChan)
-import Control.Monad.Catch (MonadCatch)
+import Control.Monad.Catch (MonadCatch, MonadThrow)
 import qualified Data.Text as Text (drop, dropEnd, isPrefixOf, length, splitAt)
 import Prelude hiding (state)
+import Relude.Extra (dup)
 import qualified Streamly.Data.Fold as Fold
-import qualified Streamly.Internal.Data.Stream.IsStream as Streamly
-import Streamly.Prelude (SerialT, parallel)
+import qualified Streamly.Internal.Data.Stream.IsStream as Stream
+import Streamly.Prelude (SerialT)
 
 import Ribosome.Control.Monad.Ribo (MonadRibo)
-import Ribosome.Data.Stream (chanStream)
+import Ribosome.Data.Stream (chanStream, takeUntilNothing)
 import Ribosome.Log (logDebug)
 import Ribosome.Menu.Prompt.Data.CursorUpdate (CursorUpdate)
 import qualified Ribosome.Menu.Prompt.Data.CursorUpdate as CursorUpdate (CursorUpdate (..))
-import Ribosome.Menu.Prompt.Data.Prompt (Prompt (Prompt), PromptChange (PromptAppend, PromptRandom, PromptUnappend))
-import Ribosome.Menu.Prompt.Data.PromptConfig (PromptConfig (PromptConfig), PromptFlag, onlyInsert, startInsert)
-import Ribosome.Menu.Prompt.Data.PromptConsumed (PromptConsumed)
-import qualified Ribosome.Menu.Prompt.Data.PromptConsumed as PromptConsumed (PromptConsumed (..))
-import qualified Ribosome.Menu.Prompt.Data.PromptConsumerUpdate as PromptConsumerUpdate
-import Ribosome.Menu.Prompt.Data.PromptConsumerUpdate (PromptConsumerUpdate (PromptConsumerUpdate))
+import qualified Ribosome.Menu.Prompt.Data.Prompt as Prompt
+import Ribosome.Menu.Prompt.Data.Prompt (
+  Prompt (Prompt),
+  PromptChange (PromptAppend, PromptRandom, PromptUnappend),
+  PromptText (PromptText),
+  )
+import qualified Ribosome.Menu.Prompt.Data.PromptConfig as PromptConfig
+import Ribosome.Menu.Prompt.Data.PromptConfig (
+  PromptConfig (PromptConfig),
+  PromptEventHandler (PromptEventHandler),
+  PromptInput (PromptInput),
+  startInsert,
+  )
+import qualified Ribosome.Menu.Prompt.Data.PromptControlEvent as PromptControlEvent
+import Ribosome.Menu.Prompt.Data.PromptControlEvent (PromptControlEvent)
+import qualified Ribosome.Menu.Prompt.Data.PromptEvent as PromptEvent
 import Ribosome.Menu.Prompt.Data.PromptEvent (PromptEvent)
-import qualified Ribosome.Menu.Prompt.Data.PromptEvent as PromptEvent (PromptEvent (..))
-import Ribosome.Menu.Prompt.Data.PromptRenderer (PromptRenderer (PromptRenderer))
+import Ribosome.Menu.Prompt.Data.PromptInputEvent (PromptInputEvent)
+import qualified Ribosome.Menu.Prompt.Data.PromptInputEvent as PromptInputEvent (PromptInputEvent (..))
+import Ribosome.Menu.Prompt.Data.PromptRenderer (PromptRenderer (PromptRenderer), render)
 import Ribosome.Menu.Prompt.Data.PromptState (PromptState)
 import qualified Ribosome.Menu.Prompt.Data.PromptState as PromptState (PromptState (..))
-import Ribosome.Menu.Prompt.Data.PromptUpdate (PromptUpdate (PromptUpdate))
+import qualified Ribosome.Menu.Prompt.Data.PromptUpdate as PromptUpdate
+import Ribosome.Menu.Prompt.Data.PromptUpdate (PromptUpdate)
 import Ribosome.Menu.Prompt.Data.TextUpdate (TextUpdate)
 import qualified Ribosome.Menu.Prompt.Data.TextUpdate as TextUpdate (TextUpdate (..))
 
@@ -65,7 +79,8 @@ updateText cursor text =
       pre <> Text.drop 1 post
     update (TextUpdate.Set newText) =
       newText
-    (pre, post) = Text.splitAt cursor text
+    (pre, post) =
+      Text.splitAt cursor text
 
 updateLastChange ::
   Text ->
@@ -78,147 +93,123 @@ updateLastChange old new =
   then PromptUnappend
   else PromptRandom
 
-updatePrompt ::
-  Monad m =>
-  (PromptEvent -> PromptState -> m PromptUpdate) ->
-  PromptEvent ->
-  Prompt ->
-  m (PromptConsumed, Prompt)
-updatePrompt modes update (Prompt cursor state text _) = do
-  (PromptUpdate newState cursorUpdate textUpdate consumed) <- modes update state
-  let
+modifyPrompt :: PromptState -> CursorUpdate -> TextUpdate -> Prompt -> Prompt
+modifyPrompt newState cursorUpdate textUpdate (Prompt cursor _ (PromptText text)) =
+  Prompt updatedCursor newState (PromptText updatedText)
+  where
+    updatedCursor =
+      updateCursor cursor updatedText cursorUpdate
     updatedText =
       updateText cursor text textUpdate
-    newPrompt =
-      Prompt (updateCursor cursor updatedText cursorUpdate) newState updatedText (updateLastChange text updatedText)
-  pure (consumed, newPrompt)
+
+modifyEvent ::
+  TextUpdate ->
+  PromptEvent
+modifyEvent = \case
+  TextUpdate.Unmodified ->
+    PromptEvent.Navigation
+  _ ->
+    PromptEvent.Edit
+
+ignoreEvent :: PromptInputEvent -> PromptEvent
+ignoreEvent = \case
+  PromptInputEvent.Init ->
+    PromptEvent.Init
+  PromptInputEvent.Character c ->
+    PromptEvent.Mapping c
+  PromptInputEvent.Error err ->
+    PromptEvent.Error err
+  PromptInputEvent.Interrupt ->
+    PromptEvent.Quit
+
+updatePrompt ::
+  Monad m =>
+  (PromptInputEvent -> PromptState -> m PromptUpdate) ->
+  PromptInputEvent ->
+  Prompt ->
+  m (Maybe (Prompt, PromptEvent))
+updatePrompt handleEvent input prompt = do
+  handleEvent input (prompt ^. Prompt.state) <&> \case
+    PromptUpdate.Modify newState cursorUpdate textUpdate -> do
+      Just (modifyPrompt newState cursorUpdate textUpdate prompt, modifyEvent textUpdate)
+    PromptUpdate.Ignore ->
+      Just (prompt, ignoreEvent input)
+    PromptUpdate.Quit ->
+      Nothing
+
+updatePromptState ::
+  Monad m =>
+  MonadRibo m =>
+  (PromptInputEvent -> PromptState -> m PromptUpdate) ->
+  PromptInputEvent ->
+  Prompt ->
+  m (Prompt, Maybe (Prompt, PromptEvent))
+updatePromptState handleEvent input old = do
+  logDebug @Text [exon|prompt input event: #{show input}|]
+  updatePrompt handleEvent input old <&> \case
+    Just (new, output) ->
+      (new, Just (new, output))
+    Nothing ->
+      (old, Nothing)
 
 processPromptEvent ::
-  MonadIO m =>
   MonadRibo m =>
-  PromptConfig m ->
-  PromptEvent ->
-  StateT Prompt m PromptConsumerUpdate
-processPromptEvent (PromptConfig _ modes _ flags) event = do
-  logDebug @Text $ "prompt event: " <> show event
-  consumed <- stateM $ lift . updatePrompt (modes flags) event
-  newPrompt <- get
-  pure (PromptConsumerUpdate event newPrompt consumed)
-  -- lift . lift . render $ newPrompt
+  MonadBaseControl IO m =>
+  MVar Prompt ->
+  PromptEventHandler m ->
+  Either PromptControlEvent PromptInputEvent ->
+  m (Maybe (Prompt, PromptEvent))
+processPromptEvent prompt (PromptEventHandler handleEvent) = \case
+  Right event ->
+    modifyMVar prompt (updatePromptState handleEvent event)
+  Left PromptControlEvent.Quit ->
+    pure Nothing
+  Left (PromptControlEvent.Set (Prompt cursor state (PromptText text))) -> do
+    newPrompt <- modifyMVar prompt (pure . dup . modifyPrompt state (CursorUpdate.Index cursor) (TextUpdate.Set text))
+    pure(Just (newPrompt, PromptEvent.Edit))
 
-promptWithBackchannel ::
+promptWithControl ::
   MonadRibo m =>
   MonadCatch m =>
   MonadBaseControl IO m =>
+  MVar Prompt ->
   PromptConfig m ->
-  TMChan PromptEvent ->
-  SerialT m PromptConsumerUpdate
-promptWithBackchannel config@(PromptConfig source _ (PromptRenderer _ _ render) _) backchannel =
-  Streamly.tapAsync (Fold.drainBy (render . PromptConsumerUpdate._prompt)) $
-  process $
-  Streamly.liftInner $
-  parallel sourceWithInit (chanStream backchannel)
+  SerialT m PromptControlEvent ->
+  MVar () ->
+  SerialT m (Prompt, PromptEvent)
+promptWithControl prompt (PromptConfig (PromptInput source) handler renderer flags) control listenQuit =
+  Stream.tapAsync (Fold.drainBy (render renderer . fst)) $
+  takeUntilNothing $
+  Stream.mapM (processPromptEvent prompt (handler flags)) $
+  Stream.parallelMin (Left <$> control) (Right <$> sourceWithInit)
   where
     sourceWithInit =
-      Streamly.finally (atomically (closeTMChan backchannel)) (Streamly.cons PromptEvent.Init source)
-    process =
-      Streamly.evalStateT (pure (pristinePrompt (startInsert config))) . Streamly.mapM (processPromptEvent config)
+      Stream.cons PromptInputEvent.Init (source listenQuit)
+
+controlChannel ::
+  MonadIO m =>
+  MonadThrow m =>
+  MonadBaseControl IO m =>
+  m (TMChan a, MVar (), m (), SerialT m a)
+controlChannel = do
+  listenQuit <- newEmptyMVar
+  chan <- atomically newTMChan
+  pure (chan, listenQuit, putMVar listenQuit () *> atomically (closeTMChan chan), chanStream chan)
 
 promptStream ::
   MonadRibo m =>
   MonadCatch m =>
   MonadBaseControl IO m =>
   PromptConfig m ->
-  m (TMChan PromptEvent, SerialT m PromptConsumerUpdate)
+  m (TMChan PromptControlEvent, SerialT m (Prompt, PromptEvent))
 promptStream config = do
-  chan <- atomically newTMChan
-  pure (chan, Streamly.finally (atomically (closeTMChan chan)) (promptWithBackchannel config chan))
-
-unprocessableChars :: [Text]
-unprocessableChars =
-  [
-    "cr",
-    "tab"
-    ]
-
-unprocessable :: Text -> Bool
-unprocessable char =
-  char `elem` unprocessableChars || Text.isPrefixOf "c-" char
-
-consumeUnmodified :: PromptState -> CursorUpdate -> PromptUpdate
-consumeUnmodified s u =
-  PromptUpdate s u TextUpdate.Unmodified PromptConsumed.Yes
-
-basicTransitionNormal ::
-  PromptEvent ->
-  PromptUpdate
-basicTransitionNormal (PromptEvent.Character "esc") =
-  consumeUnmodified PromptState.Quit CursorUpdate.Unmodified
-basicTransitionNormal (PromptEvent.Character "q") =
-  consumeUnmodified PromptState.Quit CursorUpdate.Unmodified
-basicTransitionNormal (PromptEvent.Character "i") =
-  consumeUnmodified PromptState.Insert CursorUpdate.Unmodified
-basicTransitionNormal (PromptEvent.Character "I") =
-  consumeUnmodified PromptState.Insert CursorUpdate.Prepend
-basicTransitionNormal (PromptEvent.Character "a") =
-  consumeUnmodified PromptState.Insert CursorUpdate.OneRight
-basicTransitionNormal (PromptEvent.Character "A") =
-  consumeUnmodified PromptState.Insert CursorUpdate.Append
-basicTransitionNormal (PromptEvent.Character "h") =
-  consumeUnmodified PromptState.Normal CursorUpdate.OneLeft
-basicTransitionNormal (PromptEvent.Character "l") =
-  consumeUnmodified PromptState.Normal CursorUpdate.OneRight
-basicTransitionNormal (PromptEvent.Character "x") =
-  PromptUpdate PromptState.Normal CursorUpdate.OneLeft TextUpdate.DeleteRight PromptConsumed.Yes
-basicTransitionNormal _ =
-  PromptUpdate PromptState.Normal CursorUpdate.Unmodified TextUpdate.Unmodified PromptConsumed.No
-
-basicTransitionInsert ::
-  [PromptFlag] ->
-  PromptEvent ->
-  PromptUpdate
-basicTransitionInsert flags =
-  trans
-  where
-    trans (PromptEvent.Character "esc") | onlyInsert flags =
-      PromptUpdate PromptState.Quit CursorUpdate.Unmodified TextUpdate.Unmodified PromptConsumed.Yes
-    trans (PromptEvent.Character "esc") =
-      normal
-    trans (PromptEvent.Character "c-n") =
-      normal
-    trans (PromptEvent.Character "bs") =
-      insert CursorUpdate.OneLeft TextUpdate.DeleteLeft PromptConsumed.Yes
-    trans (PromptEvent.Character c) | unprocessable c =
-      insert CursorUpdate.Unmodified TextUpdate.Unmodified PromptConsumed.No
-    trans (PromptEvent.Character "space") =
-      insert CursorUpdate.OneRight (TextUpdate.Insert " ") PromptConsumed.Yes
-    trans (PromptEvent.Character c) =
-      insert CursorUpdate.OneRight (TextUpdate.Insert c) PromptConsumed.Yes
-    trans _ =
-      insert CursorUpdate.Unmodified TextUpdate.Unmodified PromptConsumed.No
-    insert =
-      PromptUpdate PromptState.Insert
-    normal =
-      PromptUpdate PromptState.Normal CursorUpdate.OneLeft TextUpdate.Unmodified PromptConsumed.Yes
-
-basicTransition ::
-  Monad m =>
-  [PromptFlag] ->
-  PromptEvent ->
-  PromptState ->
-  m PromptUpdate
-basicTransition _ (PromptEvent.Set (Prompt cursor state text _)) _ =
-  pure $ PromptUpdate state (CursorUpdate.Index cursor) (TextUpdate.Set text) PromptConsumed.Yes
-basicTransition _ event PromptState.Normal =
-  pure $ basicTransitionNormal event
-basicTransition flags event PromptState.Insert =
-  pure $ basicTransitionInsert flags event
-basicTransition _ _ PromptState.Quit =
-  pure $ PromptUpdate PromptState.Quit CursorUpdate.Unmodified TextUpdate.Unmodified PromptConsumed.No
+  (chan, listenQuit, close, control) <- controlChannel
+  prompt <- newMVar (pristinePrompt (startInsert (config ^. PromptConfig.flags)))
+  pure (chan, Stream.finally close (promptWithControl prompt config control listenQuit))
 
 pristinePrompt :: Bool -> Prompt
 pristinePrompt insert =
-  Prompt 0 (if insert then PromptState.Insert else PromptState.Normal) "" PromptRandom
+  Prompt 0 (if insert then PromptState.Insert else PromptState.Normal) ""
 
 noPromptRenderer ::
   Applicative m =>

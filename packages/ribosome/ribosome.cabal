@@ -3,8 +3,6 @@ cabal-version: 2.2
 -- This file has been generated from package.yaml by hpack version 0.34.4.
 --
 -- see: https://github.com/sol/hpack
---
--- hash: f4d694dd501149ee8dde73a6e346201c1a86fff45ca8d64d89a96a454429252e
 
 name:           ribosome
 version:        0.4.0.0
@@ -62,7 +60,6 @@ library
       Ribosome.Data.Errors
       Ribosome.Data.FloatOptions
       Ribosome.Data.Foldable
-      Ribosome.Data.List
       Ribosome.Data.Mapping
       Ribosome.Data.PersistError
       Ribosome.Data.Register
@@ -86,21 +83,31 @@ library
       Ribosome.Log
       Ribosome.Mapping
       Ribosome.Menu.Action
-      Ribosome.Menu.BasicTransform
-      Ribosome.Menu.Data.BasicMenuAction
-      Ribosome.Menu.Data.FilteredMenuItem
+      Ribosome.Menu.Combinators
+      Ribosome.Menu.Consumer
+      Ribosome.Menu.Data.CursorIndex
+      Ribosome.Menu.Data.CursorLine
+      Ribosome.Menu.Data.Entry
       Ribosome.Menu.Data.Menu
       Ribosome.Menu.Data.MenuAction
       Ribosome.Menu.Data.MenuConfig
       Ribosome.Menu.Data.MenuConsumer
-      Ribosome.Menu.Data.MenuConsumerAction
-      Ribosome.Menu.Data.MenuConsumerUpdate
+      Ribosome.Menu.Data.MenuData
       Ribosome.Menu.Data.MenuEvent
       Ribosome.Menu.Data.MenuItem
       Ribosome.Menu.Data.MenuItemFilter
+      Ribosome.Menu.Data.MenuRenderer
       Ribosome.Menu.Data.MenuRenderEvent
       Ribosome.Menu.Data.MenuResult
-      Ribosome.Menu.Data.MenuUpdate
+      Ribosome.Menu.Data.MenuState
+      Ribosome.Menu.Data.MenuView
+      Ribosome.Menu.Data.NvimMenuState
+      Ribosome.Menu.Data.QuitReason
+      Ribosome.Menu.Filters
+      Ribosome.Menu.ItemLens
+      Ribosome.Menu.Items
+      Ribosome.Menu.Items.Read
+      Ribosome.Menu.Main
       Ribosome.Menu.Nvim
       Ribosome.Menu.Prompt
       Ribosome.Menu.Prompt.Data.Codes
@@ -109,16 +116,18 @@ library
       Ribosome.Menu.Prompt.Data.Prompt
       Ribosome.Menu.Prompt.Data.PromptConfig
       Ribosome.Menu.Prompt.Data.PromptConsumed
-      Ribosome.Menu.Prompt.Data.PromptConsumerUpdate
+      Ribosome.Menu.Prompt.Data.PromptControlEvent
       Ribosome.Menu.Prompt.Data.PromptEvent
+      Ribosome.Menu.Prompt.Data.PromptInputEvent
       Ribosome.Menu.Prompt.Data.PromptRenderer
       Ribosome.Menu.Prompt.Data.PromptState
       Ribosome.Menu.Prompt.Data.PromptUpdate
       Ribosome.Menu.Prompt.Data.TextUpdate
       Ribosome.Menu.Prompt.Nvim
       Ribosome.Menu.Prompt.Run
+      Ribosome.Menu.Prompt.Transition
       Ribosome.Menu.Run
-      Ribosome.Menu.Simple
+      Ribosome.Menu.UpdateState
       Ribosome.Msgpack.Decode
       Ribosome.Msgpack.Encode
       Ribosome.Msgpack.Error
@@ -141,7 +150,10 @@ library
       Ribosome.Plugin.TH.Handler
       Ribosome.Plugin.Watch
       Ribosome.Prelude
+      Ribosome.Prelude.Debug
       Ribosome.Scratch
+      Ribosome.Stream.Accumulate
+      Ribosome.Stream.ChunkAfter
       Ribosome.System.Time
       Ribosome.Tmux.Run
   other-modules:
@@ -209,11 +221,12 @@ library
       UndecidableInstances
       UnicodeSyntax
       ViewPatterns
-  ghc-options: -Wall -Wredundant-constraints -Wincomplete-uni-patterns -Wmissing-deriving-strategies -Widentities -Wunused-packages
+  ghc-options: -Wall -Wredundant-constraints -Wincomplete-uni-patterns -Wmissing-deriving-strategies -Widentities -Wunused-packages -threaded -rtsopts -with-rtsopts=-N
   build-depends:
       aeson
     , base ==4.*
     , bytestring
+    , bytestring-trie
     , chiasma
     , composition
     , composition-extra
@@ -224,12 +237,14 @@ library
     , directory
     , either
     , exceptions
+    , exon
     , filepath
     , free
     , fuzzyfind >=3
     , hourglass
     , hslogger
     , lens
+    , lifted-async
     , lifted-base
     , messagepack
     , monad-control
@@ -246,13 +261,9 @@ library
     , streamly >=0.8
     , template-haskell
     , text
-    , th-abstraction
     , time
     , transformers
     , transformers-base
-    , unix
-    , unliftio
-    , unliftio-core
     , utf8-string
   mixins:
       base hiding (Prelude)

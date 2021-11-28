@@ -5,16 +5,16 @@ module Ribosome.Control.Monad.Ribo where
 import Control.Exception.Lifted (onException)
 import Control.Lens (Lens')
 import qualified Control.Lens as Lens (mapMOf, over, view)
-import Control.Monad.Base (MonadBase(..))
+import Control.Monad.Base (MonadBase (..))
 import Control.Monad.Catch (MonadCatch, MonadMask, MonadThrow)
-import Control.Monad.Error.Class (MonadError(..))
+import Control.Monad.Error.Class (MonadError (..))
 import qualified Control.Monad.Reader as ReaderT
 import Control.Monad.Trans.Free (FreeT)
-import Control.Monad.Trans.Resource (MonadResource(..), runResourceT)
+import Control.Monad.Trans.Resource (MonadResource (..), runResourceT)
 import qualified Control.Monad.Trans.State.Strict as StateT (gets, modify)
-import Data.DeepLenses (DeepLenses(deepLens))
+import Data.DeepLenses (DeepLenses (deepLens))
 import Data.DeepPrisms (DeepPrisms)
-import Neovim.Context.Internal (Neovim(..))
+import Neovim.Context.Internal (Neovim (..))
 
 import Ribosome.Control.Ribosome (Ribosome, RibosomeInternal, RibosomeState)
 import qualified Ribosome.Control.Ribosome as Ribosome (_errors, errors, name, state)
@@ -23,9 +23,10 @@ import Ribosome.Control.StrictRibosome (StrictRibosome)
 import qualified Ribosome.Control.StrictRibosome as StrictRibosome (name, state)
 import Ribosome.Data.Errors (Errors)
 import Ribosome.Nvim.Api.RpcCall (Rpc, RpcError)
-import qualified Ribosome.Nvim.Api.RpcCall as Rpc (Rpc(..))
+import qualified Ribosome.Nvim.Api.RpcCall as Rpc (Rpc (..))
 import Ribosome.Orphans ()
-import Ribosome.Plugin.RpcHandler (RpcHandler(..))
+import Ribosome.Plugin.RpcHandler (RpcHandler (..))
+import qualified Control.Monad.Trans.State.Lazy as Lazy
 
 type RNeovim s = Neovim (Ribosome s)
 
@@ -114,6 +115,12 @@ class (Nvim m, MonadDeepError e RpcError m) => NvimE e m where
 instance DeepPrisms e RpcError => NvimE e (Ribo s e) where
 
 instance (DeepPrisms e RpcError, Nvim m, Monad m) => NvimE e (ExceptT e m) where
+
+instance (Nvim m, MonadDeepError e RpcError m) => NvimE e (ReaderT env m) where
+
+instance (Nvim m, MonadDeepError e RpcError m) => NvimE e (StateT env m) where
+
+instance (Nvim m, MonadDeepError e RpcError m) => NvimE e (Lazy.StateT env m) where
 
 instance (Functor f, MonadDeepError e RpcError m, Nvim m, Monad m) => NvimE e (FreeT f m) where
 

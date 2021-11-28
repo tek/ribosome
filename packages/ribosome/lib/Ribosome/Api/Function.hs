@@ -3,7 +3,7 @@ module Ribosome.Api.Function where
 import qualified Data.Text as Text (intercalate)
 
 import Ribosome.Control.Monad.Ribo (NvimE)
-import Ribosome.Nvim.Api.IO (vimCommand)
+import Ribosome.Nvim.Api.IO (nvimExec)
 
 defineFunction ::
   NvimE e m =>
@@ -12,7 +12,7 @@ defineFunction ::
   [Text] ->
   m ()
 defineFunction name params body =
-  vimCommand $ unlines $ sig : body ++ ["endfunction"]
+  void $ nvimExec (unlines (sig : body ++ ["endfunction"])) True
   where
     sig =
       "function! " <> name <> "(" <> Text.intercalate ", " params <> ")"

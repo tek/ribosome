@@ -13,7 +13,6 @@ library:
       mixin:
         - hiding (Ribosome.Prelude)
         - (Ribosome.Prelude as Prelude)
-    - aeson
     - bytestring
     - chiasma
     - containers
@@ -25,22 +24,17 @@ library:
     - free
     - hedgehog
     - hslogger
-    - lens
     - lifted-async
     - lifted-base
     - messagepack
     - monad-control
     - mtl
     - nvim-hs
-    - path
-    - prettyprinter
-    - prettyprinter-ansi-terminal
     - process
     - relude >= 0.7
     - resourcet
     - tasty
     - tasty-hedgehog
-    - template-haskell
     - text
     - transformers
     - typed-process
@@ -68,6 +62,7 @@ tests:
       - containers
       - cornea
       - either
+      - exceptions
       - hedgehog
       - hslogger
       - lens
@@ -81,3 +76,35 @@ tests:
       - streamly
       - tasty
       - template-haskell
+      - transformers
+
+benchmarks:
+  ribosome-bench:
+    main: Main.hs
+    source-dirs: benchmark
+    dependencies:
+      - name: ribosome
+        mixin:
+          - hiding (Ribosome.Prelude)
+          - (Ribosome.Prelude as Prelude)
+      - aeson
+      - chiasma
+      - containers
+      - cornea
+      - criterion
+      - either
+      - exceptions
+      - hedgehog
+      - hslogger
+      - lens
+      - lifted-base
+      - messagepack
+      - nvim-hs
+      - path
+      - prettyprinter
+      - prettyprinter-ansi-terminal
+      - ribosome-test
+      - streamly
+      - tasty
+      - template-haskell
+      - transformers

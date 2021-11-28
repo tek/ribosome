@@ -11,6 +11,7 @@ library:
   dependencies:
     - aeson
     - bytestring
+    - bytestring-trie
     - chiasma
     - composition
     - composition-extra
@@ -21,12 +22,14 @@ library:
     - directory
     - either
     - exceptions
+    - exon
     - filepath
     - free
     - fuzzyfind >= 3
     - hourglass
     - hslogger
     - lens
+    - lifted-async
     - lifted-base
     - messagepack
     - monad-control
@@ -43,13 +46,9 @@ library:
     - streamly >= 0.8
     - template-haskell
     - text
-    - th-abstraction
     - time
     - transformers
     - transformers-base
-    - unix
-    - unliftio
-    - unliftio-core
     - utf8-string
 
 extra-source-files:

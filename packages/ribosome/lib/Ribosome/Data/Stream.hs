@@ -3,8 +3,9 @@ module Ribosome.Data.Stream where
 import Control.Concurrent.STM.TMChan (TMChan, readTMChan)
 import Control.Monad.Catch (MonadThrow)
 import Relude.Unsafe (fromJust)
-import qualified Streamly.Prelude as Streamly
+import qualified Streamly.Prelude as Stream
 import Streamly.Prelude (IsStream)
+
 
 takeUntilNothing ::
   Monad m =>
@@ -12,7 +13,7 @@ takeUntilNothing ::
   t m (Maybe a) ->
   t m a
 takeUntilNothing s =
-  fromJust <$> Streamly.takeWhile isJust s
+  fromJust <$> Stream.takeWhile isJust s
 
 chanStream ::
   MonadIO m =>
@@ -22,4 +23,4 @@ chanStream ::
   TMChan a ->
   t m a
 chanStream chan =
-  takeUntilNothing (Streamly.repeatM (atomically (readTMChan chan)))
+  takeUntilNothing (Stream.repeatM (atomically (readTMChan chan)))

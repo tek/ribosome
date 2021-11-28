@@ -1,29 +1,31 @@
 module Ribosome.Menu.Nvim where
 
-import Control.Lens (view)
+import Control.Concurrent.Lifted (modifyMVar)
+import Control.Lens (use, view, views, (%=), (.=), (<.=))
+import qualified Data.IntMap.Strict as IntMap
 import qualified Data.Map as Map (fromList)
+import qualified Data.Sequence as Seq
 import qualified Data.Text as Text (cons, snoc)
 
-import Ribosome.Api.Window (redraw, restoreView, saveView, setLine)
+import Ribosome.Api.Window (redraw, restoreView, setLine)
 import Ribosome.Control.Monad.Ribo (MonadRibo, NvimE)
-import Ribosome.Data.List (mapSelectors)
 import Ribosome.Data.Scratch (Scratch (scratchWindow), scratchBuffer)
-import Ribosome.Data.ScratchOptions (ScratchOptions)
-import Ribosome.Data.Syntax (
-  HiLink (..),
-  Syntax (Syntax),
-  SyntaxItem (..),
-  syntaxMatch,
-  )
-import qualified Ribosome.Data.WindowView as WindowView (WindowView (..))
+import Ribosome.Data.ScratchOptions (ScratchOptions, maxSize)
+import Ribosome.Data.Syntax (HiLink (..), Syntax (Syntax), SyntaxItem (..), syntaxMatch)
 import Ribosome.Data.WindowView (PartialWindowView (PartialWindowView))
 import Ribosome.Log (logDebug)
-import qualified Ribosome.Menu.Data.FilteredMenuItem as FilteredMenuItem (item)
-import Ribosome.Menu.Data.Menu (Menu (Menu), current)
-import qualified Ribosome.Menu.Data.MenuItem as MenuItem (abbreviated)
-import Ribosome.Menu.Data.MenuRenderEvent (MenuRenderEvent)
+import Ribosome.Menu.Data.CursorIndex (CursorIndex (CursorIndex))
+import Ribosome.Menu.Data.Entry (Entries, Entry (Entry), index)
+import Ribosome.Menu.Data.Menu (Menu)
+import qualified Ribosome.Menu.Data.MenuData as Menu
+import Ribosome.Menu.Data.MenuData (entries)
+import Ribosome.Menu.Data.MenuItem (MenuItem (MenuItem))
 import qualified Ribosome.Menu.Data.MenuRenderEvent as MenuRenderEvent (MenuRenderEvent (..))
-import Ribosome.Nvim.Api.IO (nvimBufIsLoaded, nvimSetCurrentWin, nvimWinGetHeight)
+import Ribosome.Menu.Data.MenuRenderer (MenuRenderer (MenuRenderer))
+import Ribosome.Menu.Data.MenuView (MenuView (MenuView), botIndex, cursorLine, topIndex, menuView)
+import Ribosome.Menu.Data.NvimMenuState (NvimMenuState, cursorIndex, indexes)
+import Ribosome.Nvim.Api.IO (nvimBufIsLoaded, nvimWinGetHeight)
+import Ribosome.Nvim.Api.RpcCall (RpcError)
 import Ribosome.Scratch (killScratch, setScratchContent)
 
 marker :: Char
@@ -38,8 +40,8 @@ markerConceal =
     options = ["conceal"]
     params = Map.fromList [("nextgroup", "RibosomeMenuMarkedLine")]
 
-markedLine :: SyntaxItem
-markedLine =
+selectionLine :: SyntaxItem
+selectionLine =
   item { siOptions = options }
   where
     item = syntaxMatch "RibosomeMenuMarkedLine" ".*$"
@@ -51,51 +53,167 @@ hlMarkedLine =
 
 menuSyntax :: Syntax
 menuSyntax =
-  Syntax [markerConceal, markedLine] [] [hlMarkedLine]
+  Syntax [markerConceal, selectionLine] [] [hlMarkedLine]
 
-withMarks :: [Int] -> [Text] -> [Text]
-withMarks =
-  mapSelectors (Text.cons marker)
+withMark :: Entry i -> Text
+withMark (Entry (MenuItem _ _ text) _ sel) =
+  bool id (Text.cons marker) sel text
 
-renderNvimMenu ::
-  MonadRibo m =>
+entrySlice ::
+  Entries i ->
+  Int ->
+  Int ->
+  Seq (Entry i)
+entrySlice ents bot top =
+  fst (IntMap.foldr' f (Seq.empty, 0) ents)
+  where
+    f a (z, i) =
+      if
+        | i > top ->
+          (z, newI)
+        | i >= bot ->
+          (z <> Seq.take (top - i + 1) a, newI)
+        | newI >= bot ->
+          (z <> Seq.take (top - bot + 1) (Seq.drop (bot - i) a), newI)
+        | otherwise ->
+          (z, newI)
+      where
+        newI =
+          i  + length a
+
+newEntrySlice ::
+  MonadReader (Menu i) m =>
+  MonadState NvimMenuState m =>
+  m [Entry i]
+newEntrySlice = do
+  bot <- use botIndex
+  top <- use topIndex
+  ents <- view entries
+  pure (toList (entrySlice ents bot top))
+
+scrollDown ::
+  CursorIndex ->
+  Int ->
+  Int ->
+  MenuView
+scrollDown newCursor@(CursorIndex bot) winHeight count =
+  MenuView (min (bot + winHeight) count - 1) bot newCursor 0
+
+scrollUp ::
+  CursorIndex ->
+  Int ->
+  MenuView
+scrollUp newCursor@(CursorIndex top) winHeight =
+  MenuView top (max (top - winHeight + 1) 0) newCursor (fromIntegral winHeight - 1)
+
+moveCursorLine ::
+  CursorIndex ->
+  Int ->
+  Int ->
+  MenuView ->
+  MenuView
+moveCursorLine newCursor winHeight count (MenuView _ oldBot oldCursor oldCurLine) =
+  MenuView (min (oldBot + winHeight) count - 1) oldBot newCursor (oldCurLine + fromIntegral (newCursor - oldCursor))
+
+resetView ::
+  CursorIndex ->
+  Int ->
+  Int ->
+  MenuView
+resetView newCursor winHeight count =
+  MenuView (min winHeight count - 1) 0 newCursor 0
+
+computeView ::
+  CursorIndex ->
+  Int ->
+  Int ->
+  MenuView ->
+  MenuView
+computeView newCursor@(CursorIndex cur) maxHeight count nmenu@(MenuView _ oldBot _ _) =
+  if
+    | scrolledDown -> scrollDown newCursor maxHeight count
+    | scrolledUp -> scrollUp newCursor maxHeight
+    | otherwise -> moveCursorLine newCursor maxHeight count nmenu
+  where
+    scrolledUp =
+      relativeTop < cur
+    relativeTop =
+      newBot + maxHeight - 1
+    newBot =
+      min oldBot cur
+    scrolledDown =
+      oldBot > cur
+
+updateMenuState ::
+  MonadReader (Menu i) m =>
+  MonadState NvimMenuState m =>
+  Int ->
+  m ([Entry i], Bool)
+updateMenuState scratchMax = do
+  oldIndexes <- use indexes
+  newCursor <- view Menu.cursor
+  count <- views entries (getSum . foldMap (Sum . Seq.length))
+  menuView %= computeView newCursor (min count scratchMax) count
+  cursorIndex .= newCursor
+  visible <- newEntrySlice
+  newIndexes <- indexes <.= (view index <$> visible)
+  pure (visible, newIndexes /= oldIndexes)
+
+windowLine ::
+  MonadState NvimMenuState m =>
+  m Int
+windowLine = do
+  top <- use topIndex
+  bot <- use botIndex
+  curLine <- use cursorLine
+  pure (top - bot - fromIntegral curLine)
+
+updateMenu ::
   NvimE e m =>
+  MonadRibo m =>
   ScratchOptions ->
   Scratch ->
-  MenuRenderEvent m a i ->
-  m ()
-renderNvimMenu _ scratch (MenuRenderEvent.Quit _) =
-  killScratch scratch
-renderNvimMenu options scratch (MenuRenderEvent.Render changed menu@(Menu _ _ _ selected marked _ maxItems)) =
+  Int ->
+  StateT NvimMenuState (ReaderT (Menu i) m) ()
+updateMenu options scratch _ = do
+  (visible, changed) <- updateMenuState (fromMaybe 30 (options ^. maxSize))
+  when changed do
+    setScratchContent options scratch (reverse (toList (withMark <$> visible)))
+  restoreView (PartialWindowView Nothing (Just 1))
+  targetLine <- windowLine
+  catchAt @RpcError invalidCursor (setLine (scratchWindow scratch) targetLine)
+  unit
+  where
+    invalidCursor _ =
+      logDebug @Text "menu cursor line invalid"
+
+renderNvimMenu ::
+  ∀ i e m .
+  NvimE e m =>
+  MonadRibo m =>
+  ScratchOptions ->
+  Scratch ->
+  StateT NvimMenuState (ReaderT (Menu i) m) ()
+renderNvimMenu options scratch =
   whenM (nvimBufIsLoaded (scratchBuffer scratch)) do
-    when changed (setScratchContent options scratch (reverse text))
-    logDebug @Text logMsg
-    updateCursor
-    nvimSetCurrentWin win
-    height <- nvimWinGetHeight win
-    adjustTopline height
+    updateMenu options scratch =<< nvimWinGetHeight (scratchWindow scratch)
+    -- logDebug @Text logMsg
     redraw
   where
-    lineNumber =
-      max 0 $ length items - selected - 1
-    text =
-      withMarks marked (view (FilteredMenuItem.item . MenuItem.abbreviated) <$> items)
-    items =
-      limit (menu ^. current)
-    limit =
-      maybe id take maxItems
-    updateCursor =
-      setLine win lineNumber
-    win =
-      scratchWindow scratch
-    logMsg =
-      "updating menu cursor to line " <> show lineNumber <> "; " <> show selected <> "/" <> show (length items)
-    adjustTopline height = do
-      when (lineNumber > lastTopline) do
-        topline <- WindowView.topline <$> saveView
-        when (topline - 1 > lastTopline) do
-          restoreView (PartialWindowView Nothing (Just (lastTopline + 1)))
-          updateCursor
-      where
-        lastTopline =
-          length items - height
+    -- logMsg =
+    --   [exon|menu cursor to #{show lineNumber}; #{show (menu ^. cursor)}/#{show (length items)}|]
+
+nvimMenuRenderer ::
+  NvimE e m =>
+  MonadRibo m =>
+  MonadBaseControl IO m =>
+  ScratchOptions ->
+  Scratch ->
+  m (MenuRenderer m i)
+nvimMenuRenderer options scratch = do
+  nvimState <- newMVar def
+  pure $ MenuRenderer \case
+    MenuRenderEvent.Render ->
+      modifyMVar nvimState (fmap swap . runStateT (renderNvimMenu options scratch))
+    MenuRenderEvent.Quit ->
+      killScratch scratch

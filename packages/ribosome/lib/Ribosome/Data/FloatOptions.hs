@@ -3,6 +3,7 @@ module Ribosome.Data.FloatOptions where
 import qualified Data.Map as Map
 
 import Ribosome.Msgpack.Encode (MsgpackEncode (toMsgpack))
+import Data.MessagePack (Object)
 
 data FloatRelative =
   Editor
@@ -69,6 +70,27 @@ instance Default FloatBorder where
   def =
     Rounded
 
+data FloatStyle =
+  FloatStyleMinimal
+  deriving stock (Eq, Show)
+
+instance Default FloatStyle where
+  def =
+    FloatStyleMinimal
+
+instance MsgpackEncode FloatStyle where
+  toMsgpack FloatStyleMinimal =
+    "minimal"
+
+newtype FloatZindex =
+  FloatZindex { unFloatZindex :: Int }
+  deriving stock (Eq, Show, Generic)
+  deriving newtype (Num, Real, Enum, Integral, Ord)
+
+instance MsgpackEncode FloatZindex where
+  toMsgpack (FloatZindex i) =
+    toMsgpack i
+
 data FloatOptions =
   FloatOptions {
     relative :: FloatRelative,
@@ -80,7 +102,10 @@ data FloatOptions =
     anchor :: FloatAnchor,
     bufpos :: Maybe (Int, Int),
     border :: FloatBorder,
-    noautocmd :: Bool
+    noautocmd :: Bool,
+    enter :: Bool,
+    style :: Maybe FloatStyle,
+    zindex :: Maybe FloatZindex
   }
   deriving stock (Eq, Show, Generic)
 
@@ -88,20 +113,25 @@ instance MsgpackEncode FloatOptions where
   toMsgpack FloatOptions {..} =
     toMsgpack $ Map.fromList (simple ++ maybe [] (pure . ("bufpos",) . toMsgpack) bufpos)
     where
+      simple :: [(Text, Object)]
       simple =
+        opt "bufpos" bufpos ++
+        opt "style" style ++
+        opt "zindex" zindex ++
         [
-          ("relative" :: Text, toMsgpack relative),
+          ("relative", toMsgpack relative),
           ("width", toMsgpack width),
           ("height", toMsgpack height),
           ("row", toMsgpack row),
           ("col", toMsgpack col),
           ("focusable", toMsgpack focusable),
           ("anchor", toMsgpack anchor),
-          ("relative", toMsgpack relative),
           ("border", toMsgpack border),
           ("noautocmd", toMsgpack noautocmd)
         ]
+      opt n f =
+        maybeToList (f <&> \ v -> (n, toMsgpack v))
 
 instance Default FloatOptions where
   def =
-    FloatOptions def 30 10 1 1 False def def def False
+    FloatOptions def 30 10 1 1 False def def def False True (Just FloatStyleMinimal) Nothing

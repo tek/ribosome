@@ -13,3 +13,6 @@ ghc-options:
   - -Wmissing-deriving-strategies
   - -Widentities
   - -Wunused-packages
+  - -threaded
+  - -rtsopts
+  - -with-rtsopts=-N
