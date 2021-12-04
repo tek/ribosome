@@ -12,8 +12,8 @@ import Neovim (Neovim, Object)
 import Neovim.API.Text (vim_command)
 import qualified Neovim.Context.Internal as Internal (
   Config,
-  Neovim(Neovim),
-  StateTransition(Failure, InitSuccess, Quit),
+  Neovim (Neovim),
+  StateTransition (Failure, InitSuccess, Quit),
   globalFunctionMap,
   mkFunctionMap,
   newConfig,
@@ -22,14 +22,14 @@ import qualified Neovim.Context.Internal as Internal (
   transitionTo,
   )
 import Neovim.Main (standalone)
-import Neovim.Plugin (Plugin(Plugin), startPluginThreads)
+import Neovim.Plugin (Plugin (Plugin), startPluginThreads)
 import Neovim.Plugin.Internal (NeovimPlugin, wrapPlugin)
 import Neovim.RPC.Common (RPCConfig, newRPCConfig)
 import Neovim.RPC.EventHandler (runEventHandler)
 import Neovim.RPC.SocketReader (runSocketReader)
 import System.Directory (makeAbsolute)
 import System.Exit (ExitCode)
-import System.Log.Logger (Priority(ERROR), setLevel, updateGlobalLogger)
+import System.Log.Logger (Priority (ERROR), setLevel, updateGlobalLogger)
 import qualified System.Posix.Signals as Signal (killProcess, signalProcess)
 import System.Process (getPid)
 import System.Process.Typed (
@@ -50,11 +50,11 @@ import System.Process.Typed (
 import Ribosome.Api.Option (rtpCat)
 import Ribosome.Control.Exception (tryAny)
 import Ribosome.Control.Monad.Ribo (NvimE)
-import Ribosome.Control.Ribosome (Ribosome(Ribosome), newRibosomeTMVar)
-import qualified Ribosome.Data.ErrorReport as ErrorReport (ErrorReport(..))
-import Ribosome.Error.Report.Class (ReportError(errorReport))
+import Ribosome.Control.Ribosome (Ribosome (Ribosome), newRibosomeTMVar)
+import qualified Ribosome.Data.ErrorReport as ErrorReport (ErrorReport (..))
+import Ribosome.Error.Report.Class (ReportError (errorReport))
 import Ribosome.Nvim.Api.IO (vimSetVar)
-import Ribosome.Plugin.RpcHandler (RpcHandler(native))
+import Ribosome.Plugin.RpcHandler (RpcHandler (native))
 import Ribosome.System.Time (sleep, sleepW)
 import Ribosome.Test.Orphans ()
 
@@ -129,7 +129,7 @@ testNvimProcessConfig TestConfig {..} =
   setStdin createPipe . setStdout createPipe . proc "nvim" . fmap toString $ args <> tcCmdArgs
   where
     args = fromMaybe defaultArgs tcCmdline
-    defaultArgs = ["--embed", "-n", "-u", "NONE", "-i", "NONE"]
+    defaultArgs = ["--embed", "-n", "-u", "NONE", "-i", "NONE", "--clean"]
 
 startHandlers ::
   MonadIO m =>

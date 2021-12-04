@@ -2,19 +2,19 @@ module Ribosome.Test.Tmux where
 
 import Chiasma.Command.Pane (sendKeys)
 import Chiasma.Data.TmuxError (TmuxError)
-import Chiasma.Data.TmuxId (PaneId(PaneId))
+import Chiasma.Data.TmuxId (PaneId (PaneId))
 import Chiasma.Monad.Stream (runTmux)
-import Chiasma.Native.Api (TmuxNative(TmuxNative))
+import Chiasma.Native.Api (TmuxNative (TmuxNative))
 import Chiasma.Test.Tmux (TmuxTestConf, withSystemTempDir)
 import qualified Chiasma.Test.Tmux as Chiasma (tmuxGuiTest, tmuxTest, tmuxTest')
 import Control.Exception.Lifted (bracket)
 import Data.DeepPrisms (DeepPrisms)
 import Hedgehog (TestT)
 import Hedgehog.Internal.Property (failWith)
-import qualified Neovim.Context.Internal as Internal (StateTransition(Quit), newConfig, retypeConfig)
-import Neovim.Plugin (Plugin(Plugin))
+import qualified Neovim.Context.Internal as Internal (StateTransition (Quit), newConfig, retypeConfig)
+import Neovim.Plugin (Plugin (Plugin))
 import Neovim.Plugin.Internal (wrapPlugin)
-import Neovim.RPC.Common (SocketType(UnixSocket), createHandle, newRPCConfig)
+import Neovim.RPC.Common (SocketType (UnixSocket), createHandle, newRPCConfig)
 import System.Directory (doesPathExist)
 import System.FilePath ((</>))
 
@@ -23,7 +23,7 @@ import Ribosome.Config.Settings (tmuxSocket)
 import Ribosome.Control.Concurrent.Wait (waitIOPredDef)
 import Ribosome.Control.Exception (catchAny, tryAny)
 import Ribosome.Control.Monad.Ribo (MonadRibo, Nvim, NvimE, Ribo)
-import Ribosome.Control.Ribosome (Ribosome(Ribosome), newRibosomeTMVar)
+import Ribosome.Control.Ribosome (Ribosome (Ribosome), newRibosomeTMVar)
 import Ribosome.Error.Report.Class (ReportError)
 import Ribosome.Msgpack.Encode (toMsgpack)
 import Ribosome.Nvim.Api.IO (vimSetVar)
@@ -32,7 +32,7 @@ import Ribosome.Plugin.RpcHandler (RpcHandler)
 import Ribosome.System.Time (sleep)
 import Ribosome.Test.Embed (
   Runner,
-  TestConfig(..),
+  TestConfig (..),
   inTestT,
   runPlugin,
   runTest,
@@ -69,7 +69,7 @@ runSocketNvimHs conf ribo specThunk socket = do
 
 externalNvimCmdline :: FilePath -> Text
 externalNvimCmdline socket =
-  "nvim --listen " <> toText socket <> " -n -u NONE -i NONE"
+  "nvim --listen " <> toText socket <> " -n -u NONE -i NONE --clean"
 
 startNvimInTmux ::
   TmuxNative ->
