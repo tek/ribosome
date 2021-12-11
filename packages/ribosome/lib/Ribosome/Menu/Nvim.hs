@@ -15,7 +15,7 @@ import Ribosome.Data.Syntax (HiLink (..), Syntax (Syntax), SyntaxItem (..), synt
 import Ribosome.Data.WindowView (PartialWindowView (PartialWindowView))
 import Ribosome.Log (logDebug)
 import Ribosome.Menu.Data.CursorIndex (CursorIndex (CursorIndex))
-import Ribosome.Menu.Data.Entry (Entries, Entry (Entry), index)
+import Ribosome.Menu.Data.Entry (Entries, Entry (Entry))
 import Ribosome.Menu.Data.Menu (Menu)
 import qualified Ribosome.Menu.Data.MenuData as Menu
 import Ribosome.Menu.Data.MenuData (entries)
@@ -144,6 +144,10 @@ computeView newCursor@(CursorIndex cur) maxHeight count nmenu@(MenuView _ oldBot
     scrolledDown =
       oldBot > cur
 
+entryId :: Entry i -> (Int, Bool)
+entryId (Entry _ i s) =
+  (i, s)
+
 updateMenuState ::
   MonadReader (Menu i) m =>
   MonadState NvimMenuState m =>
@@ -156,7 +160,7 @@ updateMenuState scratchMax = do
   menuView %= computeView newCursor (min count scratchMax) count
   cursorIndex .= newCursor
   visible <- newEntrySlice
-  newIndexes <- indexes <.= (view index <$> visible)
+  newIndexes <- indexes <.= (entryId <$> visible)
   pure (visible, newIndexes /= oldIndexes)
 
 windowLine ::

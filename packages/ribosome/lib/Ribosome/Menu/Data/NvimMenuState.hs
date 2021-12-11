@@ -7,7 +7,7 @@ data NvimMenuState =
   NvimMenuState {
     _view :: MenuView,
     _cursorIndex :: CursorIndex,
-    _indexes :: [Int]
+    _indexes :: [(Int, Bool)]
   }
   deriving stock (Eq, Show)
 
