@@ -22,9 +22,9 @@ import Ribosome.Menu.Data.MenuData (entries)
 import Ribosome.Menu.Data.MenuItem (MenuItem (MenuItem))
 import qualified Ribosome.Menu.Data.MenuRenderEvent as MenuRenderEvent (MenuRenderEvent (..))
 import Ribosome.Menu.Data.MenuRenderer (MenuRenderer (MenuRenderer))
-import Ribosome.Menu.Data.MenuView (MenuView (MenuView), botIndex, cursorLine, topIndex, menuView)
+import Ribosome.Menu.Data.MenuView (MenuView (MenuView), botIndex, cursorLine, menuView, topIndex)
 import Ribosome.Menu.Data.NvimMenuState (NvimMenuState, cursorIndex, indexes)
-import Ribosome.Nvim.Api.IO (nvimBufIsLoaded, nvimWinGetHeight)
+import Ribosome.Nvim.Api.IO (nvimBufIsLoaded, nvimSetCurrentWin, nvimWinGetHeight)
 import Ribosome.Nvim.Api.RpcCall (RpcError)
 import Ribosome.Scratch (killScratch, setScratchContent)
 
@@ -177,17 +177,18 @@ updateMenu ::
   MonadRibo m =>
   ScratchOptions ->
   Scratch ->
-  Int ->
   StateT NvimMenuState (ReaderT (Menu i) m) ()
-updateMenu options scratch _ = do
+updateMenu options scratch = do
+  nvimSetCurrentWin win
   (visible, changed) <- updateMenuState (fromMaybe 30 (options ^. maxSize))
   when changed do
     setScratchContent options scratch (reverse (toList (withMark <$> visible)))
   restoreView (PartialWindowView Nothing (Just 1))
   targetLine <- windowLine
-  catchAt @RpcError invalidCursor (setLine (scratchWindow scratch) targetLine)
-  unit
+  catchAt @RpcError invalidCursor (setLine win targetLine)
   where
+    win =
+      scratchWindow scratch
     invalidCursor _ =
       logDebug @Text "menu cursor line invalid"
 
@@ -200,12 +201,8 @@ renderNvimMenu ::
   StateT NvimMenuState (ReaderT (Menu i) m) ()
 renderNvimMenu options scratch =
   whenM (nvimBufIsLoaded (scratchBuffer scratch)) do
-    updateMenu options scratch =<< nvimWinGetHeight (scratchWindow scratch)
-    -- logDebug @Text logMsg
+    updateMenu options scratch
     redraw
-  where
-    -- logMsg =
-    --   [exon|menu cursor to #{show lineNumber}; #{show (menu ^. cursor)}/#{show (length items)}|]
 
 nvimMenuRenderer ::
   NvimE e m =>
