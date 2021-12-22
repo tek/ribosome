@@ -102,7 +102,7 @@ adaptCursorAfterDeletion deleted (CursorIndex curs) =
   CursorIndex (foldl' f curs deleted)
   where
     f z i =
-      if i < curs then z - 1 else z
+      if i <= curs && i > 0 then z - 1 else z
 
 -- |Remove all entries for which @f@ returns @Just (Right b)@, or if none are matched, the last one for which @f@
 -- returns @Just (Left a)@.
