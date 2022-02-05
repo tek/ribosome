@@ -24,7 +24,7 @@ import qualified Ribosome.Menu.Data.MenuRenderEvent as MenuRenderEvent (MenuRend
 import Ribosome.Menu.Data.MenuRenderer (MenuRenderer (MenuRenderer))
 import Ribosome.Menu.Data.MenuView (MenuView (MenuView), botIndex, cursorLine, menuView, topIndex)
 import Ribosome.Menu.Data.NvimMenuState (NvimMenuState, cursorIndex, indexes)
-import Ribosome.Nvim.Api.IO (nvimBufIsLoaded, nvimSetCurrentWin, nvimWinGetHeight)
+import Ribosome.Nvim.Api.IO (nvimBufIsLoaded, nvimSetCurrentWin)
 import Ribosome.Nvim.Api.RpcCall (RpcError)
 import Ribosome.Scratch (killScratch, setScratchContent)
 

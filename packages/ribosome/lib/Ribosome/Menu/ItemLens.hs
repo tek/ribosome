@@ -5,12 +5,13 @@ module Ribosome.Menu.ItemLens where
 import Control.Lens (Getter, element, to, views, (^?))
 import qualified Data.IntMap.Strict as IntMap
 
-import Ribosome.Menu.Combinators (filterEntries, sortedEntries)
+import Ribosome.Menu.Combinators (filterEntries, sortedEntries, foldEntries)
 import qualified Ribosome.Menu.Data.Entry as Entry
 import Ribosome.Menu.Data.Entry (Entry)
 import Ribosome.Menu.Data.MenuData (HasMenuCursor, HasMenuItems, cursor, entries)
 import qualified Ribosome.Menu.Data.MenuItem as MenuItem
 import Ribosome.Menu.Data.MenuItem (MenuItem)
+import Ribosome.Menu.Data.CursorIndex (CursorIndex(CursorIndex))
 
 filterIndexesFlat :: [Int] -> [a] -> [a]
 filterIndexesFlat indexes =
@@ -115,12 +116,32 @@ menuItemsByIndexes ::
 menuItemsByIndexes indexes =
   maybe [] toList . itemsByEntryIndex indexes
 
+-- |Extract either the entries that aren't selected, or, if none are, all but the focused entry.
+-- This needs two passes since the result should be sorted and it's impossible to know whether the focus should be
+-- included or not before the entire dataset was traversed.
 unselectedItems ::
+  HasMenuCursor a =>
   HasMenuItems a i =>
   a ->
   [MenuItem i]
-unselectedItems =
-  fmap Entry._item . views entries (filterEntries \ _ -> not . Entry._selected)
+unselectedItems menu =
+  Entry._item <$> views entries filterUnselected menu
+  where
+    filterUnselected =
+      uncurry extract .
+      first toList .
+      foldEntries folder (mempty, False)
+    extract ents = \case
+      True -> mapMaybe rightToMaybe ents
+      False -> either id id <$> ents
+    folder (z, _) _ e | Entry._selected e =
+      (z, True)
+    folder (z, foundSelected) i e | i == cursorIndex =
+      (Left e : z, foundSelected)
+    folder (z, _) _ e =
+      (Right e : z, True)
+    CursorIndex cursorIndex =
+      menu ^. cursor
 
 unselected ::
   HasMenuCursor a =>

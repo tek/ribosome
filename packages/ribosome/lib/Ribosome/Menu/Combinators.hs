@@ -63,6 +63,13 @@ foldEntries f a =
     transSeq (i, z) e =
       (i + 1, f z i e)
 
+mapEntries :: (Int -> Entry i -> a) -> Entries i -> Seq a
+mapEntries f =
+  foldEntries folder Seq.empty
+  where
+    folder z i e =
+      z |> f i e
+
 partitionEntries ::
   (Int -> Entry i -> Either a b) ->
   Entries i ->

@@ -16,7 +16,7 @@ import Ribosome.Menu.Action (menuIgnore, menuQuit)
 import Ribosome.Menu.Combinators (sortEntries, sortedEntries)
 import qualified Ribosome.Menu.Consumer as Consumer
 import qualified Ribosome.Menu.Data.Entry as Entry
-import Ribosome.Menu.Data.Entry (Entries, Entry (Entry))
+import Ribosome.Menu.Data.Entry (Entries, Entry (Entry), simpleIntEntries)
 import qualified Ribosome.Menu.Data.Menu as Menu
 import Ribosome.Menu.Data.Menu (Menu, consMenu)
 import Ribosome.Menu.Data.MenuConfig (MenuConfig (MenuConfig))
@@ -32,7 +32,7 @@ import Ribosome.Menu.Data.MenuRenderEvent (MenuRenderEvent)
 import Ribosome.Menu.Data.MenuRenderer (MenuRenderer (MenuRenderer))
 import Ribosome.Menu.Data.MenuState (menuRead)
 import Ribosome.Menu.Filters (fuzzyItemFilter)
-import Ribosome.Menu.ItemLens (focus, selected', selectedOnly)
+import Ribosome.Menu.ItemLens (focus, selected', selectedOnly, unselected)
 import Ribosome.Menu.Items (deleteSelected, popSelection)
 import Ribosome.Menu.Prompt.Data.Prompt (Prompt (Prompt))
 import Ribosome.Menu.Prompt.Data.PromptConfig (
@@ -337,7 +337,7 @@ testItems =
 test_menuDeleteSelected :: UnitTest
 test_menuDeleteSelected = do
   targetSel === IntMap.elems (MenuItem._text <$> updatedSel ^. MenuItems.items)
-  1 === updatedSel ^. cursor
+  2 === updatedSel ^. cursor
   targetFoc === IntMap.elems (MenuItem._text <$> updatedFoc ^. MenuItems.items)
   (([0], [9]), 9) === second (length . sortEntries) (popSelection 0 unselectedEntries)
   75000 === length (sortEntries (snd (popSelection manyCursor manyEntries)))
@@ -374,6 +374,15 @@ test_menuDeleteSelected = do
     manyCursor =
       30000
 
+test_menuUnselectedCursor :: UnitTest
+test_menuUnselectedCursor =
+  [2, 4] === (MenuItem._meta <$> evalState (use unselected) menu)
+  where
+    menu =
+      consMenu mempty entries mempty 0 mempty True 1 def
+    entries =
+      simpleIntEntries [2, 3, 4]
+
 test_menu :: TestTree
 test_menu =
   testGroup "menu" [
@@ -383,5 +392,6 @@ test_menu =
     unitTest "mark multiple items" test_menuMultiMark,
     unitTest "toggle selection items" test_menuToggle,
     unitTest "execute a thunk action" test_menuExecuteThunk,
-    unitTest "delete selected" test_menuDeleteSelected
+    unitTest "delete selected" test_menuDeleteSelected,
+    unitTest "unselected items with no selected items" test_menuUnselectedCursor
   ]
