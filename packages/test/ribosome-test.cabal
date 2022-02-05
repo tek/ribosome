@@ -1,10 +1,10 @@
 cabal-version: 2.2
 
--- This file has been generated from package.yaml by hpack version 0.34.4.
+-- This file has been generated from package.yaml by hpack version 0.34.6.
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 874b76f677543a374a7f48c2d08222913b887b8cd0cf39db5753868e9ce13703
+-- hash: 9d25cb969f902f8ef084d15eebaae95247b26d3747405cfe8543cd464d5dbb25
 
 name:           ribosome-test
 version:        0.4.0.0
@@ -160,6 +160,8 @@ test-suite ribosome-unit
       Ribosome.Test.WindowTest
       TestError
       Paths_ribosome_test
+  autogen-modules:
+      Paths_ribosome_test
   hs-source-dirs:
       test
   default-extensions:
@@ -254,6 +256,8 @@ benchmark ribosome-bench
   type: exitcode-stdio-1.0
   main-is: Main.hs
   other-modules:
+      Paths_ribosome_test
+  autogen-modules:
       Paths_ribosome_test
   hs-source-dirs:
       benchmark
