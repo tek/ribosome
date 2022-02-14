@@ -5,11 +5,11 @@
         "hix": "hix"
       },
       "locked": {
-        "lastModified": 1627325932,
-        "narHash": "sha256-fwDlrm8DpcKcrCaZI7ZFnD7BkyNu1mBwKOi3uLn2oJY=",
+        "lastModified": 1644882872,
+        "narHash": "sha256-6W0XMCYj6DQJkgyp4IlxbpYB52XiCesroDybDGQl9FA=",
         "owner": "tek",
         "repo": "chiasma",
-        "rev": "a838c590a2337f44a2c0a0a89622a40a9fd6032a",
+        "rev": "4df21c6debd2f25c7c15f3031b6be44d143b3cda",
         "type": "github"
       },
       "original": {
@@ -127,11 +127,11 @@
         "thax": "thax_2"
       },
       "locked": {
-        "lastModified": 1644024496,
-        "narHash": "sha256-e+PPOYwkB2+yznCWeByYfUF8SYNdiQA73Imb/xYc22Q=",
+        "lastModified": 1644074691,
+        "narHash": "sha256-2x85GKkC39h4cxQtA/nZHcWvjyruXdb4QEwpncJhoYE=",
         "owner": "tek",
         "repo": "hix",
-        "rev": "c1b7e00a92986c32b9cd1fa1ad612db5a2c279aa",
+        "rev": "6a70f685ab6508c475745698581b50c36a159e18",
         "type": "github"
       },
       "original": {

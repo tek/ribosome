@@ -76,7 +76,7 @@ startNvimInTmux ::
   FilePath ->
   IO Handle
 startNvimInTmux api temp = do
-  void $ runExceptT @TmuxError $ runTmux api $ sendKeys (PaneId 0) [externalNvimCmdline socket]
+  void $ runExceptT @TmuxError $ runTmux api $ sendKeys (PaneId 0) [] [externalNvimCmdline socket]
   _ <- waitIOPredDef (pure socket) doesPathExist
   catchAny err (createHandle (UnixSocket socket))
   where
