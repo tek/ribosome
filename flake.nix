@@ -30,9 +30,8 @@
     inherit overrides;
     devGhc.compiler = "ghc8107";
     hackage.versionFile = "ops/hpack/shared/meta.yaml";
-    ghcid.shellConfig =
-    let pkgs = config.devGhc.pkgs;
-    in { buildInputs = [pkgs.neovim pkgs.tmux pkgs.rxvt-unicode]; };
+    hackage.check = false;
+    ghcid.shellConfig.buildInputs = with config.devGhc.pkgs; [pkgs.neovim pkgs.tmux pkgs.rxvt-unicode];
     compat.enable = false;
   });
 }
