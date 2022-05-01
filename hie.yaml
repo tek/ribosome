@@ -1,13 +1,13 @@
 cradle:
   cabal:
-    - path: "./packages/ribosome/lib"
-      component: "lib:ribosome"
+    - path: "./packages/host/lib"
+      component: "lib:ribosome-host"
 
-    - path: "./packages/test/lib"
-      component: "lib:ribosome-test"
+    - path: "./packages/host/test"
+      component: "ribosome-host:test:ribosome-host-unit"
 
-    - path: "./packages/test/test"
-      component: "ribosome-test:test:ribosome-unit"
+    - path: "./packages/host-test/lib"
+      component: "lib:host-test"
 
-    - path: "./packages/test/benchmark"
-      component: "ribosome-test:benchmark:ribosome-bench"
+    - path: "./packages/host-test/test"
+      component: "host-test:test:integration"

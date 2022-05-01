@@ -1,1 +1,1 @@
-packages: packages/*
+packages: packages/host packages/host-test

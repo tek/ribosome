@@ -960,13 +960,17 @@
         "thax": "thax_18"
       },
       "locked": {
-        "narHash": "sha256-f9uFICUK+FTUOFP3RLelpM2/WG/KXJeiTL1x1PnBki0=",
-        "path": "/home/tek/code/tek/nix/hix",
-        "type": "path"
+        "lastModified": 1651092931,
+        "narHash": "sha256-6IhSnHnDt1tqm/i3kgv3ButhReLUTRl1mhnz8sJ7/DU=",
+        "owner": "tek",
+        "repo": "hix",
+        "rev": "011a825d089e8b38cd9eee40b2cf808a1cbeb29d",
+        "type": "github"
       },
       "original": {
-        "path": "/home/tek/code/tek/nix/hix",
-        "type": "path"
+        "owner": "tek",
+        "repo": "hix",
+        "type": "github"
       }
     },
     "hix_19": {
@@ -1875,17 +1879,17 @@
     },
     "nixpkgs_36": {
       "locked": {
-        "lastModified": 1651927509,
-        "narHash": "sha256-fGVGUdEsriuAL1vkUh29FlOQmEkPRnSfRGImWYaVjos=",
+        "lastModified": 1650701402,
+        "narHash": "sha256-XKfstdtqDg+O+gNBx1yGVKWIhLgfEDg/e2lvJSsp9vU=",
         "owner": "NixOS",
         "repo": "nixpkgs",
-        "rev": "2fdb6f2e08e7989b03a2a1aa8538d99e3eeea881",
+        "rev": "bc41b01dd7a9fdffd32d9b03806798797532a5fe",
         "type": "github"
       },
       "original": {
         "owner": "NixOS",
         "repo": "nixpkgs",
-        "rev": "2fdb6f2e08e7989b03a2a1aa8538d99e3eeea881",
+        "rev": "bc41b01dd7a9fdffd32d9b03806798797532a5fe",
         "type": "github"
       }
     },
@@ -3950,17 +3954,17 @@
     },
     "nixpkgs_ghc922": {
       "locked": {
-        "lastModified": 1651927509,
-        "narHash": "sha256-fGVGUdEsriuAL1vkUh29FlOQmEkPRnSfRGImWYaVjos=",
+        "lastModified": 1650701402,
+        "narHash": "sha256-XKfstdtqDg+O+gNBx1yGVKWIhLgfEDg/e2lvJSsp9vU=",
         "owner": "nixos",
         "repo": "nixpkgs",
-        "rev": "2fdb6f2e08e7989b03a2a1aa8538d99e3eeea881",
+        "rev": "bc41b01dd7a9fdffd32d9b03806798797532a5fe",
         "type": "github"
       },
       "original": {
         "owner": "nixos",
         "repo": "nixpkgs",
-        "rev": "2fdb6f2e08e7989b03a2a1aa8538d99e3eeea881",
+        "rev": "bc41b01dd7a9fdffd32d9b03806798797532a5fe",
         "type": "github"
       }
     },
@@ -4813,11 +4817,25 @@
         "type": "github"
       }
     },
-    "root": {
+    "ribosome": {
       "inputs": {
         "chiasma": "chiasma",
         "hix": "hix_18",
         "polysemy-conc": "polysemy-conc_3"
+      },
+      "locked": {
+        "narHash": "sha256-R9sX+HEcuiizfEGDG+C6+v2tl9afQuPcdbm1DlMakPw=",
+        "path": "../../../../..",
+        "type": "path"
+      },
+      "original": {
+        "path": "../../../../..",
+        "type": "path"
+      }
+    },
+    "root": {
+      "inputs": {
+        "ribosome": "ribosome"
       }
     },
     "thax": {
