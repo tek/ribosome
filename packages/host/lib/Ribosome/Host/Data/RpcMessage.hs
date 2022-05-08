@@ -1,6 +1,8 @@
 module Ribosome.Host.Data.RpcMessage where
 
 import Data.MessagePack (Object (ObjectArray, ObjectNil))
+import qualified Data.Serialize as Serialize
+import Data.Serialize (Serialize)
 import Exon (exon)
 
 import Ribosome.Host.Class.Msgpack.Array (MsgpackArray (msgpackArray))
@@ -26,11 +28,11 @@ pattern ErrorPayload :: RpcError -> Object
 pattern ErrorPayload e <- (decodeError -> e)
 
 data RpcMessage =
-  Request (TrackedRequest Object)
+  Request TrackedRequest
   |
-  Response (TrackedResponse Object)
+  Response TrackedResponse
   |
-  Notification RpcMethod Object
+  Notification RpcMethod [Object]
   deriving stock (Eq, Show)
 
 instance MsgpackEncode RpcMessage where
@@ -52,7 +54,13 @@ instance MsgpackDecode RpcMessage where
       Right (Response (TrackedResponse i (Response.Success payload)))
     ObjectArray [Msgpack (1 :: Int), Msgpack i, ErrorPayload e, ObjectNil] ->
       Right (Response (TrackedResponse i (Response.Error e)))
-    ObjectArray [Msgpack (2 :: Int), Msgpack method, payload] ->
+    ObjectArray [Msgpack (2 :: Int), Msgpack method, Msgpack payload] ->
       Right (Notification method payload)
     o ->
       Left [exon|Invalid format for RpcMessage: #{show o}|]
+
+instance Serialize RpcMessage where
+  put =
+    Serialize.put . toMsgpack
+  get =
+    either (fail . toString) pure . fromMsgpack =<< Serialize.get

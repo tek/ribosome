@@ -8,8 +8,11 @@ import Polysemy.Process (Process)
 
 import Ribosome.Host.Data.HandlerError (HandlerError (HandlerError))
 import Ribosome.Host.Data.Request (Request (Request), RequestId, RpcMethod (RpcMethod))
+import qualified Ribosome.Host.Data.Response as Response
+import Ribosome.Host.Data.Response (Response)
 import Ribosome.Host.Data.RpcDef (RpcDef (RpcDef), RpcHandler)
-import Ribosome.Host.Data.RpcError (RpcError)
+import Ribosome.Host.Data.RpcError (RpcError (RpcError))
+import Ribosome.Host.Data.RpcMessage (RpcMessage)
 import Ribosome.Host.Effect.RequestHandler (RequestHandler (Handle))
 import Ribosome.Host.Effect.Responses (Responses)
 import Ribosome.Host.Effect.Rpc (Rpc)
@@ -23,36 +26,36 @@ handlersByName =
   Map.fromList . fmap \ (RpcDef _ name _ handler) -> (RpcMethod name, handler)
 
 invalidMethod ::
-  Member (Stop HandlerError) r =>
   RpcMethod ->
-  Sem r a
+  Response
 invalidMethod (RpcMethod name) =
-  stop (HandlerError [exon|Invalid method: #{name}|])
+  Response.Error (RpcError [exon|Invalid method: #{name}|])
 
 executeRequest ::
   [Object] ->
   RpcHandler r ->
-  Sem (Stop HandlerError : r) Object
+  Sem r Response
 executeRequest args handle =
-  stopOnError (raiseUnder (handle args))
+  runError (handle args) <&> \case
+    Right a -> Response.Success a
+    Left (HandlerError e) -> Response.Error (RpcError e)
 
 interpretRequestHandler ::
-  Member (Rpc !! RpcError) r =>
   [RpcDef r] ->
-  InterpreterFor (RequestHandler !! HandlerError) r
+  InterpreterFor RequestHandler r
 interpretRequestHandler defs =
-  interpretResumable \case
+  interpret \case
     Handle (Request name args) ->
-      maybe (invalidMethod name) (executeRequest args) (Map.lookup name handlers)
+      maybe (pure (invalidMethod name)) (executeRequest args) (Map.lookup name handlers)
   where
     handlers =
       handlersByName defs
 
 withRequestHandler ::
-  Members [Process Object (Either Text Object), Rpc !! RpcError, Log, Error Text] r =>
-  Members [Responses RequestId (Either RpcError Object) !! RpcError, Resource, Race, Async] r =>
+  Members [Process RpcMessage (Either Text RpcMessage), Rpc !! RpcError, Log, Error Text] r =>
+  Members [Responses RequestId Response !! RpcError, Resource, Race, Async] r =>
   [RpcDef r] ->
-  InterpreterFor (RequestHandler !! HandlerError) r
+  InterpreterFor RequestHandler r
 withRequestHandler defs sem = do
   interpretRequestHandler defs do
     withAsync_ listener do
@@ -60,8 +63,8 @@ withRequestHandler defs sem = do
       sem
 
 runRequestHandler ::
-  Members [Process Object (Either Text Object), Rpc !! RpcError, Log, Error Text] r =>
-  Members [Responses RequestId (Either RpcError Object) !! RpcError, Resource, Race, Async] r =>
+  Members [Process RpcMessage (Either Text RpcMessage), Rpc !! RpcError, Log, Error Text] r =>
+  Members [Responses RequestId Response !! RpcError, Resource, Race, Async] r =>
   [RpcDef r] ->
   Sem r ()
 runRequestHandler defs = do

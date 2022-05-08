@@ -14,6 +14,8 @@ newtype RequestId =
   deriving stock (Eq, Show, Generic)
   deriving newtype (Num, Real, Enum, Integral, Ord, MsgpackDecode, MsgpackEncode)
 
+type role Request phantom
+
 data Request a =
   Request {
     method :: RpcMethod,
@@ -21,9 +23,9 @@ data Request a =
   }
   deriving stock (Eq, Show)
 
-data TrackedRequest a =
+data TrackedRequest =
   TrackedRequest {
     id :: RequestId,
-    request :: Request a
+    request :: Request Object
   }
   deriving stock (Eq, Show)

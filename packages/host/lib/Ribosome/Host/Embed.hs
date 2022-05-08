@@ -1,6 +1,5 @@
 module Ribosome.Host.Embed where
 
-import Data.MessagePack (Object)
 import Data.Serialize (Serialize)
 import Polysemy.Conc (interpretRace)
 import Polysemy.Log (Severity (Warn), interpretLogStdoutLevelConc)
@@ -9,8 +8,10 @@ import Polysemy.Process.Data.ProcessError (ProcessError)
 import System.Process.Typed (ProcessConfig, proc)
 
 import Ribosome.Host.Data.Request (RequestId)
+import Ribosome.Host.Data.Response (Response)
 import Ribosome.Host.Data.RpcDef (RpcDef, hoistRpcDef)
 import Ribosome.Host.Data.RpcError (RpcError)
+import Ribosome.Host.Data.RpcMessage (RpcMessage)
 import Ribosome.Host.Effect.Responses (Responses)
 import Ribosome.Host.Effect.Rpc (Rpc)
 import Ribosome.Host.Interpreter.Process (interpretProcessCerealNative)
@@ -35,9 +36,9 @@ interpretProcessCerealNvimEmbed options =
   interpretProcessCerealNative options embeddedProcessConfig
 
 interpretRpcMsgpackProcessSingle ::
-  Member (Scoped () (Process Object (Either Text Object)) !! ProcessError) r =>
-  Members [Responses RequestId (Either RpcError Object) !! RpcError, Error ProcessError, Log, Async, Embed IO] r =>
-  InterpretersFor [Rpc !! RpcError, Process Object (Either Text Object)] r
+  Member (Scoped () (Process RpcMessage o) !! ProcessError) r =>
+  Members [Responses RequestId Response !! RpcError, Error ProcessError, Log, Async, Embed IO] r =>
+  InterpretersFor [Rpc !! RpcError, Process RpcMessage o] r
 interpretRpcMsgpackProcessSingle =
   resumeError .
   withProcess @() .
@@ -47,12 +48,12 @@ interpretRpcMsgpackProcessSingle =
 type RpcStack =
   [
     Rpc !! RpcError,
-    Process Object (Either Text Object),
-    Scoped () (Process Object (Either Text Object)) !! ProcessError
+    Process RpcMessage (Either Text RpcMessage),
+    Scoped () (Process RpcMessage (Either Text RpcMessage)) !! ProcessError
   ]
 
 interpretRpcMsgpackProcessNvimEmbed ::
-  Member (Responses RequestId (Either RpcError Object) !! RpcError) r =>
+  Member (Responses RequestId Response !! RpcError) r =>
   Members [Error ProcessError, Log, Resource, Race, Async, Embed IO] r =>
   ProcessConfig () () () ->
   InterpretersFor RpcStack r
@@ -61,7 +62,7 @@ interpretRpcMsgpackProcessNvimEmbed conf =
   interpretRpcMsgpackProcessSingle
 
 interpretRpcMsgpackProcessNvimEmbedDef ::
-  Member (Responses RequestId (Either RpcError Object) !! RpcError) r =>
+  Member (Responses RequestId Response !! RpcError) r =>
   Members [Error ProcessError, Log, Resource, Race, Async, Embed IO] r =>
   InterpretersFor RpcStack r
 interpretRpcMsgpackProcessNvimEmbedDef =
