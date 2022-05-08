@@ -960,13 +960,17 @@
         "thax": "thax_18"
       },
       "locked": {
-        "narHash": "sha256-f9uFICUK+FTUOFP3RLelpM2/WG/KXJeiTL1x1PnBki0=",
-        "path": "/home/tek/code/tek/nix/hix",
-        "type": "path"
+        "lastModified": 1652035838,
+        "narHash": "sha256-VciK/D9QK4cVFYpFT/FrXKLsu2QXjfc2Hi8b4LUMzfY=",
+        "owner": "tek",
+        "repo": "hix",
+        "rev": "6c9220cd89d71d7477c9427abf7a9b1470c437f1",
+        "type": "github"
       },
       "original": {
-        "path": "/home/tek/code/tek/nix/hix",
-        "type": "path"
+        "owner": "tek",
+        "repo": "hix",
+        "type": "github"
       }
     },
     "hix_19": {

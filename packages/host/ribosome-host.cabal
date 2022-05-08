@@ -55,6 +55,7 @@ library
       Ribosome.Host.TH.Api.Generate
       Ribosome.Host.TH.Api.GenerateData
       Ribosome.Host.TH.Api.GenerateEffect
+      Ribosome.Host.TH.Api.Param
   hs-source-dirs:
       lib
   default-extensions:

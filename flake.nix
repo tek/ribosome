@@ -2,8 +2,7 @@
   description = "A Neovim plugin host and framework for Haskell";
 
   inputs = {
-    # hix.url = github:tek/hix;
-    hix.url = path:/home/tek/code/tek/nix/hix;
+    hix.url = github:tek/hix;
     chiasma.url = github:tek/chiasma/main;
     polysemy-conc.url = github:tek/polysemy-conc;
   };

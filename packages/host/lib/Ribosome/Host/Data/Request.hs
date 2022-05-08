@@ -16,6 +16,8 @@ newtype RequestId =
 
 type role Request phantom
 
+-- |This type is used in API function definitions for simplicity, and so carries a phantom representing the function's
+-- return type.
 data Request a =
   Request {
     method :: RpcMethod,
@@ -23,9 +25,12 @@ data Request a =
   }
   deriving stock (Eq, Show)
 
+type SomeRequest =
+  Request Void
+
 data TrackedRequest =
   TrackedRequest {
     id :: RequestId,
-    request :: Request Object
+    request :: SomeRequest
   }
   deriving stock (Eq, Show)

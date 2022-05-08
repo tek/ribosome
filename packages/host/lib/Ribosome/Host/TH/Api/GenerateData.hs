@@ -38,6 +38,7 @@ import Ribosome.Host.Data.ApiInfo (ExtTypeMeta (ExtTypeMeta))
 import Ribosome.Host.Data.ApiType (ApiPrim (Object), ApiType (Prim))
 import Ribosome.Host.Data.Request (Request (Request), RpcMethod (RpcMethod))
 import Ribosome.Host.TH.Api.Generate (MethodSpec (MethodSpec), generateFromApi, reifyApiType)
+import Ribosome.Host.TH.Api.Param (Param, monoType, paramName)
 
 effectiveType :: ApiType -> Q Type
 effectiveType = \case
@@ -46,24 +47,26 @@ effectiveType = \case
   a ->
     reifyApiType a
 
-dataSig :: [Type] -> Name -> ApiType -> DecQ
+dataSig :: [Param] -> Name -> ApiType -> DecQ
 dataSig types name returnType = do
   t <- [t|Request $(effectiveType returnType)|]
-  sigD name (pure (foldr (AppT . AppT ArrowT) t types))
+  sigD name (pure (foldr (AppT . AppT ArrowT . monoType) t types))
 
-dataBody :: String -> Name -> [Name] -> DecQ
+dataBody :: String -> Name -> [Param] -> DecQ
 dataBody apiName name params =
-  funD name [clause (varP <$> params) (normalB rpcCall) []]
+  funD name [clause (varP <$> names) (normalB rpcCall) []]
   where
     rpcCall =
-      [|Request (RpcMethod apiName) $(listE (toObjVar <$> params))|]
+      [|Request (RpcMethod apiName) $(listE (toObjVar <$> names))|]
     toObjVar v =
       [|toMsgpack $(varE v)|]
+    names =
+      paramName <$> params
 
 genRequest :: MethodSpec -> DecsQ
-genRequest (MethodSpec apiName name paramNames paramTypes returnType) = do
-  sig <- dataSig paramTypes name returnType
-  body <- dataBody apiName name paramNames
+genRequest (MethodSpec apiName name params returnType) = do
+  sig <- dataSig params name returnType
+  body <- dataBody apiName name params
   pure [sig, body]
 
 extData :: Name -> DecQ

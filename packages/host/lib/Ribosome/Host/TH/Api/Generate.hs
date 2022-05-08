@@ -1,30 +1,17 @@
 module Ribosome.Host.TH.Api.Generate where
 
 import Data.Char (toUpper)
-import qualified Data.Map.Strict as Map (fromList, toList)
+import qualified Data.Map.Strict as Map
 import Data.MessagePack (Object)
 import Exon (exon)
-import Language.Haskell.TH (
-  Dec,
-  DecsQ,
-  Name,
-  Q,
-  Type,
-  TypeQ,
-  appT,
-  conT,
-  listT,
-  mkName,
-  newName,
-  runIO,
-  tupleT,
-  )
+import Language.Haskell.TH (Dec, DecsQ, Name, Q, Type, appT, conT, listT, mkName, newName, runIO, tupleT)
 import Prelude hiding (Type)
 
 import qualified Ribosome.Host.Data.ApiInfo as ApiInfo
 import Ribosome.Host.Data.ApiInfo (ApiInfo (ApiInfo), ExtType, ExtTypeMeta, RpcDecl (RpcDecl), apiInfo, unExtType)
 import Ribosome.Host.Data.ApiType (ApiPrim (..), ApiType (..))
 import Ribosome.Host.Data.LuaRef (LuaRef)
+import Ribosome.Host.TH.Api.Param (Param (Param))
 
 camelcase :: String -> String
 camelcase =
@@ -34,18 +21,6 @@ camelcase =
     folder a (True, h : t) = (False, a : toUpper h : t)
     folder a (True, []) = (False, [a])
     folder a (False, z) = (False, a : z)
-
-haskellTypes :: Map String TypeQ
-haskellTypes =
-  Map.fromList [
-    ("Boolean", [t|Bool|]),
-    ("Integer", [t|Int|]),
-    ("Float", [t|Double|]),
-    ("String", [t|Text|]),
-    ("Array", [t|[Object]|]),
-    ("Dictionary", [t|Map Text Object|]),
-    ("void", [t|()|])
-    ]
 
 reifyApiPrim :: ApiPrim -> Q Type
 reifyApiPrim = \case
@@ -69,26 +44,36 @@ reifyApiType = \case
   Ext t ->
     conT (mkName t)
 
+polyName :: Int -> ApiType -> Q (Maybe Name)
+polyName i = \case
+  Prim Object ->
+    Just <$> newName [exon|p_#{show i}|]
+  _ ->
+    pure Nothing
+
+reifyParam :: Int -> (ApiType, String) -> Q Param
+reifyParam i (t, n) = do
+  name <- newName prefixed
+  mono <- reifyApiType t
+  paramType <- polyName i t
+  pure (Param name mono paramType)
+  where
+    prefixed =
+      [exon|arg#{show i}_#{n}|]
+
 data MethodSpec =
   MethodSpec {
     apiName :: String,
     camelcaseName :: Name,
-    paramNames :: [Name],
-    paramTypes :: [Type],
+    params :: [Param],
     returnType :: ApiType
   }
   deriving stock (Eq, Show)
 
 functionData :: RpcDecl -> Q MethodSpec
 functionData (RpcDecl name parameters _ _ _ returnType) = do
-  names <- traverse newName prefixedNames
-  types <- traverse reifyApiType (fst <$> parameters)
-  pure (MethodSpec name (mkName (camelcase name)) names types returnType)
-  where
-    prefix i n =
-      [exon|arg#{show i}_#{n}|]
-    prefixedNames =
-      zipWith prefix [0 :: Int ..] (snd <$> parameters)
+  params <- zipWithM reifyParam [0..] parameters
+  pure (MethodSpec name (mkName (camelcase name)) params returnType)
 
 genExtTypes :: Map ExtType ExtTypeMeta -> (Name -> ExtTypeMeta -> DecsQ) -> Q [[Dec]]
 genExtTypes types gen =

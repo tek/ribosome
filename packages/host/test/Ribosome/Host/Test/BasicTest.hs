@@ -31,7 +31,7 @@ hand _ = do
     13 ->
       throw "already 13"
     _ -> do
-      rpcError (nvimSetVar var (toMsgpack (23 :: Int)))
+      rpcError (nvimSetVar var (23 :: Int))
       toMsgpack (47 :: Int) <$ atomicPut 13
 
 handlers ::
@@ -54,7 +54,7 @@ callTest =
 test_basic :: UnitTest
 test_basic =
   runTest $ interpretAtomic 0 $ embedNvim handlers $ interpretSync do
-    nvimSetVar var (toMsgpack (10 :: Int))
+    nvimSetVar var (10 :: Int)
     Rpc.async (Data.nvimGetVar var) (void . Sync.putTry)
     assertRight (10 :: Int) =<< evalMaybe =<< Sync.wait (Seconds 5)
     assertEq 47 =<< callTest
