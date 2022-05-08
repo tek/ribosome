@@ -10,7 +10,7 @@ import Ribosome.Host.Data.HandlerError (HandlerError (HandlerError))
 import Ribosome.Host.Data.Request (Request (Request), RequestId, RpcMethod (RpcMethod))
 import qualified Ribosome.Host.Data.Response as Response
 import Ribosome.Host.Data.Response (Response)
-import Ribosome.Host.Data.RpcDef (RpcDef (RpcDef), RpcHandler)
+import Ribosome.Host.Data.RpcDef (RpcDef (RpcDef), RpcHandler, rpcMethod)
 import Ribosome.Host.Data.RpcError (RpcError (RpcError))
 import Ribosome.Host.Data.RpcMessage (RpcMessage)
 import Ribosome.Host.Effect.RequestHandler (RequestHandler (Handle))
@@ -23,7 +23,7 @@ handlersByName ::
   [RpcDef r] ->
   Map RpcMethod (RpcHandler r)
 handlersByName =
-  Map.fromList . fmap \ (RpcDef _ name _ handler) -> (RpcMethod name, handler)
+  Map.fromList . fmap \ rpcDef@(RpcDef _ _ _ handler) -> (rpcMethod rpcDef, handler)
 
 invalidMethod ::
   RpcMethod ->

@@ -42,7 +42,7 @@ handlers =
 
 targetError :: RpcError
 targetError =
-  "Vim(let):Error invoking 'Test' on channel 1:\nalready 13"
+  "Vim(let):Error invoking 'function:Test' on channel 1:\nalready 13"
 
 callTest ::
   Member Rpc r =>
@@ -50,7 +50,6 @@ callTest ::
 callTest =
   nvimCallFunction "Test" []
 
--- TODO replace all Object parameters in the API with MsgpackEncode a => a
 test_basic :: UnitTest
 test_basic =
   runTest $ interpretAtomic 0 $ embedNvim handlers $ interpretSync do

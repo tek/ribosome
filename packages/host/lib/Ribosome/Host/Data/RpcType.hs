@@ -21,3 +21,15 @@ data RpcType =
   |
   Autocmd AutocmdEvent AutocmdOpts
   deriving stock (Show)
+
+camel :: RpcType -> Text
+camel = \case
+  Function -> "Function"
+  Command -> "Command"
+  Autocmd _ _ -> "Autocmd"
+
+methodPrefix :: RpcType -> Text
+methodPrefix = \case
+  Function -> "function"
+  Command -> "command"
+  Autocmd _ _ -> "autocmd"

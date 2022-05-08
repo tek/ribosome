@@ -6,6 +6,8 @@ import Text.Show (showParen, showsPrec)
 
 import Ribosome.Host.Data.Execution (Execution)
 import Ribosome.Host.Data.HandlerError (HandlerError)
+import Ribosome.Host.Data.Request (RpcMethod (RpcMethod))
+import qualified Ribosome.Host.Data.RpcType as RpcType
 import Ribosome.Host.Data.RpcType (RpcType)
 
 type RpcHandler r =
@@ -29,3 +31,7 @@ hoistRpcDef ::
   RpcDef r1
 hoistRpcDef f RpcDef {..} =
   RpcDef {handler = f . handler, ..}
+
+rpcMethod :: RpcDef r -> RpcMethod
+rpcMethod RpcDef {rpcType, name} =
+  RpcMethod [exon|#{RpcType.methodPrefix rpcType}:#{name}|]

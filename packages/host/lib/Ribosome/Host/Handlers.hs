@@ -9,7 +9,7 @@ import Ribosome.Host.Class.Msgpack.Array (msgpackArray)
 import Ribosome.Host.Class.Msgpack.Decode (fromMsgpack)
 import Ribosome.Host.Class.Msgpack.Map (MsgpackMap (msgpackMap))
 import Ribosome.Host.Data.ChannelId (ChannelId (ChannelId))
-import Ribosome.Host.Data.RpcDef (RpcDef (RpcDef))
+import Ribosome.Host.Data.RpcDef (RpcDef (RpcDef), rpcMethod)
 import Ribosome.Host.Data.RpcError (RpcError (RpcError, unRpcError))
 import qualified Ribosome.Host.Data.RpcType as RpcType
 import Ribosome.Host.Data.RpcType (AutocmdEvent (AutocmdEvent), AutocmdOpts (AutocmdOpts))
@@ -29,33 +29,39 @@ channelId =
 
 registerFailed ::
   Member Log r =>
-  Text ->
-  Text ->
+  RpcDef r ->
   RpcError ->
   Sem r ()
-registerFailed tpe name (RpcError e) =
-  Log.error [exon|Registering #{tpe} '#{name}' failed: #{e}|]
+registerFailed (RpcDef tpe name _ _) (RpcError e) =
+  Log.error [exon|Registering #{RpcType.methodPrefix tpe} '#{name}' failed: #{e}|]
 
 autocmdOpts :: AutocmdOpts -> Object
 autocmdOpts (AutocmdOpts pat nested once grp) =
   msgpackMap ("pattern", pat) ("nested", nested) ("once", once) ("group", grp)
+
+define :: RpcDef r -> Text
+define (RpcDef tpe _ _ _) =
+  [exon|remote#define##{RpcType.camel tpe}OnChannel|]
+
+registerArgs :: RpcDef r -> [Object]
+registerArgs = \case
+  RpcDef RpcType.Function name exec _ ->
+    msgpackArray exec name (ObjectMap mempty)
+  RpcDef RpcType.Command name exec _ ->
+    msgpackArray exec name (ObjectMap mempty)
+  RpcDef (RpcType.Autocmd (AutocmdEvent event) opts) _ exec _ ->
+    msgpackArray exec event (autocmdOpts opts)
 
 registerHandler ::
   Members [Rpc !! RpcError, Log] r =>
   ChannelId ->
   RpcDef r ->
   Sem r ()
-registerHandler (ChannelId i) = \case
-  RpcDef RpcType.Function name exec _ ->
-    reg "Function" name (msgpackArray exec name (ObjectMap mempty))
-  RpcDef RpcType.Command name exec _ ->
-    reg "Command" name (msgpackArray exec name (ObjectMap mempty))
-  RpcDef (RpcType.Autocmd (AutocmdEvent event) opts) name exec _ ->
-    reg "Autocmd" name (msgpackArray exec event (autocmdOpts opts))
+registerHandler (ChannelId i) rpcDef =
+  nvimCallFunction (define rpcDef) (msgpackArray i method <> registerArgs rpcDef) !! registerFailed rpcDef
   where
-    reg tpe name args =
-      nvimCallFunction [exon|remote#define##{tpe}OnChannel|] (msgpackArray i name <> args) !!
-      registerFailed tpe name
+    method =
+      rpcMethod rpcDef
 
 registerHandlers ::
   Member (Error Text) r =>
