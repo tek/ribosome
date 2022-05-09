@@ -960,11 +960,11 @@
         "thax": "thax_18"
       },
       "locked": {
-        "lastModified": 1651092931,
-        "narHash": "sha256-6IhSnHnDt1tqm/i3kgv3ButhReLUTRl1mhnz8sJ7/DU=",
+        "lastModified": 1652035838,
+        "narHash": "sha256-VciK/D9QK4cVFYpFT/FrXKLsu2QXjfc2Hi8b4LUMzfY=",
         "owner": "tek",
         "repo": "hix",
-        "rev": "011a825d089e8b38cd9eee40b2cf808a1cbeb29d",
+        "rev": "6c9220cd89d71d7477c9427abf7a9b1470c437f1",
         "type": "github"
       },
       "original": {
@@ -1879,17 +1879,17 @@
     },
     "nixpkgs_36": {
       "locked": {
-        "lastModified": 1650701402,
-        "narHash": "sha256-XKfstdtqDg+O+gNBx1yGVKWIhLgfEDg/e2lvJSsp9vU=",
+        "lastModified": 1651927509,
+        "narHash": "sha256-fGVGUdEsriuAL1vkUh29FlOQmEkPRnSfRGImWYaVjos=",
         "owner": "NixOS",
         "repo": "nixpkgs",
-        "rev": "bc41b01dd7a9fdffd32d9b03806798797532a5fe",
+        "rev": "2fdb6f2e08e7989b03a2a1aa8538d99e3eeea881",
         "type": "github"
       },
       "original": {
         "owner": "NixOS",
         "repo": "nixpkgs",
-        "rev": "bc41b01dd7a9fdffd32d9b03806798797532a5fe",
+        "rev": "2fdb6f2e08e7989b03a2a1aa8538d99e3eeea881",
         "type": "github"
       }
     },
@@ -3954,17 +3954,17 @@
     },
     "nixpkgs_ghc922": {
       "locked": {
-        "lastModified": 1650701402,
-        "narHash": "sha256-XKfstdtqDg+O+gNBx1yGVKWIhLgfEDg/e2lvJSsp9vU=",
+        "lastModified": 1651927509,
+        "narHash": "sha256-fGVGUdEsriuAL1vkUh29FlOQmEkPRnSfRGImWYaVjos=",
         "owner": "nixos",
         "repo": "nixpkgs",
-        "rev": "bc41b01dd7a9fdffd32d9b03806798797532a5fe",
+        "rev": "2fdb6f2e08e7989b03a2a1aa8538d99e3eeea881",
         "type": "github"
       },
       "original": {
         "owner": "nixos",
         "repo": "nixpkgs",
-        "rev": "bc41b01dd7a9fdffd32d9b03806798797532a5fe",
+        "rev": "2fdb6f2e08e7989b03a2a1aa8538d99e3eeea881",
         "type": "github"
       }
     },
@@ -4824,7 +4824,7 @@
         "polysemy-conc": "polysemy-conc_3"
       },
       "locked": {
-        "narHash": "sha256-R9sX+HEcuiizfEGDG+C6+v2tl9afQuPcdbm1DlMakPw=",
+        "narHash": "sha256-eeAojt+ODkz4brBdTjw9m6JX1e48vW2awWi4exyuebM=",
         "path": "../../../../..",
         "type": "path"
       },

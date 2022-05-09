@@ -8,7 +8,7 @@ import Path (Abs, Dir, Path, reldir, relfile, toFilePath, (</>))
 import Path.IO (copyDirRecur)
 import qualified Polysemy.Conc as Conc
 import Polysemy.Conc (interpretRace)
-import Polysemy.Log (Severity (Info), interpretLogStdoutLevelConc)
+import Polysemy.Log (Severity (Warn), interpretLogStdoutLevelConc)
 import Polysemy.Process.Data.ProcessError (ProcessError)
 import qualified Polysemy.Test as Test
 import Polysemy.Test (Hedgehog, Test, TestError (TestError), UnitTest, assertEq, liftH, runTestAuto)
@@ -38,7 +38,7 @@ testPlugin riboRoot =
   asyncToIOFinal $
   interpretRace $
   interpretTimeGhc $
-  interpretLogStdoutLevelConc (Just Info) $
+  interpretLogStdoutLevelConc (Just Warn) $
   mapError TestError $
   mapError (show @_ @ProcessError) do
     source <- Test.fixturePath [reldir|plugin|]

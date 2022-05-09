@@ -53,6 +53,7 @@ library
       Ribosome.Host.Interpreter.Rpc
       Ribosome.Host.Listener
       Ribosome.Host.Remote
+      Ribosome.Host.Text
       Ribosome.Host.TH.Api.Generate
       Ribosome.Host.TH.Api.GenerateData
       Ribosome.Host.TH.Api.GenerateEffect

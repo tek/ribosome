@@ -14,6 +14,7 @@ import qualified Ribosome.Host.Effect.RequestHandler as RequestHandler
 import Ribosome.Host.Effect.RequestHandler (RequestHandler)
 import qualified Ribosome.Host.Effect.Responses as Responses
 import Ribosome.Host.Effect.Responses (Responses)
+import Ribosome.Host.Text (ellipsize)
 
 handleRequest ::
   Members [RequestHandler, Process RpcMessage a] r =>
@@ -52,7 +53,7 @@ listener =
   forever do
     Process.recv >>= \case
       Right msg -> do
-        Log.debug [exon|listen: #{show msg}|]
+        Log.debug [exon|listen: #{ellipsize 500 (show msg)}|]
         dispatch msg
       Left err ->
         Log.error [exon|listen error: #{err}|]

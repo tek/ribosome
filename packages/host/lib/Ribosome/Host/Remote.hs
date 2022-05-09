@@ -1,12 +1,13 @@
 module Ribosome.Host.Remote where
 
-import Data.MessagePack (Object)
 import Polysemy.Process (Process, interpretProcessCurrent)
 import Polysemy.Process.Data.ProcessError (ProcessError)
 
 import Ribosome.Host.Data.Request (RequestId)
-import Ribosome.Host.Data.RpcHandler (RpcHandler, hoistRpcDef)
+import Ribosome.Host.Data.Response (Response)
 import Ribosome.Host.Data.RpcError (RpcError)
+import Ribosome.Host.Data.RpcHandler (RpcHandler, hoistRpcDef)
+import Ribosome.Host.Data.RpcMessage (RpcMessage)
 import Ribosome.Host.Effect.Responses (Responses)
 import Ribosome.Host.Effect.Rpc (Rpc)
 import Ribosome.Host.Interpreter.Process (interpretProcessInputCereal, interpretProcessOutputCereal)
@@ -16,8 +17,8 @@ import Ribosome.Host.Interpreter.Rpc (interpretRpcMsgpack)
 
 interpretRpcMsgpackRemote ::
   Members [Log, Resource, Async, Race, Embed IO] r =>
-  Members [Responses RequestId (Either RpcError Object) !! RpcError, Error ProcessError] r =>
-  InterpretersFor [Rpc !! RpcError, Process Object (Either Text Object)] r
+  Members [Responses RequestId Response !! RpcError, Error ProcessError] r =>
+  InterpretersFor [Rpc !! RpcError, Process RpcMessage (Either Text RpcMessage)] r
 interpretRpcMsgpackRemote =
   interpretProcessOutputCereal .
   interpretProcessInputCereal .

@@ -20,6 +20,7 @@ executable test-plugin
       base >=4.12 && <5
     , exon
     , incipit
+    , messagepack
     , nvim-hs
     , polysemy
     , polysemy-plugin
