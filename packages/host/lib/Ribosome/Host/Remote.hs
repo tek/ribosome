@@ -5,7 +5,7 @@ import Polysemy.Process (Process, interpretProcessCurrent)
 import Polysemy.Process.Data.ProcessError (ProcessError)
 
 import Ribosome.Host.Data.Request (RequestId)
-import Ribosome.Host.Data.RpcDef (RpcDef, hoistRpcDef)
+import Ribosome.Host.Data.RpcHandler (RpcHandler, hoistRpcDef)
 import Ribosome.Host.Data.RpcError (RpcError)
 import Ribosome.Host.Effect.Responses (Responses)
 import Ribosome.Host.Effect.Rpc (Rpc)
@@ -28,7 +28,7 @@ interpretRpcMsgpackRemote =
 
 runNvimPlugin ::
   Members [Error ProcessError, Error Text, Log, Resource, Async, Race, Embed IO] r =>
-  [RpcDef (Rpc !! RpcError : r)] ->
+  [RpcHandler (Rpc !! RpcError : r)] ->
   Sem r ()
 runNvimPlugin =
   interpretResponses .

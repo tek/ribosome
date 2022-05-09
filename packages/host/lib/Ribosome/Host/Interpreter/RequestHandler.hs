@@ -10,7 +10,7 @@ import Ribosome.Host.Data.HandlerError (HandlerError (HandlerError))
 import Ribosome.Host.Data.Request (Request (Request), RequestId, RpcMethod (RpcMethod))
 import qualified Ribosome.Host.Data.Response as Response
 import Ribosome.Host.Data.Response (Response)
-import Ribosome.Host.Data.RpcDef (RpcDef (RpcDef), RpcHandler, rpcMethod)
+import Ribosome.Host.Data.RpcHandler (RpcHandler (RpcHandler), RpcHandler, rpcMethod, RpcHandlerFun)
 import Ribosome.Host.Data.RpcError (RpcError (RpcError))
 import Ribosome.Host.Data.RpcMessage (RpcMessage)
 import Ribosome.Host.Effect.RequestHandler (RequestHandler (Handle))
@@ -20,10 +20,10 @@ import Ribosome.Host.Handlers (registerHandlers)
 import Ribosome.Host.Listener (listener)
 
 handlersByName ::
-  [RpcDef r] ->
-  Map RpcMethod (RpcHandler r)
+  [RpcHandler r] ->
+  Map RpcMethod (RpcHandlerFun r)
 handlersByName =
-  Map.fromList . fmap \ rpcDef@(RpcDef _ _ _ handler) -> (rpcMethod rpcDef, handler)
+  Map.fromList . fmap \ rpcDef@(RpcHandler _ _ _ handler) -> (rpcMethod rpcDef, handler)
 
 invalidMethod ::
   RpcMethod ->
@@ -33,7 +33,7 @@ invalidMethod (RpcMethod name) =
 
 executeRequest ::
   [Object] ->
-  RpcHandler r ->
+  RpcHandlerFun r ->
   Sem r Response
 executeRequest args handle =
   runError (handle args) <&> \case
@@ -41,7 +41,7 @@ executeRequest args handle =
     Left (HandlerError e) -> Response.Error (RpcError e)
 
 interpretRequestHandler ::
-  [RpcDef r] ->
+  [RpcHandler r] ->
   InterpreterFor RequestHandler r
 interpretRequestHandler defs =
   interpret \case
@@ -54,7 +54,7 @@ interpretRequestHandler defs =
 withRequestHandler ::
   Members [Process RpcMessage (Either Text RpcMessage), Rpc !! RpcError, Log, Error Text] r =>
   Members [Responses RequestId Response !! RpcError, Resource, Race, Async] r =>
-  [RpcDef r] ->
+  [RpcHandler r] ->
   InterpreterFor RequestHandler r
 withRequestHandler defs sem = do
   interpretRequestHandler defs do
@@ -65,7 +65,7 @@ withRequestHandler defs sem = do
 runRequestHandler ::
   Members [Process RpcMessage (Either Text RpcMessage), Rpc !! RpcError, Log, Error Text] r =>
   Members [Responses RequestId Response !! RpcError, Resource, Race, Async] r =>
-  [RpcDef r] ->
+  [RpcHandler r] ->
   Sem r ()
 runRequestHandler defs = do
   interpretRequestHandler defs do

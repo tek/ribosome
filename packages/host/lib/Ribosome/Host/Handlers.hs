@@ -9,7 +9,7 @@ import Ribosome.Host.Class.Msgpack.Array (msgpackArray)
 import Ribosome.Host.Class.Msgpack.Decode (fromMsgpack)
 import Ribosome.Host.Class.Msgpack.Map (MsgpackMap (msgpackMap))
 import Ribosome.Host.Data.ChannelId (ChannelId (ChannelId))
-import Ribosome.Host.Data.RpcDef (RpcDef (RpcDef), rpcMethod)
+import Ribosome.Host.Data.RpcHandler (RpcHandler (RpcHandler), rpcMethod)
 import Ribosome.Host.Data.RpcError (RpcError (RpcError, unRpcError))
 import qualified Ribosome.Host.Data.RpcType as RpcType
 import Ribosome.Host.Data.RpcType (AutocmdEvent (AutocmdEvent), AutocmdOpts (AutocmdOpts))
@@ -29,33 +29,33 @@ channelId =
 
 registerFailed ::
   Member Log r =>
-  RpcDef r ->
+  RpcHandler r ->
   RpcError ->
   Sem r ()
-registerFailed (RpcDef tpe name _ _) (RpcError e) =
+registerFailed (RpcHandler tpe name _ _) (RpcError e) =
   Log.error [exon|Registering #{RpcType.methodPrefix tpe} '#{name}' failed: #{e}|]
 
 autocmdOpts :: AutocmdOpts -> Object
 autocmdOpts (AutocmdOpts pat nested once grp) =
   msgpackMap ("pattern", pat) ("nested", nested) ("once", once) ("group", grp)
 
-define :: RpcDef r -> Text
-define (RpcDef tpe _ _ _) =
+define :: RpcHandler r -> Text
+define (RpcHandler tpe _ _ _) =
   [exon|remote#define##{RpcType.camel tpe}OnChannel|]
 
-registerArgs :: RpcDef r -> [Object]
+registerArgs :: RpcHandler r -> [Object]
 registerArgs = \case
-  RpcDef RpcType.Function name exec _ ->
+  RpcHandler RpcType.Function name exec _ ->
     msgpackArray exec name (ObjectMap mempty)
-  RpcDef RpcType.Command name exec _ ->
+  RpcHandler RpcType.Command name exec _ ->
     msgpackArray exec name (ObjectMap mempty)
-  RpcDef (RpcType.Autocmd (AutocmdEvent event) opts) _ exec _ ->
+  RpcHandler (RpcType.Autocmd (AutocmdEvent event) opts) _ exec _ ->
     msgpackArray exec event (autocmdOpts opts)
 
 registerHandler ::
   Members [Rpc !! RpcError, Log] r =>
   ChannelId ->
-  RpcDef r ->
+  RpcHandler r ->
   Sem r ()
 registerHandler (ChannelId i) rpcDef =
   nvimCallFunction (define rpcDef) (msgpackArray i method <> registerArgs rpcDef) !! registerFailed rpcDef
@@ -66,7 +66,7 @@ registerHandler (ChannelId i) rpcDef =
 registerHandlers ::
   Member (Error Text) r =>
   Members [Rpc !! RpcError, Log] r =>
-  [RpcDef r] ->
+  [RpcHandler r] ->
   Sem r ()
 registerHandlers defs = do
   i <- channelId

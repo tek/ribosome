@@ -1,4 +1,4 @@
-module Ribosome.Host.Data.RpcDef where
+module Ribosome.Host.Data.RpcHandler where
 
 import Data.MessagePack (Object)
 import Exon (exon)
@@ -10,28 +10,28 @@ import Ribosome.Host.Data.Request (RpcMethod (RpcMethod))
 import qualified Ribosome.Host.Data.RpcType as RpcType
 import Ribosome.Host.Data.RpcType (RpcType)
 
-type RpcHandler r =
+type RpcHandlerFun r =
   [Object] -> Sem (Error HandlerError : r) Object
 
-data RpcDef r =
-  RpcDef {
+data RpcHandler r =
+  RpcHandler {
     rpcType :: RpcType,
     name :: Text,
     execution :: Execution,
-    handler :: RpcHandler r
+    handler :: RpcHandlerFun r
   }
 
-instance Show (RpcDef m) where
-  showsPrec p (RpcDef t n e _) =
-    showParen (p > 10) [exon|RpcDef #{showsPrec 11 t} #{showsPrec 11 n} #{showsPrec 11 e}|]
+instance Show (RpcHandler m) where
+  showsPrec p (RpcHandler t n e _) =
+    showParen (p > 10) [exon|RpcHandler #{showsPrec 11 t} #{showsPrec 11 n} #{showsPrec 11 e}|]
 
 hoistRpcDef ::
   (∀ x . Sem (Error HandlerError : r) x -> Sem (Error HandlerError : r1) x) ->
-  RpcDef r ->
-  RpcDef r1
-hoistRpcDef f RpcDef {..} =
-  RpcDef {handler = f . handler, ..}
+  RpcHandler r ->
+  RpcHandler r1
+hoistRpcDef f RpcHandler {..} =
+  RpcHandler {handler = f . handler, ..}
 
-rpcMethod :: RpcDef r -> RpcMethod
-rpcMethod RpcDef {rpcType, name} =
+rpcMethod :: RpcHandler r -> RpcMethod
+rpcMethod RpcHandler {rpcType, name} =
   RpcMethod [exon|#{RpcType.methodPrefix rpcType}:#{name}|]

@@ -9,7 +9,7 @@ import System.Process.Typed (ProcessConfig, proc)
 
 import Ribosome.Host.Data.Request (RequestId)
 import Ribosome.Host.Data.Response (Response)
-import Ribosome.Host.Data.RpcDef (RpcDef, hoistRpcDef)
+import Ribosome.Host.Data.RpcHandler (RpcHandler, hoistRpcDef)
 import Ribosome.Host.Data.RpcError (RpcError)
 import Ribosome.Host.Data.RpcMessage (RpcMessage)
 import Ribosome.Host.Effect.Responses (Responses)
@@ -71,7 +71,7 @@ interpretRpcMsgpackProcessNvimEmbedDef =
 
 interpretRpcEmbed ::
   Members [Error ProcessError, Error Text, Log, Resource, Race, Async, Embed IO] r =>
-  [RpcDef (Rpc !! RpcError : r)] ->
+  [RpcHandler (Rpc !! RpcError : r)] ->
   InterpreterFor (Rpc !! RpcError) r
 interpretRpcEmbed handlers =
   interpretResponses .
@@ -92,7 +92,7 @@ type EmbedStack =
 runNvimPluginEmbedLog ::
   Members [Error Text, Resource, Embed IO, Final IO] r =>
   Severity ->
-  [RpcDef (Rpc !! RpcError : r)] ->
+  [RpcHandler (Rpc !! RpcError : r)] ->
   InterpretersFor EmbedStack r
 runNvimPluginEmbedLog logLevel handlers =
   asyncToIOFinal .
@@ -104,7 +104,7 @@ runNvimPluginEmbedLog logLevel handlers =
 
 runNvimPluginEmbed ::
   Members [Error Text, Resource, Embed IO, Final IO] r =>
-  [RpcDef (Rpc !! RpcError : r)] ->
+  [RpcHandler (Rpc !! RpcError : r)] ->
   InterpretersFor EmbedStack r
 runNvimPluginEmbed =
   runNvimPluginEmbedLog Warn

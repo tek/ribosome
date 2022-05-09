@@ -5,7 +5,7 @@ import Polysemy.Test (Hedgehog, Test, TestError (TestError), UnitTest, runTestAu
 import Polysemy.Time (GhcTime, interpretTimeGhcConstant, mkDatetime)
 
 import Ribosome.Host.Data.HandlerError (HandlerError (HandlerError))
-import Ribosome.Host.Data.RpcDef (RpcDef)
+import Ribosome.Host.Data.RpcHandler (RpcHandler)
 import Ribosome.Host.Data.RpcError (RpcError (unRpcError))
 import Ribosome.Host.Effect.Rpc (Rpc)
 import Ribosome.Host.Embed (EmbedStack, runNvimPluginEmbed)
@@ -22,7 +22,7 @@ testTime =
 
 embedTestWith ::
   Members [Resource, Error Text, Embed IO, Final IO] (r ++ TestStack) =>
-  [RpcDef (Rpc !! RpcError : r ++ TestStack)] ->
+  [RpcHandler (Rpc !! RpcError : r ++ TestStack)] ->
   InterpretersFor r TestStack ->
   Sem (EmbedTestStack r) () ->
   UnitTest
@@ -43,14 +43,14 @@ runTest =
 
 embedNvim ::
   Members [Error Text, Resource, Embed IO, Final IO] r =>
-  [RpcDef (Rpc !! RpcError : r)] ->
+  [RpcHandler (Rpc !! RpcError : r)] ->
   InterpretersFor (Rpc : EmbedStack) r
 embedNvim handlers =
   runNvimPluginEmbed handlers .
   resumeHoistError @_ @Rpc (show @Text)
 
 embedTest ::
-  [RpcDef (Rpc !! RpcError : TestStack)] ->
+  [RpcHandler (Rpc !! RpcError : TestStack)] ->
   Sem (Rpc : EmbedTestStack '[]) () ->
   UnitTest
 embedTest handlers =

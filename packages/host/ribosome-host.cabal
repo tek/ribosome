@@ -36,14 +36,15 @@ library
       Ribosome.Host.Data.LuaRef
       Ribosome.Host.Data.Request
       Ribosome.Host.Data.Response
-      Ribosome.Host.Data.RpcDef
       Ribosome.Host.Data.RpcError
+      Ribosome.Host.Data.RpcHandler
       Ribosome.Host.Data.RpcMessage
       Ribosome.Host.Data.RpcType
       Ribosome.Host.Effect.RequestHandler
       Ribosome.Host.Effect.Responses
       Ribosome.Host.Effect.Rpc
       Ribosome.Host.Embed
+      Ribosome.Host.Handler
       Ribosome.Host.Handlers
       Ribosome.Host.Interpreter.Id
       Ribosome.Host.Interpreter.Process

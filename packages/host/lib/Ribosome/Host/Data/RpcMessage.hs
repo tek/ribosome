@@ -46,9 +46,10 @@ instance MsgpackEncode RpcMessage where
     Notification method payload ->
       msgpackArray (2 :: Int) method payload
 
+-- TODO for unknown reasons, the request args are sent as [[Object]]. investigate
 instance MsgpackDecode RpcMessage where
   fromMsgpack = \case
-    ObjectArray [Msgpack (0 :: Int), Msgpack i, Msgpack method, Msgpack payload] ->
+    ObjectArray [Msgpack (0 :: Int), Msgpack i, Msgpack method, ObjectArray [Msgpack payload]] ->
       Right (Request (TrackedRequest i (Request.Request method payload)))
     ObjectArray [Msgpack (1 :: Int), Msgpack i, ObjectNil, payload] ->
       Right (Response (TrackedResponse i (Response.Success payload)))
