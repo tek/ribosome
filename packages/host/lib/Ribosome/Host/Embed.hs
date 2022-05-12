@@ -9,7 +9,7 @@ import System.Process.Typed (ProcessConfig, proc)
 
 import Ribosome.Host.Data.Request (RequestId)
 import Ribosome.Host.Data.Response (Response)
-import Ribosome.Host.Data.RpcHandler (RpcHandler, hoistRpcDef)
+import Ribosome.Host.Data.RpcHandler (RpcHandler, hoistRpcHandler)
 import Ribosome.Host.Data.RpcError (RpcError)
 import Ribosome.Host.Data.RpcMessage (RpcMessage)
 import Ribosome.Host.Effect.Responses (Responses)
@@ -76,7 +76,7 @@ interpretRpcEmbed ::
 interpretRpcEmbed handlers =
   interpretResponses .
   interpretRpcMsgpackProcessNvimEmbedDef .
-  withRequestHandler (hoistRpcDef (insertAt @2) <$> handlers) .
+  withRequestHandler (hoistRpcHandler (insertAt @2) <$> handlers) .
   insertAt @2 .
   raise
 
@@ -99,7 +99,7 @@ runNvimPluginEmbedLog logLevel handlers =
   interpretRace .
   interpretLogStdoutLevelConc (Just logLevel) .
   mapError @ProcessError show .
-  interpretRpcEmbed (hoistRpcDef (insertAt @2) <$> handlers) .
+  interpretRpcEmbed (hoistRpcHandler (insertAt @2) <$> handlers) .
   insertAt @1
 
 runNvimPluginEmbed ::

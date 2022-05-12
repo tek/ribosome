@@ -1,1 +1,1 @@
-packages: packages/host packages/host-test
+packages: packages/host packages/integration

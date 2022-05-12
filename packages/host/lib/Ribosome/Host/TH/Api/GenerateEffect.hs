@@ -1,5 +1,6 @@
 module Ribosome.Host.TH.Api.GenerateEffect where
 
+import qualified Data.Kind as Kind
 import Exon (exon)
 import Language.Haskell.TH (
   Dec,
@@ -7,8 +8,9 @@ import Language.Haskell.TH (
   Name,
   Q,
   Quote (newName),
-  Type (AppT, ArrowT, ForallT, VarT),
-  TypeQ,
+  Specificity (SpecifiedSpec),
+  TyVarBndr (KindedTV),
+  Type (AppT, ArrowT, ForallT, StarT, VarT),
   appE,
   clause,
   funD,
@@ -23,12 +25,12 @@ import Language.Haskell.TH (
 import Prelude hiding (Type)
 
 import Ribosome.Host.Class.Msgpack.Decode (MsgpackDecode)
+import Ribosome.Host.Class.Msgpack.Encode (MsgpackEncode (toMsgpack))
 import Ribosome.Host.Data.ApiType (ApiPrim (Object), ApiType (Prim))
 import qualified Ribosome.Host.Effect.Rpc as Rpc
 import Ribosome.Host.Effect.Rpc (Rpc)
 import Ribosome.Host.TH.Api.Generate (MethodSpec (MethodSpec), generateFromApi, reifyApiType)
-import Ribosome.Host.TH.Api.Param (Param (paramName, Param))
-import Ribosome.Host.Class.Msgpack.Encode (MsgpackEncode(toMsgpack))
+import Ribosome.Host.TH.Api.Param (Param (Param, paramName))
 
 msgpackDecodeConstraint :: ApiType -> Q (Maybe Type)
 msgpackDecodeConstraint = \case
@@ -44,41 +46,52 @@ msgpackEncodeConstraint = \case
   Param _ _ Nothing ->
     pure Nothing
 
-newT :: String -> TypeQ
-newT =
-  varT <=< newName
-
-effReturnType :: ApiType -> Q Type
+effReturnType :: ApiType -> Q (Maybe Name, Type)
 effReturnType = \case
-  Prim Object ->
-    pure (VarT (mkName "a"))
-  a ->
-    reifyApiType a
+  Prim Object -> do
+    let n = mkName "a"
+    pure (Just n, VarT (mkName "a"))
+  a -> do
+    t <- reifyApiType a
+    pure (Nothing, t)
 
-analyzeReturnType :: ApiType -> Q (Type, Maybe Type)
+analyzeReturnType :: ApiType -> Q (Maybe Name, Type, Maybe Type)
 analyzeReturnType tpe = do
-  rt <- effReturnType tpe
+  (n, rt) <- effReturnType tpe
   constraint <- msgpackDecodeConstraint tpe
-  pure (rt, constraint)
+  pure (n, rt, constraint)
 
 effSig :: Name -> [Param] -> ApiType -> DecQ
 effSig name params returnType = do
-  stack <- newT "r"
+  stackName <- newName "r"
+  stack <- varT stackName
   rpcConstraint <- [t|Member Rpc $(pure stack)|]
-  (retType, decodeConstraint) <- analyzeReturnType returnType
+  (retTv, retType, decodeConstraint) <- analyzeReturnType returnType
   encodeConstraints <- traverse msgpackEncodeConstraint params
   semT <- [t|Sem|]
+  stackKind <- [t|[(Kind.Type -> Kind.Type) -> Kind.Type -> Kind.Type]|]
   let
-    paramsType =
-      foldr (AppT . AppT ArrowT . paramType) (AppT (AppT semT stack) retType) params
     paramType = \case
       Param _ _ (Just n) ->
         VarT n
       Param _ t Nothing ->
         t
+    paramsType =
+      foldr (AppT . AppT ArrowT . paramType) (AppT (AppT semT stack) retType) params
     constraints =
       rpcConstraint : maybeToList decodeConstraint <> catMaybes encodeConstraints
-  sigD name (pure (ForallT [] constraints paramsType))
+    paramTv = \case
+      Param _ _ (Just n) ->
+        Just n
+      Param _ _ Nothing ->
+        Nothing
+    paramTvs =
+      mapMaybe paramTv params
+    tv n =
+      KindedTV n SpecifiedSpec StarT
+    stackTv =
+      KindedTV stackName SpecifiedSpec stackKind
+  sigD name (pure (ForallT ((tv <$> paramTvs) <> maybeToList (tv <$> retTv) <> [stackTv]) constraints paramsType))
 
 effBody :: Name -> [Param] -> DecQ
 effBody name params =

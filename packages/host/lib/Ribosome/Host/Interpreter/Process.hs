@@ -45,7 +45,7 @@ interpretProcessOutputLog ::
 interpretProcessOutputLog =
   interpret \case
     Chunk _ msg ->
-      ([], "") <$ Log.error [exon|Nvim stderr: #{decodeUtf8 msg}|]
+      ([], "") <$ Log.debug [exon|Nvim stderr: #{decodeUtf8 msg}|]
 
 interpretProcessInputCereal ::
   Serialize a =>

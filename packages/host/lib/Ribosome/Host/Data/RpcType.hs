@@ -2,34 +2,34 @@ module Ribosome.Host.Data.RpcType where
 
 newtype AutocmdEvent =
   AutocmdEvent { unAutocmdEvent :: Text }
-  deriving stock (Eq, Show)
+  deriving stock (Eq, Show, Generic)
   deriving newtype (IsString, Ord)
 
-data AutocmdOpts =
-  AutocmdOpts {
+data AutocmdOptions =
+  AutocmdOptions {
     fPattern :: Text,
     nested :: Bool,
     once :: Bool,
     group :: Maybe Text
   }
-  deriving stock (Eq, Show)
+  deriving stock (Eq, Show, Generic)
 
 data RpcType =
   Function
   |
-  Command
+  Command [Text] [Text]
   |
-  Autocmd AutocmdEvent AutocmdOpts
-  deriving stock (Show)
+  Autocmd AutocmdEvent AutocmdOptions
+  deriving stock (Show, Generic)
 
 camel :: RpcType -> Text
 camel = \case
   Function -> "Function"
-  Command -> "Command"
+  Command _ _ -> "Command"
   Autocmd _ _ -> "Autocmd"
 
 methodPrefix :: RpcType -> Text
 methodPrefix = \case
   Function -> "function"
-  Command -> "command"
+  Command _ _ -> "command"
   Autocmd _ _ -> "autocmd"

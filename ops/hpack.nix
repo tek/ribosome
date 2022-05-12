@@ -80,40 +80,44 @@ in {
     synopsis = "Neovim plugin host for Polysemy";
     description = "See https://hackage.haskell.org/package/ribosome-host/docs/Ribosome-Host.html";
     library.dependencies = [
-      "aeson"
       "cereal"
       "exon"
       "flatparse"
+      "lens"
       "messagepack"
       "path"
       "polysemy-process"
       "template-haskell"
+      "type-errors-pretty"
       "typed-process"
     ];
     tests = {
       ribosome-host-unit = exe "ribosome-host" "test" {
         dependencies = [
           "cereal"
+          "deepseq"
+          "ghc-hs-meta"
           "ribosome-host"
           "messagepack"
           "polysemy-conc"
           "polysemy-process"
           "polysemy-test"
           "tasty"
+          "template-haskell"
           "time"
         ];
       };
     };
   };
 
-  host-test = merge (project "host-test") {
+  integration = merge (project "integration") {
     synopsis = "Neovim plugin host for Polysemy";
     description = "Internal project for testing ribosome-host";
     library.dependencies = [
       "ribosome-host"
     ];
     tests = {
-      integration = exe "host-test" "test" {
+      integration = exe "integration" "test" {
         dependencies = [
           "cereal"
           "exon"

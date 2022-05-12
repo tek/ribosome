@@ -6,7 +6,7 @@ import Polysemy.Process.Data.ProcessError (ProcessError)
 import Ribosome.Host.Data.Request (RequestId)
 import Ribosome.Host.Data.Response (Response)
 import Ribosome.Host.Data.RpcError (RpcError)
-import Ribosome.Host.Data.RpcHandler (RpcHandler, hoistRpcDef)
+import Ribosome.Host.Data.RpcHandler (RpcHandler, hoistRpcHandler)
 import Ribosome.Host.Data.RpcMessage (RpcMessage)
 import Ribosome.Host.Effect.Responses (Responses)
 import Ribosome.Host.Effect.Rpc (Rpc)
@@ -35,4 +35,4 @@ runNvimPlugin =
   interpretResponses .
   interpretRpcMsgpackRemote .
   runRequestHandler .
-  fmap (hoistRpcDef (insertAt @2))
+  fmap (hoistRpcHandler (insertAt @2))

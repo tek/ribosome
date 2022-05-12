@@ -22,7 +22,7 @@
       fuzzyfind = hackage "3.0.0" "1aba9rxxdi6sv0z6qgwyq87fnqqhncqakvrbph0fvppd0lnajaac";
       polysemy-process = source.package polysemy-conc "process";
       ribosome-host = configure "--extra-prog-path=${pkgs.neovim}/bin" inputs;
-      host-test = inputs;
+      integration = inputs;
       streamly = hackage "0.8.1" "0ywyy7gxjnp32hx8kki0lfn94bnc9mzjh8g6mg65ff3vv28k2vdr";
       unicode-data = hackage "0.2.0" "14crb68g79yyw87fgh49z2fn4glqx0zr53v6mapihaxzkikhkkc3";
     };
@@ -32,7 +32,7 @@
       # ribosome = ./packages/ribosome;
       # ribosome-test = ./packages/test;
       ribosome-host = ./packages/host;
-      host-test = ./packages/host-test;
+      integration = ./packages/integration;
     };
     main = "ribosome-host";
     inherit overrides;

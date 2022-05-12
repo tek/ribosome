@@ -8,6 +8,7 @@ import Polysemy.Time (Seconds (Seconds))
 import qualified Ribosome.Host.Api.Data as Data
 import Ribosome.Host.Api.Effect (nvimCallFunction, nvimGetVar, nvimSetVar)
 import Ribosome.Host.Class.Msgpack.Encode (toMsgpack)
+import Ribosome.Host.Data.Bar (Bar (Bar))
 import Ribosome.Host.Data.Execution (Execution (Sync))
 import Ribosome.Host.Data.HandlerError (HandlerError)
 import Ribosome.Host.Data.RpcError (RpcError)
@@ -23,9 +24,11 @@ var =
 
 hand ::
   Members [AtomicState Int, Rpc !! RpcError, Error HandlerError] r =>
+  Bar ->
+  Bool ->
   Int ->
   Sem r Int
-hand n = do
+hand Bar _ n = do
   atomicGet >>= \case
     13 ->
       throw "already 13"
@@ -44,14 +47,14 @@ handlers =
 
 targetError :: RpcError
 targetError =
-  "Vim(let):Error invoking 'function:Fun' on channel 1:\nalready 13"
+  "Vim(return):Error invoking 'function:Fun' on channel 1:\nalready 13"
 
 callTest ::
   Member Rpc r =>
   Int ->
   Sem r Int
 callTest n =
-  nvimCallFunction "Fun" [toMsgpack n]
+  nvimCallFunction "Fun" [toMsgpack True, toMsgpack n]
 
 test_basic :: UnitTest
 test_basic =

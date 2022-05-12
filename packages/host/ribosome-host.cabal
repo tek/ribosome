@@ -29,11 +29,17 @@ library
       Ribosome.Host.Class.Msgpack.Util
       Ribosome.Host.Data.ApiInfo
       Ribosome.Host.Data.ApiType
+      Ribosome.Host.Data.Args
+      Ribosome.Host.Data.Bang
+      Ribosome.Host.Data.Bar
       Ribosome.Host.Data.ChannelId
-      Ribosome.Host.Data.CommandArgs
+      Ribosome.Host.Data.CommandMods
+      Ribosome.Host.Data.CommandOptions
+      Ribosome.Host.Data.CommandRegister
       Ribosome.Host.Data.Execution
       Ribosome.Host.Data.HandlerError
       Ribosome.Host.Data.LuaRef
+      Ribosome.Host.Data.Range
       Ribosome.Host.Data.Request
       Ribosome.Host.Data.Response
       Ribosome.Host.Data.RpcError
@@ -45,13 +51,15 @@ library
       Ribosome.Host.Effect.Rpc
       Ribosome.Host.Embed
       Ribosome.Host.Handler
-      Ribosome.Host.Handlers
+      Ribosome.Host.Handler.Codec
+      Ribosome.Host.Handler.Command
       Ribosome.Host.Interpreter.Id
       Ribosome.Host.Interpreter.Process
       Ribosome.Host.Interpreter.RequestHandler
       Ribosome.Host.Interpreter.Responses
       Ribosome.Host.Interpreter.Rpc
       Ribosome.Host.Listener
+      Ribosome.Host.RegisterHandlers
       Ribosome.Host.Remote
       Ribosome.Host.Text
       Ribosome.Host.TH.Api.Generate
@@ -122,18 +130,19 @@ library
       ViewPatterns
   ghc-options: -Wall -Wredundant-constraints -Wincomplete-uni-patterns -Wmissing-deriving-strategies -Widentities -Wunused-packages -fplugin=Polysemy.Plugin
   build-depends:
-      aeson
-    , base >=4.12 && <5
+      base >=4.12 && <5
     , cereal
     , exon
     , flatparse
     , incipit
+    , lens
     , messagepack
     , path
     , polysemy
     , polysemy-plugin
     , polysemy-process
     , template-haskell
+    , type-errors-pretty
     , typed-process
   mixins:
       base hiding (Prelude)
@@ -145,6 +154,13 @@ test-suite ribosome-host-unit
   other-modules:
       Ribosome.Host.Test.ApiInfoTest
       Ribosome.Host.Test.BasicTest
+      Ribosome.Host.Test.CommandArgsTest
+      Ribosome.Host.Test.CommandBangTest
+      Ribosome.Host.Test.CommandModsTest
+      Ribosome.Host.Test.CommandParamErrorDecls
+      Ribosome.Host.Test.CommandParamErrorTest
+      Ribosome.Host.Test.CommandRangeTest
+      Ribosome.Host.Test.CommandRegisterTest
       Ribosome.Host.Test.Run
   hs-source-dirs:
       test
@@ -212,6 +228,8 @@ test-suite ribosome-host-unit
   build-depends:
       base >=4.12 && <5
     , cereal
+    , deepseq
+    , ghc-hs-meta
     , incipit
     , messagepack
     , polysemy
@@ -221,6 +239,7 @@ test-suite ribosome-host-unit
     , polysemy-test
     , ribosome-host
     , tasty
+    , template-haskell
     , time
   mixins:
       base hiding (Prelude)

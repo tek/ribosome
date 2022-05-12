@@ -21,7 +21,7 @@ import GHC.Generics (
 import Path (Abs, Dir, File, Path, Rel, parseAbsDir, parseAbsFile, parseRelDir, parseRelFile)
 
 import qualified Ribosome.Host.Class.Msgpack.Util as Util (illegalType, invalid, lookupObjectMap, missingRecordKey)
-import Ribosome.Host.Data.CommandArgs (CommandArgs)
+import Exon (exon)
 
 class MsgpackDecode a where
   fromMsgpack :: Object -> Either Text a
@@ -208,15 +208,31 @@ instance MsgpackDecode () where
 instance MsgpackDecode Object where
   fromMsgpack = Right
 
-instance (MsgpackDecode a, MsgpackDecode b) => MsgpackDecode (a, b) where
-  fromMsgpack (ObjectArray [a, b]) =
-    (,) <$> fromMsgpack a <*> fromMsgpack b
-  fromMsgpack o@(ObjectArray _) =
-    Util.invalid "invalid array length for pair" o
-  fromMsgpack o =
-    Util.illegalType "pair" o
+decodeTuple :: Int -> ([Object] -> Either (Maybe Text) a) -> Object -> Either Text a
+decodeTuple i f = \case
+  o@(ObjectArray oa) ->
+    case f oa of
+      Right a -> pure a
+      Left Nothing -> Util.invalid [exon|invalid array length for #{show i}-tuple|] o
+      Left (Just err) -> Left err
+  o ->
+    Util.illegalType [exon|#{show i}-tuple|] o
 
-instance MsgpackDecode CommandArgs where
+instance (MsgpackDecode a, MsgpackDecode b) => MsgpackDecode (a, b) where
+  fromMsgpack =
+    decodeTuple 2 \case
+      [a, b] ->
+        first Just ((,) <$> fromMsgpack a <*> fromMsgpack b)
+      _ ->
+        Left Nothing
+
+instance (MsgpackDecode a, MsgpackDecode b, MsgpackDecode c) => MsgpackDecode (a, b, c) where
+  fromMsgpack =
+    decodeTuple 3 \case
+      [a, b, c] ->
+        first Just ((,,) <$> fromMsgpack a <*> fromMsgpack b <*> fromMsgpack c)
+      _ ->
+        Left Nothing
 
 class DecodePath b t where
   decodePath :: FilePath -> Either SomeException (Path b t)

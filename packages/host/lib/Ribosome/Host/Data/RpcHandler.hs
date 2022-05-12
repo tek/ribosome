@@ -20,18 +20,26 @@ data RpcHandler r =
     execution :: Execution,
     handler :: RpcHandlerFun r
   }
+  deriving stock (Generic)
 
 instance Show (RpcHandler m) where
   showsPrec p (RpcHandler t n e _) =
     showParen (p > 10) [exon|RpcHandler #{showsPrec 11 t} #{showsPrec 11 n} #{showsPrec 11 e}|]
 
-hoistRpcDef ::
+hoistRpcHandler ::
   (∀ x . Sem (Error HandlerError : r) x -> Sem (Error HandlerError : r1) x) ->
   RpcHandler r ->
   RpcHandler r1
-hoistRpcDef f RpcHandler {..} =
+hoistRpcHandler f RpcHandler {..} =
   RpcHandler {handler = f . handler, ..}
 
-rpcMethod :: RpcHandler r -> RpcMethod
-rpcMethod RpcHandler {rpcType, name} =
+rpcMethod ::
+  RpcType ->
+  Text ->
+  RpcMethod
+rpcMethod rpcType name =
   RpcMethod [exon|#{RpcType.methodPrefix rpcType}:#{name}|]
+
+rpcHandlerMethod :: RpcHandler r -> RpcMethod
+rpcHandlerMethod RpcHandler {rpcType, name} =
+  rpcMethod rpcType name

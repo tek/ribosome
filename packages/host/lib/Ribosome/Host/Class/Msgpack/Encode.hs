@@ -117,7 +117,12 @@ instance MsgpackEncode ByteString where
   toMsgpack = ObjectString
 
 instance (MsgpackEncode a, MsgpackEncode b) => MsgpackEncode (a, b) where
-  toMsgpack (a, b) = ObjectArray [toMsgpack a, toMsgpack b]
+  toMsgpack (a, b) =
+    ObjectArray [toMsgpack a, toMsgpack b]
+
+instance (MsgpackEncode a, MsgpackEncode b, MsgpackEncode c) => MsgpackEncode (a, b, c) where
+  toMsgpack (a, b, c) =
+    ObjectArray [toMsgpack a, toMsgpack b, toMsgpack c]
 
 instance MsgpackEncode (Path b t) where
   toMsgpack = ObjectString . encodeUtf8 . toFilePath
