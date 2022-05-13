@@ -227,19 +227,14 @@ test-suite ribosome-host-unit
   ghc-options: -Wall -Wredundant-constraints -Wincomplete-uni-patterns -Wmissing-deriving-strategies -Widentities -Wunused-packages -fplugin=Polysemy.Plugin -threaded -rtsopts -with-rtsopts=-N
   build-depends:
       base >=4.12 && <5
-    , cereal
     , deepseq
-    , ghc-hs-meta
     , incipit
-    , messagepack
     , polysemy
     , polysemy-conc
     , polysemy-plugin
-    , polysemy-process
     , polysemy-test
     , ribosome-host
     , tasty
-    , template-haskell
     , time
   mixins:
       base hiding (Prelude)

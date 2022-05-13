@@ -94,16 +94,11 @@ in {
     tests = {
       ribosome-host-unit = exe "ribosome-host" "test" {
         dependencies = [
-          "cereal"
           "deepseq"
-          "ghc-hs-meta"
           "ribosome-host"
-          "messagepack"
           "polysemy-conc"
-          "polysemy-process"
           "polysemy-test"
           "tasty"
-          "template-haskell"
           "time"
         ];
       };
@@ -119,11 +114,9 @@ in {
     tests = {
       integration = exe "integration" "test" {
         dependencies = [
-          "cereal"
           "exon"
           "hedgehog"
           "ribosome-host"
-          "messagepack"
           "path"
           "path-io"
           "polysemy-conc"

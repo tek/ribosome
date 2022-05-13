@@ -52,7 +52,7 @@ testPlugin riboRoot =
       withRequestHandler mempty do
         resumeHoistError @RpcError @Rpc (show @Text) do
           Conc.timeout_ (liftH (failWith Nothing "RPC function did not appear")) (Minutes 2) do
-            Time.while (MilliSeconds 50) (resumeAs @RpcError True (False <$ nvimCallFunction @_ @Int "Test" []))
+            Time.while (MilliSeconds 50) (resumeAs @RpcError True (False <$ nvimCallFunction @Int "Test" []))
           assertEq (5 :: Int) =<< nvimCallFunction "Test" []
 
 test_plugin :: UnitTest
