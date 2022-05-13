@@ -38,6 +38,11 @@ registerFailed ::
 registerFailed tpe name (RpcError e) =
   Log.error [exon|Registering #{RpcType.methodPrefix tpe} '#{name}' failed: #{e}|]
 
+trigger :: Execution -> Text
+trigger = \case
+  Sync -> "rpcrequest"
+  Async -> "rpcnotify"
+
 rpcCall ::
   ChannelId ->
   RpcMethod ->
@@ -45,11 +50,7 @@ rpcCall ::
   Text ->
   Text
 rpcCall (ChannelId i) (RpcMethod method) exec args =
-  [exon|#{trigger exec}(#{show i}, '#{method}', #{args})|]
-  where
-    trigger = \case
-      Sync -> "rpcrequest"
-      Async -> "rpcnotify"
+  [exon|call('#{trigger exec}', [#{show i}, '#{method}'] + #{args})|]
 
 registerType ::
   ChannelId ->
@@ -70,7 +71,7 @@ endfunction|]
         Text.intercalate " " options
       argsText =
         [exon|[#{Text.intercalate ", " args}]|]
-  (RpcType.Autocmd (AutocmdEvent event) (AutocmdOptions {..})) ->
+  RpcType.Autocmd (AutocmdEvent event) AutocmdOptions {..} ->
     [exon|autocmd! #{fold group} #{event} #{fPattern} call #{rpcCall i method exec "[]"}|]
 
 registerHandler ::

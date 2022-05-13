@@ -32,8 +32,8 @@ handlers =
     rpcFunction "Fun" Async (hand @(Error HandlerError : r))
   ]
 
-test_function :: UnitTest
-test_function =
+test_notify :: UnitTest
+test_notify =
   runTest $ interpretSync $ embedNvim handlers do
     Rpc.notify (nvimCallFunction "Fun" [toMsgpack i])
     assertJust i =<< Sync.takeWait (Seconds 5)

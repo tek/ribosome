@@ -4,6 +4,7 @@ import Ribosome.Host.Data.Request (SomeRequest)
 import Ribosome.Host.Data.Response (Response)
 
 data RequestHandler :: Effect where
-  Handle :: SomeRequest -> RequestHandler m Response
+  Request :: SomeRequest -> RequestHandler m Response
+  Notification :: SomeRequest -> RequestHandler m ()
 
 makeSem ''RequestHandler

@@ -5,7 +5,7 @@ import qualified Polysemy.Log as Log
 import qualified Polysemy.Process as Process
 import Polysemy.Process (Process)
 
-import Ribosome.Host.Data.Request (RequestId, TrackedRequest (TrackedRequest))
+import Ribosome.Host.Data.Request (RequestId, SomeRequest, TrackedRequest (TrackedRequest))
 import Ribosome.Host.Data.Response (Response, TrackedResponse (TrackedResponse))
 import Ribosome.Host.Data.RpcError (RpcError (RpcError))
 import qualified Ribosome.Host.Data.RpcMessage as RpcMessage
@@ -15,15 +15,21 @@ import Ribosome.Host.Effect.RequestHandler (RequestHandler)
 import qualified Ribosome.Host.Effect.Responses as Responses
 import Ribosome.Host.Effect.Responses (Responses)
 import Ribosome.Host.Text (ellipsize)
-import qualified Ribosome.Host.Data.Response as Response
 
 handleRequest ::
   Members [RequestHandler, Process RpcMessage a] r =>
   TrackedRequest ->
   Sem r ()
 handleRequest (TrackedRequest i req) = do
-  response <- RequestHandler.handle req
+  response <- RequestHandler.request req
   Process.send (RpcMessage.Response (TrackedResponse i response))
+
+handleNotification ::
+  Members [RequestHandler, Log] r =>
+  SomeRequest ->
+  Sem r ()
+handleNotification req = do
+  RequestHandler.notification req
 
 sendToConsumer ::
   Members [Responses RequestId Response !! RpcError, Log] r =>
@@ -33,7 +39,6 @@ sendToConsumer ::
 sendToConsumer i msg =
   Responses.respond i msg !! \ (RpcError e) -> Log.error e
 
--- TODO use Conc.Events for UI events
 dispatch ::
   Members [RequestHandler, Process RpcMessage a, Responses RequestId Response !! RpcError, Log, Async] r =>
   RpcMessage ->
@@ -44,12 +49,7 @@ dispatch = \case
   RpcMessage.Response (TrackedResponse i response) ->
     sendToConsumer i response
   RpcMessage.Notification req ->
-    void $ async do
-      RequestHandler.handle req >>= \case
-        Response.Success _ ->
-          unit
-        Response.Error (RpcError err) ->
-          Log.error [exon|Notification: #{err}|]
+    void (async (handleNotification req))
 
 listener ::
   Members [RequestHandler, Process RpcMessage (Either Text RpcMessage)] r =>

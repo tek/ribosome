@@ -9,7 +9,9 @@ import Ribosome.Host.Test.CommandModsTest (test_mods)
 import Ribosome.Host.Test.CommandParamErrorTest (test_paramError)
 import Ribosome.Host.Test.CommandRangeTest (test_range)
 import Ribosome.Host.Test.CommandRegisterTest (test_register)
+import Ribosome.Host.Test.EventTest (test_errorEvent)
 import Ribosome.Host.Test.FunctionTest (test_function)
+import Ribosome.Host.Test.NotifyTest (test_notify)
 import Test.Tasty (TestTree, defaultMain, testGroup)
 
 tests :: TestTree
@@ -25,7 +27,9 @@ tests =
       unitTest "register" test_register,
       unitTest "errors" test_paramError
     ],
-    unitTest "autocmd" test_autocmd
+    unitTest "autocmd" test_autocmd,
+    unitTest "notify" test_notify,
+    unitTest "error event" test_errorEvent
   ]
 
 main :: IO ()

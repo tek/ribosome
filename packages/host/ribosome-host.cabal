@@ -36,6 +36,7 @@ library
       Ribosome.Host.Data.CommandMods
       Ribosome.Host.Data.CommandOptions
       Ribosome.Host.Data.CommandRegister
+      Ribosome.Host.Data.Event
       Ribosome.Host.Data.Execution
       Ribosome.Host.Data.HandlerError
       Ribosome.Host.Data.LuaRef
@@ -161,6 +162,7 @@ test-suite ribosome-host-unit
       Ribosome.Host.Test.CommandParamErrorTest
       Ribosome.Host.Test.CommandRangeTest
       Ribosome.Host.Test.CommandRegisterTest
+      Ribosome.Host.Test.EventTest
       Ribosome.Host.Test.FunctionTest
       Ribosome.Host.Test.NotifyTest
       Ribosome.Host.Test.Run

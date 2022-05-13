@@ -1,5 +1,6 @@
 module Ribosome.Host.Remote where
 
+import Polysemy.Conc (interpretEventsChan)
 import Polysemy.Process (Process, interpretProcessCurrent)
 import Polysemy.Process.Data.ProcessError (ProcessError)
 
@@ -32,6 +33,7 @@ runNvimPlugin ::
   [RpcHandler (Rpc !! RpcError : r)] ->
   Sem r ()
 runNvimPlugin =
+  interpretEventsChan .
   interpretResponses .
   interpretRpcMsgpackRemote .
   runRequestHandler .
