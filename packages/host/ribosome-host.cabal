@@ -154,7 +154,6 @@ test-suite ribosome-host-unit
   other-modules:
       Ribosome.Host.Test.ApiInfoTest
       Ribosome.Host.Test.AutocmdTest
-      Ribosome.Host.Test.BasicTest
       Ribosome.Host.Test.CommandArgsTest
       Ribosome.Host.Test.CommandBangTest
       Ribosome.Host.Test.CommandModsTest
@@ -162,6 +161,8 @@ test-suite ribosome-host-unit
       Ribosome.Host.Test.CommandParamErrorTest
       Ribosome.Host.Test.CommandRangeTest
       Ribosome.Host.Test.CommandRegisterTest
+      Ribosome.Host.Test.FunctionTest
+      Ribosome.Host.Test.NotifyTest
       Ribosome.Host.Test.Run
   hs-source-dirs:
       test

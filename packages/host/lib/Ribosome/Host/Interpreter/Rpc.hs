@@ -52,4 +52,4 @@ interpretRpcMsgpack =
     Rpc.Notify req@Request {..} -> do
       Log.debug [exon|notify rpc: #{show req}|]
       liftT do
-        Process.send (RpcMessage.Notification method payload)
+        Process.send (RpcMessage.Notification (Request method payload))

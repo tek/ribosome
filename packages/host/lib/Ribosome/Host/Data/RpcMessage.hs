@@ -9,7 +9,7 @@ import Ribosome.Host.Class.Msgpack.Array (MsgpackArray (msgpackArray))
 import Ribosome.Host.Class.Msgpack.Decode (pattern Msgpack, MsgpackDecode (fromMsgpack))
 import Ribosome.Host.Class.Msgpack.Encode (MsgpackEncode (toMsgpack))
 import qualified Ribosome.Host.Data.Request as Request
-import Ribosome.Host.Data.Request (RpcMethod, TrackedRequest (TrackedRequest))
+import Ribosome.Host.Data.Request (SomeRequest, TrackedRequest (TrackedRequest))
 import qualified Ribosome.Host.Data.Response as Response
 import Ribosome.Host.Data.Response (TrackedResponse (TrackedResponse))
 import Ribosome.Host.Data.RpcError (RpcError (RpcError))
@@ -32,7 +32,7 @@ data RpcMessage =
   |
   Response TrackedResponse
   |
-  Notification RpcMethod [Object]
+  Notification SomeRequest
   deriving stock (Eq, Show)
 
 instance MsgpackEncode RpcMessage where
@@ -43,7 +43,7 @@ instance MsgpackEncode RpcMessage where
       msgpackArray (1 :: Int) i () payload
     Response (TrackedResponse i (Response.Error payload)) ->
       msgpackArray (1 :: Int) i payload ()
-    Notification method payload ->
+    Notification (Request.Request method payload) ->
       msgpackArray (2 :: Int) method payload
 
 -- TODO for unknown reasons, the request args are sent as [[Object]]. investigate
@@ -55,8 +55,8 @@ instance MsgpackDecode RpcMessage where
       Right (Response (TrackedResponse i (Response.Success payload)))
     ObjectArray [Msgpack (1 :: Int), Msgpack i, ErrorPayload e, ObjectNil] ->
       Right (Response (TrackedResponse i (Response.Error e)))
-    ObjectArray [Msgpack (2 :: Int), Msgpack method, Msgpack payload] ->
-      Right (Notification method payload)
+    ObjectArray [Msgpack (2 :: Int), Msgpack method, ObjectArray [Msgpack payload]] ->
+      Right (Notification (Request.Request method payload))
     o ->
       Left [exon|Invalid format for RpcMessage: #{show o}|]
 

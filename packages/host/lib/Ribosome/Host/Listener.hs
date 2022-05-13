@@ -15,6 +15,7 @@ import Ribosome.Host.Effect.RequestHandler (RequestHandler)
 import qualified Ribosome.Host.Effect.Responses as Responses
 import Ribosome.Host.Effect.Responses (Responses)
 import Ribosome.Host.Text (ellipsize)
+import qualified Ribosome.Host.Data.Response as Response
 
 handleRequest ::
   Members [RequestHandler, Process RpcMessage a] r =>
@@ -42,8 +43,13 @@ dispatch = \case
     void (async (handleRequest req))
   RpcMessage.Response (TrackedResponse i response) ->
     sendToConsumer i response
-  RpcMessage.Notification _ payload ->
-    Log.error [exon|Notification not implemented: #{show payload}|]
+  RpcMessage.Notification req ->
+    void $ async do
+      RequestHandler.handle req >>= \case
+        Response.Success _ ->
+          unit
+        Response.Error (RpcError err) ->
+          Log.error [exon|Notification: #{err}|]
 
 listener ::
   Members [RequestHandler, Process RpcMessage (Either Text RpcMessage)] r =>

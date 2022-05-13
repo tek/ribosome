@@ -1,4 +1,4 @@
-module Ribosome.Host.Test.BasicTest where
+module Ribosome.Host.Test.FunctionTest where
 
 import Polysemy.Conc (interpretAtomic, interpretSync)
 import qualified Polysemy.Conc.Sync as Sync
@@ -56,8 +56,8 @@ callTest ::
 callTest n =
   nvimCallFunction "Fun" [toMsgpack True, toMsgpack n]
 
-test_basic :: UnitTest
-test_basic =
+test_function :: UnitTest
+test_function =
   runTest $ interpretAtomic 0 $ embedNvim handlers $ interpretSync do
     nvimSetVar var (10 :: Int)
     Rpc.async (Data.nvimGetVar var) (void . Sync.putTry)
