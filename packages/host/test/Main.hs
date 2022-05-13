@@ -2,6 +2,7 @@ module Main where
 
 import Polysemy.Test (unitTest)
 import Ribosome.Host.Test.ApiInfoTest (test_parseType)
+import Ribosome.Host.Test.AutocmdTest (test_autocmd)
 import Ribosome.Host.Test.BasicTest (test_basic)
 import Ribosome.Host.Test.CommandArgsTest (test_args)
 import Ribosome.Host.Test.CommandBangTest (test_bang)
@@ -23,7 +24,8 @@ tests =
       unitTest "range" test_range,
       unitTest "register" test_register,
       unitTest "errors" test_paramError
-    ]
+    ],
+    unitTest "autocmd" test_autocmd
   ]
 
 main :: IO ()

@@ -1,6 +1,6 @@
 module Ribosome.Host.Test.CommandRegisterTest where
 
-import Polysemy.Conc (interpretAtomic, interpretSync)
+import Polysemy.Conc (interpretAtomic)
 import Polysemy.Test (UnitTest, assertJust)
 
 import Ribosome.Host.Api.Effect (nvimCommand, nvimGetVar, nvimSetVar)
@@ -35,6 +35,6 @@ regHandlers =
 
 test_register :: UnitTest
 test_register =
-  runTest $ interpretAtomic 0 $ embedNvim regHandlers $ interpretSync do
+  runTest $ interpretAtomic 0 $ embedNvim regHandlers do
     nvimCommand "Register x"
     assertJust @Text "x" =<< nvimGetVar var

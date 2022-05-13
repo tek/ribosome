@@ -14,6 +14,10 @@ data AutocmdOptions =
   }
   deriving stock (Eq, Show, Generic)
 
+instance Default AutocmdOptions where
+  def =
+    AutocmdOptions "*" False False Nothing
+
 data RpcType =
   Function
   |

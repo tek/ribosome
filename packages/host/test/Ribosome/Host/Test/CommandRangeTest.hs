@@ -1,6 +1,6 @@
 module Ribosome.Host.Test.CommandRangeTest where
 
-import Polysemy.Conc (interpretAtomic, interpretSync)
+import Polysemy.Conc (interpretAtomic)
 import Polysemy.Test (UnitTest, assertJust)
 
 import Ribosome.Host.Api.Effect (
@@ -91,7 +91,7 @@ rangeHandlers =
 
 test_range :: UnitTest
 test_range =
-  runTest $ interpretAtomic 0 $ embedNvim rangeHandlers $ interpretSync do
+  runTest $ interpretAtomic 0 $ embedNvim rangeHandlers do
     buf <- nvimGetCurrentBuf
     win <- nvimGetCurrentWin
     nvimBufSetLines buf 0 1 True ["1", "2", "3", "4", "5"]

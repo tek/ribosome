@@ -1,6 +1,6 @@
 module Ribosome.Host.Test.CommandModsTest where
 
-import Polysemy.Conc (interpretAtomic, interpretSync)
+import Polysemy.Conc (interpretAtomic)
 import Polysemy.Test (UnitTest, assertJust)
 
 import Ribosome.Host.Api.Effect (nvimCommand, nvimGetVar, nvimSetVar)
@@ -36,6 +36,6 @@ modsHandlers =
 
 test_mods :: UnitTest
 test_mods =
-  runTest $ interpretAtomic 0 $ embedNvim modsHandlers $ interpretSync do
+  runTest $ interpretAtomic 0 $ embedNvim modsHandlers do
     nvimCommand "belowright silent lockmarks Mods"
     assertJust @Text "belowright lockmarks silent" =<< nvimGetVar var

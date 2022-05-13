@@ -1,6 +1,6 @@
 module Ribosome.Host.Test.CommandBangTest where
 
-import Polysemy.Conc (interpretAtomic, interpretSync)
+import Polysemy.Conc (interpretAtomic)
 import Polysemy.Test (UnitTest, assertJust)
 
 import Ribosome.Host.Api.Effect (nvimCommand, nvimGetVar, nvimSetVar)
@@ -40,7 +40,7 @@ bangHandlers =
 
 test_bang :: UnitTest
 test_bang =
-  runTest $ interpretAtomic 0 $ embedNvim bangHandlers $ interpretSync do
+  runTest $ interpretAtomic 0 $ embedNvim bangHandlers do
     nvimCommand "Bang! 9"
     assertJust @(_, Int) (True, 9) =<< nvimGetVar var
     nvimCommand "Bang 10"

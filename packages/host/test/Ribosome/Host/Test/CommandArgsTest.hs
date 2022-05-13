@@ -1,6 +1,6 @@
 module Ribosome.Host.Test.CommandArgsTest where
 
-import Polysemy.Conc (interpretAtomic, interpretSync)
+import Polysemy.Conc (interpretAtomic)
 import Polysemy.Test (UnitTest, assertJust)
 
 import Ribosome.Host.Api.Effect (nvimCommand, nvimGetVar, nvimSetVar)
@@ -35,6 +35,6 @@ argsHandlers =
 
 test_args :: UnitTest
 test_args =
-  runTest $ interpretAtomic 0 $ embedNvim argsHandlers $ interpretSync do
+  runTest $ interpretAtomic 0 $ embedNvim argsHandlers do
     nvimCommand "Args 1 2 3 4 5"
     assertJust @Text "1 2 3 4 5" =<< nvimGetVar var

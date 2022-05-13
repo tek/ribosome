@@ -1,18 +1,18 @@
 module Ribosome.Host.RegisterHandlers where
 
-import Data.MessagePack (Object)
 import qualified Data.Text as Text
 import Exon (exon)
 import qualified Polysemy.Log as Log
+import Prelude hiding (group)
 
 import Ribosome.Host.Api.Effect (nvimCommand, nvimGetApiInfo)
 import Ribosome.Host.Class.Msgpack.Decode (fromMsgpack)
-import Ribosome.Host.Class.Msgpack.Map (MsgpackMap (msgpackMap))
 import Ribosome.Host.Data.ChannelId (ChannelId (ChannelId))
 import Ribosome.Host.Data.Execution (Execution (Async, Sync))
 import Ribosome.Host.Data.Request (RpcMethod (RpcMethod))
 import Ribosome.Host.Data.RpcError (RpcError (RpcError, unRpcError))
 import Ribosome.Host.Data.RpcHandler (RpcHandler (RpcHandler), rpcMethod)
+import qualified Ribosome.Host.Data.RpcType as AutocmdOptions
 import qualified Ribosome.Host.Data.RpcType as RpcType
 import Ribosome.Host.Data.RpcType (AutocmdEvent (AutocmdEvent), AutocmdOptions (AutocmdOptions), RpcType)
 import Ribosome.Host.Effect.Rpc (Rpc)
@@ -37,14 +37,6 @@ registerFailed ::
   Sem r ()
 registerFailed tpe name (RpcError e) =
   Log.error [exon|Registering #{RpcType.methodPrefix tpe} '#{name}' failed: #{e}|]
-
-autocmdOptions :: AutocmdOptions -> Object
-autocmdOptions (AutocmdOptions pat nested once grp) =
-  msgpackMap ("pattern", pat) ("nested", nested) ("once", once) ("group", grp)
-
-define :: RpcHandler r -> Text
-define (RpcHandler tpe _ _ _) =
-  [exon|remote#define##{RpcType.camel tpe}OnChannel|]
 
 rpcCall ::
   ChannelId ->
@@ -78,8 +70,8 @@ endfunction|]
         Text.intercalate " " options
       argsText =
         [exon|[#{Text.intercalate ", " args}]|]
-  (RpcType.Autocmd (AutocmdEvent _) _) ->
-    ""
+  (RpcType.Autocmd (AutocmdEvent event) (AutocmdOptions {..})) ->
+    [exon|autocmd! #{fold group} #{event} #{fPattern} call #{rpcCall i method exec "[]"}|]
 
 registerHandler ::
   Members [Rpc !! RpcError, Log] r =>

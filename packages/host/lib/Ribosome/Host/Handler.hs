@@ -3,6 +3,7 @@ module Ribosome.Host.Handler where
 import Ribosome.Host.Data.Execution (Execution)
 import Ribosome.Host.Data.RpcHandler (RpcHandler (RpcHandler))
 import qualified Ribosome.Host.Data.RpcType as RpcType
+import Ribosome.Host.Data.RpcType (AutocmdEvent (AutocmdEvent), AutocmdOptions)
 import Ribosome.Host.Handler.Codec (HandlerCodec (handlerCodec))
 import Ribosome.Host.Handler.Command (CommandHandler (commandOptions), OptionStateZero)
 
@@ -23,3 +24,13 @@ rpcCommand name execution h =
   where
     (opts, args) =
       commandOptions @OptionStateZero @h
+
+rpcAutocmd ::
+  HandlerCodec h r =>
+  Text ->
+  Execution ->
+  AutocmdOptions ->
+  h ->
+  RpcHandler r
+rpcAutocmd name execution options h =
+  RpcHandler (RpcType.Autocmd (AutocmdEvent name) options) name execution (handlerCodec h)

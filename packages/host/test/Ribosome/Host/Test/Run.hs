@@ -1,6 +1,7 @@
 module Ribosome.Host.Test.Run where
 
 import Data.Time (UTCTime)
+import Polysemy.Conc (interpretRace)
 import Polysemy.Log (Severity)
 import Polysemy.Test (Hedgehog, Test, TestError (TestError), UnitTest, runTestAuto)
 import Polysemy.Time (GhcTime, interpretTimeGhcConstant, mkDatetime)
@@ -12,7 +13,7 @@ import Ribosome.Host.Effect.Rpc (Rpc)
 import Ribosome.Host.Embed (EmbedStack, runNvimPluginEmbed, runNvimPluginEmbedLog)
 
 type TestStack =
-  [GhcTime, Error Text, Test, Fail, Error TestError, Hedgehog IO, Embed IO, Resource, Final IO]
+  [GhcTime, Race, Async, Error Text, Test, Fail, Error TestError, Hedgehog IO, Embed IO, Resource, Final IO]
 
 type EmbedTestStack r =
   EmbedStack ++ r ++ TestStack
@@ -21,29 +22,18 @@ testTime :: UTCTime
 testTime =
   mkDatetime 2025 6 15 12 30 30
 
-embedTestWith ::
-  Members [Resource, Error Text, Embed IO, Final IO] (r ++ TestStack) =>
-  [RpcHandler (Rpc !! RpcError : r ++ TestStack)] ->
-  InterpretersFor r TestStack ->
-  Sem (EmbedTestStack r) () ->
-  UnitTest
-embedTestWith handlers extra =
-  runTestAuto .
-  mapError TestError .
-  interpretTimeGhcConstant testTime .
-  extra .
-  runNvimPluginEmbed handlers
-
 runTest ::
   Sem TestStack () ->
   UnitTest
 runTest =
   runTestAuto .
   mapError TestError .
+  asyncToIOFinal .
+  interpretRace .
   interpretTimeGhcConstant testTime
 
 embedNvimLog ::
-  Members [Error Text, Resource, Embed IO, Final IO] r =>
+  Members [Error Text, Resource, Race, Async, Embed IO, Final IO] r =>
   Severity ->
   [RpcHandler (Rpc !! RpcError : r)] ->
   InterpretersFor (Rpc : EmbedStack) r
@@ -52,7 +42,7 @@ embedNvimLog level handlers =
   resumeHoistError @_ @Rpc (show @Text)
 
 embedNvim ::
-  Members [Error Text, Resource, Embed IO, Final IO] r =>
+  Members [Error Text, Resource, Race, Async, Embed IO, Final IO] r =>
   [RpcHandler (Rpc !! RpcError : r)] ->
   InterpretersFor (Rpc : EmbedStack) r
 embedNvim handlers =
