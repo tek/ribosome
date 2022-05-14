@@ -5,7 +5,7 @@ import qualified Polysemy.Log as Log
 import qualified Polysemy.Process as Process
 import Polysemy.Process (Process)
 
-import Ribosome.Host.Data.Request (RequestId, SomeRequest, TrackedRequest (TrackedRequest))
+import Ribosome.Host.Data.Request (RequestId, Request, TrackedRequest (TrackedRequest))
 import Ribosome.Host.Data.Response (Response, TrackedResponse (TrackedResponse))
 import Ribosome.Host.Data.RpcError (RpcError (RpcError))
 import qualified Ribosome.Host.Data.RpcMessage as RpcMessage
@@ -26,7 +26,7 @@ handleRequest (TrackedRequest i req) = do
 
 handleNotification ::
   Members [RequestHandler, Log] r =>
-  SomeRequest ->
+  Request ->
   Sem r ()
 handleNotification req = do
   RequestHandler.notification req

@@ -86,6 +86,7 @@ in {
       "lens"
       "messagepack"
       "path"
+      "polysemy-conc"
       "polysemy-process"
       "template-haskell"
       "type-errors-pretty"
@@ -95,6 +96,7 @@ in {
       ribosome-host-unit = exe "ribosome-host" "test" {
         dependencies = [
           "deepseq"
+          "messagepack"
           "ribosome-host"
           "polysemy-conc"
           "polysemy-test"

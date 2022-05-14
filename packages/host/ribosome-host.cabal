@@ -43,6 +43,7 @@ library
       Ribosome.Host.Data.Range
       Ribosome.Host.Data.Request
       Ribosome.Host.Data.Response
+      Ribosome.Host.Data.RpcCall
       Ribosome.Host.Data.RpcError
       Ribosome.Host.Data.RpcHandler
       Ribosome.Host.Data.RpcMessage
@@ -62,11 +63,13 @@ library
       Ribosome.Host.Listener
       Ribosome.Host.RegisterHandlers
       Ribosome.Host.Remote
+      Ribosome.Host.RpcCall
       Ribosome.Host.Text
       Ribosome.Host.TH.Api.Generate
       Ribosome.Host.TH.Api.GenerateData
       Ribosome.Host.TH.Api.GenerateEffect
       Ribosome.Host.TH.Api.Param
+      Ribosome.Host.TH.Api.Sig
   hs-source-dirs:
       lib
   default-extensions:
@@ -129,6 +132,7 @@ library
       UndecidableInstances
       UnicodeSyntax
       ViewPatterns
+      StandaloneKindSignatures
   ghc-options: -Wall -Wredundant-constraints -Wincomplete-uni-patterns -Wmissing-deriving-strategies -Widentities -Wunused-packages -fplugin=Polysemy.Plugin
   build-depends:
       base >=4.12 && <5
@@ -140,6 +144,7 @@ library
     , messagepack
     , path
     , polysemy
+    , polysemy-conc
     , polysemy-plugin
     , polysemy-process
     , template-haskell
@@ -154,6 +159,7 @@ test-suite ribosome-host-unit
   main-is: Main.hs
   other-modules:
       Ribosome.Host.Test.ApiInfoTest
+      Ribosome.Host.Test.AtomicTest
       Ribosome.Host.Test.AutocmdTest
       Ribosome.Host.Test.CommandArgsTest
       Ribosome.Host.Test.CommandBangTest
@@ -228,11 +234,13 @@ test-suite ribosome-host-unit
       UndecidableInstances
       UnicodeSyntax
       ViewPatterns
+      StandaloneKindSignatures
   ghc-options: -Wall -Wredundant-constraints -Wincomplete-uni-patterns -Wmissing-deriving-strategies -Widentities -Wunused-packages -fplugin=Polysemy.Plugin -threaded -rtsopts -with-rtsopts=-N
   build-depends:
       base >=4.12 && <5
     , deepseq
     , incipit
+    , messagepack
     , polysemy
     , polysemy-conc
     , polysemy-plugin

@@ -1,8 +1,8 @@
 module Ribosome.Host.Data.Request where
 
-import Data.MessagePack (Object)
+import Data.MessagePack (Object (ObjectArray))
 import Ribosome.Host.Class.Msgpack.Decode (MsgpackDecode)
-import Ribosome.Host.Class.Msgpack.Encode (MsgpackEncode)
+import Ribosome.Host.Class.Msgpack.Encode (MsgpackEncode (toMsgpack))
 
 newtype RpcMethod =
   RpcMethod { unRpcMethod :: Text }
@@ -14,23 +14,20 @@ newtype RequestId =
   deriving stock (Eq, Show, Generic)
   deriving newtype (Num, Real, Enum, Integral, Ord, MsgpackDecode, MsgpackEncode)
 
-type role Request phantom
-
--- |This type is used in API function definitions for simplicity, and so carries a phantom representing the function's
--- return type.
-data Request a =
+data Request =
   Request {
     method :: RpcMethod,
     payload :: [Object]
   }
-  deriving stock (Eq, Show)
+  deriving stock (Eq, Show, Generic)
 
-type SomeRequest =
-  Request Void
+instance MsgpackEncode Request where
+  toMsgpack (Request m p) =
+    ObjectArray [toMsgpack m, toMsgpack p]
 
 data TrackedRequest =
   TrackedRequest {
     id :: RequestId,
-    request :: SomeRequest
+    request :: Request
   }
   deriving stock (Eq, Show)

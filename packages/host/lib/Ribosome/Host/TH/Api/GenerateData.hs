@@ -11,7 +11,9 @@ import Language.Haskell.TH (
   Q,
   SourceStrictness (SourceStrict),
   SourceUnpackedness (NoSourceUnpackedness),
-  Type (AppT, ArrowT, ConT, VarT),
+  Specificity (SpecifiedSpec),
+  TyVarBndr (KindedTV),
+  Type (AppT, ArrowT, ConT, ForallT, StarT, VarT),
   clause,
   conE,
   conP,
@@ -37,8 +39,10 @@ import Ribosome.Host.Class.Msgpack.Util (illegalType)
 import Ribosome.Host.Data.ApiInfo (ExtTypeMeta (ExtTypeMeta))
 import Ribosome.Host.Data.ApiType (ApiPrim (Object), ApiType (Prim))
 import Ribosome.Host.Data.Request (Request (Request), RpcMethod (RpcMethod))
+import Ribosome.Host.Data.RpcCall (RpcCall (RpcCallRequest))
 import Ribosome.Host.TH.Api.Generate (MethodSpec (MethodSpec), generateFromApi, reifyApiType)
-import Ribosome.Host.TH.Api.Param (Param, monoType, paramName)
+import Ribosome.Host.TH.Api.GenerateEffect (analyzeReturnType, msgpackEncodeConstraint)
+import Ribosome.Host.TH.Api.Param (Param (Param), paramName)
 
 effectiveType :: ApiType -> Q Type
 effectiveType = \case
@@ -48,16 +52,37 @@ effectiveType = \case
     reifyApiType a
 
 dataSig :: [Param] -> Name -> ApiType -> DecQ
-dataSig types name returnType = do
-  t <- [t|Request $(effectiveType returnType)|]
-  sigD name (pure (foldr (AppT . AppT ArrowT . monoType) t types))
+dataSig params name returnType = do
+  (retTv, retType, decodeConstraint) <- analyzeReturnType returnType
+  encodeConstraints <- traverse msgpackEncodeConstraint params
+  rc <- [t|RpcCall|]
+  let
+    paramType = \case
+      Param _ _ (Just n) ->
+        VarT n
+      Param _ t Nothing ->
+        t
+    paramsType =
+      foldr (AppT . AppT ArrowT . paramType) (AppT rc retType) params
+    constraints =
+      maybeToList decodeConstraint <> catMaybes encodeConstraints
+    paramTv = \case
+      Param _ _ (Just n) ->
+        Just n
+      Param _ _ Nothing ->
+        Nothing
+    paramTvs =
+      mapMaybe paramTv params
+    tv n =
+      KindedTV n SpecifiedSpec StarT
+  sigD name (pure (ForallT ((tv <$> paramTvs) <> maybeToList (tv <$> retTv)) constraints paramsType))
 
 dataBody :: String -> Name -> [Param] -> DecQ
 dataBody apiName name params =
   funD name [clause (varP <$> names) (normalB rpcCall) []]
   where
     rpcCall =
-      [|Request (RpcMethod apiName) $(listE (toObjVar <$> names))|]
+      [|RpcCallRequest (Request (RpcMethod apiName) $(listE (toObjVar <$> names)))|]
     toObjVar v =
       [|toMsgpack $(varE v)|]
     names =

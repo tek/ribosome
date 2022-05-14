@@ -1,5 +1,3 @@
-{-# options_ghc -Wno-orphans #-}
-
 module Ribosome.Host.Class.Msgpack.Encode where
 
 import qualified Data.List.NonEmpty as NonEmpty (toList)
@@ -126,7 +124,3 @@ instance (MsgpackEncode a, MsgpackEncode b, MsgpackEncode c) => MsgpackEncode (a
 
 instance MsgpackEncode (Path b t) where
   toMsgpack = ObjectString . encodeUtf8 . toFilePath
-
-instance IsString Object where
-  fromString =
-    toMsgpack

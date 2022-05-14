@@ -9,7 +9,7 @@ import Ribosome.Host.Class.Msgpack.Array (MsgpackArray (msgpackArray))
 import Ribosome.Host.Class.Msgpack.Decode (pattern Msgpack, MsgpackDecode (fromMsgpack))
 import Ribosome.Host.Class.Msgpack.Encode (MsgpackEncode (toMsgpack))
 import qualified Ribosome.Host.Data.Request as Request
-import Ribosome.Host.Data.Request (SomeRequest, TrackedRequest (TrackedRequest))
+import Ribosome.Host.Data.Request (Request, TrackedRequest (TrackedRequest))
 import qualified Ribosome.Host.Data.Response as Response
 import Ribosome.Host.Data.Response (TrackedResponse (TrackedResponse))
 import Ribosome.Host.Data.RpcError (RpcError (RpcError))
@@ -32,7 +32,7 @@ data RpcMessage =
   |
   Response TrackedResponse
   |
-  Notification SomeRequest
+  Notification Request
   deriving stock (Eq, Show)
 
 instance MsgpackEncode RpcMessage where

@@ -43,6 +43,7 @@
     ghci = {
       preludePackage = "incipit";
       args = ["-fplugin=Polysemy.Plugin"];
+      extensions = ["StandaloneKindSignatures"];
     };
     compat.enable = false;
   });

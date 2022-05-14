@@ -8,7 +8,7 @@ import Polysemy.Process (Process)
 
 import Ribosome.Host.Data.Event (Event (Event), EventName (EventName))
 import Ribosome.Host.Data.HandlerError (HandlerError (HandlerError))
-import Ribosome.Host.Data.Request (Request (Request), RequestId, RpcMethod (RpcMethod), SomeRequest)
+import Ribosome.Host.Data.Request (Request (Request), RequestId, RpcMethod (RpcMethod))
 import qualified Ribosome.Host.Data.Response as Response
 import Ribosome.Host.Data.Response (Response)
 import Ribosome.Host.Data.RpcError (RpcError (RpcError))
@@ -28,14 +28,14 @@ handlersByName =
   Map.fromList . fmap \ rpcDef@(RpcHandler _ _ _ handler) -> (rpcHandlerMethod rpcDef, handler)
 
 invalidMethod ::
-  SomeRequest ->
+  Request ->
   Response
 invalidMethod (Request (RpcMethod name) _) =
   Response.Error (RpcError [exon|Invalid method for request: #{name}|])
 
 publishEvent ::
   Member (Events er Event) r =>
-  SomeRequest ->
+  Request ->
   Sem r ()
 publishEvent (Request (RpcMethod name) args) =
   publish (Event (EventName name) args)
@@ -51,7 +51,7 @@ executeRequest args handler =
 
 handle ::
   Map RpcMethod (RpcHandlerFun r) ->
-  SomeRequest ->
+  Request ->
   Sem r (Maybe Response)
 handle handlers (Request method args) =
   traverse (executeRequest args) (Map.lookup method handlers)

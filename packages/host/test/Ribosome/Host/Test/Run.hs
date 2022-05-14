@@ -49,6 +49,12 @@ embedNvim handlers =
   runNvimPluginEmbed handlers .
   resumeHoistError @_ @Rpc (show @Text)
 
+embedNvim_ ::
+  Members [Error Text, Resource, Race, Async, Embed IO, Final IO] r =>
+  InterpretersFor (Rpc : EmbedStack) r
+embedNvim_ =
+  embedNvim []
+
 embedTest ::
   [RpcHandler (Rpc !! RpcError : TestStack)] ->
   Sem (Rpc : EmbedTestStack '[]) () ->
@@ -56,6 +62,13 @@ embedTest ::
 embedTest handlers =
   runTest .
   embedNvim handlers
+
+embedTest_ ::
+  Sem (Rpc : EmbedTestStack '[]) () ->
+  UnitTest
+embedTest_ =
+  runTest .
+  embedNvim_
 
 rpcError ::
   Members [eff !! RpcError, Error HandlerError] r =>
