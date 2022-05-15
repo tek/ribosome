@@ -1,7 +1,12 @@
 module Ribosome.Api.Path where
 
-import Ribosome.Control.Monad.Ribo (NvimE)
-import Ribosome.Nvim.Api.IO (vimCallFunction)
+import Path (Abs, Dir, Path)
 
-nvimCwd :: NvimE e m => m FilePath
-nvimCwd = vimCallFunction "getcwd" []
+import Ribosome.Host.Api.Effect (vimCallFunction)
+import Ribosome.Host.Effect.Rpc (Rpc)
+
+nvimCwd ::
+  Member Rpc r =>
+  Sem r (Path Abs Dir)
+nvimCwd =
+  vimCallFunction "getcwd" []

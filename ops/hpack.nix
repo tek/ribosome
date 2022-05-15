@@ -107,6 +107,37 @@ in {
     };
   };
 
+  ribosome = merge (project "ribosome") {
+    synopsis = "Neovim plugin framework for Polysemy";
+    description = "See https://hackage.haskell.org/package/ribosome/docs/Ribosome.html";
+    library.dependencies = [
+      "cereal"
+      "exon"
+      "flatparse"
+      "lens"
+      "messagepack"
+      "ribosome-host"
+      "path"
+      "polysemy-process"
+      "template-haskell"
+      "type-errors-pretty"
+      "typed-process"
+    ];
+    tests = {
+      ribosome-unit = exe "ribosome" "test" {
+        dependencies = [
+          "path"
+          "ribosome"
+          "ribosome-host"
+          "polysemy-conc"
+          "polysemy-test"
+          "tasty"
+          "time"
+        ];
+      };
+    };
+  };
+
   integration = merge (project "integration") {
     synopsis = "Neovim plugin host for Polysemy";
     description = "Internal project for testing ribosome-host";

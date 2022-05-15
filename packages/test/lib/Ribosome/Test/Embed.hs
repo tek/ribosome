@@ -8,7 +8,6 @@ import Control.Monad.Trans.Resource (runResourceT)
 import qualified Data.Map.Strict as Map (fromList, toList, union)
 import Hedgehog (TestT)
 import Hedgehog.Internal.Property (mkTestT, runTestT)
-import Neovim (Neovim, Object)
 import Neovim.API.Text (vim_command)
 import qualified Neovim.Context.Internal as Internal (
   Config,

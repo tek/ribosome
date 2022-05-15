@@ -7,4 +7,4 @@ undo ::
   NvimE e m =>
   m ()
 undo =
-  vimCommand "undo"
+  nvimCommand "undo"

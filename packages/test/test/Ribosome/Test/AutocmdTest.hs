@@ -7,7 +7,7 @@ import TestError (RiboTest, handleTestError)
 import Ribosome.Control.Monad.Ribo (NvimE)
 import Ribosome.Control.Ribosome (Ribosome, newRibosome)
 import Ribosome.Msgpack.Encode (MsgpackEncode(toMsgpack))
-import Ribosome.Nvim.Api.IO (vimCommand, vimGetVar, vimSetVar)
+import Ribosome.Nvim.Api.IO (nvimCommand, vimGetVar, vimSetVar)
 import Ribosome.Orphans ()
 import Ribosome.Plugin (autocmd, riboPlugin, rpcHandler)
 import Ribosome.Test.Await (await)
@@ -40,7 +40,7 @@ autocmdPlugin = do
 
 autocmdTest :: RiboTest ()
 autocmdTest = do
-  () <- vimCommand "doautocmd BufWritePre"
+  () <- nvimCommand "doautocmd BufWritePre"
   await (result ===) (vimGetVar varName)
 
 test_autocmd :: UnitTest

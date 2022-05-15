@@ -61,6 +61,7 @@ library
       Ribosome.Host.Interpreter.Responses
       Ribosome.Host.Interpreter.Rpc
       Ribosome.Host.Listener
+      Ribosome.Host.Modify
       Ribosome.Host.RegisterHandlers
       Ribosome.Host.Remote
       Ribosome.Host.RpcCall

@@ -1,18 +1,18 @@
 module Ribosome.Api.Sleep where
 
 import Ribosome.Control.Monad.Ribo (NvimE)
-import Ribosome.Nvim.Api.IO (vimCommand)
+import Ribosome.Nvim.Api.IO (nvimCommand)
 
 nvimSleep ::
   NvimE e m =>
   Int ->
   m ()
 nvimSleep interval =
-  vimCommand $ "sleep " <> show interval
+  nvimCommand $ "sleep " <> show interval
 
 nvimMSleep ::
   NvimE e m =>
   Int ->
   m ()
 nvimMSleep interval =
-  vimCommand $ "sleep " <> show interval <> "m"
+  nvimCommand $ "sleep " <> show interval <> "m"

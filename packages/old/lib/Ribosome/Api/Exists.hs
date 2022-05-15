@@ -1,7 +1,6 @@
 module Ribosome.Api.Exists where
 
 import Prettyprinter (viaShow, (<+>))
-import Neovim (AnsiStyle, Doc, Object(ObjectInt))
 
 import Ribosome.Control.Monad.Ribo (NvimE)
 import Ribosome.Msgpack.Decode (MsgpackDecode, fromMsgpack)

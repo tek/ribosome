@@ -13,7 +13,7 @@ import Ribosome.Api.Variable (setVar)
 import Ribosome.Control.Monad.Ribo (MonadRibo, NvimE, Ribo)
 import Ribosome.Control.Ribosome (Ribosome, newRibosome)
 import Ribosome.Error.Report (reportError)
-import Ribosome.Nvim.Api.IO (vimCommand, vimGetVar)
+import Ribosome.Nvim.Api.IO (nvimCommand, vimGetVar)
 import Ribosome.Nvim.Api.RpcCall (RpcError)
 import Ribosome.Plugin (RpcDef, cmd, riboPlugin, rpcHandler, sync)
 import Ribosome.System.Time (sleep)
@@ -114,7 +114,7 @@ successCommand ::
   RiboTest ()
 successCommand cmd' = do
   setVar resultVar (0 :: Int)
-  vimCommand cmd'
+  nvimCommand cmd'
   (target ===) =<< vimGetVar resultVar
 
 failureCommand ::
@@ -122,7 +122,7 @@ failureCommand ::
   RiboTest ()
 failureCommand cmd' = do
   lift (setVar resultVar (0 :: Int))
-  catchAt recoverRpc (vimCommand cmd')
+  catchAt recoverRpc (nvimCommand cmd')
   ((0 :: Int) ===) =<< vimGetVar resultVar
   where
     recoverRpc (_ :: RpcError) =

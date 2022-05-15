@@ -1,166 +1,29 @@
 cabal-version: 2.2
 
--- This file has been generated from package.yaml by hpack version 0.34.4.
+-- This file has been generated from package.yaml by hpack version 0.34.6.
 --
 -- see: https://github.com/sol/hpack
 
 name:           ribosome
-version:        0.4.0.0
-synopsis:       High Level Neovim Plugin Framework
-description:    Please see the README on GitHub at <https://github.com/tek/ribosome>
+version:        0.1.0.0
+synopsis:       Neovim plugin framework for Polysemy
+description:    See https://hackage.haskell.org/package/ribosome/docs/Ribosome.html
 category:       Neovim
-homepage:       https://github.com/tek/ribosome#readme
-bug-reports:    https://github.com/tek/ribosome/issues
 author:         Torsten Schmits
-maintainer:     tek@tryp.io
-copyright:      2021 Torsten Schmits
+maintainer:     hackage@tryp.io
+copyright:      2022 Torsten Schmits
 license:        BSD-2-Clause-Patent
 license-file:   LICENSE
 build-type:     Simple
-extra-source-files:
-    readme.md
-
-source-repository head
-  type: git
-  location: https://github.com/tek/ribosome
 
 library
   exposed-modules:
-      Ribosome
-      Ribosome.Api.Atomic
-      Ribosome.Api.Autocmd
       Ribosome.Api.Buffer
-      Ribosome.Api.Echo
-      Ribosome.Api.Exists
-      Ribosome.Api.Function
-      Ribosome.Api.Input
-      Ribosome.Api.Mode
-      Ribosome.Api.Normal
-      Ribosome.Api.Option
       Ribosome.Api.Path
-      Ribosome.Api.Process
-      Ribosome.Api.Register
-      Ribosome.Api.Response
-      Ribosome.Api.Sleep
-      Ribosome.Api.Syntax
-      Ribosome.Api.Tabpage
-      Ribosome.Api.Undo
-      Ribosome.Api.Variable
       Ribosome.Api.Window
-      Ribosome.Config.Setting
-      Ribosome.Config.Settings
-      Ribosome.Control.Concurrent.Wait
-      Ribosome.Control.Exception
-      Ribosome.Control.Lock
-      Ribosome.Control.Monad.Error
-      Ribosome.Control.Monad.Ribo
-      Ribosome.Control.Ribosome
-      Ribosome.Control.StrictRibosome
-      Ribosome.Data.ErrorReport
-      Ribosome.Data.Errors
-      Ribosome.Data.FloatOptions
-      Ribosome.Data.Foldable
-      Ribosome.Data.Mapping
-      Ribosome.Data.PersistError
-      Ribosome.Data.Register
-      Ribosome.Data.RegisterType
-      Ribosome.Data.RiboError
-      Ribosome.Data.Scratch
-      Ribosome.Data.ScratchOptions
-      Ribosome.Data.Setting
-      Ribosome.Data.SettingError
-      Ribosome.Data.Stream
-      Ribosome.Data.String
-      Ribosome.Data.Syntax
-      Ribosome.Data.Text
-      Ribosome.Data.WindowConfig
+      Ribosome.Data.FileBuffer
       Ribosome.Data.WindowView
-      Ribosome.Error.Report
-      Ribosome.Error.Report.Class
-      Ribosome.File
-      Ribosome.Internal.IO
-      Ribosome.Internal.NvimObject
-      Ribosome.Log
-      Ribosome.Mapping
-      Ribosome.Menu.Action
-      Ribosome.Menu.Combinators
-      Ribosome.Menu.Consumer
-      Ribosome.Menu.Data.CursorIndex
-      Ribosome.Menu.Data.CursorLine
-      Ribosome.Menu.Data.Entry
-      Ribosome.Menu.Data.Menu
-      Ribosome.Menu.Data.MenuAction
-      Ribosome.Menu.Data.MenuConfig
-      Ribosome.Menu.Data.MenuConsumer
-      Ribosome.Menu.Data.MenuData
-      Ribosome.Menu.Data.MenuEvent
-      Ribosome.Menu.Data.MenuItem
-      Ribosome.Menu.Data.MenuItemFilter
-      Ribosome.Menu.Data.MenuRenderer
-      Ribosome.Menu.Data.MenuRenderEvent
-      Ribosome.Menu.Data.MenuResult
-      Ribosome.Menu.Data.MenuState
-      Ribosome.Menu.Data.MenuView
-      Ribosome.Menu.Data.NvimMenuState
-      Ribosome.Menu.Data.QuitReason
-      Ribosome.Menu.Filters
-      Ribosome.Menu.ItemLens
-      Ribosome.Menu.Items
-      Ribosome.Menu.Items.Read
-      Ribosome.Menu.Main
-      Ribosome.Menu.Nvim
-      Ribosome.Menu.Prompt
-      Ribosome.Menu.Prompt.Data.Codes
-      Ribosome.Menu.Prompt.Data.CursorUpdate
-      Ribosome.Menu.Prompt.Data.InputEvent
-      Ribosome.Menu.Prompt.Data.Prompt
-      Ribosome.Menu.Prompt.Data.PromptConfig
-      Ribosome.Menu.Prompt.Data.PromptConsumed
-      Ribosome.Menu.Prompt.Data.PromptControlEvent
-      Ribosome.Menu.Prompt.Data.PromptEvent
-      Ribosome.Menu.Prompt.Data.PromptInputEvent
-      Ribosome.Menu.Prompt.Data.PromptRenderer
-      Ribosome.Menu.Prompt.Data.PromptState
-      Ribosome.Menu.Prompt.Data.PromptUpdate
-      Ribosome.Menu.Prompt.Data.TextUpdate
-      Ribosome.Menu.Prompt.Nvim
-      Ribosome.Menu.Prompt.Run
-      Ribosome.Menu.Prompt.Transition
-      Ribosome.Menu.Run
-      Ribosome.Menu.UpdateState
-      Ribosome.Msgpack.Decode
-      Ribosome.Msgpack.Encode
-      Ribosome.Msgpack.Error
-      Ribosome.Msgpack.NvimObject
-      Ribosome.Msgpack.Util
-      Ribosome.Nvim.Api.Data
-      Ribosome.Nvim.Api.Generate
-      Ribosome.Nvim.Api.GenerateData
-      Ribosome.Nvim.Api.GenerateIO
-      Ribosome.Nvim.Api.IO
-      Ribosome.Nvim.Api.RpcCall
-      Ribosome.Orphans
-      Ribosome.Persist
-      Ribosome.Plugin
-      Ribosome.Plugin.Builtin
-      Ribosome.Plugin.Mapping
-      Ribosome.Plugin.RpcHandler
-      Ribosome.Plugin.TH
-      Ribosome.Plugin.TH.Command
-      Ribosome.Plugin.TH.Handler
-      Ribosome.Plugin.Watch
-      Ribosome.Prelude
-      Ribosome.Prelude.Debug
-      Ribosome.Scratch
-      Ribosome.Stream.Accumulate
-      Ribosome.Stream.ChunkAfter
-      Ribosome.System.Time
-      Ribosome.Tmux.Run
-  other-modules:
-      Prelude
-      Paths_ribosome
-  autogen-modules:
-      Paths_ribosome
+      Ribosome.Path
   hs-source-dirs:
       lib
   default-extensions:
@@ -180,6 +43,7 @@ library
       DeriveLift
       DeriveTraversable
       DerivingStrategies
+      DerivingVia
       DisambiguateRecordFields
       DoAndIfThenElse
       DuplicateRecordFields
@@ -209,6 +73,7 @@ library
       RankNTypes
       RecordWildCards
       RecursiveDo
+      RoleAnnotations
       ScopedTypeVariables
       StandaloneDeriving
       TemplateHaskell
@@ -221,50 +86,110 @@ library
       UndecidableInstances
       UnicodeSyntax
       ViewPatterns
-  ghc-options: -Wall -Wredundant-constraints -Wincomplete-uni-patterns -Wmissing-deriving-strategies -Widentities -Wunused-packages -threaded -rtsopts -with-rtsopts=-N
+      StandaloneKindSignatures
+  ghc-options: -Wall -Wredundant-constraints -Wincomplete-uni-patterns -Wmissing-deriving-strategies -Widentities -Wunused-packages -fplugin=Polysemy.Plugin
   build-depends:
-      aeson
-    , base ==4.*
-    , bytestring
-    , bytestring-trie
-    , chiasma
-    , composition
-    , composition-extra
-    , containers
-    , cornea
-    , data-default
-    , deepseq
-    , directory
-    , either
-    , exceptions
+      base >=4.12 && <5
+    , cereal
     , exon
-    , filepath
-    , free
-    , fuzzyfind >=3
-    , hourglass
-    , hslogger
+    , flatparse
+    , incipit
     , lens
-    , lifted-async
-    , lifted-base
     , messagepack
-    , monad-control
-    , mtl
-    , nvim-hs
     , path
-    , path-io
-    , prettyprinter
-    , prettyprinter-ansi-terminal
-    , relude >=0.7
-    , resourcet
-    , stm
-    , stm-chans
-    , streamly >=0.8
+    , polysemy
+    , polysemy-plugin
+    , polysemy-process
+    , ribosome-host
     , template-haskell
-    , text
+    , type-errors-pretty
+    , typed-process
+  mixins:
+      base hiding (Prelude)
+  default-language: Haskell2010
+
+test-suite ribosome-unit
+  type: exitcode-stdio-1.0
+  main-is: Main.hs
+  other-modules:
+      Ribosome.Host.Test.Run
+      Ribosome.Test.BufferTest
+  hs-source-dirs:
+      test
+  default-extensions:
+      AllowAmbiguousTypes
+      ApplicativeDo
+      BangPatterns
+      BinaryLiterals
+      BlockArguments
+      ConstraintKinds
+      DataKinds
+      DefaultSignatures
+      DeriveAnyClass
+      DeriveDataTypeable
+      DeriveFoldable
+      DeriveFunctor
+      DeriveGeneric
+      DeriveLift
+      DeriveTraversable
+      DerivingStrategies
+      DerivingVia
+      DisambiguateRecordFields
+      DoAndIfThenElse
+      DuplicateRecordFields
+      EmptyDataDecls
+      ExistentialQuantification
+      FlexibleContexts
+      FlexibleInstances
+      FunctionalDependencies
+      GADTs
+      GeneralizedNewtypeDeriving
+      InstanceSigs
+      KindSignatures
+      LambdaCase
+      LiberalTypeSynonyms
+      MultiParamTypeClasses
+      MultiWayIf
+      NamedFieldPuns
+      OverloadedStrings
+      OverloadedLists
+      PackageImports
+      PartialTypeSignatures
+      PatternGuards
+      PatternSynonyms
+      PolyKinds
+      QuantifiedConstraints
+      QuasiQuotes
+      RankNTypes
+      RecordWildCards
+      RecursiveDo
+      RoleAnnotations
+      ScopedTypeVariables
+      StandaloneDeriving
+      TemplateHaskell
+      TupleSections
+      TypeApplications
+      TypeFamilies
+      TypeFamilyDependencies
+      TypeOperators
+      TypeSynonymInstances
+      UndecidableInstances
+      UnicodeSyntax
+      ViewPatterns
+      StandaloneKindSignatures
+  ghc-options: -Wall -Wredundant-constraints -Wincomplete-uni-patterns -Wmissing-deriving-strategies -Widentities -Wunused-packages -fplugin=Polysemy.Plugin -threaded -rtsopts -with-rtsopts=-N
+  build-depends:
+      base >=4.12 && <5
+    , incipit
+    , path
+    , polysemy
+    , polysemy-conc
+    , polysemy-plugin
+    , polysemy-test
+    , ribosome
+    , ribosome-host
+    , tasty
     , time
-    , transformers
-    , transformers-base
-    , utf8-string
   mixins:
       base hiding (Prelude)
   default-language: Haskell2010

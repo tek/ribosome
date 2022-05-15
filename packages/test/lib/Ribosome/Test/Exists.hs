@@ -1,7 +1,6 @@
 module Ribosome.Test.Exists where
 
 import Data.MessagePack (Object(ObjectInt))
-import Neovim (Neovim, toObject)
 import Neovim.API.Text (vim_call_function)
 import UnliftIO.Exception (tryAny)
 

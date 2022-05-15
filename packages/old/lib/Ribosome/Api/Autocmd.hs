@@ -5,7 +5,7 @@ import Control.Exception.Lifted (bracket)
 import Ribosome.Control.Monad.Ribo (NvimE)
 import Ribosome.Msgpack.Encode (toMsgpack)
 import Ribosome.Nvim.Api.Data (Buffer)
-import Ribosome.Nvim.Api.IO (bufferGetNumber, vimCommand, vimGetOption, vimSetOption)
+import Ribosome.Nvim.Api.IO (bufferGetNumber, nvimCommand, vimGetOption, vimSetOption)
 
 doautocmd ::
   NvimE e m =>
@@ -13,7 +13,7 @@ doautocmd ::
   Text ->
   m ()
 doautocmd silent name =
-  vimCommand $ pre <> "doautocmd " <> name
+  nvimCommand $ pre <> "doautocmd " <> name
   where
     pre =
       if silent then "silent! " else ""
@@ -50,6 +50,6 @@ bufferAutocmd ::
   m ()
 bufferAutocmd buffer grp event cmd = do
   number <- bufferGetNumber buffer
-  vimCommand $ "augroup " <> grp
-  vimCommand $ "autocmd " <> " " <> event <> " <buffer=" <> show number <> "> " <> cmd
-  vimCommand "augroup end"
+  nvimCommand $ "augroup " <> grp
+  nvimCommand $ "autocmd " <> " " <> event <> " <buffer=" <> show number <> "> " <> cmd
+  nvimCommand "augroup end"

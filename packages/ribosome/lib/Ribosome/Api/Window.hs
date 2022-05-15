@@ -1,102 +1,104 @@
 module Ribosome.Api.Window where
 
-import Ribosome.Control.Monad.Ribo (NvimE)
 import Ribosome.Data.WindowView (PartialWindowView, WindowView)
-import Ribosome.Msgpack.Encode (toMsgpack)
-import Ribosome.Nvim.Api.Data (Window)
-import Ribosome.Nvim.Api.IO (
+import Ribosome.Host.Api.Data (Window)
+import Ribosome.Host.Api.Effect (
   nvimBufGetOption,
+  nvimCommand,
   nvimGetCurrentWin,
   nvimWinClose,
   nvimWinGetBuf,
   nvimWinGetCursor,
   nvimWinSetCursor,
   vimCallFunction,
-  vimCommand,
   vimGetWindows,
   vimSetCurrentWindow,
   windowIsValid,
   )
+import Ribosome.Host.Class.Msgpack.Encode (toMsgpack)
+import Ribosome.Host.Effect.Rpc (Rpc)
+import Ribosome.Host.Modify (silentBang)
 
 closeWindow ::
-  NvimE e m =>
+  Member Rpc r =>
   Window ->
-  m ()
+  Sem r ()
 closeWindow window = do
   valid <- windowIsValid window
   last' <- (1 ==) . length <$> vimGetWindows
   when (valid && not last') $ nvimWinClose window True
 
 cursor ::
-  NvimE e m =>
+  Member Rpc r =>
   Window ->
-  m (Int, Int)
+  Sem r (Int, Int)
 cursor window = do
   (line, col) <- nvimWinGetCursor window
-  return (line - 1, col)
+  pure (line - 1, col)
 
 currentCursor ::
-  NvimE e m =>
-  m (Int, Int)
+  Member Rpc r =>
+  Sem r (Int, Int)
 currentCursor =
   cursor =<< nvimGetCurrentWin
 
 windowLine ::
-  NvimE e m =>
+  Member Rpc r =>
   Window ->
-  m Int
+  Sem r Int
 windowLine window =
   fst <$> cursor window
 
 currentLine ::
-  NvimE e m =>
-  m Int
+  Member Rpc r =>
+  Sem r Int
 currentLine =
   windowLine =<< nvimGetCurrentWin
 
 setCursor ::
-  NvimE e m =>
+  Member Rpc r =>
   Window ->
   Int ->
   Int ->
-  m ()
+  Sem r ()
 setCursor window line col =
   nvimWinSetCursor window (line + 1, col)
 
 setCurrentCursor ::
-  NvimE e m =>
+  Member Rpc r =>
   Int ->
   Int ->
-  m ()
+  Sem r ()
 setCurrentCursor line col = do
   window <- nvimGetCurrentWin
   setCursor window line col
 
 setLine ::
-  NvimE e m =>
+  Member Rpc r =>
   Window ->
   Int ->
-  m ()
+  Sem r ()
 setLine window line =
   setCursor window line 0
 
 setCurrentLine ::
-  NvimE e m =>
+  Member Rpc r =>
   Int ->
-  m ()
+  Sem r ()
 setCurrentLine line =
   setCurrentCursor line 0
 
 redraw ::
-  NvimE e m =>
-  m ()
+  Member Rpc r =>
+  Sem r ()
 redraw =
-  vimCommand "silent! redraw!"
+  silentBang do
+    nvimCommand "redraw!"
 
 -- |A main window means here any non-window that may be used to edit a file, i.e. one with an empty 'buftype'.
 findMainWindow ::
-  NvimE e m =>
-  m (Maybe Window)
+  Member Rpc r =>
+  Sem r (Maybe Window)
 findMainWindow =
   listToMaybe <$> (filterM isFile =<< vimGetWindows)
   where
@@ -107,28 +109,26 @@ findMainWindow =
 -- |Create a new window at the top if no existing window has empty 'buftype'.
 -- Focuses the window.
 ensureMainWindow ::
-  NvimE e m =>
-  m Window
+  Member Rpc r =>
+  Sem r Window
 ensureMainWindow =
   maybe create focus =<< findMainWindow
   where
     create = do
-      vimCommand "aboveleft new"
-      win <- nvimGetCurrentWin
-      vimCommand "wincmd K"
-      return win
+      nvimCommand "aboveleft new"
+      nvimGetCurrentWin <* nvimCommand "wincmd K"
     focus w =
       w <$ vimSetCurrentWindow w
 
 saveView ::
-  NvimE e m =>
-  m WindowView
+  Member Rpc r =>
+  Sem r WindowView
 saveView =
   vimCallFunction "winsaveview" []
 
 restoreView ::
-  NvimE e m =>
+  Member Rpc r =>
   PartialWindowView ->
-  m ()
+  Sem r ()
 restoreView view =
   vimCallFunction "winrestview" [toMsgpack view]

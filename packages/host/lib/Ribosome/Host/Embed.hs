@@ -126,3 +126,26 @@ runNvimPluginEmbed ::
   InterpretersFor EmbedStack r
 runNvimPluginEmbed =
   runNvimPluginEmbedLog Warn
+
+embedNvimLog ::
+  Members [Error Text, Resource, Race, Async, Embed IO, Final IO] r =>
+  Severity ->
+  [RpcHandler (Rpc !! RpcError : r)] ->
+  InterpretersFor (Rpc : EmbedStack) r
+embedNvimLog level handlers =
+  runNvimPluginEmbedLog level handlers .
+  resumeHoistError @_ @Rpc (show @Text)
+
+embedNvim ::
+  Members [Error Text, Resource, Race, Async, Embed IO, Final IO] r =>
+  [RpcHandler (Rpc !! RpcError : r)] ->
+  InterpretersFor (Rpc : EmbedStack) r
+embedNvim handlers =
+  runNvimPluginEmbed handlers .
+  resumeHoistError @_ @Rpc (show @Text)
+
+embedNvim_ ::
+  Members [Error Text, Resource, Race, Async, Embed IO, Final IO] r =>
+  InterpretersFor (Rpc : EmbedStack) r
+embedNvim_ =
+  embedNvim []

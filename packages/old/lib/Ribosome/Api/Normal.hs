@@ -1,25 +1,25 @@
 module Ribosome.Api.Normal where
 
 import Ribosome.Control.Monad.Ribo (NvimE)
-import Ribosome.Nvim.Api.IO (vimCommand)
+import Ribosome.Nvim.Api.IO (nvimCommand)
 
 normalm ::
   NvimE e m =>
   Text ->
   m ()
 normalm cmd =
-  vimCommand $ "normal " <> cmd
+  nvimCommand $ "normal " <> cmd
 
 normal ::
   NvimE e m =>
   Text ->
   m ()
 normal cmd =
-  vimCommand $ "normal! " <> cmd
+  nvimCommand $ "normal! " <> cmd
 
 noautocmdNormal ::
   NvimE e m =>
   Text ->
   m ()
 noautocmdNormal cmd =
-  vimCommand $ "noautocmd normal! " <> cmd
+  nvimCommand $ "noautocmd normal! " <> cmd

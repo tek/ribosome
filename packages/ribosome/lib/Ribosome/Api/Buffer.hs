@@ -1,165 +1,180 @@
 module Ribosome.Api.Buffer where
 
-import Data.MessagePack (Object)
 import qualified Data.Text as Text (null)
-import System.FilePath ((</>))
+import Exon (exon)
+import Path (Abs, Dir, File, Path, parseAbsFile, parseRelFile, (</>))
 
-import Ribosome.Api.Atomic (atomicAs)
 import Ribosome.Api.Path (nvimCwd)
-import Ribosome.Control.Monad.Ribo (NvimE)
-import Ribosome.Msgpack.Encode (toMsgpack)
-import Ribosome.Msgpack.Error (DecodeError)
-import Ribosome.Nvim.Api.Data (Buffer)
-import qualified Ribosome.Nvim.Api.Data as ApiData (bufferGetName)
-import Ribosome.Nvim.Api.IO (
+import Ribosome.Data.FileBuffer (FileBuffer (FileBuffer))
+import qualified Ribosome.Host.Api.Data as Data
+import Ribosome.Host.Api.Data (Buffer)
+import Ribosome.Host.Api.Effect (
   bufferGetLines,
   bufferGetName,
   bufferGetNumber,
   bufferGetOption,
   bufferIsValid,
   bufferSetLines,
+  nvimBufDelete,
+  nvimCallFunction,
+  nvimCommand,
   nvimWinSetBuf,
-  vimCallFunction,
-  vimCommand,
   vimGetBuffers,
   vimGetCurrentBuffer,
   vimGetCurrentWindow,
   )
-import Ribosome.Nvim.Api.RpcCall (RpcError, syncRpcCall)
+import Ribosome.Host.Class.Msgpack.Encode (toMsgpack)
+import Ribosome.Host.Data.RpcError (RpcError)
+import qualified Ribosome.Host.Effect.Rpc as Rpc
+import Ribosome.Host.Effect.Rpc (Rpc)
+import Ribosome.Host.Modify (silentBang)
+import Ribosome.Path (pathText)
 
-edit :: NvimE e m => FilePath -> m ()
-edit path = vimCommand $ "silent! edit " <> toText path
+edit ::
+  Member Rpc r =>
+  Path b t ->
+  Sem r ()
+edit path = nvimCommand [exon|silent! edit #{pathText path}|]
 
-nvimCallBool :: NvimE e m => Text -> [Object] -> m Bool
-nvimCallBool =
-  vimCallFunction
-
-buflisted :: NvimE e m => Buffer -> m Bool
+buflisted ::
+  Member (Rpc !! RpcError) r =>
+  Buffer ->
+  Sem r Bool
 buflisted buf = do
-  catchAs @RpcError False do
+  resumeAs False do
     num <- bufferGetNumber buf
-    nvimCallBool "buflisted" [toMsgpack num]
+    nvimCallFunction "buflisted" [toMsgpack num]
 
-bufferContent :: NvimE e m => Buffer -> m [Text]
+bufferContent ::
+  Member Rpc r =>
+  Buffer ->
+  Sem r [Text]
 bufferContent buffer =
   bufferGetLines buffer 0 (-1) False
 
-currentBufferContent :: NvimE e m => m [Text]
+currentBufferContent ::
+  Member Rpc r =>
+  Sem r [Text]
 currentBufferContent =
   bufferContent =<< vimGetCurrentBuffer
 
-setBufferContent :: NvimE e m => Buffer -> [Text] -> m ()
+setBufferContent ::
+  Member Rpc r =>
+  Buffer ->
+  [Text] ->
+  Sem r ()
 setBufferContent buffer =
   bufferSetLines buffer 0 (-1) False
 
-setBufferLine :: NvimE e m => Buffer -> Int -> Text -> m ()
+setBufferLine :: Member Rpc r => Buffer -> Int -> Text -> Sem r ()
 setBufferLine buffer line text =
   bufferSetLines buffer line (line + 1) False [text]
 
 setCurrentBufferContent ::
-  NvimE e m =>
+  Member Rpc r =>
   [Text] ->
-  m ()
+  Sem r ()
 setCurrentBufferContent content = do
   buffer <- vimGetCurrentBuffer
   setBufferContent buffer content
 
-withBufferNumber ::
-  NvimE e m =>
-  (Int -> m ()) ->
+whenValid ::
+  Member Rpc r =>
+  (Buffer -> Sem r ()) ->
   Buffer ->
-  m ()
-withBufferNumber run buffer =
-  whenM (bufferIsValid buffer) (run =<< bufferGetNumber buffer)
+  Sem r ()
+whenValid use buffer =
+  whenM (bufferIsValid buffer) (use buffer)
+
+withBufferNumber ::
+  Member Rpc r =>
+  (Int -> Sem r ()) ->
+  Buffer ->
+  Sem r ()
+withBufferNumber run =
+ whenValid (run <=< bufferGetNumber)
 
 closeBuffer ::
-  NvimE e m =>
+  Member Rpc r =>
   Buffer ->
-  m ()
+  Sem r ()
 closeBuffer =
-  withBufferNumber del
+  silentBang . withBufferNumber del
   where
     del number =
-      vimCommand ("silent! bdelete! " <> show number)
+      nvimCommand [exon|bdelete! #{show number}|]
 
 wipeBuffer ::
-  NvimE e m =>
+  Member Rpc r =>
   Buffer ->
-  m ()
+  Sem r ()
 wipeBuffer =
-  withBufferNumber wipe
-  where
-    wipe number =
-      vimCommand ("silent! bwipeout! " <> show number)
+  whenValid \ b -> nvimBufDelete b [("force", toMsgpack True)]
 
 unloadBuffer ::
-  NvimE e m =>
+  Member Rpc r =>
   Buffer ->
-  m ()
+  Sem r ()
 unloadBuffer =
-  withBufferNumber unload
-  where
-    unload number =
-      vimCommand ("silent! bunload! " <> show number)
+  whenValid \ b -> nvimBufDelete b [("force", toMsgpack True), ("unload", toMsgpack True)]
 
 addBuffer ::
-  NvimE e m =>
+  Member Rpc r =>
   Text ->
-  m ()
+  Sem r ()
 addBuffer path =
-  vimCommand ("badd " <> path)
+  nvimCommand ("badd " <> path)
 
-buffersAndNames ::
-  MonadIO m =>
-  MonadDeepError e DecodeError m =>
-  NvimE e m =>
-  m [(Buffer, Text)]
-buffersAndNames = do
+fileBuffer ::
+  Path Abs Dir ->
+  Buffer ->
+  Text ->
+  Maybe FileBuffer
+fileBuffer cwd buffer (toString -> path) =
+  FileBuffer buffer <$> (parseAbsFile path <|> (cwd </>) <$> parseRelFile path)
+
+fileBuffers ::
+  Member Rpc r =>
+  Sem r [FileBuffer]
+fileBuffers = do
+  cwd <- nvimCwd
   buffers <- vimGetBuffers
-  names <- atomicAs (syncRpcCall . ApiData.bufferGetName <$> buffers)
-  return (zip buffers names)
+  names <- Rpc.sync (foldMap (fmap pure . Data.bufferGetName) buffers)
+  pure (catMaybes (zipWith (fileBuffer cwd) buffers names))
 
 bufferForFile ::
-  MonadIO m =>
-  MonadDeepError e DecodeError m =>
-  NvimE e m =>
-  Text ->
-  m (Maybe Buffer)
-bufferForFile target = do
-  cwd <- nvimCwd
-  fmap fst . find sameBuffer . fmap (second (toText . absolute cwd . toString)) <$> buffersAndNames
+  Member Rpc r =>
+  Path Abs File ->
+  Sem r (Maybe FileBuffer)
+bufferForFile target =
+  find sameBuffer <$> fileBuffers
   where
-    sameBuffer (_, name) = name == target
-    absolute dir ('.' : '/' : rest) =
-      dir </> rest
-    absolute _ p@('/' : _) =
-      p
-    absolute dir path =
-      dir </> path
+    sameBuffer (FileBuffer _ path) =
+      path == target
 
 currentBufferName ::
-  NvimE e m =>
-  m Text
+  Member Rpc r =>
+  Sem r Text
 currentBufferName =
   bufferGetName =<< vimGetCurrentBuffer
 
 setCurrentBuffer ::
-  NvimE e m =>
+  Member Rpc r =>
   Buffer ->
-  m ()
+  Sem r ()
 setCurrentBuffer buf = do
   win <- vimGetCurrentWindow
   nvimWinSetBuf win buf
 
 bufferIsFile ::
-  NvimE e m =>
+  Member Rpc r =>
   Buffer ->
-  m Bool
+  Sem r Bool
 bufferIsFile buf =
   Text.null <$> bufferGetOption buf "buftype"
 
 bufferCount ::
-  NvimE e m =>
-  m Natural
+  Member Rpc r =>
+  Sem r Natural
 bufferCount =
   fromIntegral . length <$> vimGetBuffers

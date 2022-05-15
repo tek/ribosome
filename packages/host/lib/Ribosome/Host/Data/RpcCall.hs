@@ -27,3 +27,15 @@ instance Applicative RpcCall where
     RpcPure
   liftA2 =
     RpcAtomic
+
+instance (
+    Semigroup a
+  ) => Semigroup (RpcCall a) where
+    (<>) =
+      liftA2 (<>)
+
+instance (
+    Monoid a
+  ) => Monoid (RpcCall a) where
+    mempty =
+      pure mempty

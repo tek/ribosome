@@ -1,1 +1,1 @@
-packages: packages/host packages/integration
+packages: packages/host packages/integration packages/ribosome

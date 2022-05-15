@@ -12,7 +12,7 @@ import qualified Ribosome.Control.Ribosome as Ribosome (scratch)
 import Ribosome.Data.FloatOptions (FloatOptions (FloatOptions), FloatRelative (Cursor))
 import Ribosome.Data.ScratchOptions (ScratchOptions (ScratchOptions))
 import Ribosome.Msgpack.Error (DecodeError)
-import Ribosome.Nvim.Api.IO (vimCallFunction, vimCommand)
+import Ribosome.Nvim.Api.IO (vimCallFunction, nvimCommand)
 import Ribosome.Plugin (riboPlugin, rpcHandler, rpcHandlerDef, sync)
 import Ribosome.Scratch (showInScratch)
 import Ribosome.Test.Await (await)
@@ -71,7 +71,7 @@ scratchTest fun = do
   () <- vimCallFunction fun []
   await ((1 :: Int) ===) scratches
   await (target ===) currentBufferContent
-  vimCommand "bdelete"
+  nvimCommand "bdelete"
   await (0 ===) scratches
   where
     scratches = vimCallFunction "ScratchCount" []

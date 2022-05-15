@@ -29,10 +29,10 @@
   in hix.lib.flake ({ config, lib, ...}: {
     base = ./.;
     packages = {
-      # ribosome = ./packages/ribosome;
-      # ribosome-test = ./packages/test;
-      ribosome-host = ./packages/host;
       integration = ./packages/integration;
+      ribosome = ./packages/ribosome;
+      ribosome-host = ./packages/host;
+      # ribosome-test = ./packages/test;
     };
     main = "ribosome-host";
     inherit overrides;

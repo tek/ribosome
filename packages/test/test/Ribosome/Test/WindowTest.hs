@@ -6,7 +6,7 @@ import TestError (RiboTest)
 import Ribosome.Api.Window (ensureMainWindow)
 import Ribosome.Msgpack.Encode (toMsgpack)
 import Ribosome.Nvim.Api.Data (Window)
-import Ribosome.Nvim.Api.IO (bufferSetOption, vimCommand, vimGetCurrentBuffer, vimGetCurrentWindow, vimGetWindows)
+import Ribosome.Nvim.Api.IO (bufferSetOption, nvimCommand, vimGetCurrentBuffer, vimGetCurrentWindow, vimGetWindows)
 import Ribosome.Test.Run (UnitTest)
 import Ribosome.Test.Unit (unitTestDef')
 
@@ -18,7 +18,7 @@ setCurrentNofile = do
 createNofile :: RiboTest Window
 createNofile = do
   initialWindow <- vimGetCurrentWindow
-  vimCommand "new"
+  nvimCommand "new"
   setCurrentNofile
   return initialWindow
 
