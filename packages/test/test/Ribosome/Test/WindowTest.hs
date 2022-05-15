@@ -4,9 +4,9 @@ import Hedgehog ((===))
 import TestError (RiboTest)
 
 import Ribosome.Api.Window (ensureMainWindow)
-import Ribosome.Msgpack.Encode (toMsgpack)
-import Ribosome.Nvim.Api.Data (Window)
-import Ribosome.Nvim.Api.IO (bufferSetOption, nvimCommand, vimGetCurrentBuffer, vimGetCurrentWindow, vimGetWindows)
+import Ribosome.Host.Class.Msgpack.Encode (toMsgpack)
+import Ribosome.Host.Api.Data (Window)
+import Ribosome.Host.Api.Effect (bufferSetOption, nvimCommand, vimGetCurrentBuffer, vimGetCurrentWindow, vimGetWindows)
 import Ribosome.Test.Run (UnitTest)
 import Ribosome.Test.Unit (unitTestDef')
 

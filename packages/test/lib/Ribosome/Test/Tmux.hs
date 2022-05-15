@@ -22,12 +22,10 @@ import Ribosome.Config.Setting (updateSetting)
 import Ribosome.Config.Settings (tmuxSocket)
 import Ribosome.Control.Concurrent.Wait (waitIOPredDef)
 import Ribosome.Control.Exception (catchAny, tryAny)
-import Ribosome.Control.Monad.Ribo (MonadRibo, Nvim, NvimE, Ribo)
 import Ribosome.Control.Ribosome (Ribosome (Ribosome), newRibosomeTMVar)
 import Ribosome.Error.Report.Class (ReportError)
-import Ribosome.Msgpack.Encode (toMsgpack)
-import Ribosome.Nvim.Api.IO (vimSetVar)
-import Ribosome.Nvim.Api.RpcCall (RpcError)
+import Ribosome.Host.Class.Msgpack.Encode (toMsgpack)
+import Ribosome.Host.Api.Effect (vimSetVar)
 import Ribosome.Plugin.RpcHandler (RpcHandler)
 import Ribosome.System.Time (sleep)
 import Ribosome.Test.Embed (
@@ -47,12 +45,10 @@ import Ribosome.Test.Unit (uTest)
 type RiboTesting e env m n =
   (
     NvimE e n,
-    MonadRibo n,
     MonadIO m,
     MonadFail m,
     ReportError e,
     RpcHandler e env n,
-    MonadBaseControl IO m
   )
 
 runSocketNvimHs ::
@@ -137,8 +133,6 @@ guiTest conf api env specThunk = do
 
 withTmux ::
   Nvim m =>
-  MonadRibo m =>
-  MonadDeepError e RpcError m =>
   m a ->
   TmuxNative ->
   m a
@@ -198,7 +192,7 @@ tmuxGuiTestDef =
   tmuxGuiTest def def
 
 withTmuxInt ::
-  NvimE e m =>
+  Member Rpc r =>
   MonadIO m =>
   Text ->
   m a ->

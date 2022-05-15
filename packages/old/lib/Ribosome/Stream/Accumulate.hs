@@ -20,7 +20,6 @@ newtype Work m r =
 
 work ::
   MonadIO m =>
-  MonadBaseControl IO m =>
   MVar () ->
   m (Maybe r) ->
   Work m r
@@ -29,7 +28,6 @@ work mv mr =
 
 extract ::
   MonadIO m =>
-  MonadBaseControl IO m =>
   (NonEmpty c -> m r) ->
   CWState r c ->
   (CWState r c, Work m r)
@@ -44,7 +42,6 @@ extract consume s@CWState {..} =
 
 elemStep ::
   MonadIO m =>
-  MonadBaseControl IO m =>
   (NonEmpty c -> m r) ->
   CWState r c ->
   Either c r ->
@@ -63,7 +60,6 @@ elemStep consume s@CWState {..} = \case
 
 chunkWhileFold ::
   MonadIO m =>
-  MonadBaseControl IO m =>
   (a -> m (Either c r)) ->
   (NonEmpty c -> m r) ->
   CWState r c ->
@@ -76,7 +72,6 @@ chunkWhileFold classify consume initial =
 
 chunkWhileIteration ::
   MonadIO m =>
-  MonadBaseControl IO m =>
   (a -> m (Either c r)) ->
   (NonEmpty c -> m r) ->
   (CWState r c, Maybe (Work m r)) ->
@@ -86,7 +81,6 @@ chunkWhileIteration classify consume (initial, _) =
 
 chunkWhileMain ::
   MonadIO m =>
-  MonadBaseControl IO m =>
   IsStream stream =>
   (a -> m (Either c r)) ->
   (NonEmpty c -> m r) ->
@@ -101,7 +95,6 @@ chunkWhileMain classify consume initial =
 mapMAcc ::
   MonadIO m =>
   MonadCatch m =>
-  MonadBaseControl IO m =>
   IsStream stream =>
   (a -> m (Either c r)) ->
   (NonEmpty c -> m r) ->

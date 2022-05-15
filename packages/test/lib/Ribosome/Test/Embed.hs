@@ -48,11 +48,10 @@ import System.Process.Typed (
 
 import Ribosome.Api.Option (rtpCat)
 import Ribosome.Control.Exception (tryAny)
-import Ribosome.Control.Monad.Ribo (NvimE)
 import Ribosome.Control.Ribosome (Ribosome (Ribosome), newRibosomeTMVar)
 import qualified Ribosome.Data.ErrorReport as ErrorReport (ErrorReport (..))
 import Ribosome.Error.Report.Class (ReportError (errorReport))
-import Ribosome.Nvim.Api.IO (vimSetVar)
+import Ribosome.Host.Api.Effect (vimSetVar)
 import Ribosome.Plugin.RpcHandler (RpcHandler (native))
 import Ribosome.System.Time (sleep, sleepW)
 import Ribosome.Test.Orphans ()
@@ -94,7 +93,7 @@ defaultTestConfigWith name vars =
 defaultTestConfig :: Text -> TestConfig
 defaultTestConfig name = defaultTestConfigWith name def
 
-setVars :: ∀ m e. NvimE e m => Vars -> m ()
+setVars :: ∀ m e. Member Rpc r => Vars -> m ()
 setVars (Vars vars) =
   traverse_ set (Map.toList vars)
   where
@@ -104,7 +103,7 @@ setVars (Vars vars) =
 
 setupPluginEnv ::
   MonadIO m =>
-  NvimE e m =>
+  Member Rpc r =>
   TestConfig ->
   m ()
 setupPluginEnv (TestConfig _ rtp _ _ _ _ vars) = do
@@ -197,7 +196,6 @@ runTest ::
   MonadFail m =>
   ReportError e =>
   RpcHandler e env n =>
-  MonadBaseControl IO m =>
   TestConfig ->
   Internal.Config env ->
   n a ->
@@ -211,7 +209,6 @@ runTest TestConfig{..} testCfg thunk = do
 runEmbeddedNvim ::
   MonadIO m =>
   MonadFail m =>
-  MonadBaseControl IO m =>
   RpcHandler e env n =>
   ReportError e =>
   TestConfig ->
@@ -226,7 +223,6 @@ runEmbeddedNvim conf ribo thunk prc = do
 
 withProcessTerm ::
   MonadIO m =>
-  MonadBaseControl IO m =>
   ProcessConfig stdin stdout stderr ->
   (Process stdin stdout stderr -> m a) ->
   m a
@@ -236,7 +232,6 @@ withProcessTerm config =
 runEmbedded ::
   MonadIO m =>
   MonadFail m =>
-  MonadBaseControl IO m =>
   RpcHandler e env n =>
   ReportError e =>
   TestConfig ->
@@ -250,7 +245,6 @@ runEmbedded conf ribo thunk = do
 unsafeEmbeddedTest ::
   MonadIO m =>
   MonadFail m =>
-  MonadBaseControl IO m =>
   RpcHandler e env n =>
   ReportError e =>
   Runner n ->
@@ -265,7 +259,6 @@ unsafeEmbeddedTestR ::
   MonadIO m =>
   MonadFail m =>
   ReportError e =>
-  MonadBaseControl IO m =>
   RpcHandler e (Ribosome env) n =>
   Runner n ->
   TestConfig ->
@@ -279,7 +272,6 @@ unsafeEmbeddedTestR runner conf env spec = do
 
 runPlugin ::
   MonadIO m =>
-  MonadBaseControl IO m =>
   Handle ->
   Handle ->
   [Neovim () NeovimPlugin] ->
@@ -317,7 +309,6 @@ integrationTest ::
   MonadFail m =>
   ReportError e =>
   RpcHandler e env n =>
-  MonadBaseControl IO m =>
   TestConfig ->
   Plugin env ->
   TestT n a ->
@@ -342,7 +333,6 @@ integrationTestDef ::
   MonadFail m =>
   ReportError e =>
   RpcHandler e env n =>
-  MonadBaseControl IO m =>
   Plugin env ->
   TestT n a ->
   TestT m a

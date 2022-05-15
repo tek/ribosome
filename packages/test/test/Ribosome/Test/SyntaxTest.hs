@@ -7,7 +7,6 @@ import TestError (TestError)
 
 import Ribosome.Api.Buffer (setCurrentBufferContent)
 import Ribosome.Api.Syntax (executeSyntax)
-import Ribosome.Control.Monad.Ribo (Ribo)
 import Ribosome.Data.Syntax (
   Syntax(Syntax),
   syntaxHighlight,

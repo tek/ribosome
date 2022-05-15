@@ -6,13 +6,12 @@ import Neovim (Plugin(..))
 import TestError (RiboTest, handleTestError)
 
 import Ribosome.Api.Buffer (currentBufferContent)
-import Ribosome.Control.Monad.Ribo (MonadRibo, NvimE)
 import Ribosome.Control.Ribosome (Ribosome, newRibosome)
 import Ribosome.Data.Mapping (Mapping(Mapping), MappingIdent(MappingIdent))
 import Ribosome.Data.ScratchOptions (ScratchOptions(ScratchOptions))
-import Ribosome.Msgpack.Encode (MsgpackEncode(toMsgpack))
+import Ribosome.Host.Class.Msgpack.Encode (MsgpackEncode(toMsgpack))
 import Ribosome.Msgpack.Error (DecodeError)
-import Ribosome.Nvim.Api.IO (nvimFeedkeys, vimCallFunction, vimGetVar, vimSetVar)
+import Ribosome.Host.Api.Effect (nvimFeedkeys, vimCallFunction, vimGetVar, vimSetVar)
 import Ribosome.Plugin (riboPlugin, rpcHandlerDef)
 import Ribosome.Plugin.Mapping (MappingHandler, mappingHandler)
 import Ribosome.Scratch (showInScratch)
@@ -24,7 +23,7 @@ import Ribosome.Test.Run (UnitTest)
 target :: [Text]
 target = ["line 1", "line 2"]
 
-go :: NvimE e m => m ()
+go :: Member Rpc r => m ()
 go =
   vimSetVar "number" (toMsgpack (13 :: Int))
 
@@ -32,15 +31,12 @@ mapping :: Mapping
 mapping =
   Mapping (MappingIdent "go") "a" "n" False True
 
-mapHandler :: NvimE e m => MappingHandler m
+mapHandler :: Member Rpc r => MappingHandler m
 mapHandler =
   mappingHandler "go" go
 
 setupMappingScratch ::
-  NvimE e m =>
-  MonadRibo m =>
-  MonadBaseControl IO m =>
-  MonadDeepError e DecodeError m =>
+  Member Rpc r =>
   m ()
 setupMappingScratch = do
   _ <- showInScratch target options

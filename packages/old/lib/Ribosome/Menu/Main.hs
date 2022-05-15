@@ -6,8 +6,6 @@ import qualified Streamly.Internal.Data.Fold as Fold
 import qualified Streamly.Internal.Data.Stream.IsStream as Stream
 import Streamly.Prelude (AsyncT, IsStream)
 
-import Ribosome.Control.Monad.Ribo (MonadRibo)
-import Ribosome.Log (logDebug)
 import Ribosome.Menu.Data.MenuAction (MenuAction)
 import qualified Ribosome.Menu.Data.MenuAction as MenuAction (MenuAction (..))
 import qualified Ribosome.Menu.Data.MenuConfig as MenuConfig
@@ -84,7 +82,6 @@ outputAction promptControl = \case
 
 runRenderer ::
   MonadIO m =>
-  MonadRibo m =>
   MenuState i ->
   MenuRenderer m i ->
   MenuRenderEvent ->
@@ -95,7 +92,6 @@ runRenderer menu (MenuRenderer render) event = do
 
 renderAction ::
   MonadIO m =>
-  MonadRibo m =>
   MenuState i ->
   MenuRenderer m i ->
   MenuAction m a ->
@@ -110,7 +106,6 @@ renderAction menu (runRenderer menu -> run) = \case
 
 menuStream ::
   IsStream t =>
-  MonadRibo m =>
   MonadCatch m =>
   MonadBaseControl IO m =>
   MenuState i ->
@@ -139,7 +134,6 @@ menuStream menu (MenuConfig items itemFilter (MenuConsumer consumer) renderer _)
       runRenderer menu renderer MenuRenderEvent.Quit
 
 menuResult ::
-  MonadRibo m =>
   Maybe (m (MenuResult a)) ->
   m (MenuResult a)
 menuResult = \case
@@ -156,7 +150,6 @@ menuResult = \case
       MenuResult.Aborted -> "user interrupt"
 
 menuMain ::
-  MonadRibo m =>
   MonadCatch m =>
   MonadBaseControl IO m =>
   MenuConfig m i a ->

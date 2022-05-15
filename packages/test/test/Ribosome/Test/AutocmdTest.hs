@@ -4,10 +4,9 @@ import Hedgehog ((===))
 import Neovim (Plugin(..))
 import TestError (RiboTest, handleTestError)
 
-import Ribosome.Control.Monad.Ribo (NvimE)
 import Ribosome.Control.Ribosome (Ribosome, newRibosome)
-import Ribosome.Msgpack.Encode (MsgpackEncode(toMsgpack))
-import Ribosome.Nvim.Api.IO (nvimCommand, vimGetVar, vimSetVar)
+import Ribosome.Host.Class.Msgpack.Encode (MsgpackEncode(toMsgpack))
+import Ribosome.Host.Api.Effect (nvimCommand, vimGetVar, vimSetVar)
 import Ribosome.Orphans ()
 import Ribosome.Plugin (autocmd, riboPlugin, rpcHandler)
 import Ribosome.Test.Await (await)
@@ -24,7 +23,7 @@ result =
   5
 
 testAuto ::
-  NvimE e m =>
+  Member Rpc r =>
   m ()
 testAuto =
   vimSetVar varName (toMsgpack result)

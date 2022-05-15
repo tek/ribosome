@@ -19,7 +19,6 @@ chanStream ::
   MonadIO m =>
   IsStream t =>
   MonadThrow m =>
-  MonadBaseControl IO m =>
   TMChan a ->
   t m a
 chanStream chan =

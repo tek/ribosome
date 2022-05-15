@@ -1,9 +1,7 @@
 module Ribosome.Data.RegisterType where
 
-import Prettyprinter (Pretty(..))
-
-import Ribosome.Msgpack.Decode (MsgpackDecode(..), msgpackFromString)
-import Ribosome.Msgpack.Encode (MsgpackEncode(..))
+import Ribosome.Host.Class.Msgpack.Decode (MsgpackDecode (..), msgpackFromString)
+import Ribosome.Host.Class.Msgpack.Encode (MsgpackEncode (..))
 
 data RegisterType =
   Character
@@ -28,7 +26,8 @@ instance IsString RegisterType where
     Unknown (toText a)
 
 instance MsgpackDecode RegisterType where
-  fromMsgpack = msgpackFromString "RegisterType"
+  fromMsgpack =
+    msgpackFromString "RegisterType"
 
 instance MsgpackEncode RegisterType where
   toMsgpack Character =
@@ -41,10 +40,3 @@ instance MsgpackEncode RegisterType where
     toMsgpack ("b" <> show width :: Text)
   toMsgpack (Unknown _) =
     toMsgpack ("" :: Text)
-
-instance Pretty RegisterType where
-  pretty Character = "c"
-  pretty Line = "v"
-  pretty Block = "<c-v>"
-  pretty (BlockWidth width) = "<c-v>" <> pretty width
-  pretty (Unknown a) = pretty a

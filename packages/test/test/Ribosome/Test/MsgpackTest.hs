@@ -8,8 +8,8 @@ import Prettyprinter (Doc, defaultLayoutOptions, layoutPretty)
 import Prettyprinter.Render.Terminal (AnsiStyle, renderStrict)
 import Test.Tasty (TestTree, testGroup)
 
-import Ribosome.Msgpack.Decode (MsgpackDecode (..), fromMsgpack)
-import Ribosome.Msgpack.Encode (MsgpackEncode (..))
+import Ribosome.Host.Class.Msgpack.Decode (MsgpackDecode (..), fromMsgpack)
+import Ribosome.Host.Class.Msgpack.Encode (MsgpackEncode (..))
 import qualified Ribosome.Msgpack.Util as Util (string)
 import Ribosome.Test.Run (UnitTest, unitTest)
 

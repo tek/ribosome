@@ -18,7 +18,6 @@ import Neovim.Plugin.Classes (
   )
 import Neovim.Plugin.Internal (ExportedFunctionality(..), Plugin(..))
 
-import Ribosome.Control.Monad.Ribo (MonadRibo, NvimE)
 import Ribosome.Data.Mapping (MappingError)
 import Ribosome.Data.Text (capitalize)
 import Ribosome.Plugin.TH (rpcHandler, rpcHandlerDef)
@@ -38,17 +37,15 @@ poll ::
   [Object] ->
   m Object
 poll _ =
-  return (ObjectBool True)
+  pure (ObjectBool True)
 
 pollRpc ::
-  MonadDeepError e MappingError m =>
   Text ->
   RpcDef m
 pollRpc pluginName =
   RpcDef (RpcFunction Sync) (capitalize pluginName <> "Poll") poll
 
 mappingHandlerRpc ::
-  MonadDeepError e MappingError m =>
   Text ->
   [MappingHandler m] ->
   RpcDef m
@@ -56,9 +53,7 @@ mappingHandlerRpc pluginName mappings =
   RpcDef (RpcFunction Async) (capitalize pluginName <> "Mapping") (handleMappingRequest mappings)
 
 watcherRpc ::
-  MonadBaseControl IO m =>
-  MonadRibo m =>
-  NvimE e m =>
+  Member Rpc r =>
   Text ->
   Map Text (Object -> m ()) ->
   [RpcDef m]
@@ -99,10 +94,7 @@ nvimPlugin env rpcDefs errorHandler =
   Plugin env (compileRpcDef errorHandler <$> join rpcDefs)
 
 riboPlugin ::
-  MonadBaseControl IO m =>
-  MonadDeepError e MappingError m =>
-  MonadRibo m =>
-  NvimE e m =>
+  Member Rpc r =>
   RpcHandler e env m =>
   Text ->
   env ->
@@ -126,7 +118,7 @@ executeRpcHandler ::
   [Object] ->
   Neovim env Object
 executeRpcHandler errorHandler rpcHandler' =
-  either handleError return <=< runExceptT . native . rpcHandler'
+  either handleError pure <=< runExceptT . native . rpcHandler'
   where
     handleError e =
       ObjectNil <$ (runExceptT . native @e . errorHandler $ e)

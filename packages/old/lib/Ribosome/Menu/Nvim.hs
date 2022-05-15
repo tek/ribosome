@@ -8,12 +8,10 @@ import qualified Data.Sequence as Seq
 import qualified Data.Text as Text (cons, snoc)
 
 import Ribosome.Api.Window (redraw, restoreView, setLine)
-import Ribosome.Control.Monad.Ribo (MonadRibo, NvimE)
 import Ribosome.Data.Scratch (Scratch (scratchWindow), scratchBuffer)
 import Ribosome.Data.ScratchOptions (ScratchOptions, maxSize)
 import Ribosome.Data.Syntax (HiLink (..), Syntax (Syntax), SyntaxItem (..), syntaxMatch)
 import Ribosome.Data.WindowView (PartialWindowView (PartialWindowView))
-import Ribosome.Log (logDebug)
 import Ribosome.Menu.Data.CursorIndex (CursorIndex (CursorIndex))
 import Ribosome.Menu.Data.Entry (Entries, Entry (Entry))
 import Ribosome.Menu.Data.Menu (Menu)
@@ -24,8 +22,7 @@ import qualified Ribosome.Menu.Data.MenuRenderEvent as MenuRenderEvent (MenuRend
 import Ribosome.Menu.Data.MenuRenderer (MenuRenderer (MenuRenderer))
 import Ribosome.Menu.Data.MenuView (MenuView (MenuView), botIndex, cursorLine, menuView, topIndex)
 import Ribosome.Menu.Data.NvimMenuState (NvimMenuState, cursorIndex, indexes)
-import Ribosome.Nvim.Api.IO (nvimBufIsLoaded, nvimSetCurrentWin)
-import Ribosome.Nvim.Api.RpcCall (RpcError)
+import Ribosome.Host.Api.Effect (nvimBufIsLoaded, nvimSetCurrentWin)
 import Ribosome.Scratch (killScratch, setScratchContent)
 
 marker :: Char
@@ -173,8 +170,7 @@ windowLine = do
   pure (top - bot - fromIntegral curLine)
 
 updateMenu ::
-  NvimE e m =>
-  MonadRibo m =>
+  Member Rpc r =>
   ScratchOptions ->
   Scratch ->
   StateT NvimMenuState (ReaderT (Menu i) m) ()
@@ -194,8 +190,7 @@ updateMenu options scratch = do
 
 renderNvimMenu ::
   ∀ i e m .
-  NvimE e m =>
-  MonadRibo m =>
+  Member Rpc r =>
   ScratchOptions ->
   Scratch ->
   StateT NvimMenuState (ReaderT (Menu i) m) ()
@@ -205,8 +200,7 @@ renderNvimMenu options scratch =
     redraw
 
 nvimMenuRenderer ::
-  NvimE e m =>
-  MonadRibo m =>
+  Member Rpc r =>
   MonadBaseControl IO m =>
   ScratchOptions ->
   Scratch ->

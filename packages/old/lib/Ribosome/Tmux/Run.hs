@@ -9,13 +9,9 @@ import Data.DeepPrisms (DeepPrisms)
 
 import Ribosome.Config.Setting (settingMaybe)
 import Ribosome.Config.Settings (tmuxSocket)
-import Ribosome.Control.Monad.Ribo (MonadRibo, Nvim, Ribo)
 
 runTmux ::
   MonadIO m =>
-  MonadRibo m =>
-  MonadBaseControl IO m =>
-  MonadDeepError e TmuxError m =>
   MonadMask m =>
   Nvim m =>
   TmuxProg m a ->
@@ -26,8 +22,6 @@ runTmux prog = do
 
 runTmuxE ::
   MonadIO m =>
-  MonadRibo m =>
-  MonadBaseControl IO m =>
   MonadMask m =>
   Nvim m =>
   TmuxProg (ExceptT TmuxError m) a ->

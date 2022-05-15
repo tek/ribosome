@@ -1,9 +1,7 @@
 module Ribosome.Data.FloatOptions where
 
-import qualified Data.Map as Map
-
-import Ribosome.Msgpack.Encode (MsgpackEncode (toMsgpack))
-import Data.MessagePack (Object)
+import Ribosome.Host.Class.Msgpack.Encode (MsgpackEncode (toMsgpack))
+import Ribosome.Host.Class.Msgpack.Map (msgpackMap)
 
 data FloatRelative =
   Editor
@@ -80,7 +78,7 @@ instance Default FloatStyle where
 
 instance MsgpackEncode FloatStyle where
   toMsgpack FloatStyleMinimal =
-    "minimal"
+    toMsgpack @Text "minimal"
 
 newtype FloatZindex =
   FloatZindex { unFloatZindex :: Int }
@@ -111,26 +109,19 @@ data FloatOptions =
 
 instance MsgpackEncode FloatOptions where
   toMsgpack FloatOptions {..} =
-    toMsgpack $ Map.fromList (simple ++ maybe [] (pure . ("bufpos",) . toMsgpack) bufpos)
-    where
-      simple :: [(Text, Object)]
-      simple =
-        opt "bufpos" bufpos ++
-        opt "style" style ++
-        opt "zindex" zindex ++
-        [
-          ("relative", toMsgpack relative),
-          ("width", toMsgpack width),
-          ("height", toMsgpack height),
-          ("row", toMsgpack row),
-          ("col", toMsgpack col),
-          ("focusable", toMsgpack focusable),
-          ("anchor", toMsgpack anchor),
-          ("border", toMsgpack border),
-          ("noautocmd", toMsgpack noautocmd)
-        ]
-      opt n f =
-        maybeToList (f <&> \ v -> (n, toMsgpack v))
+    msgpackMap
+    ("relative", relative)
+    ("width", width)
+    ("height", height)
+    ("row", row)
+    ("col", col)
+    ("focusable", focusable)
+    ("anchor", anchor)
+    ("bufpos", bufpos)
+    ("border", border)
+    ("noautocmd", noautocmd)
+    ("style", style)
+    ("zindex", zindex)
 
 instance Default FloatOptions where
   def =

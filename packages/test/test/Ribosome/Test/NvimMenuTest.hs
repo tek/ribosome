@@ -14,7 +14,6 @@ import TestError (RiboTest, TestError)
 
 import Ribosome.Api.Buffer (bufferContent, buflisted)
 import Ribosome.Api.Input (syntheticInput)
-import Ribosome.Control.Monad.Ribo (Ribo)
 import Ribosome.Data.ScratchOptions (ScratchOptions (_maxSize))
 import Ribosome.Menu.Action (menuOk, menuResult)
 import Ribosome.Menu.Combinators (sortedEntries)
@@ -43,7 +42,7 @@ import qualified Ribosome.Menu.Prompt.Data.PromptInputEvent as PromptInputEvent 
 import Ribosome.Menu.Prompt.Nvim (getCharStream, nvimPromptRenderer)
 import Ribosome.Menu.Prompt.Transition (basicTransition)
 import Ribosome.Menu.Run (nvimMenu, staticNvimMenu)
-import Ribosome.Nvim.Api.IO (bufferGetName, vimGetBuffers, vimGetWindows)
+import Ribosome.Host.Api.Effect (bufferGetName, vimGetBuffers, vimGetWindows)
 import Ribosome.System.Time (sleep)
 import Ribosome.Test.Run (UnitTest, unitTest)
 import Ribosome.Test.Tmux (tmuxTestDef)
@@ -82,7 +81,6 @@ items =
 exec ::
   ∀ m i .
   MonadIO m =>
-  MonadBaseControl IO m =>
   MenuWidget m i Text
 exec =
   menuWrite do

@@ -21,7 +21,6 @@ module Ribosome.Prelude (
 
 import Control.Lens (makeClassy, (%~), (.~), (?~), (^.))
 import Control.Monad.Base (MonadBase (..))
-import Control.Monad.Trans.Control (MonadBaseControl (..))
 import Control.Monad.Trans.Resource.Internal (ResourceT (ResourceT))
 import Cornea
 import Data.Default (Default (def))
@@ -58,7 +57,6 @@ throwText =
 instance MonadBase b m => MonadBase b (ResourceT m) where
     liftBase = lift . liftBase
 
-instance MonadBaseControl b m => MonadBaseControl b (ResourceT m) where
   type StM (ResourceT m) a = StM m a
   liftBaseWith f = ResourceT $ \reader' ->
       liftBaseWith $ \runInBase ->

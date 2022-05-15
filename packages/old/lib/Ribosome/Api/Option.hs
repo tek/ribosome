@@ -3,30 +3,28 @@ module Ribosome.Api.Option where
 import Control.Exception.Lifted (bracket)
 import Data.Text (splitOn)
 
-import Ribosome.Control.Monad.Ribo (NvimE)
-import Ribosome.Msgpack.Encode (MsgpackEncode(toMsgpack))
-import Ribosome.Nvim.Api.IO (vimGetOption, vimSetOption)
+import Ribosome.Host.Class.Msgpack.Encode (MsgpackEncode(toMsgpack))
+import Ribosome.Host.Api.Effect (vimGetOption, vimSetOption)
 
-optionCat :: NvimE e m => Text -> Text -> m ()
+optionCat :: Member Rpc r => Text -> Text -> m ()
 optionCat name extra = do
   current <- vimGetOption name
   vimSetOption name $ toMsgpack $ current <> "," <> extra
 
-rtpCat :: NvimE e m => Text -> m ()
+rtpCat :: Member Rpc r => Text -> m ()
 rtpCat = optionCat "runtimepath"
 
-optionString :: NvimE e m => Text -> m Text
+optionString :: Member Rpc r => Text -> m Text
 optionString = vimGetOption
 
-optionList :: NvimE e m => Text -> m [Text]
+optionList :: Member Rpc r => Text -> m [Text]
 optionList name = do
   s <- vimGetOption name
-  return $ splitOn "," s
+  pure $ splitOn "," s
 
 withOption ::
-  NvimE e m =>
+  Member Rpc r =>
   MsgpackEncode a =>
-  MonadBaseControl IO m =>
   Text ->
   a ->
   m b ->

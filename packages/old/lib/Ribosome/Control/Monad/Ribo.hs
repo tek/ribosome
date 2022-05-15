@@ -1,7 +1,5 @@
 {-# OPTIONS_GHC -fno-warn-orphans #-}
 
-module Ribosome.Control.Monad.Ribo where
-
 import Control.Exception.Lifted (onException)
 import Control.Lens (Lens')
 import qualified Control.Lens as Lens (mapMOf, over, view)
@@ -22,8 +20,6 @@ import qualified Ribosome.Control.Ribosome as RibosomeState (internal, public)
 import Ribosome.Control.StrictRibosome (StrictRibosome)
 import qualified Ribosome.Control.StrictRibosome as StrictRibosome (name, state)
 import Ribosome.Data.Errors (Errors)
-import Ribosome.Nvim.Api.RpcCall (Rpc, RpcError)
-import qualified Ribosome.Nvim.Api.RpcCall as Rpc (Rpc (..))
 import Ribosome.Orphans ()
 import Ribosome.Plugin.RpcHandler (RpcHandler (..))
 import qualified Control.Monad.Trans.State.Lazy as Lazy
@@ -33,14 +29,13 @@ type RNeovim s = Neovim (Ribosome s)
 instance MonadBase IO (Neovim e) where
   liftBase = liftIO
 
-instance MonadBaseControl IO (Neovim e) where
   type StM (Neovim e) a = a
   liftBaseWith f =
     Neovim (lift $ ReaderT $ \r -> f (peel r))
     where
       peel r ma =
         runReaderT (runResourceT (unNeovim ma)) r
-  restoreM = return
+  restoreM = pure
 
 newtype Ribo s e a =
   Ribo { unRibo :: ExceptT e (RNeovim s) a }
@@ -56,11 +51,10 @@ modifyTMVar ::
 modifyTMVar f tmvar = do
   a <- f <$> atomically (takeTMVar tmvar)
   atomically $ putTMVar tmvar a
-  return a
+  pure a
 
 safeModifyTMVarM ::
   MonadIO m =>
-  MonadBaseControl IO m =>
   (a -> m a) ->
   TMVar a ->
   m a
@@ -110,21 +104,10 @@ instance (MonadTrans t, Monad (t m), Nvim m) => Nvim (t m) where
 instance Nvim (Ribo s e) where
   call = Ribo . call
 
-class (Nvim m, MonadDeepError e RpcError m) => NvimE e m where
-
 instance DeepPrisms e RpcError => NvimE e (Ribo s e) where
 
 instance (DeepPrisms e RpcError, Nvim m, Monad m) => NvimE e (ExceptT e m) where
 
-instance (Nvim m, MonadDeepError e RpcError m) => NvimE e (ReaderT env m) where
-
-instance (Nvim m, MonadDeepError e RpcError m) => NvimE e (StateT env m) where
-
-instance (Nvim m, MonadDeepError e RpcError m) => NvimE e (Lazy.StateT env m) where
-
-instance (Functor f, MonadDeepError e RpcError m, Nvim m, Monad m) => NvimE e (FreeT f m) where
-
-instance MonadBaseControl IO (Ribo s e) where
     type StM (Ribo s e) a = Either e a
     liftBaseWith f =
       Ribo $ liftBaseWith $ \ q -> f (q . unRibo)
@@ -163,26 +146,20 @@ instance PluginName (RNeovim s) where
   pluginName1 =
     ReaderT.asks (Lens.view Ribosome.name)
 
-class MonadIO m => MonadRibo m where
   pluginName :: m Text
   pluginInternal :: m RibosomeInternal
   pluginInternalModify :: (RibosomeInternal -> RibosomeInternal) -> m ()
 
-pluginInternals :: MonadRibo m => (RibosomeInternal -> a) -> m a
 pluginInternals = (<$> pluginInternal)
 
-pluginInternalL :: MonadRibo m => Lens' RibosomeInternal a -> m a
 pluginInternalL = pluginInternals . Lens.view
 
-pluginInternalPut' :: MonadRibo m => RibosomeInternal -> m ()
 pluginInternalPut' s =
   pluginInternalModify (const s)
 
-pluginInternalModifyL :: MonadRibo m => Lens' RibosomeInternal a -> (a -> a) -> m ()
 pluginInternalModifyL l f =
   pluginInternalModify $ Lens.over l f
 
-instance MonadRibo (RNeovim s) where
   pluginName =
     ReaderT.asks (Lens.view Ribosome.name)
 
@@ -192,17 +169,14 @@ instance MonadRibo (RNeovim s) where
   pluginInternalModify f =
     void . modifyTMVar (Lens.over RibosomeState.internal f) =<< riboStateVar
 
-instance MonadRibo (Ribo s e) where
   pluginName = Ribo pluginName
   pluginInternal = Ribo pluginInternal
   pluginInternalModify = Ribo . pluginInternalModify
 
-instance {-# OVERLAPPABLE #-} (MonadTrans t, MonadIO (t m), MonadRibo m) => MonadRibo (t m) where
   pluginName = lift pluginName
   pluginInternal = lift pluginInternal
   pluginInternalModify = lift . pluginInternalModify
 
-instance {-# OVERLAPPING #-} MonadIO m => MonadRibo (StateT (StrictRibosome s) m) where
   pluginName =
     StateT.gets (Lens.view StrictRibosome.name)
   pluginInternal =
@@ -210,14 +184,11 @@ instance {-# OVERLAPPING #-} MonadIO m => MonadRibo (StateT (StrictRibosome s) m
   pluginInternalModify =
     StateT.modify . Lens.over (StrictRibosome.state . RibosomeState.internal)
 
-getErrors :: MonadRibo m => m Errors
 getErrors =
   pluginInternals Ribosome._errors
 
-inspectErrors :: MonadRibo m => (Errors -> a) -> m a
 inspectErrors = (<$> getErrors)
 
-modifyErrors :: MonadRibo m => (Errors -> Errors) -> m ()
 modifyErrors =
   pluginInternalModifyL Ribosome.errors
 
@@ -256,12 +227,11 @@ prependUniqueBy attr lens a =
 
 inspectHeadE ::
   ∀ s' s e e' m a .
-  (MonadDeepState s s' m, MonadDeepError e e' m) =>
   e' ->
   Lens' s' [a] ->
   m a
 inspectHeadE err lens = do
   as <- gets $ Lens.view lens
   case as of
-    (a : _) -> return a
+    (a : _) -> pure a
     _ -> throwHoist err

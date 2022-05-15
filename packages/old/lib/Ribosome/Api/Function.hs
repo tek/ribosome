@@ -2,11 +2,10 @@ module Ribosome.Api.Function where
 
 import qualified Data.Text as Text (intercalate)
 
-import Ribosome.Control.Monad.Ribo (NvimE)
-import Ribosome.Nvim.Api.IO (nvimExec)
+import Ribosome.Host.Api.Effect (nvimExec)
 
 defineFunction ::
-  NvimE e m =>
+  Member Rpc r =>
   Text ->
   [Text] ->
   [Text] ->

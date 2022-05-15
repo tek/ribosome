@@ -1,10 +1,9 @@
 module Ribosome.Api.Undo where
 
-import Ribosome.Control.Monad.Ribo (NvimE)
-import Ribosome.Nvim.Api.IO (vimCommand)
+import Ribosome.Host.Api.Effect (vimCommand)
 
 undo ::
-  NvimE e m =>
+  Member Rpc r =>
   m ()
 undo =
   nvimCommand "undo"

@@ -16,4 +16,4 @@ forkNeovim :: Neovim e () -> Neovim e ()
 forkNeovim thunk = do
   env <- Neovim ReaderT.ask
   _ <- liftIO $ forkIO $ void $ runNeovim env thunk
-  return ()
+  pure ()

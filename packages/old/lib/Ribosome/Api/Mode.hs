@@ -1,8 +1,7 @@
 module Ribosome.Api.Mode where
 
-import Ribosome.Control.Monad.Ribo (NvimE)
-import Ribosome.Msgpack.Decode (MsgpackDecode(..), msgpackFromString)
-import Ribosome.Nvim.Api.IO (vimCallFunction)
+import Ribosome.Host.Class.Msgpack.Decode (MsgpackDecode(..), msgpackFromString)
+import Ribosome.Host.Api.Effect (vimCallFunction)
 
 data NvimMode =
   Normal
@@ -26,13 +25,13 @@ instance MsgpackDecode NvimMode where
   fromMsgpack = msgpackFromString "NvimMode"
 
 mode ::
-  NvimE e m =>
+  Member Rpc r =>
   m NvimMode
 mode =
   vimCallFunction "mode" []
 
 visualModeActive ::
-  NvimE e m =>
+  Member Rpc r =>
   m Bool
 visualModeActive =
   (== Visual) <$> mode

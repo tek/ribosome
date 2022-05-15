@@ -9,8 +9,6 @@ import qualified Streamly.Internal.Data.Fold as Fold
 import qualified Streamly.Internal.Data.Stream.IsStream as Stream
 import Streamly.Prelude (AsyncT, IsStream)
 
-import Ribosome.Control.Monad.Ribo (MonadRibo)
-import Ribosome.Log (logDebug)
 import Ribosome.Menu.Combinators (push)
 import Ribosome.Menu.Data.Entry (Entries, insertFiltered)
 import Ribosome.Menu.Data.MenuData (MenuCursor, MenuQuery (MenuQuery), currentQuery, entries, history, itemCount, items)
@@ -148,7 +146,6 @@ classifyEvent = \case
     Right (MenuEvent.Quit (QuitReason.Error e))
 
 setPromptAndClassify ::
-  MonadRibo m =>
   MenuState i ->
   Prompt ->
   PromptEvent ->
@@ -158,7 +155,6 @@ setPromptAndClassify menu prompt event = do
   classifyEvent event <$ setPrompt menu prompt
 
 promptEvent ::
-  MonadRibo m =>
   MonadCatch m =>
   IsStream stream =>
   MonadBaseControl IO m =>

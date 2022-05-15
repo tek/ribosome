@@ -10,11 +10,9 @@ import System.Log.Logger (Priority(DEBUG), setLevel, updateGlobalLogger)
 import TestError (RiboTest, TestError)
 
 import Ribosome.Api.Variable (setVar)
-import Ribosome.Control.Monad.Ribo (MonadRibo, NvimE, Ribo)
 import Ribosome.Control.Ribosome (Ribosome, newRibosome)
 import Ribosome.Error.Report (reportError)
-import Ribosome.Nvim.Api.IO (nvimCommand, vimGetVar)
-import Ribosome.Nvim.Api.RpcCall (RpcError)
+import Ribosome.Host.Api.Effect (nvimCommand, vimGetVar)
 import Ribosome.Plugin (RpcDef, cmd, riboPlugin, rpcHandler, sync)
 import Ribosome.System.Time (sleep)
 import Ribosome.Test.Embed (integrationTestDef)
@@ -36,14 +34,14 @@ resultVar =
   "test_result"
 
 handler ::
-  NvimE e m =>
+  Member Rpc r =>
   m Int
 handler = do
   setVar resultVar target
   return target
 
 handlerCmdCmdArgs ::
-  NvimE e m =>
+  Member Rpc r =>
   CommandArguments ->
   Text ->
   Text ->
@@ -53,7 +51,7 @@ handlerCmdCmdArgs _ _ _ _ =
   handler
 
 handlerCmdNoCmdArgs ::
-  NvimE e m =>
+  Member Rpc r =>
   Text ->
   Text ->
   Text ->
@@ -62,27 +60,27 @@ handlerCmdNoCmdArgs _ _ _ =
   handler
 
 handlerCmdNoArgs ::
-  NvimE e m =>
+  Member Rpc r =>
   m Int
 handlerCmdNoArgs =
   handler
 
 handlerCmdOneArg ::
-  NvimE e m =>
+  Member Rpc r =>
   Text ->
   m Int
 handlerCmdOneArg _ =
   handler
 
 handlerCmdMaybeArg ::
-  NvimE e m =>
+  Member Rpc r =>
   Maybe Text ->
   m Int
 handlerCmdMaybeArg _ =
   handler
 
 handlerCmdListArg ::
-  NvimE e m =>
+  Member Rpc r =>
   [Text] ->
   m Int
 handlerCmdListArg _ =
@@ -91,8 +89,7 @@ handlerCmdListArg _ =
 $(return [])
 
 handlers ::
-  MonadRibo m =>
-  NvimE e m =>
+  Member Rpc r =>
   [[RpcDef m]]
 handlers =
   [

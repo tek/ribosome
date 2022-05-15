@@ -18,7 +18,6 @@ mapping :: MappingIdent -> [MappingHandler m] -> Maybe (MappingHandler m)
 mapping ident =
   find ((ident ==) . mhMapping)
 
-noSuchMapping :: MonadDeepError e MappingError m => MappingIdent -> m a
 noSuchMapping =
   throwHoist . NoSuchMapping
 
@@ -26,7 +25,6 @@ executeMapping :: MappingHandler m -> m ()
 executeMapping (MappingHandler _ f) =
   f
 
-handleMappingRequest :: MonadDeepError e MappingError m => [MappingHandler m] -> [Object] -> m Object
 handleMappingRequest mappings [ObjectString s] =
   ObjectNil <$ maybe (noSuchMapping ident) executeMapping (mapping ident mappings)
   where

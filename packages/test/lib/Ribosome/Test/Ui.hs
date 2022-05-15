@@ -2,12 +2,11 @@ module Ribosome.Test.Ui where
 
 import Hedgehog (TestT, (===))
 import Ribosome.Api.Window (currentCursor, cursor)
-import Ribosome.Control.Monad.Ribo (NvimE)
-import Ribosome.Nvim.Api.Data (Window)
-import Ribosome.Nvim.Api.IO (nvimListWins)
+import Ribosome.Host.Api.Data (Window)
+import Ribosome.Host.Api.Effect (nvimListWins)
 
 windowCountIs ::
-  NvimE e m =>
+  Member Rpc r =>
   Int ->
   TestT m ()
 windowCountIs count = do
@@ -15,7 +14,7 @@ windowCountIs count = do
   count === (length wins)
 
 cursorIs ::
-  NvimE e m =>
+  Member Rpc r =>
   Int ->
   Int ->
   Window ->
@@ -24,7 +23,7 @@ cursorIs line col =
   ((line, col) ===) <=< lift . cursor
 
 currentCursorIs ::
-  NvimE e m =>
+  Member Rpc r =>
   Int ->
   Int ->
   TestT m ()

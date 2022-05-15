@@ -1,31 +1,24 @@
 module Ribosome.Scratch where
 
-import Control.Lens (Lens', set, view)
-import qualified Control.Lens as Lens (at)
-import qualified Data.Map.Strict as Map (empty)
+import Control.Lens (view, (^.))
+import qualified Data.Map.Strict as Map
 import Data.MessagePack (Object)
+import Exon (exon)
+import qualified Polysemy.Log as Log
 
 import Ribosome.Api.Autocmd (bufferAutocmd, eventignore)
 import Ribosome.Api.Buffer (setBufferContent, wipeBuffer)
-import Ribosome.Api.Syntax (executeCurrentWindowSyntax)
+import Ribosome.Api.Syntax (executeWindowSyntax)
 import Ribosome.Api.Tabpage (closeTabpage)
 import Ribosome.Api.Window (closeWindow)
-import Ribosome.Control.Monad.Ribo (MonadRibo, NvimE, pluginInternalL, pluginInternalModify, pluginName)
-import Ribosome.Control.Ribosome (RibosomeInternal)
-import qualified Ribosome.Control.Ribosome as Ribosome (scratch)
 import Ribosome.Data.FloatOptions (FloatOptions, enter)
+import Ribosome.Data.PluginName (PluginName (PluginName))
 import Ribosome.Data.Scratch (Scratch (Scratch))
 import qualified Ribosome.Data.Scratch as Scratch (Scratch (scratchBuffer, scratchPrevious, scratchWindow))
 import Ribosome.Data.ScratchOptions (ScratchOptions (ScratchOptions))
 import qualified Ribosome.Data.ScratchOptions as ScratchOptions (maxSize, modify, name, resize, vertical)
-import Ribosome.Data.Text (capitalize)
-import Ribosome.Log (logDebug)
-import Ribosome.Mapping (activateBufferMapping)
-import Ribosome.Msgpack.Decode (fromMsgpack)
-import Ribosome.Msgpack.Encode (toMsgpack)
-import Ribosome.Msgpack.Error (DecodeError)
-import Ribosome.Nvim.Api.Data (Buffer, Tabpage, Window)
-import Ribosome.Nvim.Api.IO (
+import Ribosome.Host.Api.Data (Buffer, Tabpage, Window)
+import Ribosome.Host.Api.Effect (
   bufferGetName,
   bufferGetNumber,
   bufferSetName,
@@ -44,24 +37,29 @@ import Ribosome.Nvim.Api.IO (
   windowSetOption,
   windowSetWidth,
   )
-import Ribosome.Nvim.Api.RpcCall (RpcError)
+import Ribosome.Host.Class.Msgpack.Decode (fromMsgpack)
+import Ribosome.Host.Class.Msgpack.Encode (toMsgpack)
+import Ribosome.Host.Data.RpcError (RpcError)
+import Ribosome.Host.Effect.Rpc (Rpc)
+import Ribosome.Mapping (activateBufferMapping)
+import Ribosome.PluginName (pluginNameCapitalized)
 
-createScratchTab :: NvimE e m => m Tabpage
+createScratchTab :: Member Rpc r => Sem r Tabpage
 createScratchTab = do
   vimCommand "tabnew"
   vimGetCurrentTabpage
 
 createRegularWindow ::
-  NvimE e m =>
+  Member Rpc r =>
   Bool ->
   Bool ->
   Maybe Int ->
-  m (Buffer, Window)
+  Sem r (Buffer, Window)
 createRegularWindow vertical bottom size = do
   vimCommand prefixedCmd
   buf <- vimGetCurrentBuffer
   win <- vimGetCurrentWindow
-  return (buf, win)
+  pure (buf, win)
   where
     prefixedCmd = locationPrefix <> " " <> sizePrefix <> cmd
     cmd = if vertical then "vnew" else "new"
@@ -75,31 +73,31 @@ floatConfig =
   fromRight Map.empty . fromMsgpack . toMsgpack
 
 createFloatWith ::
-  NvimE e m =>
+  Member Rpc r =>
   Bool ->
   Bool ->
   FloatOptions ->
-  m (Buffer, Window)
+  Sem r (Buffer, Window)
 createFloatWith listed scratch options = do
   buffer <- nvimCreateBuf listed scratch
   window <- nvimOpenWin buffer (enter options) (floatConfig options)
-  return (buffer, window)
+  pure (buffer, window)
 
 createFloat ::
-  NvimE e m =>
+  Member Rpc r =>
   FloatOptions ->
-  m (Buffer, Window)
+  Sem r (Buffer, Window)
 createFloat =
   createFloatWith True True
 
 createScratchWindow ::
-  NvimE e m =>
+  Member Rpc r =>
   Bool ->
   Bool ->
   Bool ->
   Maybe FloatOptions ->
   Maybe Int ->
-  m (Buffer, Window)
+  Sem r (Buffer, Window)
 createScratchWindow vertical wrap bottom float size = do
   (buffer, win) <- createWindow
   windowSetOption win "wrap" (toMsgpack wrap)
@@ -109,35 +107,35 @@ createScratchWindow vertical wrap bottom float size = do
   windowSetOption win "foldmethod" (toMsgpack ("manual" :: Text))
   windowSetOption win "conceallevel" (toMsgpack (2 :: Int))
   windowSetOption win "concealcursor" (toMsgpack ("nvic" :: Text))
-  return (buffer, win)
+  pure (buffer, win)
   where
     createWindow =
       maybe regular createFloat float
     regular =
       createRegularWindow vertical bottom size
 
-createScratchUiInTab :: NvimE e m => m (Buffer, Window, Maybe Tabpage)
+createScratchUiInTab :: Member Rpc r => Sem r (Buffer, Window, Maybe Tabpage)
 createScratchUiInTab = do
   tab <- createScratchTab
   win <- vimGetCurrentWindow
   buffer <- windowGetBuffer win
-  return (buffer, win, Just tab)
+  pure (buffer, win, Just tab)
 
 createScratchUi ::
-  NvimE e m =>
+  Member Rpc r =>
   ScratchOptions ->
-  m (Buffer, Window, Maybe Tabpage)
+  Sem r (Buffer, Window, Maybe Tabpage)
 createScratchUi (ScratchOptions False vertical wrap _ _ bottom _ float size _ _ _ _ _) =
   uncurry (,,Nothing) <$> createScratchWindow vertical wrap bottom float size
 createScratchUi _ =
   createScratchUiInTab
 
 configureScratchBuffer ::
-  NvimE e m =>
+  Member Rpc r =>
   Buffer ->
   Maybe Text ->
   Text ->
-  m ()
+  Sem r ()
 configureScratchBuffer buffer ft name = do
   bufferSetOption buffer "bufhidden" (toMsgpack ("wipe" :: Text))
   bufferSetOption buffer "buftype" (toMsgpack ("nofile" :: Text))
@@ -146,123 +144,108 @@ configureScratchBuffer buffer ft name = do
   bufferSetName buffer name
 
 setupScratchBuffer ::
-  NvimE e m =>
-  MonadRibo m =>
+  Members [Rpc, Log] r =>
   Window ->
   Buffer ->
   Maybe Text ->
   Text ->
-  m Buffer
+  Sem r Buffer
 setupScratchBuffer window buffer ft name = do
   valid <- nvimBufIsLoaded buffer
-  logDebug @Text $ (if valid then "" else "in") <> "valid scratch buffer"
-  validBuffer <- if valid then return buffer else windowGetBuffer window
+  Log.debug [exon|#{if valid then "" else "in"}valid scratch buffer|]
+  validBuffer <- if valid then pure buffer else windowGetBuffer window
   configureScratchBuffer validBuffer ft name
-  return validBuffer
-
-scratchLens :: Text -> Lens' RibosomeInternal (Maybe Scratch)
-scratchLens name =
-  Ribosome.scratch . Lens.at name
+  pure validBuffer
 
 setupDeleteAutocmd ::
-  MonadRibo m =>
-  NvimE e m =>
+  Members [Rpc, Reader PluginName] r =>
   Scratch ->
-  m ()
+  Sem r ()
 setupDeleteAutocmd (Scratch name buffer _ _ _) = do
-  pname <- capitalize <$> pluginName
+  PluginName pname <- pluginNameCapitalized
   bufferAutocmd buffer "RibosomeScratch" "BufDelete" (deleteCall pname)
   where
     deleteCall pname =
       "silent! call " <> pname <> "DeleteScratch('" <> name <> "')"
 
 setupScratchIn ::
-  MonadDeepError e DecodeError m =>
-  MonadRibo m =>
-  NvimE e m =>
+  Members [Rpc, AtomicState (Map Text Scratch), Reader PluginName, Log] r =>
   Buffer ->
   Window ->
   Window ->
   Maybe Tabpage ->
   ScratchOptions ->
-  m Scratch
+  Sem r Scratch
 setupScratchIn buffer previous window tab (ScratchOptions _ _ _ focus _ _ _ _ _ _ syntax mappings ft name) = do
   validBuffer <- setupScratchBuffer window buffer ft name
-  traverse_ executeCurrentWindowSyntax syntax
+  traverse_ (executeWindowSyntax window) syntax
   traverse_ (activateBufferMapping validBuffer) mappings
   unless focus $ vimSetCurrentWindow previous
   let scratch = Scratch name validBuffer window previous tab
-  pluginInternalModify $ set (scratchLens name) (Just scratch)
+  atomicModify' (Map.insert name scratch)
   setupDeleteAutocmd scratch
-  return scratch
+  pure scratch
 
 createScratch ::
-  NvimE e m =>
-  MonadRibo m =>
-  MonadBaseControl IO m =>
-  MonadDeepError e DecodeError m =>
+  Members [Rpc, AtomicState (Map Text Scratch), Reader PluginName, Log, Resource] r =>
   ScratchOptions ->
-  m Scratch
+  Sem r Scratch
 createScratch options = do
-  logDebug @Text $ "creating new scratch `" <> show options <> "`"
+  Log.debug [exon|creating new scratch: #{show options}|]
   previous <- vimGetCurrentWindow
   (buffer, window, tab) <- eventignore $ createScratchUi options
   eventignore $ setupScratchIn buffer previous window tab options
 
 bufferStillLoaded ::
-  NvimE e m =>
+  Members [Rpc !! RpcError, Rpc] r =>
   Text ->
   Buffer ->
-  m Bool
+  Sem r Bool
 bufferStillLoaded name buffer =
   (&&) <$> loaded <*> loadedName
   where
-    loaded = nvimBufIsLoaded buffer
-    loadedName = catchAs @RpcError False ((name ==) <$> bufferGetName buffer)
+    loaded =
+      nvimBufIsLoaded buffer
+    loadedName =
+      resumeAs @RpcError False ((name ==) <$> bufferGetName buffer)
 
 updateScratch ::
-  NvimE e m =>
-  MonadRibo m =>
-  MonadBaseControl IO m =>
-  MonadDeepError e DecodeError m =>
+  Members [Rpc !! RpcError, Rpc, AtomicState (Map Text Scratch), Reader PluginName, Log, Resource] r =>
   Scratch ->
   ScratchOptions ->
-  m Scratch
+  Sem r Scratch
 updateScratch oldScratch@(Scratch name oldBuffer oldWindow _ _) options = do
-  logDebug $ "updating existing scratch `" <> name <> "`"
+  Log.debug [exon|updating existing scratch '#{name}'|]
   ifM (windowIsValid oldWindow) attemptReuseWindow reset
   where
     attemptReuseWindow =
-      ifM (bufferStillLoaded name oldBuffer) (return oldScratch) closeAndReset
+      ifM (bufferStillLoaded name oldBuffer) (pure oldScratch) closeAndReset
     closeAndReset =
       closeWindow oldWindow *> reset
     reset =
       createScratch options
 
 lookupScratch ::
-  MonadRibo m =>
+  Member (AtomicState (Map Text Scratch)) r =>
   Text ->
-  m (Maybe Scratch)
+  Sem r (Maybe Scratch)
 lookupScratch name =
-  pluginInternalL (scratchLens name)
+  atomicGets (Map.lookup name)
 
 ensureScratch ::
-  NvimE e m =>
-  MonadRibo m =>
-  MonadBaseControl IO m =>
-  MonadDeepError e DecodeError m =>
+  Members [Rpc !! RpcError, Rpc, AtomicState (Map Text Scratch), Reader PluginName, Log, Resource] r =>
   ScratchOptions ->
-  m Scratch
+  Sem r Scratch
 ensureScratch options = do
-  f <- maybe createScratch updateScratch <$> lookupScratch (view ScratchOptions.name options)
+  f <- maybe createScratch updateScratch <$> lookupScratch (options ^. ScratchOptions.name)
   f options
 
 withModifiable ::
-  NvimE e m =>
+  Member Rpc r =>
   Buffer ->
   ScratchOptions ->
-  m a ->
-  m a
+  Sem r a ->
+  Sem r a
 withModifiable buffer options thunk =
   if isWrite then thunk else wrap
   where
@@ -275,14 +258,14 @@ withModifiable buffer options thunk =
 
 setScratchContent ::
   Foldable t =>
-  NvimE e m =>
+  Members [Rpc !! RpcError, Rpc] r =>
   ScratchOptions ->
   Scratch ->
   t Text ->
-  m ()
+  Sem r ()
 setScratchContent options (Scratch _ buffer win _ _) lines' = do
   withModifiable buffer options $ setBufferContent buffer (toList lines')
-  when (options ^. ScratchOptions.resize) (ignoreError @RpcError (setSize win size))
+  when (options ^. ScratchOptions.resize) (resume_ @RpcError (setSize win size))
   where
     size =
       max 1 calculateSize
@@ -297,67 +280,59 @@ setScratchContent options (Scratch _ buffer win _ _) lines' = do
 
 showInScratch ::
   Foldable t =>
-  NvimE e m =>
-  MonadRibo m =>
-  MonadBaseControl IO m =>
-  MonadDeepError e DecodeError m =>
+  Members [Rpc !! RpcError, Rpc, AtomicState (Map Text Scratch), Reader PluginName, Log, Resource] r =>
   t Text ->
   ScratchOptions ->
-  m Scratch
+  Sem r Scratch
 showInScratch lines' options = do
   scratch <- ensureScratch options
   scratch <$ setScratchContent options scratch lines'
 
 showInScratchDef ::
   Foldable t =>
-  NvimE e m =>
-  MonadRibo m =>
-  MonadBaseControl IO m =>
-  MonadDeepError e DecodeError m =>
+  Members [Rpc !! RpcError, Rpc, AtomicState (Map Text Scratch), Reader PluginName, Log, Resource] r =>
   t Text ->
-  m Scratch
+  Sem r Scratch
 showInScratchDef lines' =
   showInScratch lines' def
 
 killScratch ::
-  MonadRibo m =>
-  NvimE e m =>
+  Members [Rpc !! RpcError, AtomicState (Map Text Scratch)] r =>
   Scratch ->
-  m ()
+  Sem r ()
 killScratch (Scratch name buffer window _ tab) = do
-  catchAs @RpcError () removeAutocmd
-  traverse_ closeTabpage tab *> closeWindow window *> wipeBuffer buffer
-  pluginInternalModify $ set (scratchLens name) Nothing
-  where
-    removeAutocmd = do
+  resume_ do
       number <- bufferGetNumber buffer
-      vimCommand $ "autocmd! RibosomeScratch BufDelete <buffer=" <> show number <> ">"
+      vimCommand [exon|autocmd! RibosomeScratch BufDelete <buffer=#{show number}>|]
+  traverse_ (resume_ . closeTabpage) tab
+  resume_ (closeWindow window)
+  resume_ (wipeBuffer buffer)
+  atomicModify' (Map.delete name)
 
 killScratchByName ::
-  MonadRibo m =>
-  NvimE e m =>
+  Members [Rpc !! RpcError, AtomicState (Map Text Scratch)] r =>
   Text ->
-  m ()
+  Sem r ()
 killScratchByName =
   traverse_ killScratch <=< lookupScratch
 
 scratchPreviousWindow ::
-  MonadRibo m =>
+  Member (AtomicState (Map Text Scratch)) r =>
   Text ->
-  m (Maybe Window)
+  Sem r (Maybe Window)
 scratchPreviousWindow =
-  fmap Scratch.scratchPrevious <$$> lookupScratch
+  fmap (fmap Scratch.scratchPrevious) <$> lookupScratch
 
 scratchWindow ::
-  MonadRibo m =>
+  Member (AtomicState (Map Text Scratch)) r =>
   Text ->
-  m (Maybe Window)
+  Sem r (Maybe Window)
 scratchWindow =
-  fmap Scratch.scratchWindow <$$> lookupScratch
+  fmap (fmap Scratch.scratchWindow) <$> lookupScratch
 
 scratchBuffer ::
-  MonadRibo m =>
+  Member (AtomicState (Map Text Scratch)) r =>
   Text ->
-  m (Maybe Buffer)
+  Sem r (Maybe Buffer)
 scratchBuffer =
-  fmap Scratch.scratchBuffer <$$> lookupScratch
+  fmap (fmap Scratch.scratchBuffer) <$> lookupScratch

@@ -1,9 +1,6 @@
 module Ribosome.Api.Process where
 
-import Ribosome.Control.Monad.Ribo (Nvim)
-import Ribosome.Nvim.Api.IO (vimCallFunction)
-import Ribosome.Nvim.Api.RpcCall (RpcError)
+import Ribosome.Host.Api.Effect (vimCallFunction)
 
-vimPid :: (MonadDeepError e RpcError m, Nvim m) => m Int
 vimPid =
   vimCallFunction "getpid" []

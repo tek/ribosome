@@ -9,11 +9,11 @@ where
 import Neovim
 
 nvimFatal :: Either NeovimException a -> Neovim env a
-nvimFatal (Right a) = return a
+nvimFatal (Right a) = pure a
 nvimFatal (Left e) = (liftIO . fail . show) e
 
 nvimResponseString :: Object -> Neovim env Text
-nvimResponseString (ObjectString a) = return $ decodeUtf8 a
+nvimResponseString (ObjectString a) = pure $ decodeUtf8 a
 nvimResponseString a = liftIO . fail $ "invalid nvim type for Text: " <> show a
 
 nvimResponseStringArray :: Object -> Neovim env [Text]

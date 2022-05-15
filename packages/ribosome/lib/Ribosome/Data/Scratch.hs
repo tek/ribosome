@@ -1,6 +1,6 @@
 module Ribosome.Data.Scratch where
 
-import Ribosome.Nvim.Api.Data (Buffer, Tabpage, Window)
+import Ribosome.Host.Api.Data (Buffer, Tabpage, Window)
 
 data Scratch =
   Scratch {

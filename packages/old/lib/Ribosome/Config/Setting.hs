@@ -1,34 +1,27 @@
 module Ribosome.Config.Setting where
 
-import Ribosome.Control.Monad.Ribo (MonadRibo, Nvim, NvimE, pluginName)
 import Ribosome.Data.Setting (Setting(Setting))
 import Ribosome.Data.SettingError (SettingError)
 import qualified Ribosome.Data.SettingError as SettingError (SettingError(..))
-import Ribosome.Msgpack.Decode (MsgpackDecode)
-import Ribosome.Msgpack.Encode (MsgpackEncode(toMsgpack))
-import Ribosome.Nvim.Api.IO
-import Ribosome.Nvim.Api.RpcCall (RpcError)
-import qualified Ribosome.Nvim.Api.RpcCall as RpcError (RpcError(..))
+import Ribosome.Host.Class.Msgpack.Decode (MsgpackDecode)
+import Ribosome.Host.Class.Msgpack.Encode (MsgpackEncode(toMsgpack))
+import Ribosome.Host.Api.Effect
 
 settingVariableName ::
-  (MonadRibo m) =>
   Setting a ->
   m Text
 settingVariableName (Setting settingName False _) =
-  return settingName
+  pure settingName
 settingVariableName (Setting settingName True _) = do
   name <- pluginName
-  return $ name <> "_" <> settingName
+  pure $ name <> "_" <> settingName
 
-settingRaw :: (MonadRibo m, Nvim m, MsgpackDecode a, MonadDeepError e RpcError m) => Setting a -> m a
 settingRaw s =
   vimGetVar =<< settingVariableName s
 
 setting ::
   ∀ e m a.
-  NvimE e m =>
-  MonadRibo m =>
-  MonadDeepError e SettingError m =>
+  Member Rpc r =>
   MsgpackDecode a =>
   Setting a ->
   m a
@@ -37,7 +30,7 @@ setting s@(Setting n _ fallback') =
   where
     handleError (RpcError.Nvim _ _) =
       case fallback' of
-        (Just fb) -> return fb
+        (Just fb) -> pure fb
         Nothing -> throwHoist $ SettingError.Unset n
     handleError a =
       throwHoist a
@@ -50,7 +43,6 @@ data SettingOrError =
 deepPrisms ''SettingOrError
 
 settingOr ::
-  (MonadIO m, Nvim m, MonadRibo m, MsgpackDecode a) =>
   a ->
   Setting a ->
   m a
@@ -58,14 +50,12 @@ settingOr a =
   (fromRight a <$>) . runExceptT . setting @SettingOrError
 
 settingMaybe ::
-  (MonadIO m, Nvim m, MonadRibo m, MsgpackDecode a) =>
   Setting a ->
   m (Maybe a)
 settingMaybe =
   (rightToMaybe <$>) . runExceptT . setting @SettingOrError
 
 updateSetting ::
-  (MonadRibo m, Nvim m, MonadDeepError e RpcError m, MsgpackEncode a) =>
   Setting a ->
   a ->
   m ()

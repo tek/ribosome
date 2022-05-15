@@ -4,11 +4,9 @@ import Data.Either.Combinators (swapEither)
 import Hedgehog (TestT, evalEither, (===))
 
 import Ribosome.Config.Setting (setting, updateSetting)
-import Ribosome.Control.Monad.Ribo (Ribo)
 import Ribosome.Data.Setting (Setting (Setting))
 import Ribosome.Data.SettingError (SettingError)
 import Ribosome.Error.Report.Class (ReportError (..))
-import Ribosome.Nvim.Api.RpcCall (RpcError)
 import Ribosome.Test.Run (UnitTest)
 import Ribosome.Test.Unit (unitTest)
 

@@ -6,11 +6,9 @@ import qualified Data.Map.Strict as Map (toList)
 import Data.MessagePack (Object(ObjectNil))
 
 import Ribosome.Control.Lock (lockOrSkip)
-import Ribosome.Control.Monad.Ribo (MonadRibo, NvimE, pluginInternalL, pluginInternalModifyL)
 import Ribosome.Control.Ribosome (RibosomeInternal)
 import qualified Ribosome.Control.Ribosome as RibosomeInternal (watchedVariables)
 import Ribosome.Nvim.Api.IO (vimGetVar)
-import Ribosome.Nvim.Api.RpcCall (RpcError)
 
 data WatchedVariable m =
   WatchedVariable {
@@ -29,7 +27,6 @@ storedVarLens name =
   RibosomeInternal.watchedVariables . Lens.at name
 
 runHandler ::
-  MonadRibo m =>
   WatchedVariable m ->
   Object ->
   m ()
@@ -38,19 +35,17 @@ runHandler (WatchedVariable name handler) new = do
   handler new
 
 compareVar ::
-  MonadRibo m =>
   WatchedVariable m ->
   Maybe Object ->
   Object ->
   m ()
 compareVar _ (Just old) new | old == new =
-  return ()
+  pure ()
 compareVar wv _ new =
   runHandler wv new
 
 checkVar ::
-  MonadRibo m =>
-  NvimE e m =>
+  Member Rpc r =>
   WatchedVariable m ->
   m ()
 checkVar wv@(WatchedVariable name _) = do
@@ -58,11 +53,10 @@ checkVar wv@(WatchedVariable name _) = do
   new <- catchAt @RpcError recover (Right <$> vimGetVar name)
   traverse_ (compareVar wv old) new
   where
-  recover _ = return (Left ())
+  recover _ = pure (Left ())
 
 handleWatcherRequest ::
-  MonadRibo m =>
-  NvimE e m =>
+  Member Rpc r =>
   [WatchedVariable m] ->
   [Object] ->
   m Object
@@ -70,9 +64,7 @@ handleWatcherRequest variables _ =
   ObjectNil <$ traverse_ checkVar variables
 
 handleWatcherRequestSafe ::
-  MonadBaseControl IO m =>
-  MonadRibo m =>
-  NvimE e m =>
+  Member Rpc r =>
   [WatchedVariable m] ->
   [Object] ->
   m Object

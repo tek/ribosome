@@ -117,7 +117,7 @@ decodeInputNum ::
   Int ->
   m (Maybe Text)
 decodeInputNum a =
-  maybe codepoint (return . Just) (specialNumCodes !? a)
+  maybe codepoint (pure . Just) (specialNumCodes !? a)
   where
     codepoint =
-      fmap Text.singleton . rightToMaybe @SomeException <$> try (return $ chr a)
+      fmap Text.singleton . rightToMaybe @SomeException <$> try (pure $ chr a)

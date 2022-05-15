@@ -6,7 +6,6 @@ import qualified Streamly.Prelude as Stream
 
 import Ribosome.Api.Atomic (atomic)
 import Ribosome.Api.Window (redraw)
-import Ribosome.Control.Monad.Ribo (MonadRibo, NvimE)
 import Ribosome.Data.Text (escapeQuotes)
 import Ribosome.Menu.Prompt.Data.Codes (decodeInputChar, decodeInputNum)
 import Ribosome.Menu.Prompt.Data.InputEvent (InputEvent)
@@ -15,11 +14,10 @@ import Ribosome.Menu.Prompt.Data.Prompt (Prompt (Prompt), PromptText (PromptText
 import Ribosome.Menu.Prompt.Data.PromptConfig (PromptInput (PromptInput))
 import qualified Ribosome.Menu.Prompt.Data.PromptInputEvent as PromptInputEvent (PromptInputEvent (..))
 import Ribosome.Menu.Prompt.Data.PromptRenderer (PromptRenderer (PromptRenderer))
-import Ribosome.Msgpack.Encode (toMsgpack)
+import Ribosome.Host.Class.Msgpack.Encode (toMsgpack)
 import Ribosome.Msgpack.Error (DecodeError)
-import qualified Ribosome.Nvim.Api.Data as ApiData (vimCommand)
-import Ribosome.Nvim.Api.IO (nvimInput, vimCallFunction, vimCommand, vimCommandOutput, vimGetOption, vimSetOption)
-import Ribosome.Nvim.Api.RpcCall (RpcError, syncRpcCall)
+import qualified Ribosome.Host.Api.Data as ApiData (vimCommand)
+import Ribosome.Host.Api.Effect (nvimInput, vimCallFunction, vimCommand, vimCommandOutput, vimGetOption, vimSetOption)
 import Ribosome.System.Time (sleep)
 
 quitChar :: Char
@@ -32,7 +30,7 @@ quitCharOrd =
 
 getChar ::
   MonadIO m =>
-  NvimE e m =>
+  Member Rpc r =>
   MonadBaseControl IO m =>
   MVar () ->
   m InputEvent
@@ -55,8 +53,7 @@ getChar quit =
       maybe (InputEvent.Unexpected num) InputEvent.Character <$> decodeInputNum num
 
 getCharStream ::
-  NvimE e m =>
-  MonadRibo m =>
+  Member Rpc r =>
   MonadBaseControl IO m =>
   Double ->
   PromptInput m
@@ -84,8 +81,7 @@ promptFragment hl text =
 
 nvimRenderPrompt ::
   Monad m =>
-  NvimE e m =>
-  MonadDeepError e DecodeError m =>
+  Member Rpc r =>
   Prompt ->
   m ()
 nvimRenderPrompt (Prompt cursor _ (PromptText text)) =
@@ -121,7 +117,7 @@ newtype NvimPromptResources =
   deriving stock (Eq, Show)
 
 nvimAcquire ::
-  NvimE e m =>
+  Member Rpc r =>
   m NvimPromptResources
 nvimAcquire = do
   highlightSet <- catchAs @RpcError False $ True <$ vimCommandOutput "highlight RibosomePromptCaret"
@@ -133,7 +129,7 @@ nvimAcquire = do
 
 nvimRelease ::
   MonadIO m =>
-  NvimE e m =>
+  Member Rpc r =>
   NvimPromptResources ->
   m ()
 nvimRelease (NvimPromptResources gc) = do
@@ -145,8 +141,7 @@ nvimRelease (NvimPromptResources gc) = do
 
 nvimPromptRenderer ::
   MonadIO m =>
-  NvimE e m =>
-  MonadDeepError e DecodeError m =>
+  Member Rpc r =>
   PromptRenderer m
 nvimPromptRenderer =
   PromptRenderer nvimAcquire nvimRelease nvimRenderPrompt

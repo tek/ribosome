@@ -1,7 +1,7 @@
 module Ribosome.Data.WindowConfig where
 
-import Ribosome.Msgpack.Decode (MsgpackDecode)
-import Ribosome.Msgpack.Encode (MsgpackEncode)
+import Ribosome.Host.Class.Msgpack.Decode (MsgpackDecode)
+import Ribosome.Host.Class.Msgpack.Encode (MsgpackEncode)
 
 data WindowConfig =
   WindowConfig {

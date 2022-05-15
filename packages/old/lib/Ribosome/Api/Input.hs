@@ -1,12 +1,11 @@
 module Ribosome.Api.Input where
 
-import Ribosome.Control.Monad.Ribo (NvimE)
-import Ribosome.Nvim.Api.IO (vimInput)
+import Ribosome.Host.Api.Effect (vimInput)
 import Ribosome.System.Time (sleep)
 
 syntheticInput ::
   MonadIO m =>
-  NvimE e m =>
+  Member Rpc r =>
   Maybe Double ->
   [Text] ->
   m ()

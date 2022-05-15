@@ -10,9 +10,7 @@ import qualified Streamly.Data.Fold as Fold
 import qualified Streamly.Internal.Data.Stream.IsStream as Stream
 import Streamly.Prelude (SerialT)
 
-import Ribosome.Control.Monad.Ribo (MonadRibo)
 import Ribosome.Data.Stream (chanStream, takeUntilNothing)
-import Ribosome.Log (logDebug)
 import Ribosome.Menu.Prompt.Data.CursorUpdate (CursorUpdate)
 import qualified Ribosome.Menu.Prompt.Data.CursorUpdate as CursorUpdate (CursorUpdate (..))
 import qualified Ribosome.Menu.Prompt.Data.Prompt as Prompt
@@ -139,7 +137,6 @@ updatePrompt handleEvent input prompt = do
 
 updatePromptState ::
   Monad m =>
-  MonadRibo m =>
   (PromptInputEvent -> PromptState -> m PromptUpdate) ->
   PromptInputEvent ->
   Prompt ->
@@ -153,7 +150,6 @@ updatePromptState handleEvent input old = do
       (old, Nothing)
 
 processPromptEvent ::
-  MonadRibo m =>
   MonadBaseControl IO m =>
   MVar Prompt ->
   PromptEventHandler m ->
@@ -169,7 +165,6 @@ processPromptEvent prompt (PromptEventHandler handleEvent) = \case
     pure(Just (newPrompt, PromptEvent.Edit))
 
 promptWithControl ::
-  MonadRibo m =>
   MonadCatch m =>
   MonadBaseControl IO m =>
   MVar Prompt ->
@@ -197,7 +192,6 @@ controlChannel = do
   pure (chan, listenQuit, putMVar listenQuit () *> atomically (closeTMChan chan), chanStream chan)
 
 promptStream ::
-  MonadRibo m =>
   MonadCatch m =>
   MonadBaseControl IO m =>
   PromptConfig m ->

@@ -11,7 +11,6 @@ await ::
   ∀ e a b m .
   MonadError e m =>
   MonadIO m =>
-  MonadBaseControl IO m =>
   (a -> TestT m b) ->
   m a ->
   TestT m b
@@ -42,7 +41,6 @@ awaitEqual ::
   Show b =>
   MonadIO m =>
   MonadError e m =>
-  MonadBaseControl IO m =>
   b ->
   (a -> b) ->
   m a ->
@@ -56,7 +54,6 @@ awaitEqual_ ::
   Show a =>
   MonadIO m =>
   MonadError e m =>
-  MonadBaseControl IO m =>
   a ->
   m a ->
   TestT m ()

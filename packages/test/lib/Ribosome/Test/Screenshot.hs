@@ -7,7 +7,6 @@ import Control.Monad.Catch (MonadMask)
 import Control.Monad.Free.Class (MonadFree)
 import Hedgehog (TestT, (===))
 
-import Ribosome.Control.Monad.Ribo (MonadRibo, Nvim)
 import Ribosome.Orphans ()
 import Ribosome.Test.Orphans ()
 import Ribosome.Test.Unit (fixture)
@@ -28,9 +27,6 @@ screenshot name record pane = do
 
 assertScreenshot ::
   MonadIO m =>
-  MonadRibo m =>
-  MonadDeepError e TmuxError m =>
-  MonadBaseControl IO m =>
   MonadMask m =>
   Nvim m =>
   Text ->
@@ -48,9 +44,6 @@ assertScreenshot name record pane = do
 awaitScreenshot ::
   MonadIO m =>
   MonadMask m =>
-  MonadRibo m =>
-  MonadBaseControl IO m =>
-  MonadDeepError e TmuxError m =>
   Nvim m =>
   Text ->
   Bool ->

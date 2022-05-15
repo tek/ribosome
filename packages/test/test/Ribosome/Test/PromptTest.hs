@@ -4,7 +4,6 @@ import Hedgehog (TestT, (===))
 import qualified Streamly.Internal.Data.Stream.IsStream as Stream
 import TestError (TestError)
 
-import Ribosome.Control.Monad.Ribo (Ribo)
 import Ribosome.Menu.Prompt.Data.Prompt (Prompt (Prompt))
 import Ribosome.Menu.Prompt.Data.PromptConfig (PromptFlag (StartInsert))
 import qualified Ribosome.Menu.Prompt.Data.PromptControlEvent as PromptControlEvent

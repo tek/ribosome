@@ -267,9 +267,8 @@ instance DecodePath b t => MsgpackDecode (Path b t) where
 
 msgpackFromString :: IsString a => Text -> Object -> Either Text a
 msgpackFromString name o =
-  adapt $ fromMsgpack o
-  where
-    adapt (Right a) =
-      Right $ fromString a
-    adapt (Left _) =
+  case fromMsgpack o of
+    Right a ->
+      Right (fromString a)
+    Left _ ->
       Util.illegalType name o

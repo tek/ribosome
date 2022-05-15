@@ -99,7 +99,6 @@ chunkAfter ::
   MonadIO m =>
   MonadThrow m =>
   IsStream stream =>
-  MonadBaseControl IO m =>
   Double ->
   Double ->
   (a -> ChunkAfter c e s) ->

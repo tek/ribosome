@@ -18,12 +18,29 @@ build-type:     Simple
 
 library
   exposed-modules:
+      Ribosome.Api.Autocmd
       Ribosome.Api.Buffer
       Ribosome.Api.Path
+      Ribosome.Api.Register
+      Ribosome.Api.Syntax
+      Ribosome.Api.Tabpage
+      Ribosome.Api.Variable
       Ribosome.Api.Window
       Ribosome.Data.FileBuffer
+      Ribosome.Data.FloatOptions
+      Ribosome.Data.Mapping
+      Ribosome.Data.PluginName
+      Ribosome.Data.Register
+      Ribosome.Data.RegisterType
+      Ribosome.Data.Scratch
+      Ribosome.Data.ScratchOptions
+      Ribosome.Data.Syntax
       Ribosome.Data.WindowView
+      Ribosome.Mapping
       Ribosome.Path
+      Ribosome.PluginName
+      Ribosome.Scratch
+      Ribosome.Text
   hs-source-dirs:
       lib
   default-extensions:
@@ -114,6 +131,7 @@ test-suite ribosome-unit
   other-modules:
       Ribosome.Host.Test.Run
       Ribosome.Test.BufferTest
+      Ribosome.Test.ScratchTest
   hs-source-dirs:
       test
   default-extensions:

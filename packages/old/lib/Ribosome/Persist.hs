@@ -9,7 +9,6 @@ import Path.IO (XdgDirectory(XdgCache), createDirIfMissing, doesFileExist, getXd
 import Ribosome.Config.Setting (setting)
 import qualified Ribosome.Config.Settings as S (persistenceDir)
 import Ribosome.Control.Monad.Error (recoveryFor)
-import Ribosome.Control.Monad.Ribo
 import Ribosome.Data.PersistError (PersistError)
 import qualified Ribosome.Data.PersistError as PersistError (PersistError(..))
 import Ribosome.Data.SettingError (SettingError)
@@ -19,22 +18,18 @@ defaultPersistencePath =
   liftIO $ getXdgDir XdgCache Nothing
 
 persistencePath ::
-  MonadRibo m =>
-  NvimE e m =>
+  Member Rpc r =>
   MonadThrow m =>
-  MonadDeepError e SettingError m =>
   Path Rel File ->
   m (Path Abs File)
 persistencePath path = do
   base <- defaultPersistencePath `recoveryFor` (parseAbsDir =<< setting S.persistenceDir)
   name <- parseRelDir . toString =<< pluginName
-  return $ base </> name </> path
+  pure $ base </> name </> path
 
 persistenceFile ::
-  MonadRibo m =>
-  NvimE e m =>
+  Member Rpc r =>
   MonadThrow m =>
-  MonadDeepError e SettingError m =>
   Path Rel File ->
   m (Path Abs File)
 persistenceFile path = do
@@ -43,10 +38,8 @@ persistenceFile path = do
   addExtension ".json" file
 
 persistStore ::
-  MonadRibo m =>
-  NvimE e m =>
+  Member Rpc r =>
   MonadThrow m =>
-  MonadDeepError e SettingError m =>
   ToJSON a =>
   Path Rel File ->
   a ->
@@ -55,12 +48,10 @@ persistStore path a = do
   file <- persistenceFile path
   liftIO $ encodeFile (toFilePath file) a
 
-noSuchFile :: MonadDeepError e PersistError m => Path Abs File -> m a
 noSuchFile = throwHoist . PersistError.NoSuchFile . toFilePath
 
 ensureExistence ::
   MonadIO m =>
-  MonadDeepError e PersistError m =>
   Path Abs File ->
   m ()
 ensureExistence file = do
@@ -68,14 +59,12 @@ ensureExistence file = do
   unless exists (noSuchFile file)
 
 decodeError ::
-  MonadDeepError e PersistError m =>
   Path Abs File ->
   Text ->
   m a
 decodeError file = throwHoist . PersistError.Decode (toFilePath file)
 
 fileNotReadable ::
-  MonadDeepError e PersistError m =>
   Path Abs File ->
   IOException ->
   m (Either String a)
@@ -83,21 +72,17 @@ fileNotReadable file _ = throwHoist $ PersistError.FileNotReadable (toFilePath f
 
 safeDecodeFile ::
   MonadIO m =>
-  MonadDeepError e PersistError m =>
   FromJSON a =>
   Path Abs File ->
   m a
 safeDecodeFile file = do
-  result <- either (fileNotReadable file) return =<< (liftIO . try . eitherDecodeFileStrict' . toFilePath $ file)
-  either (decodeError file) return . mapLeft toText $ result
+  result <- either (fileNotReadable file) pure =<< (liftIO . try . eitherDecodeFileStrict' . toFilePath $ file)
+  either (decodeError file) pure . mapLeft toText $ result
 
 persistLoad ::
   MonadIO m =>
-  MonadRibo m =>
-  NvimE e m =>
+  Member Rpc r =>
   MonadThrow m =>
-  MonadDeepError e SettingError m =>
-  MonadDeepError e PersistError m =>
   FromJSON a =>
   Path Rel File ->
   m a
@@ -107,10 +92,7 @@ persistLoad path = do
   safeDecodeFile file
 
 mayPersistLoad ::
-  MonadRibo m =>
-  NvimE e m =>
-  MonadDeepError e SettingError m =>
-  MonadDeepError e PersistError m =>
+  Member Rpc r =>
   MonadThrow m =>
   FromJSON a =>
   Path Rel File ->
@@ -119,6 +101,6 @@ mayPersistLoad =
   catchAt recover . persistLoad
   where
     recover (PersistError.NoSuchFile _) =
-      return Nothing
+      pure Nothing
     recover e =
       throwHoist e

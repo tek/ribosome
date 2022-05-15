@@ -66,7 +66,6 @@ menuItems =
 
 storePrompt ::
   MonadIO m =>
-  MonadBaseControl IO m =>
   MVar [Prompt] ->
   MenuEvent ->
   MenuWidget m Text a
@@ -88,7 +87,6 @@ storePrompt prompts = \case
 
 render ::
   MonadIO m =>
-  MonadBaseControl IO m =>
   MVar [[Entry Text]] ->
   MenuRenderEvent ->
   ReaderT (Menu Text) m ()
@@ -104,7 +102,6 @@ type TestM m = StateT (StrictRibosome ()) m
 menuTest ::
   MonadIO m =>
   MonadCatch m =>
-  MonadBaseControl IO m =>
   MenuConsumer (TestM m) Text a ->
   [Text] ->
   [Text] ->
@@ -122,7 +119,6 @@ menuTest handler items chars = do
 promptTest ::
   MonadIO m =>
   MonadCatch m =>
-  MonadBaseControl IO m =>
   [Text] ->
   [Text] ->
   m ([[Entry Text]], [Prompt])
@@ -212,7 +208,6 @@ items3 =
 
 exec ::
   MonadIO m =>
-  MonadBaseControl IO m =>
   MVar [Text] ->
   MenuWidget m Text a
 exec var = do
@@ -244,7 +239,6 @@ itemsMulti =
 
 execMulti ::
   MonadIO m =>
-  MonadBaseControl IO m =>
   MVar (Maybe (NonEmpty Text)) ->
   MenuWidget m Text a
 execMulti var = do
@@ -278,7 +272,6 @@ itemsToggle =
 
 execToggle ::
   MonadIO m =>
-  MonadBaseControl IO m =>
   MVar (Maybe (NonEmpty Text)) ->
   MenuWidget m Text a
 execToggle var = do
@@ -306,7 +299,6 @@ itemsExecuteThunk =
 
 execExecuteThunk ::
   MonadIO m =>
-  MonadBaseControl IO m =>
   MVar [Text] ->
   MenuWidget m Text a
 execExecuteThunk var =

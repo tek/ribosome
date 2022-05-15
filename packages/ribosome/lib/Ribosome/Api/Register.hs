@@ -1,13 +1,14 @@
 module Ribosome.Api.Register where
 
-import Ribosome.Control.Monad.Ribo (NvimE)
 import Ribosome.Data.Register (Register)
-import qualified Ribosome.Data.Register as Register (Register(..))
+import qualified Ribosome.Data.Register as Register (Register (..))
 import Ribosome.Data.RegisterType (RegisterType)
-import qualified Ribosome.Data.RegisterType as RegisterType (RegisterType(..))
-import Ribosome.Msgpack.Decode (MsgpackDecode)
-import Ribosome.Msgpack.Encode (MsgpackEncode(toMsgpack))
-import Ribosome.Nvim.Api.IO (vimCallFunction)
+import qualified Ribosome.Data.RegisterType as RegisterType (RegisterType (..))
+import Ribosome.Host.Api.Effect (vimCallFunction)
+import Ribosome.Host.Class.Msgpack.Array (msgpackArray)
+import Ribosome.Host.Class.Msgpack.Decode (MsgpackDecode)
+import Ribosome.Host.Class.Msgpack.Encode (MsgpackEncode (toMsgpack))
+import Ribosome.Host.Effect.Rpc (Rpc)
 
 starRegister :: Register
 starRegister =
@@ -18,51 +19,51 @@ unnamedRegister =
   Register.Special "\""
 
 setregAs ::
-  NvimE e m =>
+  Member Rpc r =>
   MsgpackEncode a =>
   RegisterType ->
   Register ->
   a ->
-  m ()
+  Sem r ()
 setregAs regType register text =
-  vimCallFunction "setreg" [toMsgpack register, toMsgpack text, toMsgpack regType]
+  vimCallFunction "setreg" (msgpackArray register text regType)
 
 setreg ::
-  NvimE e m =>
+  Member Rpc r =>
   Register ->
   Text ->
-  m ()
+  Sem r ()
 setreg =
   setregAs RegisterType.Character
 
 setregLine ::
-  NvimE e m =>
+  Member Rpc r =>
   Register ->
   [Text] ->
-  m ()
+  Sem r ()
 setregLine =
   setregAs RegisterType.Line
 
 getregtype ::
-  NvimE e m =>
+  Member Rpc r =>
   Register ->
-  m RegisterType
+  Sem r RegisterType
 getregtype register =
   vimCallFunction "getregtype" [toMsgpack register]
 
 getregAs ::
-  NvimE e m =>
+  Member Rpc r =>
   MsgpackDecode a =>
   Bool ->
   Register ->
-  m a
+  Sem r a
 getregAs list register =
-  vimCallFunction "getreg" [toMsgpack register, toMsgpack (0 :: Int), toMsgpack list]
+  vimCallFunction "getreg" (msgpackArray register (0 :: Int) list)
 
 getreg ::
-  NvimE e m =>
+  Member Rpc r =>
   Register ->
-  m (Either [Text] Text)
+  Sem r (Either [Text] Text)
 getreg register =
   withType =<< getregtype register
   where
@@ -72,8 +73,8 @@ getreg register =
       Right <$> getregAs False register
 
 getregList ::
-  NvimE e m =>
+  Member Rpc r =>
   Register ->
-  m [Text]
+  Sem r [Text]
 getregList =
   getregAs True

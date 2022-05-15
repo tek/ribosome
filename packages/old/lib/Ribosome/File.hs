@@ -10,7 +10,7 @@ canonicalPathWithHome home path =
 canonicalPath :: MonadIO m => FilePath -> m FilePath
 canonicalPath path = do
   home <- liftIO getHomeDirectory
-  return $ canonicalPathWithHome home path
+  pure $ canonicalPathWithHome home path
 
 canonicalPaths :: MonadIO m => [FilePath] -> m [FilePath]
 canonicalPaths paths = do

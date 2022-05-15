@@ -7,7 +7,6 @@ import System.FilePath (takeDirectory, takeFileName, (</>))
 import System.Log ()
 import System.Log.Logger (Priority(DEBUG, WARNING), setLevel, updateGlobalLogger)
 
-import Ribosome.Control.Monad.Ribo (MonadRibo, NvimE, pluginName)
 import Ribosome.Control.Ribosome (Ribosome)
 import Ribosome.Error.Report.Class (ReportError)
 import Ribosome.Plugin.RpcHandler (RpcHandler)
@@ -18,7 +17,7 @@ import Ribosome.Test.Orphans ()
 uPrefix :: Text
 uPrefix = "test"
 
-uTest :: (MonadIO m, NvimE e m) => Runner m
+uTest :: (MonadIO m, Member Rpc r) => Runner m
 uTest conf spec = do
   setupPluginEnv conf
   spec
@@ -29,7 +28,6 @@ unitTest ::
   NvimE e' n =>
   MonadFail m =>
   ReportError e =>
-  MonadBaseControl IO m =>
   RpcHandler e (Ribosome env) n =>
   TestConfig ->
   env ->
@@ -44,7 +42,6 @@ unitTestDef ::
   NvimE e' n =>
   MonadFail m =>
   ReportError e =>
-  MonadBaseControl IO m =>
   RpcHandler e (Ribosome env) n =>
   env ->
   TestT n a ->
@@ -58,7 +55,6 @@ unitTestDef' ::
   NvimE e' n =>
   MonadFail m =>
   ReportError e =>
-  MonadBaseControl IO m =>
   RpcHandler e (Ribosome ()) n =>
   TestT n a ->
   TestT m a
@@ -81,7 +77,6 @@ fixtureContent = F.fixtureContent uPrefix
 
 withLogAs ::
   MonadIO m =>
-  MonadBaseControl IO m =>
   Text ->
   m a ->
   m a
@@ -92,8 +87,6 @@ withLogAs name =
       liftIO . updateGlobalLogger (toString name) . setLevel
 
 withLog ::
-  MonadRibo m =>
-  MonadBaseControl IO m =>
   m a ->
   m a
 withLog thunk =

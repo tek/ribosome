@@ -2,10 +2,9 @@ module Ribosome.Api.Exists where
 
 import Prettyprinter (viaShow, (<+>))
 
-import Ribosome.Control.Monad.Ribo (NvimE)
-import Ribosome.Msgpack.Decode (MsgpackDecode, fromMsgpack)
-import Ribosome.Msgpack.Encode (toMsgpack)
-import Ribosome.Nvim.Api.IO (vimCallFunction)
+import Ribosome.Host.Class.Msgpack.Decode (MsgpackDecode, fromMsgpack)
+import Ribosome.Host.Class.Msgpack.Encode (toMsgpack)
+import Ribosome.Host.Api.Effect (vimCallFunction)
 import Ribosome.System.Time (epochSeconds, sleep)
 
 data Retry =
@@ -29,17 +28,17 @@ retry thunk check (Retry timeout interval) = do
       result <- thunk
       checked <- check result
       recurse start checked
-    recurse _ (Right b) = return (Right b)
+    recurse _ (Right b) = pure (Right b)
     recurse start (Left e) = do
       current <- epochSeconds
       if (current - start) < timeout
       then do
         sleep interval
         step start
-      else return $ Left e
+      else pure $ Left e
 
 waitFor ::
-  NvimE e m =>
+  Member Rpc r =>
   MonadIO m =>
   m Object ->
   (Object -> m (Either (Doc AnsiStyle) b)) ->
@@ -51,47 +50,47 @@ waitFor thunk check' =
     check result =
       case fromMsgpack result of
         Right a -> check' a
-        Left e -> return $ Left e
+        Left e -> pure $ Left e
 
 existsResult :: Object -> Either (Doc AnsiStyle) ()
 existsResult (ObjectInt 1) = Right ()
 existsResult a =
-  Left $ "weird return type " <+> viaShow a
+  Left $ "weird pure type " <+> viaShow a
 
 vimExists ::
-  NvimE e m =>
+  Member Rpc r =>
   Text ->
   m Object
 vimExists entity =
   vimCallFunction "exists" [toMsgpack entity]
 
 vimDoesExist ::
-  NvimE e m =>
+  Member Rpc r =>
   Text ->
   m Bool
 vimDoesExist entity =
   fmap (isRight . existsResult) (vimExists entity)
 
 function ::
-  NvimE e m =>
+  Member Rpc r =>
   Text ->
   m Bool
 function name =
   vimDoesExist ("*" <> name)
 
 waitForFunction ::
-  NvimE e m =>
+  Member Rpc r =>
   MonadIO m =>
   Text ->
   Retry ->
   m (Either (Doc AnsiStyle) ())
 waitForFunction name =
-  waitFor thunk (return . existsResult)
+  waitFor thunk (pure . existsResult)
   where
     thunk = vimExists ("*" <> name)
 
 waitForFunctionResult ::
-  NvimE e m =>
+  Member Rpc r =>
   MonadIO m =>
   Eq a =>
   Show a =>
@@ -102,8 +101,8 @@ waitForFunctionResult ::
   m (Either (Doc AnsiStyle) ())
 waitForFunctionResult name a retry' =
   waitForFunction name retry' >>= \case
-    Right _ -> waitFor thunk (return . check . fromMsgpack) retry'
-    Left e -> return (Left e)
+    Right _ -> waitFor thunk (pure . check . fromMsgpack) retry'
+    Left e -> pure (Left e)
   where
     thunk = vimCallFunction name []
     check (Right a') | a == a' =
@@ -111,4 +110,4 @@ waitForFunctionResult name a retry' =
     check (Right a') =
       Left $ "results differ:" <+> show a <+> "/" <+> show a'
     check (Left e) =
-      Left $ "weird return type: " <+> e
+      Left $ "weird pure type: " <+> e
