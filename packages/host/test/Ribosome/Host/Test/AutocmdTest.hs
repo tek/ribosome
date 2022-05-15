@@ -12,8 +12,9 @@ import Ribosome.Host.Data.RpcError (RpcError)
 import Ribosome.Host.Data.RpcHandler (RpcHandler)
 import Ribosome.Host.Data.RpcType (fPattern)
 import Ribosome.Host.Effect.Rpc (Rpc)
+import Ribosome.Host.Embed (embedNvim)
 import Ribosome.Host.Handler (rpcAutocmd)
-import Ribosome.Host.Test.Run (embedNvim, rpcError, runTest)
+import Ribosome.Host.Test.Run (rpcError, runTest)
 
 var :: Text
 var =

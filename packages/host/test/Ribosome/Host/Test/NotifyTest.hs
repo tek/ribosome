@@ -13,8 +13,9 @@ import Ribosome.Host.Data.RpcError (RpcError)
 import Ribosome.Host.Data.RpcHandler (RpcHandler)
 import qualified Ribosome.Host.Effect.Rpc as Rpc
 import Ribosome.Host.Effect.Rpc (Rpc)
+import Ribosome.Host.Embed (embedNvim)
 import Ribosome.Host.Handler (rpcFunction)
-import Ribosome.Host.Test.Run (embedNvim, runTest)
+import Ribosome.Host.Test.Run (runTest)
 
 hand ::
   Members [Rpc !! RpcError, Sync Int, Error HandlerError] r =>
@@ -35,7 +36,7 @@ handlers =
 test_notify :: UnitTest
 test_notify =
   runTest $ interpretSync $ embedNvim handlers do
-    Rpc.notify (nvimCallFunction "Fun" [toMsgpack i])
+    Rpc.notify (nvimCallFunction @() "Fun" [toMsgpack i])
     assertJust i =<< Sync.takeWait (Seconds 5)
   where
     i =

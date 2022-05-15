@@ -4,14 +4,15 @@ import Polysemy.Conc (interpretAtomic)
 import Polysemy.Test (UnitTest, assertJust)
 
 import Ribosome.Host.Api.Effect (nvimCommand, nvimGetVar, nvimSetVar)
-import Ribosome.Host.Data.CommandMods
+import Ribosome.Host.Data.CommandMods (CommandMods (CommandMods))
 import Ribosome.Host.Data.Execution (Execution (Sync))
 import Ribosome.Host.Data.HandlerError (HandlerError)
 import Ribosome.Host.Data.RpcError (RpcError)
 import Ribosome.Host.Data.RpcHandler (RpcHandler)
 import Ribosome.Host.Effect.Rpc (Rpc)
+import Ribosome.Host.Embed (embedNvim)
 import Ribosome.Host.Handler (rpcCommand)
-import Ribosome.Host.Test.Run (embedNvim, rpcError, runTest)
+import Ribosome.Host.Test.Run (rpcError, runTest)
 
 var :: Text
 var =

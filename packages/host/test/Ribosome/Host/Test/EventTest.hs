@@ -9,7 +9,8 @@ import qualified Ribosome.Host.Api.Data as Data
 import Ribosome.Host.Class.Msgpack.Encode (toMsgpack)
 import Ribosome.Host.Data.Event (Event (Event))
 import qualified Ribosome.Host.Effect.Rpc as Rpc
-import Ribosome.Host.Test.Run (embedNvim, runTest)
+import Ribosome.Host.Embed (embedNvim)
+import Ribosome.Host.Test.Run (runTest)
 
 listenEvent ::
   Members [EventConsumer res Event, Sync Event] r =>

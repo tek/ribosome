@@ -96,6 +96,7 @@ in {
       ribosome-host-unit = exe "ribosome-host" "test" {
         dependencies = [
           "deepseq"
+          "hedgehog"
           "messagepack"
           "ribosome-host"
           "polysemy-conc"

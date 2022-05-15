@@ -240,6 +240,7 @@ test-suite ribosome-host-unit
   build-depends:
       base >=4.12 && <5
     , deepseq
+    , hedgehog
     , incipit
     , messagepack
     , polysemy

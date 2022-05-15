@@ -1,6 +1,5 @@
 module Ribosome.Host.Test.CommandRangeTest where
 
-import Polysemy.Conc (interpretAtomic)
 import Polysemy.Test (UnitTest, assertJust)
 
 import Ribosome.Host.Api.Effect (
@@ -18,8 +17,9 @@ import Ribosome.Host.Data.Range (Range (Range), RangeStyle (RangeCount, RangeFil
 import Ribosome.Host.Data.RpcError (RpcError)
 import Ribosome.Host.Data.RpcHandler (RpcHandler)
 import Ribosome.Host.Effect.Rpc (Rpc)
+import Ribosome.Host.Embed (embedNvim)
 import Ribosome.Host.Handler (rpcCommand)
-import Ribosome.Host.Test.Run (embedNvim, rpcError, runTest)
+import Ribosome.Host.Test.Run (rpcError, runTest)
 
 var :: Text
 var =
@@ -78,7 +78,7 @@ rangeCountDefault = \case
 
 rangeHandlers ::
   ∀ r .
-  Members [AtomicState Int, Rpc !! RpcError] r =>
+  Member (Rpc !! RpcError) r =>
   [RpcHandler r]
 rangeHandlers =
   [
@@ -91,7 +91,7 @@ rangeHandlers =
 
 test_range :: UnitTest
 test_range =
-  runTest $ interpretAtomic 0 $ embedNvim rangeHandlers do
+  runTest $ embedNvim rangeHandlers do
     buf <- nvimGetCurrentBuf
     win <- nvimGetCurrentWin
     nvimBufSetLines buf 0 1 True ["1", "2", "3", "4", "5"]
