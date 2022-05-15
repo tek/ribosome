@@ -16,7 +16,8 @@ import Ribosome.Host.Data.RpcHandler (RpcHandler)
 import qualified Ribosome.Host.Effect.Rpc as Rpc
 import Ribosome.Host.Effect.Rpc (Rpc)
 import Ribosome.Host.Handler (rpcFunction)
-import Ribosome.Host.Test.Run (embedNvim, rpcError, runTest)
+import Ribosome.Host.Test.Run (rpcError, runTest)
+import Ribosome.Host.Embed (embedNvim)
 
 var :: Text
 var =

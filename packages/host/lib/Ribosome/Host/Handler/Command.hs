@@ -44,7 +44,7 @@ class SpecialParam (state :: OptionState) (a :: Type) where
     Nothing
 
 instance SpecialParam ('OptionState 'False c o ac) a where
-    type TransSpecial ('OptionState 'False c o ac) _ =
+    type TransSpecial ('OptionState 'False c o ac) a =
       TypeError ("Command option type " <> a <> " may not come after non-option")
 
 instance (

@@ -1,6 +1,7 @@
-module Ribosome.Host.Test.Run where
+module Ribosome.Test.Run where
 
 import Data.Time (UTCTime)
+import Hedgehog.Internal.Property (Failure)
 import Polysemy.Conc (interpretRace)
 import Polysemy.Test (Hedgehog, Test, TestError (TestError), UnitTest, runTestAuto)
 import Polysemy.Time (GhcTime, interpretTimeGhcConstant, mkDatetime)
@@ -12,7 +13,7 @@ import Ribosome.Host.Effect.Rpc (Rpc)
 import Ribosome.Host.Embed (EmbedStack, embedNvim, embedNvim_)
 
 type TestStack =
-  [GhcTime, Race, Async, Error Text, Test, Fail, Error TestError, Hedgehog IO, Embed IO, Resource, Final IO]
+  [GhcTime, Race, Async, Error Text, Test, Fail, Error TestError, Hedgehog IO, Error Failure, Embed IO, Resource, Final IO]
 
 type EmbedTestStack r =
   EmbedStack ++ r ++ TestStack
@@ -32,7 +33,7 @@ runTest =
   interpretTimeGhcConstant testTime
 
 embedTest ::
-  [RpcHandler (Rpc !! RpcError : TestStack)] ->
+  [RpcHandler (EmbedTestStack '[])] ->
   Sem (Rpc : EmbedTestStack '[]) () ->
   UnitTest
 embedTest handlers =

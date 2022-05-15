@@ -43,7 +43,7 @@ publishRequests ::
   Sem r a ->
   Sem r a
 publishRequests =
-  intercept \case
+  intercept @(Process i o) \case
     Process.Send msg -> do
       publish msg
       Process.send msg
@@ -106,42 +106,42 @@ type EmbedStack =
     Log
   ]
 
-runNvimPluginEmbedLog ::
+runHostEmbedLog ::
   Members [Error Text, Resource, Race, Async, Embed IO, Final IO] r =>
   Severity ->
-  [RpcHandler (Rpc !! RpcError : r)] ->
+  [RpcHandler (EmbedStack ++ r)] ->
   InterpretersFor EmbedStack r
-runNvimPluginEmbedLog logLevel handlers =
+runHostEmbedLog logLevel handlers =
   interpretLogStdoutLevelConc (Just logLevel) .
   mapError @ProcessError show .
   interpretEventsChan @RpcMessage .
   interpretEventsChan @Event .
-  interpretRpcEmbed (hoistRpcHandler (insertAt @2) <$> handlers) .
+  interpretRpcEmbed (hoistRpcHandler (raise2Under . raise3Under) <$> handlers) .
   raiseUnder .
   raise2Under
 
-runNvimPluginEmbed ::
+runHostEmbed ::
   Members [Error Text, Resource, Race, Async, Embed IO, Final IO] r =>
-  [RpcHandler (Rpc !! RpcError : r)] ->
+  [RpcHandler (EmbedStack ++ r)] ->
   InterpretersFor EmbedStack r
-runNvimPluginEmbed =
-  runNvimPluginEmbedLog Warn
+runHostEmbed =
+  runHostEmbedLog Warn
 
 embedNvimLog ::
   Members [Error Text, Resource, Race, Async, Embed IO, Final IO] r =>
   Severity ->
-  [RpcHandler (Rpc !! RpcError : r)] ->
+  [RpcHandler (EmbedStack ++ r)] ->
   InterpretersFor (Rpc : EmbedStack) r
 embedNvimLog level handlers =
-  runNvimPluginEmbedLog level handlers .
+  runHostEmbedLog level handlers .
   resumeHoistError @_ @Rpc (show @Text)
 
 embedNvim ::
   Members [Error Text, Resource, Race, Async, Embed IO, Final IO] r =>
-  [RpcHandler (Rpc !! RpcError : r)] ->
+  [RpcHandler (EmbedStack ++ r)] ->
   InterpretersFor (Rpc : EmbedStack) r
 embedNvim handlers =
-  runNvimPluginEmbed handlers .
+  runHostEmbed handlers .
   resumeHoistError @_ @Rpc (show @Text)
 
 embedNvim_ ::

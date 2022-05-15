@@ -1,6 +1,5 @@
 module Ribosome.Scratch where
 
-import Control.Lens (view, (^.))
 import qualified Data.Map.Strict as Map
 import Data.MessagePack (Object)
 import Exon (exon)
@@ -237,7 +236,7 @@ ensureScratch ::
   ScratchOptions ->
   Sem r Scratch
 ensureScratch options = do
-  f <- maybe createScratch updateScratch <$> lookupScratch (options ^. ScratchOptions.name)
+  f <- maybe createScratch updateScratch <$> lookupScratch (ScratchOptions.name options)
   f options
 
 withModifiable ::
@@ -250,7 +249,7 @@ withModifiable buffer options thunk =
   if isWrite then thunk else wrap
   where
     isWrite =
-      view ScratchOptions.modify options
+      ScratchOptions.modify options
     wrap =
       update True *> thunk <* update False
     update value =
@@ -265,16 +264,16 @@ setScratchContent ::
   Sem r ()
 setScratchContent options (Scratch _ buffer win _ _) lines' = do
   withModifiable buffer options $ setBufferContent buffer (toList lines')
-  when (options ^. ScratchOptions.resize) (resume_ @RpcError (setSize win size))
+  when (ScratchOptions.resize options) (resume_ @RpcError @Rpc (setSize win size))
   where
     size =
       max 1 calculateSize
     calculateSize =
       if vertical then fromMaybe 50 maxSize else min (length lines') (fromMaybe 30 maxSize)
     maxSize =
-      options ^. ScratchOptions.maxSize
+      ScratchOptions.maxSize options
     vertical =
-      options ^. ScratchOptions.vertical
+      ScratchOptions.vertical options
     setSize =
       if vertical then windowSetWidth else windowSetHeight
 
@@ -297,20 +296,21 @@ showInScratchDef lines' =
   showInScratch lines' def
 
 killScratch ::
-  Members [Rpc !! RpcError, AtomicState (Map Text Scratch)] r =>
+  Members [Rpc !! RpcError, AtomicState (Map Text Scratch), Log] r =>
   Scratch ->
   Sem r ()
 killScratch (Scratch name buffer window _ tab) = do
-  resume_ do
+  Log.debug [exon|Killing scratch buffer '#{name}'|]
+  atomicModify' (Map.delete @_ @Scratch name)
+  resume_ @RpcError @Rpc do
       number <- bufferGetNumber buffer
       vimCommand [exon|autocmd! RibosomeScratch BufDelete <buffer=#{show number}>|]
-  traverse_ (resume_ . closeTabpage) tab
-  resume_ (closeWindow window)
-  resume_ (wipeBuffer buffer)
-  atomicModify' (Map.delete name)
+  traverse_ (resume_ @RpcError @Rpc . closeTabpage) tab
+  resume_ @RpcError @Rpc (closeWindow window)
+  resume_ @RpcError @Rpc (wipeBuffer buffer)
 
 killScratchByName ::
-  Members [Rpc !! RpcError, AtomicState (Map Text Scratch)] r =>
+  Members [Rpc !! RpcError, AtomicState (Map Text Scratch), Log] r =>
   Text ->
   Sem r ()
 killScratchByName =

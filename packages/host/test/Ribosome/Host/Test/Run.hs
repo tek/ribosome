@@ -47,7 +47,7 @@ embedTest_ =
   embedNvim_
 
 rpcError ::
-  Members [eff !! RpcError, Error HandlerError] r =>
-  InterpreterFor eff r
+  Members [Rpc !! RpcError, Error HandlerError] r =>
+  InterpreterFor Rpc r
 rpcError =
   resumeHoistError (HandlerError . unRpcError)

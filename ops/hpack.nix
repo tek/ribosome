@@ -126,6 +126,7 @@ in {
     tests = {
       ribosome-unit = exe "ribosome" "test" {
         dependencies = [
+          "hedgehog"
           "path"
           "ribosome"
           "ribosome-host"

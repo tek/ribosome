@@ -48,7 +48,7 @@ type RiboTesting e env m n =
     MonadIO m,
     MonadFail m,
     ReportError e,
-    RpcHandler e env n,
+    RpcHandler e env n
   )
 
 runSocketNvimHs ::

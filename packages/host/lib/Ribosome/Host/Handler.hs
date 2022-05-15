@@ -7,12 +7,18 @@ import Ribosome.Host.Data.RpcType (AutocmdEvent (AutocmdEvent), AutocmdOptions)
 import Ribosome.Host.Handler.Codec (HandlerCodec (handlerCodec))
 import Ribosome.Host.Handler.Command (CommandHandler (commandOptions), OptionStateZero)
 
-rpcFunction :: HandlerCodec h r => Text -> Execution -> h -> RpcHandler r
+rpcFunction ::
+  ∀ r h .
+  HandlerCodec h r =>
+  Text ->
+  Execution ->
+  h ->
+  RpcHandler r
 rpcFunction name execution h =
   RpcHandler RpcType.Function name execution (handlerCodec h)
 
 rpcCommand ::
-  ∀ h r .
+  ∀ r h .
   HandlerCodec h r =>
   CommandHandler OptionStateZero h =>
   Text ->
@@ -26,6 +32,7 @@ rpcCommand name execution h =
       commandOptions @OptionStateZero @h
 
 rpcAutocmd ::
+  ∀ r h .
   HandlerCodec h r =>
   Text ->
   Execution ->
