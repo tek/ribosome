@@ -28,8 +28,8 @@ type TestStack =
     Final IO
   ]
 
-type EmbedTestStack r =
-  EmbedStack ++ r ++ TestStack
+type EmbedTestStack =
+  EmbedStack ++ TestStack
 
 testTime :: UTCTime
 testTime =
@@ -46,15 +46,15 @@ runTest =
   interpretTimeGhcConstant testTime
 
 embedTest ::
-  [RpcHandler (EmbedTestStack '[])] ->
-  Sem (Rpc : EmbedTestStack '[]) () ->
+  [RpcHandler EmbedTestStack] ->
+  Sem (Rpc : EmbedTestStack) () ->
   UnitTest
 embedTest handlers =
   runTest .
   embedNvim handlers
 
 embedTest_ ::
-  Sem (Rpc : EmbedTestStack '[]) () ->
+  Sem (Rpc : EmbedTestStack) () ->
   UnitTest
 embedTest_ =
   runTest .

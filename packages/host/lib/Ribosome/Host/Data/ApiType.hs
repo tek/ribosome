@@ -53,6 +53,15 @@ data ApiType =
   Ext String
   deriving stock (Show, Eq)
 
+polyType :: ApiType -> Bool
+polyType = \case
+  Prim Object -> True
+  Prim Dictionary -> True
+  _ -> False
+
+pattern PolyType :: ApiType
+pattern PolyType <- (polyType -> True)
+
 type Parser =
   FlatParse.Parser Text
 

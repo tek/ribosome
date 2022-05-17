@@ -7,7 +7,8 @@ import Ribosome.Host.Class.Msgpack.Decode (pattern Msgpack, MsgpackDecode (fromM
 import Ribosome.Host.Class.Msgpack.Encode (MsgpackEncode (toMsgpack))
 import Ribosome.Host.Data.Args (Args (Args))
 import Ribosome.Host.Data.Bar (Bar (Bar))
-import Ribosome.Host.Data.HandlerError (HandlerError (HandlerError))
+import qualified Ribosome.Host.Data.HandlerError as HandlerError
+import Ribosome.Host.Data.HandlerError (HandlerError)
 import Ribosome.Host.Data.RpcHandler (RpcHandlerFun)
 
 decodeArg ::
@@ -16,14 +17,14 @@ decodeArg ::
   Object ->
   Sem r a
 decodeArg =
-  fromEither . first HandlerError . fromMsgpack
+  fromEither . first HandlerError.simple . fromMsgpack
 
 extraError ::
   Member (Error HandlerError) r =>
   [Object] ->
   Sem r a
 extraError o =
-  throw (HandlerError [exon|Extraneous arguments: #{show o}|])
+  throw (HandlerError.simple [exon|Extraneous arguments: #{show o}|])
 
 class HandlerArg a r where
   handlerArg :: [Object] -> Sem r ([Object], a)
@@ -50,7 +51,7 @@ instance (
     (Msgpack a : rest) ->
       pure (rest, Args a)
     a : _ ->
-      throw (HandlerError [exon|Invalid type for Args: #{show a}|])
+      throw (HandlerError.simple [exon|Invalid type for Args: #{show a}|])
 
 class HandlerCodec h r where
   handlerCodec :: h -> RpcHandlerFun r

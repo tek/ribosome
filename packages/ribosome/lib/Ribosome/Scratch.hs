@@ -14,8 +14,8 @@ import Ribosome.Data.FloatOptions (FloatOptions, enter)
 import Ribosome.Data.PluginName (PluginName (PluginName))
 import Ribosome.Data.Scratch (Scratch (Scratch))
 import qualified Ribosome.Data.Scratch as Scratch (Scratch (scratchBuffer, scratchPrevious, scratchWindow))
+import qualified Ribosome.Data.ScratchOptions as ScratchOptions
 import Ribosome.Data.ScratchOptions (ScratchOptions (ScratchOptions))
-import qualified Ribosome.Data.ScratchOptions as ScratchOptions (maxSize, modify, name, resize, vertical)
 import Ribosome.Host.Api.Data (Buffer, Tabpage, Window)
 import Ribosome.Host.Api.Effect (
   bufferGetName,
@@ -236,7 +236,7 @@ ensureScratch ::
   ScratchOptions ->
   Sem r Scratch
 ensureScratch options = do
-  f <- maybe createScratch updateScratch <$> lookupScratch (ScratchOptions.name options)
+  f <- maybe createScratch updateScratch <$> lookupScratch (ScratchOptions._name options)
   f options
 
 withModifiable ::
@@ -249,7 +249,7 @@ withModifiable buffer options thunk =
   if isWrite then thunk else wrap
   where
     isWrite =
-      ScratchOptions.modify options
+      ScratchOptions._modify options
     wrap =
       update True *> thunk <* update False
     update value =
@@ -264,16 +264,16 @@ setScratchContent ::
   Sem r ()
 setScratchContent options (Scratch _ buffer win _ _) lines' = do
   withModifiable buffer options $ setBufferContent buffer (toList lines')
-  when (ScratchOptions.resize options) (resume_ @RpcError @Rpc (setSize win size))
+  when (ScratchOptions._resize options) (resume_ @RpcError @Rpc (setSize win size))
   where
     size =
       max 1 calculateSize
     calculateSize =
       if vertical then fromMaybe 50 maxSize else min (length lines') (fromMaybe 30 maxSize)
     maxSize =
-      ScratchOptions.maxSize options
+      ScratchOptions._maxSize options
     vertical =
-      ScratchOptions.vertical options
+      ScratchOptions._vertical options
     setSize =
       if vertical then windowSetWidth else windowSetHeight
 

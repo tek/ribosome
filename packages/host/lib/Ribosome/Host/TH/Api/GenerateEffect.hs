@@ -26,7 +26,7 @@ import Prelude hiding (Type)
 
 import Ribosome.Host.Class.Msgpack.Decode (MsgpackDecode)
 import Ribosome.Host.Class.Msgpack.Encode (MsgpackEncode (toMsgpack))
-import Ribosome.Host.Data.ApiType (ApiPrim (Object), ApiType (Prim))
+import Ribosome.Host.Data.ApiType (ApiType, pattern PolyType)
 import qualified Ribosome.Host.Effect.Rpc as Rpc
 import Ribosome.Host.Effect.Rpc (Rpc)
 import Ribosome.Host.TH.Api.Generate (MethodSpec (MethodSpec), generateFromApi, reifyApiType)
@@ -34,7 +34,7 @@ import Ribosome.Host.TH.Api.Param (Param (Param, paramName))
 
 msgpackDecodeConstraint :: ApiType -> Q (Maybe Type)
 msgpackDecodeConstraint = \case
-  Prim Object ->
+  PolyType ->
     Just <$> [t|MsgpackDecode $(varT (mkName "a"))|]
   _ ->
     pure Nothing
@@ -48,7 +48,7 @@ msgpackEncodeConstraint = \case
 
 effReturnType :: ApiType -> Q (Maybe Name, Type)
 effReturnType = \case
-  Prim Object -> do
+  PolyType -> do
     let n = mkName "a"
     pure (Just n, VarT (mkName "a"))
   a -> do

@@ -1,6 +1,19 @@
 module Ribosome.Host.Data.HandlerError where
 
-newtype HandlerError =
-  HandlerError { unHandlerError :: Text }
+import Polysemy.Log (Severity (Error))
+
+data HandlerError =
+  HandlerError {
+    user :: Text,
+    log :: [Text],
+    severity :: Severity
+  }
   deriving stock (Eq, Show)
-  deriving newtype (IsString)
+
+simple :: Text -> HandlerError
+simple msg =
+  HandlerError msg [msg] Error
+
+instance IsString HandlerError where
+  fromString =
+    simple . toText

@@ -37,7 +37,7 @@ import Ribosome.Host.Class.Msgpack.Decode (MsgpackDecode (fromMsgpack))
 import Ribosome.Host.Class.Msgpack.Encode (MsgpackEncode (toMsgpack))
 import Ribosome.Host.Class.Msgpack.Util (illegalType)
 import Ribosome.Host.Data.ApiInfo (ExtTypeMeta (ExtTypeMeta))
-import Ribosome.Host.Data.ApiType (ApiPrim (Object), ApiType (Prim))
+import Ribosome.Host.Data.ApiType (ApiType, pattern PolyType)
 import Ribosome.Host.Data.Request (Request (Request), RpcMethod (RpcMethod))
 import Ribosome.Host.Data.RpcCall (RpcCall (RpcCallRequest))
 import Ribosome.Host.TH.Api.Generate (MethodSpec (MethodSpec), generateFromApi, reifyApiType)
@@ -46,7 +46,7 @@ import Ribosome.Host.TH.Api.Param (Param (Param), paramName)
 
 effectiveType :: ApiType -> Q Type
 effectiveType = \case
-  Prim Object ->
+  PolyType ->
     pure (VarT (mkName "a"))
   a ->
     reifyApiType a

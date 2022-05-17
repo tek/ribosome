@@ -20,12 +20,22 @@ library
   exposed-modules:
       Ribosome.Api.Autocmd
       Ribosome.Api.Buffer
+      Ribosome.Api.Echo
+      Ribosome.Api.Function
+      Ribosome.Api.Input
+      Ribosome.Api.Mode
+      Ribosome.Api.Normal
+      Ribosome.Api.Option
       Ribosome.Api.Path
+      Ribosome.Api.Process
       Ribosome.Api.Register
+      Ribosome.Api.Sleep
       Ribosome.Api.Syntax
       Ribosome.Api.Tabpage
+      Ribosome.Api.Undo
       Ribosome.Api.Variable
       Ribosome.Api.Window
+      Ribosome.Config.Settings
       Ribosome.Data.FileBuffer
       Ribosome.Data.FloatOptions
       Ribosome.Data.Mapping
@@ -34,14 +44,67 @@ library
       Ribosome.Data.RegisterType
       Ribosome.Data.Scratch
       Ribosome.Data.ScratchOptions
+      Ribosome.Data.Setting
+      Ribosome.Data.SettingError
       Ribosome.Data.Syntax
+      Ribosome.Data.WindowConfig
       Ribosome.Data.WindowView
+      Ribosome.Effect.Settings
       Ribosome.Embed
+      Ribosome.Interpreter.Settings
       Ribosome.Mapping
+      Ribosome.Menu.Action
+      Ribosome.Menu.Combinators
+      Ribosome.Menu.Consumer
+      Ribosome.Menu.Data.CursorIndex
+      Ribosome.Menu.Data.CursorLine
+      Ribosome.Menu.Data.Entry
+      Ribosome.Menu.Data.Menu
+      Ribosome.Menu.Data.MenuAction
+      Ribosome.Menu.Data.MenuConfig
+      Ribosome.Menu.Data.MenuConsumer
+      Ribosome.Menu.Data.MenuData
+      Ribosome.Menu.Data.MenuEvent
+      Ribosome.Menu.Data.MenuItem
+      Ribosome.Menu.Data.MenuItemFilter
+      Ribosome.Menu.Data.MenuRenderer
+      Ribosome.Menu.Data.MenuRenderEvent
+      Ribosome.Menu.Data.MenuResult
+      Ribosome.Menu.Data.MenuState
+      Ribosome.Menu.Data.MenuView
+      Ribosome.Menu.Data.NvimMenuState
+      Ribosome.Menu.Data.QuitReason
+      Ribosome.Menu.Filters
+      Ribosome.Menu.ItemLens
+      Ribosome.Menu.Items
+      Ribosome.Menu.Items.Read
+      Ribosome.Menu.Main
+      Ribosome.Menu.Nvim
+      Ribosome.Menu.Prompt
+      Ribosome.Menu.Prompt.Data.Codes
+      Ribosome.Menu.Prompt.Data.CursorUpdate
+      Ribosome.Menu.Prompt.Data.InputEvent
+      Ribosome.Menu.Prompt.Data.Prompt
+      Ribosome.Menu.Prompt.Data.PromptConfig
+      Ribosome.Menu.Prompt.Data.PromptConsumed
+      Ribosome.Menu.Prompt.Data.PromptControlEvent
+      Ribosome.Menu.Prompt.Data.PromptEvent
+      Ribosome.Menu.Prompt.Data.PromptInputEvent
+      Ribosome.Menu.Prompt.Data.PromptRenderer
+      Ribosome.Menu.Prompt.Data.PromptState
+      Ribosome.Menu.Prompt.Data.PromptUpdate
+      Ribosome.Menu.Prompt.Data.TextUpdate
+      Ribosome.Menu.Prompt.Nvim
+      Ribosome.Menu.Prompt.Run
+      Ribosome.Menu.Prompt.Transition
+      Ribosome.Menu.Run
+      Ribosome.Menu.UpdateState
       Ribosome.Path
       Ribosome.Plugin.Builtin
       Ribosome.PluginName
       Ribosome.Scratch
+      Ribosome.Stream.Accumulate
+      Ribosome.Stream.Util
       Ribosome.Text
   hs-source-dirs:
       lib
@@ -109,18 +172,28 @@ library
   ghc-options: -Wall -Wredundant-constraints -Wincomplete-uni-patterns -Wmissing-deriving-strategies -Widentities -Wunused-packages -fplugin=Polysemy.Plugin
   build-depends:
       base >=4.12 && <5
+    , bytestring-trie
     , cereal
+    , exceptions
     , exon
     , flatparse
+    , fuzzyfind
     , incipit
     , lens
+    , lifted-async
+    , lifted-base
+    , lifted-stm
     , messagepack
+    , monad-control
     , path
     , polysemy
     , polysemy-plugin
     , polysemy-process
     , ribosome-host
+    , stm-chans
+    , streamly
     , template-haskell
+    , transformers
     , type-errors-pretty
     , typed-process
   mixins:
@@ -132,6 +205,7 @@ test-suite ribosome-unit
   main-is: Main.hs
   other-modules:
       Ribosome.Test.BufferTest
+      Ribosome.Test.MenuTest
       Ribosome.Test.Run
       Ribosome.Test.ScratchTest
       Ribosome.Test.Wait
@@ -201,8 +275,13 @@ test-suite ribosome-unit
   ghc-options: -Wall -Wredundant-constraints -Wincomplete-uni-patterns -Wmissing-deriving-strategies -Widentities -Wunused-packages -fplugin=Polysemy.Plugin -threaded -rtsopts -with-rtsopts=-N
   build-depends:
       base >=4.12 && <5
+    , exceptions
     , hedgehog
     , incipit
+    , lens
+    , lifted-async
+    , lifted-base
+    , lifted-stm
     , path
     , polysemy
     , polysemy-conc
@@ -210,8 +289,10 @@ test-suite ribosome-unit
     , polysemy-test
     , ribosome
     , ribosome-host
+    , streamly
     , tasty
     , time
+    , transformers
   mixins:
       base hiding (Prelude)
   default-language: Haskell2010

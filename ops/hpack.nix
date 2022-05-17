@@ -112,29 +112,46 @@ in {
     synopsis = "Neovim plugin framework for Polysemy";
     description = "See https://hackage.haskell.org/package/ribosome/docs/Ribosome.html";
     library.dependencies = [
+      "bytestring-trie"
       "cereal"
+      "exceptions"
       "exon"
       "flatparse"
+      "fuzzyfind"
       "lens"
+      "lifted-async"
+      "lifted-base"
+      "lifted-stm"
       "messagepack"
-      "ribosome-host"
+      "monad-control"
       "path"
       "polysemy-process"
+      "ribosome-host"
+      "streamly"
+      "stm-chans"
       "template-haskell"
+      "transformers"
       "type-errors-pretty"
       "typed-process"
     ];
     tests = {
       ribosome-unit = exe "ribosome" "test" {
         dependencies = [
+          "exceptions"
           "hedgehog"
+          "lens"
+          "lifted-async"
+          "lifted-base"
+          "lifted-stm"
           "path"
           "ribosome"
           "ribosome-host"
           "polysemy-conc"
           "polysemy-test"
+          "streamly"
           "tasty"
           "time"
+          "transformers"
         ];
       };
     };

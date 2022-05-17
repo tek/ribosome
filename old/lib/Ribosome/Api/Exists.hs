@@ -41,9 +41,9 @@ waitFor ::
   Member Rpc r =>
   MonadIO m =>
   m Object ->
-  (Object -> m (Either (Doc AnsiStyle) b)) ->
+  (Object -> m (Either Text b)) ->
   Retry ->
-  m (Either (Doc AnsiStyle) b)
+  m (Either Text b)
 waitFor thunk check' =
   retry thunk check
   where
@@ -52,7 +52,7 @@ waitFor thunk check' =
         Right a -> check' a
         Left e -> pure $ Left e
 
-existsResult :: Object -> Either (Doc AnsiStyle) ()
+existsResult :: Object -> Either Text ()
 existsResult (ObjectInt 1) = Right ()
 existsResult a =
   Left $ "weird pure type " <+> viaShow a
@@ -83,7 +83,7 @@ waitForFunction ::
   MonadIO m =>
   Text ->
   Retry ->
-  m (Either (Doc AnsiStyle) ())
+  m (Either Text ())
 waitForFunction name =
   waitFor thunk (pure . existsResult)
   where
@@ -98,7 +98,7 @@ waitForFunctionResult ::
   Text ->
   a ->
   Retry ->
-  m (Either (Doc AnsiStyle) ())
+  m (Either Text ())
 waitForFunctionResult name a retry' =
   waitForFunction name retry' >>= \case
     Right _ -> waitFor thunk (pure . check . fromMsgpack) retry'

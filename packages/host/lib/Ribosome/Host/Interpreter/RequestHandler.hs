@@ -2,8 +2,10 @@ module Ribosome.Host.Interpreter.RequestHandler where
 
 import qualified Data.Map.Strict as Map
 import Data.MessagePack (Object)
+import qualified Data.Text as Text
 import Exon (exon)
 import Polysemy.Conc (withAsync_)
+import qualified Polysemy.Log as Log
 import Polysemy.Process (Process)
 
 import Ribosome.Host.Data.Event (Event (Event), EventName (EventName))
@@ -41,15 +43,20 @@ publishEvent (Request (RpcMethod name) args) =
   publish (Event (EventName name) args)
 
 executeRequest ::
+  Member Log r =>
   [Object] ->
   RpcHandlerFun r ->
   Sem r Response
 executeRequest args handler =
-  runError (handler args) <&> \case
-    Right a -> Response.Success a
-    Left (HandlerError e) -> Response.Error (RpcError e)
+  runError (handler args) >>= \case
+    Right a ->
+      pure (Response.Success a)
+    Left (HandlerError e log severity) -> do
+      Log.log severity (Text.unlines log)
+      pure (Response.Error (RpcError e))
 
 handle ::
+  Member Log r =>
   Map RpcMethod (RpcHandlerFun r) ->
   Request ->
   Sem r (Maybe Response)
@@ -57,7 +64,7 @@ handle handlers (Request method args) =
   traverse (executeRequest args) (Map.lookup method handlers)
 
 interpretRequestHandler ::
-  Member (Events er Event) r =>
+  Members [Events er Event, Log] r =>
   [RpcHandler r] ->
   InterpreterFor RequestHandler r
 interpretRequestHandler (handlersByName -> handlers) =
