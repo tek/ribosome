@@ -53,21 +53,21 @@ closeFloats = do
   traverse_ closeWindow =<< filterM isFloat =<< vimGetWindows
 
 runMenu ::
-  Members [Resource, Embed IO] r =>
-  MenuConfig IO i a ->
+  Members [Log, Resource, Race, Embed IO, Final IO] r =>
+  MenuConfig r IO i a ->
   Sem r (MenuResult a)
 runMenu config =
   bracketPrompt (config ^. MenuConfig.prompt . PromptConfig.render)
   where
     bracketPrompt (PromptRenderer acquire release _) =
-      bracket (embed acquire) (embed . release) \ _ -> embed (menuMain config)
+      bracket (embed acquire) (embed . release) \ _ -> menuMain config
 
 nvimMenu ::
   Members [Rpc !! RpcError, Settings !! SettingError] r =>
   Members [Rpc, AtomicState (Map Text Scratch), Reader PluginName, Log, Resource, Race, Embed IO, Final IO] r =>
   ScratchOptions ->
   SerialT IO (MenuItem i) ->
-  MenuConsumer IO i a ->
+  MenuConsumer r i a ->
   PromptConfig IO ->
   Sem r (MenuResult a)
 nvimMenu options items consumer promptConfig = do
@@ -89,7 +89,7 @@ staticNvimMenu ::
   Members [Rpc, AtomicState (Map Text Scratch), Reader PluginName, Log, Resource, Race, Embed IO, Final IO] r =>
   ScratchOptions ->
   [MenuItem i] ->
-  MenuConsumer IO i a ->
+  MenuConsumer r i a ->
   PromptConfig IO ->
   Sem r (MenuResult a)
 staticNvimMenu options items =

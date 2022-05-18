@@ -8,8 +8,7 @@ import qualified Data.Map.Strict as Map
 import Data.Monoid (Sum (Sum, getSum))
 import qualified Data.Sequence as Seq
 import qualified Data.Text as Text (cons, snoc)
-import Polysemy.Conc (interpretSyncAs)
-import qualified Polysemy.Conc.Sync as Sync
+import Polysemy.Conc (interpretAtomic)
 import Polysemy.Final (withWeavingToFinal)
 import qualified Polysemy.Log as Log
 
@@ -173,19 +172,18 @@ windowLine = do
   pure (top - bot - fromIntegral curLine)
 
 runSR ::
-  Members [State s, Reader e, Embed IO] r =>
+  Members [AtomicState s, Reader e, Embed IO] r =>
   StateT s (ReaderT e IO) a ->
   Sem r a
 runSR ma = do
   e <- ask
-  s <- get
+  s <- atomicGet
   (a, s') <- embed (runReaderT (runStateT ma s) e)
-  put s'
+  atomicPut s'
   pure a
 
--- TODO catch errors when setting line?
 updateMenu ::
-  Members [State NvimMenuState, Reader (Menu i), Rpc, Rpc !! RpcError, Log, Embed IO] r =>
+  Members [AtomicState NvimMenuState, Reader (Menu i), Rpc, Rpc !! RpcError, Log, Embed IO] r =>
   ScratchOptions ->
   Scratch ->
   Sem r ()
@@ -197,14 +195,13 @@ updateMenu options scratch = do
   restoreView (PartialWindowView Nothing (Just 1))
   targetLine <- runSR windowLine
   setLine win targetLine !>> Log.debug "menu cursor line invalid"
-  setLine win targetLine
   where
     win =
       scratchWindow scratch
 
 renderNvimMenu ::
   ∀ i r .
-  Members [State NvimMenuState, Reader (Menu i), Rpc, Rpc !! RpcError, Log, Embed IO] r =>
+  Members [AtomicState NvimMenuState, Reader (Menu i), Rpc, Rpc !! RpcError, Log, Embed IO] r =>
   ScratchOptions ->
   Scratch ->
   Sem r ()
@@ -214,18 +211,15 @@ renderNvimMenu options scratch =
     redraw
 
 nvimMenuRenderer ::
-  Members [Rpc, Rpc !! RpcError, AtomicState (Map Text Scratch), Race, Log, Embed IO, Final IO] r =>
+  Members [Rpc, Rpc !! RpcError, AtomicState (Map Text Scratch), Log, Embed IO, Final IO] r =>
   ScratchOptions ->
   Scratch ->
   Sem r (MenuRenderer IO i)
 nvimMenuRenderer options scratch =
-  interpretSyncAs (def :: NvimMenuState) $
+  interpretAtomic (def :: NvimMenuState) $
   withWeavingToFinal \ s wv _ ->
     pure $ (<$ s) $ MenuRenderer \ menu -> \case
-      MenuRenderEvent.Render -> do
-        void $ wv $ (<$ s) do
-          ns <- Sync.takeBlock
-          (newS, ()) <- runReader menu (runState ns(renderNvimMenu options scratch))
-          Sync.putBlock newS
+      MenuRenderEvent.Render ->
+        void (wv (runReader menu (renderNvimMenu options scratch) <$ s))
       MenuRenderEvent.Quit ->
         void (wv (killScratch scratch <$ s))

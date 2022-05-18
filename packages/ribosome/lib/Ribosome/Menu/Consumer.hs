@@ -1,28 +1,24 @@
 module Ribosome.Menu.Consumer where
 
-import Control.Monad.Trans.Control (MonadBaseControl)
-import Control.Monad.Trans.Reader (runReaderT)
 import Data.Map.Strict ((!?))
 import qualified Data.Map.Strict as Map (fromList, union)
 
 import Ribosome.Menu.Action (menuCycle, menuToggle, menuToggleAll)
-import Ribosome.Menu.Data.MenuConsumer (MenuApp (MenuApp), MenuConsumer (MenuConsumer), MenuWidget)
+import Ribosome.Menu.Data.MenuConsumer (MenuApp (MenuApp), MenuConsumer (MenuConsumer), MenuWidgetSem)
 import qualified Ribosome.Menu.Data.MenuEvent as MenuEvent (MenuEvent (..))
 
-type Mappings m i a =
-  Map Text (MenuWidget m i a)
+type Mappings r i a =
+  Map Text (MenuWidgetSem r i a)
 
 forApp ::
-  MenuApp m i a ->
-  MenuConsumer m i a
+  MenuApp r i a ->
+  MenuConsumer r i a
 forApp (MenuApp consumer) =
-  MenuConsumer \ menu event ->
-    runReaderT (consumer event) menu
+  MenuConsumer consumer
 
 forMappings ::
-  Applicative m =>
-  Mappings m i a ->
-  MenuConsumer m i a
+  Mappings r i a ->
+  MenuConsumer r i a
 forMappings mappings =
   forApp $ MenuApp \case
     MenuEvent.Mapping char ->
@@ -31,9 +27,8 @@ forMappings mappings =
       pure Nothing
 
 defaultMappings ::
-  MonadIO m =>
-  MonadBaseControl IO m =>
-  Mappings m i a
+  Members [Resource, Embed IO] r =>
+  Mappings r i a
 defaultMappings =
   Map.fromList [
     ("k", menuCycle 1),
@@ -45,16 +40,14 @@ defaultMappings =
   ]
 
 withMappings ::
-  MonadIO m =>
-  MonadBaseControl IO m =>
-  Mappings m i a ->
-  MenuConsumer m i a
+  Members [Resource, Embed IO] r =>
+  Mappings r i a ->
+  MenuConsumer r i a
 withMappings extraMappings =
   forMappings (Map.union extraMappings defaultMappings)
 
 basic ::
-  MonadIO m =>
-  MonadBaseControl IO m =>
-  MenuConsumer m i a
+  Members [Resource, Embed IO] r =>
+  MenuConsumer r i a
 basic =
   withMappings mempty

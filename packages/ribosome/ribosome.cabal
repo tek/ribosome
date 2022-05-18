@@ -51,6 +51,7 @@ library
       Ribosome.Data.WindowView
       Ribosome.Effect.Settings
       Ribosome.Embed
+      Ribosome.Final
       Ribosome.Interpreter.Settings
       Ribosome.Mapping
       Ribosome.Menu.Action
@@ -71,6 +72,7 @@ library
       Ribosome.Menu.Data.MenuRenderEvent
       Ribosome.Menu.Data.MenuResult
       Ribosome.Menu.Data.MenuState
+      Ribosome.Menu.Data.MenuStateSem
       Ribosome.Menu.Data.MenuView
       Ribosome.Menu.Data.NvimMenuState
       Ribosome.Menu.Data.QuitReason
@@ -104,6 +106,7 @@ library
       Ribosome.PluginName
       Ribosome.Scratch
       Ribosome.Stream.Accumulate
+      Ribosome.Stream.ChunkAfter
       Ribosome.Stream.Util
       Ribosome.Text
   hs-source-dirs:
@@ -185,6 +188,7 @@ library
     , lifted-stm
     , messagepack
     , monad-control
+    , mtl
     , path
     , polysemy
     , polysemy-plugin

@@ -186,24 +186,26 @@ promptWithControl prompt (PromptConfig (PromptInput source) handler renderer fla
       Stream.cons PromptInputEvent.Init (source listenQuit)
 
 controlChannel ::
+  Member (Embed IO) r =>
   MonadIO m =>
   MonadThrow m =>
   MonadBaseControl IO m =>
-  m (TMChan a, MVar (), m (), SerialT m a)
+  Sem r (TMChan a, MVar (), m (), SerialT m a)
 controlChannel = do
-  listenQuit <- liftIO newEmptyMVar
-  chan <- liftIO (atomically newTMChan)
+  listenQuit <- embed newEmptyMVar
+  chan <- embed (atomically newTMChan)
   pure (chan, listenQuit, liftIO (putMVar listenQuit () *> atomically (closeTMChan chan)), chanStream chan)
 
 promptStream ::
+  Member (Embed IO) r =>
   MonadIO m =>
   MonadCatch m =>
   MonadBaseControl IO m =>
   PromptConfig m ->
-  m (TMChan PromptControlEvent, SerialT m (Prompt, PromptEvent))
+  Sem r (TMChan PromptControlEvent, SerialT m (Prompt, PromptEvent))
 promptStream config = do
   (chan, listenQuit, close, control) <- controlChannel
-  prompt <- liftIO (newMVar (pristinePrompt (startInsert (config ^. PromptConfig.flags))))
+  prompt <- embed (newMVar (pristinePrompt (startInsert (config ^. PromptConfig.flags))))
   pure (chan, Stream.finally close (promptWithControl prompt config control listenQuit))
 
 pristinePrompt :: Bool -> Prompt

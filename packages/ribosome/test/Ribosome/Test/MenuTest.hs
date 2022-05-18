@@ -6,9 +6,12 @@ import Control.Lens (use, view, (^.))
 import Control.Monad.Catch (MonadCatch)
 import qualified Control.Monad.Trans.Reader as MTL
 import Control.Monad.Trans.Reader (ReaderT)
+import qualified Control.Monad.Trans.State.Strict as MTL
 import Control.Monad.Trans.State.Strict (StateT, evalStateT)
 import qualified Data.IntMap.Strict as IntMap
 import qualified Data.Map.Strict as Map (fromList)
+import Polysemy.Conc (interpretRace)
+import Polysemy.Log (interpretLogNull)
 import Polysemy.Test (UnitTest, runTestAuto, unitTest, (===))
 import qualified Streamly.Prelude as Streamly
 import Streamly.Prelude (MonadAsync, SerialT)
@@ -21,8 +24,8 @@ import qualified Ribosome.Menu.Data.Entry as Entry
 import Ribosome.Menu.Data.Entry (Entries, Entry (Entry), simpleIntEntries)
 import qualified Ribosome.Menu.Data.Menu as Menu
 import Ribosome.Menu.Data.Menu (Menu, consMenu)
-import Ribosome.Menu.Data.MenuConfig (MenuConfig (MenuConfig))
-import Ribosome.Menu.Data.MenuConsumer (MenuApp (MenuApp), MenuConsumer, MenuWidget)
+import Ribosome.Menu.Data.MenuConfig (MenuConfig (MenuConfig), hoistMenuConfig)
+import Ribosome.Menu.Data.MenuConsumer (MenuApp (MenuApp), MenuConsumer, MenuWidget, MenuWidgetSem)
 import qualified Ribosome.Menu.Data.MenuData as MenuItems
 import Ribosome.Menu.Data.MenuData (cursor)
 import qualified Ribosome.Menu.Data.MenuEvent as MenuEvent
@@ -32,7 +35,7 @@ import Ribosome.Menu.Data.MenuItem (Items, MenuItem, simpleMenuItem)
 import qualified Ribosome.Menu.Data.MenuRenderEvent as MenuRenderEvent
 import Ribosome.Menu.Data.MenuRenderEvent (MenuRenderEvent)
 import Ribosome.Menu.Data.MenuRenderer (MenuRenderer (MenuRenderer))
-import Ribosome.Menu.Data.MenuState (menuRead)
+import Ribosome.Menu.Data.MenuStateSem (SemS (SemS), menuRead, semState)
 import Ribosome.Menu.Filters (fuzzyItemFilter)
 import Ribosome.Menu.ItemLens (focus, selected', selectedOnly, unselected)
 import Ribosome.Menu.Items (deleteSelected, popSelection)
@@ -48,7 +51,6 @@ import qualified Ribosome.Menu.Prompt.Data.PromptState as PromptState
 import Ribosome.Menu.Prompt.Run (noPromptRenderer)
 import Ribosome.Menu.Prompt.Transition (basicTransition)
 import Ribosome.Menu.Run (runMenu)
-import qualified Control.Monad.Trans.State.Strict as MTL
 
 sleep ::
   Double ->
@@ -72,9 +74,10 @@ menuItems =
   Streamly.fromList . fmap (simpleMenuItem "name")
 
 storePrompt ::
+  Members [Resource, Embed IO] r =>
   MVar [Prompt] ->
   MenuEvent ->
-  MenuWidget IO Text a
+  MenuWidgetSem r Text a
 storePrompt prompts = \case
     MenuEvent.PromptEdit ->
       store
@@ -87,9 +90,10 @@ storePrompt prompts = \case
   where
     store = do
       menuRead do
-        prompt <- use Menu.prompt
-        liftIO (modifyMVar_ prompts (pure . (prompt :)))
-        menuIgnore
+        semState do
+          prompt <- use Menu.prompt
+          SemS (embed (modifyMVar_ prompts (pure . (prompt :))))
+          menuIgnore
 
 render ::
   MVar [[Entry Text]] ->
@@ -104,23 +108,24 @@ render varItems menu = \case
     unit
 
 menuTest ::
-  Members [Resource, Embed IO] r =>
-  MenuConsumer IO Text a ->
+  Members [Resource, Race, Embed IO, Final IO] r =>
+  MenuConsumer r Text a ->
   [Text] ->
   [Text] ->
   Sem r [[Entry Text]]
-menuTest handler items chars = do
+menuTest consumer items chars = do
   itemsVar <- embed (newMVar [])
-  _ <- runMenu (conf itemsVar)
+  _ <- interpretLogNull $ runMenu (conf itemsVar)
   embed (readMVar itemsVar)
   where
     conf itemsVar =
-      MenuConfig (menuItems items) fuzzyItemFilter handler (MenuRenderer (render itemsVar)) promptConfig
+      hoistMenuConfig raise raise3Under $
+      MenuConfig (menuItems items) fuzzyItemFilter consumer (MenuRenderer (render itemsVar)) promptConfig
     promptConfig =
       PromptConfig (PromptInput (const (promptInput chars))) basicTransition noPromptRenderer [StartInsert]
 
 promptTest ::
-  Members [Resource, Embed IO] r =>
+  Members [Resource, Race, Embed IO, Final IO] r =>
   [Text] ->
   [Text] ->
   Sem r ([[Entry Text]], [Prompt])
@@ -171,7 +176,7 @@ itemsTarget1 =
 
 test_pureMenuModeChange :: UnitTest
 test_pureMenuModeChange =
-  runTestAuto do
+  runTestAuto $ interpretRace do
     (items, prompts) <- promptTest items1 chars1
     itemsTarget1 === (fmap Entry._item <$> take 3 items)
     promptsTarget1 === reverse prompts
@@ -195,7 +200,7 @@ itemsTarget =
 
 test_pureMenuFilter :: UnitTest
 test_pureMenuFilter = do
-  runTestAuto do
+  runTestAuto $ interpretRace do
     items <- fst <$> promptTest items2 chars2
     [itemsTarget] === (fmap (view Entry.item) <$> take 1 items)
 
@@ -211,17 +216,19 @@ items3 =
     ]
 
 exec ::
+  Members [Resource, Embed IO] r =>
   MVar [Text] ->
-  MenuWidget IO Text a
+  MenuWidgetSem r Text a
 exec var = do
   menuRead do
-    fs <- use sortedEntries
-    liftIO $ void $ swapMVar var (view (Entry.item . MenuItem.text) <$> fs)
-    menuQuit
+    semState do
+      fs <- use sortedEntries
+      SemS (embed $ void $ swapMVar var (view (Entry.item . MenuItem.text) <$> fs))
+      menuQuit
 
 test_pureMenuExecute :: UnitTest
 test_pureMenuExecute = do
-  runTestAuto do
+  runTestAuto $ interpretRace do
     var <- embed (newMVar [])
     _ <- menuTest (Consumer.forMappings (Map.fromList [("cr", exec var)])) items3 chars3
     (items3 ===) =<< embed (readMVar var)
@@ -242,17 +249,18 @@ itemsMulti =
   ]
 
 execMulti ::
+  Members [Resource, Embed IO] r =>
   MVar (Maybe (NonEmpty Text)) ->
-  MenuWidget IO Text a
+  MenuWidgetSem r Text a
 execMulti var = do
   menuRead do
-    selection <- use selected'
+    selection <- semState (use selected')
     liftIO $ void $ swapMVar var (fmap MenuItem._text <$> selection)
     menuQuit
 
 test_menuMultiMark :: UnitTest
 test_menuMultiMark = do
-  runTestAuto do
+  runTestAuto $ interpretRace do
     var <- embed (newMVar Nothing)
     _ <- menuTest (Consumer.withMappings (Map.fromList [("cr", execMulti var)])) itemsMulti charsMulti
     (Just ["item5", "item4", "item3"] ===) =<< embed (readMVar var)
@@ -275,17 +283,18 @@ itemsToggle =
   ]
 
 execToggle ::
+  Members [Resource, Embed IO] r =>
   MVar (Maybe (NonEmpty Text)) ->
-  MenuWidget IO Text a
+  MenuWidgetSem r Text a
 execToggle var = do
   menuRead do
-    selection <- use selectedOnly
+    selection <- semState (use selectedOnly)
     liftIO $ void $ swapMVar var (fmap MenuItem._text <$> selection)
   menuQuit
 
 test_menuToggle :: UnitTest
 test_menuToggle = do
-  runTestAuto do
+  runTestAuto $ interpretRace do
     var <- embed (newMVar Nothing)
     _ <- menuTest (Consumer.withMappings (Map.fromList [("cr", execToggle var)])) itemsToggle charsToggle
     (Just ["abc", "a"] ===) =<< embed (readMVar var)
@@ -302,19 +311,20 @@ itemsExecuteThunk =
   ]
 
 execExecuteThunk ::
+  Members [Resource, Embed IO] r =>
   MVar [Text] ->
-  MenuWidget IO Text a
+  MenuWidgetSem r Text a
 execExecuteThunk var =
   menuRead do
-    sel <- use focus
-    Nothing <$ liftIO (modifyMVar_ var (append sel))
+    sel <- semState (use focus)
+    Nothing <$ embed (modifyMVar_ var (append sel))
   where
     append sel a =
       pure (a ++ maybeToList (MenuItem._text <$> sel))
 
 test_menuExecuteThunk :: UnitTest
 test_menuExecuteThunk = do
-  runTestAuto do
+  runTestAuto $ interpretRace do
     var <- embed (newMVar [])
     _ <- menuTest (Consumer.withMappings (Map.fromList [("cr", execExecuteThunk var)])) itemsExecuteThunk charsExecuteThunk
     (["a", "b"] ===) =<< embed (readMVar var)

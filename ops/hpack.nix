@@ -124,6 +124,7 @@ in {
       "lifted-stm"
       "messagepack"
       "monad-control"
+      "mtl"
       "path"
       "polysemy-process"
       "ribosome-host"

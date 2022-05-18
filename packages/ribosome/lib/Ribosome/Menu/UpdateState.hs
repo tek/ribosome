@@ -1,14 +1,14 @@
 module Ribosome.Menu.UpdateState where
 
 import Control.Lens (use, uses, (%=), (+=), (.=))
-import Control.Monad.Catch (MonadCatch, MonadThrow)
+import Control.Monad.Catch (MonadThrow)
 import Control.Monad.Trans.Control (MonadBaseControl)
 import qualified Data.IntMap.Strict as IntMap
 import qualified Data.Text as Text
 import qualified Data.Trie as Trie
 import qualified Streamly.Internal.Data.Fold as Fold
 import qualified Streamly.Internal.Data.Stream.IsStream as Stream
-import Streamly.Prelude (AsyncT, IsStream)
+import Streamly.Prelude (AsyncT, IsStream, SerialT)
 
 import Ribosome.Menu.Combinators (push)
 import Ribosome.Menu.Data.Entry (Entries, insertFiltered)
@@ -146,6 +146,7 @@ classifyEvent = \case
   PromptEvent.Error e ->
     Right (MenuEvent.Quit (QuitReason.Error e))
 
+-- TODO Log
 setPromptAndClassify ::
   MonadIO m =>
   MenuState i ->
@@ -157,14 +158,10 @@ setPromptAndClassify menu prompt event = do
   classifyEvent event <$ setPrompt menu prompt
 
 promptEvent ::
-  MonadIO m =>
-  MonadCatch m =>
-  IsStream t =>
-  MonadBaseControl IO m =>
   MenuState i ->
   MenuItemFilter i ->
-  AsyncT m (Prompt, PromptEvent) ->
-  t m MenuEvent
+  AsyncT IO (Prompt, PromptEvent) ->
+  SerialT IO MenuEvent
 promptEvent menu itemFilter =
   Stream.fromAsync .
   mapMAcc (uncurry (setPromptAndClassify menu)) (const (queryUpdate menu itemFilter)) .

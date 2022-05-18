@@ -7,14 +7,14 @@ import qualified Ribosome.Menu.Data.MenuResult as MenuResult
 import Ribosome.Menu.Data.MenuResult (MenuResult)
 import Ribosome.Menu.Prompt.Data.Prompt (Prompt)
 
-data MenuAction m a =
+data MenuAction r a =
   Continue
   |
   Render
   |
   UpdatePrompt Prompt
   |
-  Quit (m (MenuResult a))
+  Quit (Sem r (MenuResult a))
   deriving stock (Functor)
 
 instance Show (MenuAction m a) where
@@ -29,14 +29,22 @@ instance Show (MenuAction m a) where
       showString "Quit"
 
 success ::
-  Applicative m =>
-  m a ->
-  MenuAction m a
+  Sem r a ->
+  MenuAction r a
 success =
   Quit . fmap MenuResult.Success
 
 abort ::
-  Applicative m =>
-  MenuAction m a
+  MenuAction r a
 abort =
   Quit (pure MenuResult.Aborted)
+
+hoistMenuAction ::
+  (∀ x . Sem r x -> Sem r' x) ->
+  MenuAction r a ->
+  MenuAction r' a
+hoistMenuAction f = \case
+  Continue -> Continue
+  Render -> Render
+  UpdatePrompt p -> UpdatePrompt p
+  Quit ma -> Quit (f ma)
