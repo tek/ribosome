@@ -8,13 +8,12 @@ import qualified Data.Trie as Trie
 
 import Ribosome.Menu.Data.Entry (Entries, Entry)
 import Ribosome.Menu.Data.MenuData (HasMenuItems, MenuQuery (MenuQuery), currentQuery, entries, history)
-import Ribosome.Menu.Data.MenuState (MenuItemsM)
+import Ribosome.Menu.Data.MenuStateSem (MenuItemsSemS)
 
 push ::
-  Monad m =>
   MenuQuery ->
   Entries a ->
-  MenuItemsM m a ()
+  MenuItemsSemS r a ()
 push newQuery new = do
   MenuQuery oldQuery <- use currentQuery
   old <- use entries
@@ -37,7 +36,7 @@ sortedEntries ::
   HasMenuItems a i =>
   Getter a [Entry i]
 sortedEntries =
-  entries . (to sortEntries)
+  entries . to sortEntries
 
 overEntries ::
   (Int -> Entry i -> Entry i) ->

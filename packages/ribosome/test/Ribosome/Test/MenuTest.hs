@@ -1,16 +1,12 @@
-{-# OPTIONS_GHC -Wno-unused-imports #-}
 module Ribosome.Test.MenuTest where
 
 import Control.Concurrent.Lifted (threadDelay)
 import Control.Lens (use, view, (^.))
-import Control.Monad.Catch (MonadCatch)
-import qualified Control.Monad.Trans.Reader as MTL
-import Control.Monad.Trans.Reader (ReaderT)
 import qualified Control.Monad.Trans.State.Strict as MTL
-import Control.Monad.Trans.State.Strict (StateT, evalStateT)
 import qualified Data.IntMap.Strict as IntMap
 import qualified Data.Map.Strict as Map (fromList)
-import Polysemy.Conc (interpretRace)
+import Polysemy (run)
+import Polysemy.Conc (interpretAtomic, interpretRace)
 import Polysemy.Log (interpretLogNull)
 import Polysemy.Test (UnitTest, runTestAuto, unitTest, (===))
 import qualified Streamly.Prelude as Streamly
@@ -25,7 +21,7 @@ import Ribosome.Menu.Data.Entry (Entries, Entry (Entry), simpleIntEntries)
 import qualified Ribosome.Menu.Data.Menu as Menu
 import Ribosome.Menu.Data.Menu (Menu, consMenu)
 import Ribosome.Menu.Data.MenuConfig (MenuConfig (MenuConfig), hoistMenuConfig)
-import Ribosome.Menu.Data.MenuConsumer (MenuApp (MenuApp), MenuConsumer, MenuWidget, MenuWidgetSem)
+import Ribosome.Menu.Data.MenuConsumer (MenuApp (MenuApp), MenuConsumer, MenuWidgetSem)
 import qualified Ribosome.Menu.Data.MenuData as MenuItems
 import Ribosome.Menu.Data.MenuData (cursor)
 import qualified Ribosome.Menu.Data.MenuEvent as MenuEvent
@@ -35,7 +31,7 @@ import Ribosome.Menu.Data.MenuItem (Items, MenuItem, simpleMenuItem)
 import qualified Ribosome.Menu.Data.MenuRenderEvent as MenuRenderEvent
 import Ribosome.Menu.Data.MenuRenderEvent (MenuRenderEvent)
 import Ribosome.Menu.Data.MenuRenderer (MenuRenderer (MenuRenderer))
-import Ribosome.Menu.Data.MenuStateSem (SemS (SemS), menuRead, semState)
+import Ribosome.Menu.Data.MenuStateSem (menuRead, semState)
 import Ribosome.Menu.Filters (fuzzyItemFilter)
 import Ribosome.Menu.ItemLens (focus, selected', selectedOnly, unselected)
 import Ribosome.Menu.Items (deleteSelected, popSelection)
@@ -74,11 +70,10 @@ menuItems =
   Streamly.fromList . fmap (simpleMenuItem "name")
 
 storePrompt ::
-  Members [Resource, Embed IO] r =>
-  MVar [Prompt] ->
+  Members [AtomicState [Prompt], Resource, Embed IO] r =>
   MenuEvent ->
   MenuWidgetSem r Text a
-storePrompt prompts = \case
+storePrompt = \case
     MenuEvent.PromptEdit ->
       store
     MenuEvent.Mapping _ ->
@@ -90,10 +85,9 @@ storePrompt prompts = \case
   where
     store = do
       menuRead do
-        semState do
-          prompt <- use Menu.prompt
-          SemS (embed (modifyMVar_ prompts (pure . (prompt :))))
-          menuIgnore
+        prompt <- semState (use Menu.prompt)
+        atomicModify' (prompt :)
+        raise menuIgnore
 
 render ::
   MVar [[Entry Text]] ->
@@ -125,14 +119,13 @@ menuTest consumer items chars = do
       PromptConfig (PromptInput (const (promptInput chars))) basicTransition noPromptRenderer [StartInsert]
 
 promptTest ::
-  Members [Resource, Race, Embed IO, Final IO] r =>
+  Members [AtomicState [Prompt], Resource, Race, Embed IO, Final IO] r =>
   [Text] ->
   [Text] ->
   Sem r ([[Entry Text]], [Prompt])
 promptTest items chars = do
-  prompts <- embed (newMVar [])
-  itemsResult <- menuTest (Consumer.forApp (MenuApp (storePrompt prompts))) items chars
-  (itemsResult,) <$> embed (readMVar prompts)
+  itemsResult <- menuTest (Consumer.forApp (MenuApp storePrompt)) items chars
+  (itemsResult,) <$> atomicGet
 
 promptsTarget1 :: [Prompt]
 promptsTarget1 =
@@ -176,7 +169,7 @@ itemsTarget1 =
 
 test_pureMenuModeChange :: UnitTest
 test_pureMenuModeChange =
-  runTestAuto $ interpretRace do
+  runTestAuto $ interpretRace $ interpretAtomic [] do
     (items, prompts) <- promptTest items1 chars1
     itemsTarget1 === (fmap Entry._item <$> take 3 items)
     promptsTarget1 === reverse prompts
@@ -200,7 +193,7 @@ itemsTarget =
 
 test_pureMenuFilter :: UnitTest
 test_pureMenuFilter = do
-  runTestAuto $ interpretRace do
+  runTestAuto $ interpretRace $ interpretAtomic [] do
     items <- fst <$> promptTest items2 chars2
     [itemsTarget] === (fmap (view Entry.item) <$> take 1 items)
 
@@ -216,22 +209,19 @@ items3 =
     ]
 
 exec ::
-  Members [Resource, Embed IO] r =>
-  MVar [Text] ->
+  Members [AtomicState [Text], Resource, Embed IO] r =>
   MenuWidgetSem r Text a
-exec var = do
+exec =
   menuRead do
-    semState do
-      fs <- use sortedEntries
-      SemS (embed $ void $ swapMVar var (view (Entry.item . MenuItem.text) <$> fs))
-      menuQuit
+    fs <- semState (use sortedEntries)
+    atomicPut (view (Entry.item . MenuItem.text) <$> fs)
+    menuQuit
 
 test_pureMenuExecute :: UnitTest
 test_pureMenuExecute = do
-  runTestAuto $ interpretRace do
-    var <- embed (newMVar [])
-    _ <- menuTest (Consumer.forMappings (Map.fromList [("cr", exec var)])) items3 chars3
-    (items3 ===) =<< embed (readMVar var)
+  runTestAuto $ interpretRace $ interpretAtomic [] do
+    _ <- menuTest (Consumer.forMappings (Map.fromList [("cr", exec)])) items3 chars3
+    (items3 ===) =<< atomicGet
 
 charsMulti :: [Text]
 charsMulti =
@@ -249,21 +239,19 @@ itemsMulti =
   ]
 
 execMulti ::
-  Members [Resource, Embed IO] r =>
-  MVar (Maybe (NonEmpty Text)) ->
+  Members [AtomicState (Maybe (NonEmpty Text)), Resource, Embed IO] r =>
   MenuWidgetSem r Text a
-execMulti var = do
+execMulti = do
   menuRead do
     selection <- semState (use selected')
-    liftIO $ void $ swapMVar var (fmap MenuItem._text <$> selection)
+    atomicPut (fmap MenuItem._text <$> selection)
     menuQuit
 
 test_menuMultiMark :: UnitTest
 test_menuMultiMark = do
-  runTestAuto $ interpretRace do
-    var <- embed (newMVar Nothing)
-    _ <- menuTest (Consumer.withMappings (Map.fromList [("cr", execMulti var)])) itemsMulti charsMulti
-    (Just ["item5", "item4", "item3"] ===) =<< embed (readMVar var)
+  runTestAuto $ interpretRace $ interpretAtomic Nothing do
+    _ <- menuTest (Consumer.withMappings (Map.fromList [("cr", execMulti)])) itemsMulti charsMulti
+    (Just ["item5", "item4", "item3"] ===) =<< atomicGet
 
 charsToggle :: [Text]
 charsToggle =
@@ -283,21 +271,19 @@ itemsToggle =
   ]
 
 execToggle ::
-  Members [Resource, Embed IO] r =>
-  MVar (Maybe (NonEmpty Text)) ->
+  Members [AtomicState (Maybe (NonEmpty Text)), Resource, Embed IO] r =>
   MenuWidgetSem r Text a
-execToggle var = do
+execToggle = do
   menuRead do
     selection <- semState (use selectedOnly)
-    liftIO $ void $ swapMVar var (fmap MenuItem._text <$> selection)
+    atomicPut (fmap MenuItem._text <$> selection)
   menuQuit
 
 test_menuToggle :: UnitTest
 test_menuToggle = do
-  runTestAuto $ interpretRace do
-    var <- embed (newMVar Nothing)
-    _ <- menuTest (Consumer.withMappings (Map.fromList [("cr", execToggle var)])) itemsToggle charsToggle
-    (Just ["abc", "a"] ===) =<< embed (readMVar var)
+  runTestAuto $ interpretRace $ interpretAtomic Nothing do
+    _ <- menuTest (Consumer.withMappings (Map.fromList [("cr", execToggle)])) itemsToggle charsToggle
+    (Just ["abc", "a"] ===) =<< atomicGet
 
 charsExecuteThunk :: [Text]
 charsExecuteThunk =
@@ -311,23 +297,21 @@ itemsExecuteThunk =
   ]
 
 execExecuteThunk ::
-  Members [Resource, Embed IO] r =>
-  MVar [Text] ->
+  Members [AtomicState [Text], Resource, Embed IO] r =>
   MenuWidgetSem r Text a
-execExecuteThunk var =
+execExecuteThunk =
   menuRead do
     sel <- semState (use focus)
-    Nothing <$ embed (modifyMVar_ var (append sel))
+    Nothing <$ atomicModify' (append sel)
   where
     append sel a =
-      pure (a ++ maybeToList (MenuItem._text <$> sel))
+      a ++ maybeToList (MenuItem._text <$> sel)
 
 test_menuExecuteThunk :: UnitTest
 test_menuExecuteThunk = do
-  runTestAuto $ interpretRace do
-    var <- embed (newMVar [])
-    _ <- menuTest (Consumer.withMappings (Map.fromList [("cr", execExecuteThunk var)])) itemsExecuteThunk charsExecuteThunk
-    (["a", "b"] ===) =<< embed (readMVar var)
+  runTestAuto $ interpretRace $ interpretAtomic mempty do
+    _ <- menuTest (Consumer.withMappings (Map.fromList [("cr", execExecuteThunk)])) itemsExecuteThunk charsExecuteThunk
+    (["a", "b"] ===) =<< atomicGet
 
 testItems :: (Items (), Entries ())
 testItems =
@@ -351,9 +335,9 @@ test_menuDeleteSelected = do
     (([30000], [70000]), 100000) === second (length . sortEntries) (popSelection manyCursor manyUnselectedEntries)
     where
       updatedSel =
-        MTL.execState deleteSelected (menu entriesSel)
+        run (execState (menu entriesSel) deleteSelected)
       updatedFoc =
-        MTL.execState deleteSelected (menu entriesFoc)
+        run (execState (menu entriesFoc) deleteSelected)
       targetSel =
         ["0", "1", "4", "5"]
       -- the cursor is counted starting at the highest score, so it removes `4`, not `5`

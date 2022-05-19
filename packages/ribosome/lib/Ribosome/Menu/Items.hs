@@ -1,13 +1,9 @@
-{-# OPTIONS_GHC -Wno-unused-matches #-}
-{-# OPTIONS_GHC -Wno-redundant-constraints #-}
-{-# OPTIONS_GHC -Wno-unused-imports #-}
 -- | Combinators for running actions on the selected or focused menu items.
 -- Intended to be used from mapping handlers.
 -- 'withFocus' and 'withSelection' will skip processing of the event downstream if the menu is empty.
 module Ribosome.Menu.Items where
 
 import Control.Lens (use, uses, (%=), (.=), (^.), (|>))
-import Control.Monad.Trans.Control (MonadBaseControl)
 import qualified Data.IntMap.Strict as IntMap
 import qualified Data.IntSet as IntSet
 import qualified Data.Sequence as Seq
@@ -17,13 +13,11 @@ import Ribosome.Menu.Data.CursorIndex (CursorIndex (CursorIndex))
 import qualified Ribosome.Menu.Data.Entry as Entry
 import Ribosome.Menu.Data.Entry (Entries, Entry)
 import qualified Ribosome.Menu.Data.MenuAction as MenuAction
-import Ribosome.Menu.Data.MenuAction (MenuAction)
-import Ribosome.Menu.Data.MenuConsumer (MenuWidget, MenuWidgetSem)
+import Ribosome.Menu.Data.MenuConsumer (MenuWidgetSem)
 import Ribosome.Menu.Data.MenuData (cursor, entries, history, items)
 import qualified Ribosome.Menu.Data.MenuItem as MenuItem
 import Ribosome.Menu.Data.MenuItem (MenuItem)
-import Ribosome.Menu.Data.MenuState (MenuM, menuWrite)
-import Ribosome.Menu.Data.MenuStateSem (CursorLock, ItemsLock, MenuSem, menuWriteSem, unSemS)
+import Ribosome.Menu.Data.MenuStateSem (CursorLock, ItemsLock, MenuSem, menuWriteSem, semState, unSemS)
 import Ribosome.Menu.ItemLens (focus, selected, selected')
 
 -- |Run an action with the focused entry if the menu is non-empty.
@@ -58,46 +52,40 @@ withFocusM f =
 
 -- |Run an action with the selection or the focused entry if the menu is non-empty.
 withSelectionItems ::
-  Monad m =>
-  (NonEmpty (MenuItem i) -> MenuM m i a) ->
-  MenuM m i (Maybe a)
+  (NonEmpty (MenuItem i) -> MenuSem r i a) ->
+  MenuSem r i (Maybe a)
 withSelectionItems f =
-  traverse f =<< use selected'
+  traverse f =<< semState (use selected')
 
 -- |Run an action with the selection or the focused entry if the menu is non-empty, extracting the item payloads.
 withSelection' ::
-  Monad m =>
-  (NonEmpty i -> MenuM m i a) ->
-  MenuM m i (Maybe a)
+  (NonEmpty i -> MenuSem r i a) ->
+  MenuSem r i (Maybe a)
 withSelection' f =
-  traverse f =<< use selected
+  traverse f =<< semState (use selected)
 
 -- |Run an action with the selection or the focused entry and quit the menu with the returned value.
 -- If the menu was empty, do nothing (i.e. skip the event).
 withSelection ::
-  MonadIO m =>
-  MonadBaseControl IO m =>
-  (NonEmpty i -> MenuM m i (m a)) ->
-  MenuWidget r m i a
+  Members [Resource, Embed IO] r =>
+  (NonEmpty i -> MenuSem r i (Sem r a)) ->
+  MenuWidgetSem r i a
 withSelection f =
-  undefined
-  -- Just . maybe MenuAction.Continue MenuAction.success <$> menuWrite (withSelection' f)
+  Just . maybe MenuAction.Continue MenuAction.success <$> menuWriteSem (withSelection' f)
 
 withSelectionM ::
-  MonadIO m =>
-  MonadBaseControl IO m =>
-  (NonEmpty i -> m a) ->
-  MenuWidget r m i a
+  Members [Resource, Embed IO] r =>
+  (NonEmpty i -> Sem r a) ->
+  MenuWidgetSem r i a
 withSelectionM f =
   withSelection (pure . f)
 
 -- |Run an action with each entry in the selection or the focused entry and quit the menu with '()'.
 -- If the menu was empty, do nothing (i.e. skip the event).
 traverseSelection_ ::
-  MonadIO m =>
-  MonadBaseControl IO m =>
-  (i -> MenuM m i ()) ->
-  MenuWidget r m i ()
+  Members [Resource, Embed IO] r =>
+  (i -> MenuSem r i ()) ->
+  MenuWidgetSem r i ()
 traverseSelection_ f =
   withSelection ((unit <$) . traverse_ f)
 
@@ -165,12 +153,12 @@ popSelection curs initial =
         (([curs], [i]), IntMap.update (Just . Seq.deleteAt si) score initial)
 
 deleteSelected ::
-  Monad m =>
-  MenuM m i ()
-deleteSelected = do
-  CursorIndex curs <- use cursor
-  ((deletedEntries, deletedItems), kept) <- uses entries (popSelection curs)
-  entries .= kept
-  history .= mempty
-  items %= flip IntMap.withoutKeys (IntSet.fromList deletedItems)
-  cursor %= adaptCursorAfterDeletion deletedEntries
+  MenuSem r i ()
+deleteSelected =
+  semState do
+    CursorIndex curs <- use cursor
+    ((deletedEntries, deletedItems), kept) <- uses entries (popSelection curs)
+    entries .= kept
+    history .= mempty
+    items %= flip IntMap.withoutKeys (IntSet.fromList deletedItems)
+    cursor %= adaptCursorAfterDeletion deletedEntries

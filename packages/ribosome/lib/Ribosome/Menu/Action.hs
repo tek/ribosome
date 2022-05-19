@@ -13,51 +13,42 @@ import Ribosome.Menu.Data.MenuStateSem (MenuSem, SemS (SemS), menuRead, menuWrit
 import Ribosome.Menu.Prompt.Data.Prompt (Prompt)
 
 act ::
-  Applicative m =>
-  MenuAction m1 a ->
-  m (Maybe (MenuAction m1 a))
+  MenuAction r1 a ->
+  Sem r (Maybe (MenuAction r1 a))
 act =
   pure . Just
 
 menuIgnore ::
-  Applicative m =>
-  m (Maybe (MenuAction m1 a))
+  Sem r (Maybe (MenuAction r1 a))
 menuIgnore =
   pure Nothing
 
 menuOk ::
-  Applicative m =>
-  m (Maybe (MenuAction m1 a))
+  Sem r (Maybe (MenuAction r1 a))
 menuOk =
   pure (Just MenuAction.Continue)
 
 menuRender ::
-  Applicative m =>
-  m (Maybe (MenuAction m1 a))
+  Sem r (Maybe (MenuAction r1 a))
 menuRender =
   act MenuAction.Render
 
 menuQuit ::
-  Applicative m =>
-  m (Maybe (MenuAction r a))
+  Sem r (Maybe (MenuAction r1 a))
 menuQuit =
   act MenuAction.abort
 
--- menuSuccess ::
---   Applicative m =>
---   Applicative m1 =>
---   m1 a ->
---   m (Maybe (MenuAction m1 a))
--- menuSuccess ma =
---   act (MenuAction.success ma)
+menuSuccess ::
+  Sem r1 a ->
+  Sem r (Maybe (MenuAction r1 a))
+menuSuccess ma =
+  act (MenuAction.success ma)
 
--- menuResult ::
---   Applicative m =>
---   Applicative m1 =>
---   a ->
---   m (Maybe (MenuAction m1 a))
--- menuResult =
---   menuSuccess . pure
+menuResult ::
+  a ->
+  Sem r (Maybe (MenuAction r1 a))
+menuResult =
+  menuSuccess . pure
 
 cycleMenu ::
   Int ->
@@ -115,8 +106,7 @@ menuToggleAll =
     entries %= overEntries (const (Entry.selected %~ not))
 
 menuUpdatePrompt ::
-  Monad (t m) =>
   Prompt ->
-  t m (Maybe (MenuAction m a))
+  MenuWidgetSem r i a
 menuUpdatePrompt prompt =
   act (MenuAction.UpdatePrompt prompt)

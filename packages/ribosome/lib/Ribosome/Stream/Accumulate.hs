@@ -117,3 +117,16 @@ mapMAcc classify consume str =
     Stream.concatMapWith Stream.async (Stream.fromEffect . unWork) $
     chunkWhileMain classify consume initial
     str
+
+mapMAccMaybe ::
+  MonadIO m =>
+  IsStream t =>
+  MonadCatch m =>
+  Functor (t m) =>
+  MonadBaseControl IO m =>
+  (a -> m (Maybe r)) ->
+  m r ->
+  t m a ->
+  t m r
+mapMAccMaybe classify consume =
+  mapMAcc (fmap (maybeToRight ()) . classify) (const consume)
