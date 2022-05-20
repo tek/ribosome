@@ -2,8 +2,6 @@ module Ribosome.Test.ScratchTest where
 
 import qualified Data.Map.Strict as Map
 import Polysemy.Test (UnitTest, assertEq, unitTest)
-import qualified Polysemy.Time as Time
-import Polysemy.Time (MilliSeconds (MilliSeconds))
 
 import Ribosome.Api.Buffer (currentBufferContent)
 import Ribosome.Data.FloatOptions (FloatOptions (FloatOptions), FloatRelative (Cursor))
@@ -69,16 +67,14 @@ handlers =
     rpcFunction "ScratchCount" Sync (scratchCount @(Error HandlerError : r))
   ]
 
--- FIXME without the `sleep`, this hangs for half of the test runs.
--- Investigate whether it's an nvim error message issue 'when tmux testing is available.
+-- FIXME This only works if the rpc handler for the delete autocmd is Sync, otherwise it hangs
 scratchTest :: Text -> UnitTest
 scratchTest fun = do
-  runTest $ embedNvimPlugin "test" handlers do
+  runTest $ embedNvimPlugin "test" mempty handlers do
     () <- vimCallFunction fun []
     assertWait scratches (assertEq (1 :: Int))
     assertWait currentBufferContent (assertEq target)
     nvimCommand "bdelete"
-    Time.sleep (MilliSeconds 100)
     assertWait scratches (assertEq 0)
   where
     scratches =

@@ -209,6 +209,7 @@ test-suite ribosome-unit
   main-is: Main.hs
   other-modules:
       Ribosome.Test.BufferTest
+      Ribosome.Test.MappingTest
       Ribosome.Test.MenuTest
       Ribosome.Test.Run
       Ribosome.Test.ScratchTest

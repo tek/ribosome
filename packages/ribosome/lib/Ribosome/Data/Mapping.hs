@@ -1,8 +1,12 @@
 module Ribosome.Data.Mapping where
 
+import Ribosome.Host.Class.Msgpack.Decode (MsgpackDecode)
+import Ribosome.Host.Class.Msgpack.Encode (MsgpackEncode)
+
 newtype MappingIdent =
-  MappingIdent Text
+  MappingIdent { unMappingIdent :: Text }
   deriving stock (Eq, Show)
+  deriving newtype (IsString, Ord, MsgpackDecode, MsgpackEncode)
 
 data Mapping =
   Mapping {

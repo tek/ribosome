@@ -139,7 +139,7 @@ configureScratchBuffer buffer ft name = do
   bufferSetOption buffer "bufhidden" (toMsgpack ("wipe" :: Text))
   bufferSetOption buffer "buftype" (toMsgpack ("nofile" :: Text))
   bufferSetOption buffer "swapfile" (toMsgpack False)
-  traverse_ (bufferSetOption buffer "filetype" . toMsgpack) ft
+  traverse_ (bufferSetOption buffer "filetype") ft
   bufferSetName buffer name
 
 setupScratchBuffer ::
@@ -165,7 +165,7 @@ setupDeleteAutocmd (Scratch name buffer _ _ _) = do
   bufferAutocmd buffer "RibosomeScratch" "BufDelete" (deleteCall pname)
   where
     deleteCall pname =
-      "silent! call " <> pname <> "DeleteScratch('" <> name <> "')"
+      [exon|silent! call #{pname}DeleteScratch('#{name}')|]
 
 setupScratchIn ::
   Members [Rpc, AtomicState (Map Text Scratch), Reader PluginName, Log] r =>

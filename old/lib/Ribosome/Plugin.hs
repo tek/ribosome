@@ -69,30 +69,6 @@ watcherRpc pluginName variables =
     name' event = capitalize pluginName <> "VariableChanged" <> event
     detail event = RpcAutocmd event Async def
 
-compileRpcDef ::
-  RpcHandler e env m =>
-  (e -> m ()) ->
-  RpcDef m ->
-  ExportedFunctionality env
-compileRpcDef errorHandler (RpcDef detail name' rpcHandler') =
-  EF (wrapDetail detail (F (encodeUtf8 name')), executeRpcHandler errorHandler rpcHandler')
-  where
-    wrapDetail (RpcFunction sync') n =
-      Function n sync'
-    wrapDetail (RpcCommand options) n =
-      Command n options
-    wrapDetail (RpcAutocmd event sync' options) n =
-      Autocmd (encodeUtf8 event) n sync' options
-
-nvimPlugin ::
-  RpcHandler e env m =>
-  env ->
-  [[RpcDef m]] ->
-  (e -> m ()) ->
-  Plugin env
-nvimPlugin env rpcDefs errorHandler =
-  Plugin env (compileRpcDef errorHandler <$> join rpcDefs)
-
 riboPlugin ::
   Member Rpc r =>
   RpcHandler e env m =>
@@ -109,36 +85,3 @@ riboPlugin pluginName env rpcDefs mappings errorHandler variables =
     Plugin _ efs = nvimPlugin env rpcDefs errorHandler
     extra = deleteScratchRpc pluginName : pollRpc pluginName : mappingHandlerRpc pluginName mappings : watch
     watch = watcherRpc pluginName variables
-
-executeRpcHandler ::
-  ∀ e env m.
-  RpcHandler e env m =>
-  (e -> m ()) ->
-  ([Object] -> m Object) ->
-  [Object] ->
-  Neovim env Object
-executeRpcHandler errorHandler rpcHandler' =
-  either handleError pure <=< runExceptT . native . rpcHandler'
-  where
-    handleError e =
-      ObjectNil <$ (runExceptT . native @e . errorHandler $ e)
-
-cmd :: [CommandOption] -> RpcHandlerConfig -> RpcHandlerConfig
-cmd opts conf =
-  conf { rhcCmd = Just opts }
-
-sync :: RpcHandlerConfig -> RpcHandlerConfig
-sync conf =
-  conf { rhcSync = Sync }
-
-name :: Text -> RpcHandlerConfig -> RpcHandlerConfig
-name n conf =
-  conf { rhcName = Just n }
-
-autocmd :: Text -> RpcHandlerConfig -> RpcHandlerConfig
-autocmd event conf =
-  conf { rhcAutocmd = Just event }
-
-autocmdOptions :: AutocmdOptions -> RpcHandlerConfig -> RpcHandlerConfig
-autocmdOptions options conf =
-  conf { rhcAutocmdOptions = Just options }

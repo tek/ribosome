@@ -1,14 +1,17 @@
 module Ribosome.Mapping where
 
+import qualified Data.Map.Strict as Map
 import Exon (exon)
 
 import Ribosome.Data.Mapping (Mapping (Mapping), MappingIdent (MappingIdent))
 import Ribosome.Data.PluginName (PluginName (PluginName))
+import Ribosome.Data.PluginState (PluginState, mappings)
 import Ribosome.Host.Api.Data (Buffer)
 import Ribosome.Host.Api.Effect (vimCommand)
+import Ribosome.Host.Data.HandlerError (HandlerError)
 import Ribosome.Host.Effect.Rpc (Rpc)
 import Ribosome.Host.Modify (bufdo)
-import Ribosome.Text (capitalize)
+import Ribosome.PluginName (pluginNameCapitalized)
 
 mapCommand :: Text -> Bool -> Text
 mapCommand mode remap =
@@ -19,7 +22,7 @@ mappingCall ::
   MappingIdent ->
   Text
 mappingCall name (MappingIdent ident) =
-  [exon|:silent call #{capitalize name}Mapping('#{ident}'<cr>)|]
+  [exon|:silent call #{name}Mapping('#{ident}')<cr>|]
 
 mappingCmd ::
   Members [Rpc, Reader PluginName] r =>
@@ -27,7 +30,7 @@ mappingCmd ::
   Mapping ->
   Sem r ()
 mappingCmd extra (Mapping ident lhs mode remap _) = do
-  PluginName name <- ask
+  PluginName name <- pluginNameCapitalized
   vimCommand (cmdline name)
   where
     cmdline name =
@@ -48,3 +51,10 @@ activateBufferMapping ::
 activateBufferMapping buffer mapping =
   bufdo buffer do
     mappingCmd " <buffer>" mapping
+
+mappingRequest ::
+  Members [AtomicState (PluginState r), Error HandlerError] r =>
+  MappingIdent ->
+  Sem r ()
+mappingRequest i =
+  fromMaybe (throw "No handler for this mapping") =<< atomicGets (Map.lookup i . mappings)
