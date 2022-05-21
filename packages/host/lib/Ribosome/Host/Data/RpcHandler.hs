@@ -36,6 +36,13 @@ hoistRpcHandler ::
 hoistRpcHandler f RpcHandler {..} =
   RpcHandler {handler = f . handler, ..}
 
+hoistRpcHandlers ::
+  (∀ x . Sem (Error HandlerError : r) x -> Sem (Error HandlerError : r1) x) ->
+  [RpcHandler r] ->
+  [RpcHandler r1]
+hoistRpcHandlers f =
+  fmap (hoistRpcHandler f)
+
 rpcMethod ::
   RpcType ->
   Text ->

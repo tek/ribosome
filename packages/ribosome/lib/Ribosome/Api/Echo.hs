@@ -1,12 +1,10 @@
 module Ribosome.Api.Echo where
 
-import Exon (exon)
-
-import Ribosome.Data.PluginName (PluginName (PluginName))
+import Ribosome.Data.PluginName (PluginName)
 import Ribosome.Host.Api.Effect (nvimEcho)
 import Ribosome.Host.Class.Msgpack.Array (msgpackArray)
 import Ribosome.Host.Effect.Rpc (Rpc)
-import Ribosome.PluginName (pluginName)
+import Ribosome.PluginName (pluginNamePrefixed)
 
 simpleEcho ::
   Member Rpc r =>
@@ -22,8 +20,8 @@ prefixedEcho ::
   Text ->
   Sem r ()
 prefixedEcho history msg = do
-  PluginName name <- pluginName
-  simpleEcho history [exon|#{name}: #{msg}|]
+  pref <- pluginNamePrefixed msg
+  simpleEcho history pref
 
 echohl ::
   Member Rpc r =>

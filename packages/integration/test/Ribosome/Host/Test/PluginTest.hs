@@ -8,7 +8,7 @@ import Path (Abs, Dir, Path, reldir, relfile, toFilePath, (</>))
 import Path.IO (copyDirRecur)
 import qualified Polysemy.Conc as Conc
 import Polysemy.Conc (interpretRace)
-import Polysemy.Log (Severity (Warn), interpretLogStdoutLevelConc)
+import Polysemy.Log (Severity (Debug), interpretLogStdoutLevelConc)
 import Polysemy.Process.Data.ProcessError (ProcessError)
 import qualified Polysemy.Test as Test
 import Polysemy.Test (Hedgehog, Test, TestError (TestError), UnitTest, assertEq, liftH, runTestAuto)
@@ -20,9 +20,10 @@ import System.Process.Typed (ProcessConfig, proc)
 import Ribosome.Host.Api.Effect (nvimCallFunction)
 import Ribosome.Host.Data.RpcError (RpcError)
 import Ribosome.Host.Effect.Rpc (Rpc)
-import Ribosome.Host.Embed (basicCliArgs, interpretRpcMsgpackProcessNvimEmbed)
+import Ribosome.Host.Embed (basicCliArgs, interpretBasicEmbedDeps, interpretRpcMsgpackProcessNvimEmbed)
 import Ribosome.Host.Interpreter.RequestHandler (withRequestHandler)
 import Ribosome.Host.Interpreter.Responses (interpretResponses)
+import Ribosome.Host.Interpreter.UserError (interpretUserErrorInfo)
 
 conf ::
   Path Abs Dir ->
@@ -38,7 +39,8 @@ testPlugin riboRoot =
   asyncToIOFinal $
   interpretRace $
   interpretTimeGhc $
-  interpretLogStdoutLevelConc (Just Warn) $
+  interpretUserErrorInfo $
+  interpretLogStdoutLevelConc (Just Debug) $
   mapError TestError $
   mapError (show @_ @ProcessError) do
     source <- Test.fixturePath [reldir|plugin|]
@@ -47,7 +49,8 @@ testPlugin riboRoot =
     let flake = toFilePath (target </> [relfile|flake.nix|])
     old <- embed (Text.readFile flake)
     embed (Text.writeFile flake (Text.replace "RIBOSOME" (toText riboRoot) old))
-    interpretResponses $
+    interpretBasicEmbedDeps $
+      interpretResponses $
       interpretRpcMsgpackProcessNvimEmbed (conf target) $
       withRequestHandler mempty do
         resumeHoistError @RpcError @Rpc (show @Text) do

@@ -51,6 +51,7 @@ library
       Ribosome.Host.Effect.RequestHandler
       Ribosome.Host.Effect.Responses
       Ribosome.Host.Effect.Rpc
+      Ribosome.Host.Effect.UserError
       Ribosome.Host.Embed
       Ribosome.Host.Handler
       Ribosome.Host.Handler.Codec
@@ -60,6 +61,7 @@ library
       Ribosome.Host.Interpreter.RequestHandler
       Ribosome.Host.Interpreter.Responses
       Ribosome.Host.Interpreter.Rpc
+      Ribosome.Host.Interpreter.UserError
       Ribosome.Host.Listener
       Ribosome.Host.Modify
       Ribosome.Host.RegisterHandlers

@@ -6,7 +6,7 @@ import qualified Polysemy.Process as Process
 import Polysemy.Process (Process)
 
 import Ribosome.Host.Data.Request (RequestId (unRequestId), TrackedRequest (TrackedRequest))
-import Ribosome.Host.Data.Response (Response, TrackedResponse (TrackedResponse))
+import Ribosome.Host.Data.Response (Response, TrackedResponse (TrackedResponse), formatResponse)
 import Ribosome.Host.Data.RpcError (RpcError (RpcError))
 import qualified Ribosome.Host.Data.RpcMessage as RpcMessage
 import Ribosome.Host.Data.RpcMessage (RpcMessage, formatRpcMsg)
@@ -22,7 +22,7 @@ handleRequest ::
   Sem r ()
 handleRequest (TrackedRequest i req) = do
   response <- RequestHandler.request req
-  Log.debug [exon|listen response: <#{show (unRequestId i)}> #{show response}|]
+  Log.debug [exon|listen response: <#{show (unRequestId i)}> #{formatResponse response}|]
   Process.send (RpcMessage.Response (TrackedResponse i response))
 
 dispatch ::

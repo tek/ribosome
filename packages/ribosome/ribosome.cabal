@@ -57,6 +57,7 @@ library
       Ribosome.Embed
       Ribosome.Final
       Ribosome.Interpreter.Settings
+      Ribosome.Interpreter.UserError
       Ribosome.Locks
       Ribosome.Mapping
       Ribosome.Menu.Action

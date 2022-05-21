@@ -2,7 +2,7 @@ module Ribosome.Embed where
 
 import Data.MessagePack (Object)
 import Polysemy.Conc (interpretAtomic, interpretSyncAs)
-import Polysemy.Log (Severity (Warn))
+import Polysemy.Log (Severity (Warn), interpretLogStdoutLevelConc)
 
 import Ribosome.Data.Locks (WatcherLock (WatcherLock))
 import Ribosome.Data.Mapping (MappingIdent)
@@ -11,7 +11,8 @@ import Ribosome.Data.Scratch (Scratch)
 import Ribosome.Data.WatchedVariable (WatchedVariable)
 import Ribosome.Host.Data.RpcHandler (Handler, RpcHandler)
 import Ribosome.Host.Effect.Rpc (Rpc)
-import Ribosome.Host.Embed (EmbedStack, embedNvimLog)
+import Ribosome.Host.Embed (EmbedStack, embedNvimBasic)
+import Ribosome.Interpreter.UserError (interpretUserErrorPrefixed)
 import Ribosome.Plugin.Builtin (builtinHandlers)
 
 type PluginEffects =
@@ -28,11 +29,11 @@ type PluginStack =
 type PluginHandler r =
   Handler (PluginStack ++ r) ()
 
-runPlugin ::
+interpretPluginEffects ::
   Members [Race, Embed IO] r =>
   PluginName ->
   InterpretersFor PluginEffects r
-runPlugin name =
+interpretPluginEffects name =
   interpretSyncAs WatcherLock .
   interpretAtomic mempty .
   interpretAtomic mempty .
@@ -47,8 +48,10 @@ embedNvimPluginLog ::
   [RpcHandler (PluginStack ++ r)] ->
   InterpretersFor (Rpc : PluginStack) r
 embedNvimPluginLog level name maps vars handlers =
-  runPlugin name .
-  embedNvimLog level (builtinHandlers name maps vars <> handlers)
+  interpretPluginEffects name .
+  interpretLogStdoutLevelConc (Just level) .
+  interpretUserErrorPrefixed .
+  embedNvimBasic (builtinHandlers name maps vars <> handlers)
 
 embedNvimPlugin ::
   Members [Error Text, Resource, Race, Async, Embed IO, Final IO] r =>
