@@ -6,6 +6,7 @@ import Polysemy.Conc (interpretRace)
 import Polysemy.Test (Hedgehog, Test, TestError (TestError), UnitTest, runTestAuto)
 import Polysemy.Time (GhcTime, interpretTimeGhcConstant, mkDatetime)
 
+import Ribosome.Host.Data.BootError (BootError (unBootError))
 import qualified Ribosome.Host.Data.HandlerError as HandlerError
 import Ribosome.Host.Data.HandlerError (HandlerError)
 import Ribosome.Host.Data.RpcError (RpcError (unRpcError))
@@ -18,7 +19,7 @@ type TestStack =
     GhcTime,
     Race,
     Async,
-    Error Text,
+    Error BootError,
     Test,
     Fail,
     Error TestError,
@@ -41,7 +42,7 @@ runTest ::
   UnitTest
 runTest =
   runTestAuto .
-  mapError TestError .
+  mapError (TestError . unBootError) .
   asyncToIOFinal .
   interpretRace .
   interpretTimeGhcConstant testTime

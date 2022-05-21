@@ -22,7 +22,7 @@ handleRequest ::
   Sem r ()
 handleRequest (TrackedRequest i req) = do
   response <- RequestHandler.request req
-  Log.debug [exon|listen response: <#{show (unRequestId i)}> #{formatResponse response}|]
+  Log.debug [exon|send response: <#{show (unRequestId i)}> #{formatResponse response}|]
   Process.send (RpcMessage.Response (TrackedResponse i response))
 
 dispatch ::

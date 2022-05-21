@@ -9,6 +9,7 @@ import Polysemy.Process.Data.ProcessError (ProcessError)
 import Polysemy.Time (interpretTimeGhc)
 import Ribosome.Host.Api.Effect (nvimEcho)
 import Ribosome.Host.Class.Msgpack.Encode (toMsgpack)
+import Ribosome.Host.Data.BootError (unBootError)
 import Ribosome.Host.Data.Execution (Execution (Sync))
 import Ribosome.Host.Data.RpcError (RpcError (RpcError))
 import Ribosome.Host.Data.RpcHandler (RpcHandler (RpcHandler))
@@ -46,6 +47,7 @@ main =
   errorStderr $
   runConc $
   runError $
+  mapError unBootError $
   mapError @ProcessError show $
   interpretTimeGhc $
   interpretLogStderrLevelConc (Just Warn) $

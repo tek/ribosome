@@ -68,8 +68,8 @@ instance Serialize RpcMessage where
 formatRpcMsg :: RpcMessage -> Text
 formatRpcMsg = \case
   Request req ->
-    formatTrackedReq req
+    [exon|request #{formatTrackedReq req}|]
   Response res ->
-    formatTrackedResponse res
+    [exon|response #{formatTrackedResponse res}|]
   Notification req ->
-    formatReq req
+    [exon|notification #{formatReq req}|]

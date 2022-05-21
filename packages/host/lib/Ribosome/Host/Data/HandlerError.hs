@@ -2,29 +2,58 @@ module Ribosome.Host.Data.HandlerError where
 
 import Polysemy.Log (Severity (Error))
 
-data HandlerError =
-  HandlerError {
+newtype HandlerTag =
+  HandlerTag { unHandlerTag :: Text }
+  deriving stock (Eq, Show)
+  deriving newtype (IsString, Ord)
+
+data ErrorMessage =
+  ErrorMessage {
     user :: Text,
     log :: [Text],
     severity :: Severity
   }
   deriving stock (Eq, Show)
 
+data HandlerError =
+  HandlerError {
+    msg :: ErrorMessage,
+    tag :: Maybe HandlerTag
+  }
+  deriving stock (Eq, Show)
+
 simple :: Text -> HandlerError
 simple msg =
-  HandlerError msg [msg] Error
+  HandlerError (ErrorMessage msg [msg] Error) Nothing
 
 instance IsString HandlerError where
   fromString =
     simple . toText
 
-class ToHandlerError e where
-  toHandlerError :: e -> HandlerError
+class ToErrorMessage e where
+  toErrorMessage :: e -> ErrorMessage
+
+toHandlerError ::
+  ToErrorMessage e =>
+  Maybe HandlerTag ->
+  e ->
+  HandlerError
+toHandlerError htag e =
+  HandlerError (toErrorMessage e) htag
+
+handlerErrorFrom ::
+  ToErrorMessage e =>
+  Member (Error HandlerError) r =>
+  HandlerTag ->
+  Sem (Stop e : r) a ->
+  Sem r a
+handlerErrorFrom t =
+  stopToError . mapStop (toHandlerError (Just t)) . raiseUnder
 
 handlerError ::
-  ToHandlerError e =>
+  ToErrorMessage e =>
   Member (Error HandlerError) r =>
   Sem (Stop e : r) a ->
   Sem r a
 handlerError =
-  stopToError . mapStop toHandlerError . raiseUnder
+  stopToError . mapStop (toHandlerError Nothing) . raiseUnder

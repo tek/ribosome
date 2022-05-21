@@ -4,7 +4,7 @@ import Exon (exon)
 import Polysemy.Log (Severity (Error))
 
 import Ribosome.Data.PersistPathError (PersistPathError)
-import Ribosome.Host.Data.HandlerError (HandlerError (HandlerError), ToHandlerError (toHandlerError))
+import Ribosome.Host.Data.HandlerError (ErrorMessage (ErrorMessage), ToErrorMessage (toErrorMessage))
 
 data PersistError =
   Permission Text
@@ -14,17 +14,17 @@ data PersistError =
   Path PersistPathError
   deriving stock (Eq, Show)
 
-instance ToHandlerError PersistError where
-  toHandlerError = \case
+instance ToErrorMessage PersistError where
+  toErrorMessage = \case
     Permission path ->
-      HandlerError msg ["PersistError.Permission:", path] Error
+      ErrorMessage msg ["PersistError.Permission:", path] Error
       where
         msg =
           [exon|Insufficient permissions for persistence file: #{path}|]
     Decode path err ->
-      HandlerError msg ["PersistError.Decode:", path, err] Error
+      ErrorMessage msg ["PersistError.Decode:", path, err] Error
       where
         msg =
           [exon|invalid data in persistence file, please delete it: #{path}|]
     Path err ->
-      toHandlerError err
+      toErrorMessage err

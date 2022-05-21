@@ -15,9 +15,11 @@ import Ribosome.Host.Data.Response (Response)
 import Ribosome.Host.Data.RpcError (RpcError)
 import Ribosome.Host.Data.RpcHandler (RpcHandler, hoistRpcHandler)
 import Ribosome.Host.Data.RpcMessage (RpcMessage)
+import Ribosome.Host.Effect.Errors (Errors)
 import Ribosome.Host.Effect.Responses (Responses)
 import Ribosome.Host.Effect.Rpc (Rpc)
 import Ribosome.Host.Effect.UserError (UserError)
+import Ribosome.Host.Interpreter.Errors (interpretErrors)
 import Ribosome.Host.Interpreter.Process (interpretProcessCerealNative)
 import Ribosome.Host.Interpreter.RequestHandler (withRequestHandler)
 import Ribosome.Host.Interpreter.Responses (interpretResponses)
@@ -89,7 +91,7 @@ interpretRpcMsgpackProcessNvimEmbedDef =
   interpretRpcMsgpackProcessSingle
 
 interpretRpcEmbed ::
-  Members [Events er Event, Events res RpcMessage, UserError] r =>
+  Members [Events er Event, Events res RpcMessage, UserError, Errors] r =>
   Members [Error BootError, Log, Resource, Race, Async, Embed IO] r =>
   [RpcHandler (Rpc !! RpcError : r)] ->
   InterpreterFor (Rpc !! RpcError) r
@@ -105,7 +107,8 @@ type BasicEmbedDeps =
     ChanEvents Event,
     ChanConsumer Event,
     ChanEvents RpcMessage,
-    ChanConsumer RpcMessage
+    ChanConsumer RpcMessage,
+    Errors
   ]
 
 type BasicEmbedStack =
@@ -121,6 +124,7 @@ interpretBasicEmbedDeps ::
   Members [Error BootError, Resource, Race, Async, Embed IO] r =>
   InterpretersFor BasicEmbedDeps r
 interpretBasicEmbedDeps =
+  interpretErrors .
   interpretEventsChan @RpcMessage .
   interpretEventsChan @Event
 

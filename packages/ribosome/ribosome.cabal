@@ -43,7 +43,6 @@ library
       Ribosome.Data.PersistError
       Ribosome.Data.PersistPathError
       Ribosome.Data.PluginName
-      Ribosome.Data.PluginState
       Ribosome.Data.Register
       Ribosome.Data.RegisterType
       Ribosome.Data.Scratch
@@ -114,7 +113,6 @@ library
       Ribosome.Menu.Run
       Ribosome.Menu.UpdateState
       Ribosome.Path
-      Ribosome.Persist
       Ribosome.Plugin.Builtin
       Ribosome.PluginName
       Ribosome.Scratch

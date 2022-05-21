@@ -1,6 +1,9 @@
 module Ribosome.Test.MappingTest where
 
-import Polysemy.Test (UnitTest, (===))
+import Polysemy.Conc (interpretSync)
+import qualified Polysemy.Conc.Sync as Sync
+import Polysemy.Test (UnitTest, assertJust, (===))
+import Polysemy.Time (Seconds (Seconds))
 
 import Ribosome.Api.Buffer (currentBufferContent)
 import Ribosome.Data.Mapping (Mapping (Mapping), MappingIdent (MappingIdent))
@@ -8,11 +11,13 @@ import Ribosome.Data.PluginName (PluginName)
 import Ribosome.Data.Scratch (Scratch)
 import Ribosome.Data.ScratchOptions (ScratchOptions (ScratchOptions))
 import Ribosome.Embed (embedNvimPlugin)
-import Ribosome.Host.Api.Effect (nvimFeedkeys, vimCallFunction, vimGetVar, vimSetVar)
+import Ribosome.Host.Api.Data (nvimFeedkeys)
+import Ribosome.Host.Api.Effect (vimCallFunction)
 import Ribosome.Host.Data.Execution (Execution (Sync))
 import Ribosome.Host.Data.HandlerError (HandlerError)
 import Ribosome.Host.Data.RpcError (RpcError)
 import Ribosome.Host.Data.RpcHandler (RpcHandler)
+import qualified Ribosome.Host.Effect.Rpc as Rpc
 import Ribosome.Host.Effect.Rpc (Rpc)
 import Ribosome.Host.Handler (rpcFunction)
 import Ribosome.Scratch (showInScratch)
@@ -23,10 +28,10 @@ target :: [Text]
 target = ["line 1", "line 2"]
 
 mappingHandler ::
-  Members [Rpc !! RpcError, Error HandlerError] r =>
+  Members [Sync Int, Rpc !! RpcError, Error HandlerError] r =>
   Sem r ()
 mappingHandler =
-  rpcError (vimSetVar "number" (13 :: Int))
+  void (Sync.putWait (Seconds 5) 13)
 
 mapping :: Mapping
 mapping =
@@ -52,8 +57,8 @@ handlers =
 
 test_mapping :: UnitTest
 test_mapping =
-  runTest $ embedNvimPlugin "test" [("mappingHandler", mappingHandler)] mempty handlers do
+  runTest $ interpretSync $ embedNvimPlugin "test" [("mappingHandler", mappingHandler)] mempty handlers do
     () <- vimCallFunction "Setup" []
     assertWait currentBufferContent (target ===)
-    nvimFeedkeys "a" "x" False
-    assertWait (vimGetVar "number") ((13 :: Int) ===)
+    Rpc.notify (nvimFeedkeys "a" "x" False)
+    assertJust (13 :: Int) =<< Sync.wait (Seconds 5)

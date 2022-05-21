@@ -18,6 +18,7 @@ import System.Environment (lookupEnv)
 import System.Process.Typed (ProcessConfig, proc)
 
 import Ribosome.Host.Api.Effect (nvimCallFunction)
+import Ribosome.Host.Data.BootError (unBootError)
 import Ribosome.Host.Data.RpcError (RpcError)
 import Ribosome.Host.Effect.Rpc (Rpc)
 import Ribosome.Host.Embed (basicCliArgs, interpretBasicEmbedDeps, interpretRpcMsgpackProcessNvimEmbed)
@@ -41,7 +42,7 @@ testPlugin riboRoot =
   interpretTimeGhc $
   interpretUserErrorInfo $
   interpretLogStdoutLevelConc (Just Debug) $
-  mapError TestError $
+  mapError (TestError . unBootError) $
   mapError (show @_ @ProcessError) do
     source <- Test.fixturePath [reldir|plugin|]
     target <- Test.tempDir [reldir|plugin|]
@@ -53,9 +54,9 @@ testPlugin riboRoot =
       interpretResponses $
       interpretRpcMsgpackProcessNvimEmbed (conf target) $
       withRequestHandler mempty do
-        resumeHoistError @RpcError @Rpc (show @Text) do
+        resumeHoistError @RpcError @Rpc (TestError . show @Text) do
           Conc.timeout_ (liftH (failWith Nothing "RPC function did not appear")) (Minutes 2) do
-            Time.while (MilliSeconds 50) (resumeAs @RpcError True (False <$ nvimCallFunction @Int "Test" []))
+            Time.while (MilliSeconds 500) (resumeAs @RpcError True (False <$ nvimCallFunction @Int "Test" []))
           assertEq (5 :: Int) =<< nvimCallFunction "Test" []
 
 test_plugin :: UnitTest

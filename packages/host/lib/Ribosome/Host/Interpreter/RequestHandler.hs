@@ -13,13 +13,15 @@ import Ribosome.Host.Api.Effect (nvimEcho)
 import Ribosome.Host.Class.Msgpack.Encode (toMsgpack)
 import Ribosome.Host.Data.BootError (BootError)
 import Ribosome.Host.Data.Event (Event (Event), EventName (EventName))
-import Ribosome.Host.Data.HandlerError (HandlerError (HandlerError))
+import Ribosome.Host.Data.HandlerError (ErrorMessage (ErrorMessage), HandlerError (HandlerError))
 import Ribosome.Host.Data.Request (Request (Request), RequestId, RpcMethod (RpcMethod))
 import qualified Ribosome.Host.Data.Response as Response
 import Ribosome.Host.Data.Response (Response)
 import Ribosome.Host.Data.RpcError (RpcError (RpcError))
 import Ribosome.Host.Data.RpcHandler (RpcHandler (RpcHandler), RpcHandlerFun, rpcHandlerMethod)
 import Ribosome.Host.Data.RpcMessage (RpcMessage)
+import qualified Ribosome.Host.Effect.Errors as Errors
+import Ribosome.Host.Effect.Errors (Errors)
 import qualified Ribosome.Host.Effect.RequestHandler as RequestHandler
 import Ribosome.Host.Effect.RequestHandler (RequestHandler ())
 import Ribosome.Host.Effect.Responses (Responses)
@@ -58,7 +60,7 @@ echoError err severity =
       Log.error [exon|Couldn't echo handler error: #{show e'}|]
 
 executeRequest ::
-  Members [Rpc !! RpcError, UserError, Log] r =>
+  Members [Rpc !! RpcError, UserError, Errors, Log] r =>
   Bool ->
   [Object] ->
   RpcHandlerFun r ->
@@ -67,13 +69,14 @@ executeRequest notification args handler =
   runError (handler args) >>= \case
     Right a ->
       pure (Response.Success a)
-    Left (HandlerError e log severity) -> do
+    Left (HandlerError msg@(ErrorMessage e log severity) htag) -> do
       Log.log severity (Text.unlines log)
+      Errors.store htag msg
       when notification (echoError e severity)
       pure (Response.Error (RpcError e))
 
 handle ::
-  Members [Rpc !! RpcError, UserError, Log] r =>
+  Members [Rpc !! RpcError, UserError, Errors, Log] r =>
   Bool ->
   Map RpcMethod (RpcHandlerFun r) ->
   Request ->
@@ -82,7 +85,7 @@ handle notification handlers (Request method args) =
   traverse (executeRequest notification args) (Map.lookup method handlers)
 
 interpretRequestHandler ::
-  Members [Rpc !! RpcError, UserError, Events er Event, Log] r =>
+  Members [Rpc !! RpcError, UserError, Errors, Events er Event, Log] r =>
   [RpcHandler r] ->
   InterpreterFor RequestHandler r
 interpretRequestHandler (handlersByName -> handlers) =
@@ -94,8 +97,8 @@ interpretRequestHandler (handlersByName -> handlers) =
       when (isNothing res) (publishEvent req)
 
 withRequestHandler ::
+  Members [Errors, Events er Event, Responses RequestId Response !! RpcError, Resource, Race, Async] r =>
   Members [Process RpcMessage (Either Text RpcMessage), Rpc !! RpcError, UserError, Log, Error BootError] r =>
-  Members [Events er Event, Responses RequestId Response !! RpcError, Resource, Race, Async] r =>
   [RpcHandler r] ->
   InterpreterFor RequestHandler r
 withRequestHandler handlers sem =
@@ -105,8 +108,8 @@ withRequestHandler handlers sem =
       sem
 
 runRequestHandler ::
+  Members [Errors, Events er Event, Responses RequestId Response !! RpcError, Resource, Race, Async] r =>
   Members [Process RpcMessage (Either Text RpcMessage), Rpc !! RpcError, UserError, Log, Error BootError] r =>
-  Members [Events er Event, Responses RequestId Response !! RpcError, Resource, Race, Async] r =>
   [RpcHandler r] ->
   Sem r ()
 runRequestHandler handlers =
