@@ -10,11 +10,13 @@ import Ribosome.Data.PluginName (PluginName)
 import Ribosome.Data.Scratch (Scratch)
 import Ribosome.Data.ScratchOptions (ScratchOptions (ScratchOptions))
 import Ribosome.Embed (embedNvimPlugin)
-import Ribosome.Host.Api.Effect (nvimCommand, vimCallFunction)
+import Ribosome.Host.Api.Data (nvimCommand)
+import Ribosome.Host.Api.Effect (vimCallFunction)
 import Ribosome.Host.Data.Execution (Execution (Sync))
 import Ribosome.Host.Data.HandlerError (HandlerError)
 import Ribosome.Host.Data.RpcError (RpcError)
 import Ribosome.Host.Data.RpcHandler (RpcHandler)
+import qualified Ribosome.Host.Effect.Rpc as Rpc
 import Ribosome.Host.Effect.Rpc (Rpc)
 import Ribosome.Host.Handler (rpcFunction)
 import Ribosome.Scratch (showInScratch)
@@ -63,22 +65,17 @@ handlers ::
 handlers =
   [
     rpcFunction "MakeFloatScratch" Sync (makeFloatScratch @(Error HandlerError : r)),
-    rpcFunction "MakeScratch" Sync (makeScratch @(Error HandlerError : r)),
-    rpcFunction "ScratchCount" Sync (scratchCount @(Error HandlerError : r))
+    rpcFunction "MakeScratch" Sync (makeScratch @(Error HandlerError : r))
   ]
 
--- FIXME This only works if the rpc handler for the delete autocmd is Sync, otherwise it hangs
 scratchTest :: Text -> UnitTest
 scratchTest fun = do
   runTest $ embedNvimPlugin "test" mempty mempty handlers do
     () <- vimCallFunction fun []
-    assertWait scratches (assertEq (1 :: Int))
+    assertWait scratchCount (assertEq (1 :: Int))
     assertWait currentBufferContent (assertEq target)
-    nvimCommand "bdelete"
-    assertWait scratches (assertEq 0)
-  where
-    scratches =
-      vimCallFunction "ScratchCount" []
+    Rpc.notify (nvimCommand "bdelete")
+    assertWait scratchCount (assertEq 0)
 
 test_regularScratch :: UnitTest
 test_regularScratch = do

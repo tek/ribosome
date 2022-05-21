@@ -8,7 +8,7 @@ import Ribosome.Data.Mapping (MappingIdent)
 import Ribosome.Data.PluginName (PluginName (PluginName))
 import Ribosome.Data.Scratch (Scratch)
 import Ribosome.Data.WatchedVariable (WatchedVariable)
-import Ribosome.Host.Data.Execution (Execution (Async, Sync))
+import Ribosome.Host.Data.Execution (Execution (Async))
 import Ribosome.Host.Data.HandlerError (HandlerError)
 import Ribosome.Host.Data.RpcError (RpcError)
 import Ribosome.Host.Data.RpcHandler (RpcHandler)
@@ -46,6 +46,6 @@ builtinHandlers ::
   [RpcHandler r]
 builtinHandlers (PluginName name) maps vars =
   [
-    rpcFunction [exon|#{capitalize name}DeleteScratch|] Sync (killScratchByName @(Error HandlerError : r)),
-    rpcFunction [exon|#{capitalize name}Mapping|] Sync (mappingHandler maps)
+    rpcFunction [exon|#{capitalize name}DeleteScratch|] Async (killScratchByName @(Error HandlerError : r)),
+    rpcFunction [exon|#{capitalize name}Mapping|] Async (mappingHandler maps)
   ] <> (watcherRpc vars <$> watcherEvents)
