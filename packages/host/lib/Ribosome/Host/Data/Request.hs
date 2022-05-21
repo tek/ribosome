@@ -1,6 +1,8 @@
 module Ribosome.Host.Data.Request where
 
 import Data.MessagePack (Object (ObjectArray))
+import Exon (exon)
+
 import Ribosome.Host.Class.Msgpack.Decode (MsgpackDecode)
 import Ribosome.Host.Class.Msgpack.Encode (MsgpackEncode (toMsgpack))
 
@@ -31,3 +33,11 @@ data TrackedRequest =
     request :: Request
   }
   deriving stock (Eq, Show)
+
+formatReq :: Request -> Text
+formatReq (Request (RpcMethod method) payload) =
+  [exon|#{method} #{show payload}|]
+
+formatTrackedReq :: TrackedRequest -> Text
+formatTrackedReq (TrackedRequest (RequestId i) req) =
+  [exon|<#{show i}> #{formatReq req}|]

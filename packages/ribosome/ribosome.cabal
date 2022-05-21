@@ -38,8 +38,10 @@ library
       Ribosome.Config.Settings
       Ribosome.Data.FileBuffer
       Ribosome.Data.FloatOptions
+      Ribosome.Data.Locks
       Ribosome.Data.Mapping
       Ribosome.Data.PluginName
+      Ribosome.Data.PluginState
       Ribosome.Data.Register
       Ribosome.Data.RegisterType
       Ribosome.Data.Scratch
@@ -47,12 +49,15 @@ library
       Ribosome.Data.Setting
       Ribosome.Data.SettingError
       Ribosome.Data.Syntax
+      Ribosome.Data.WatchedVariable
+      Ribosome.Data.WatchedVariableHandler
       Ribosome.Data.WindowConfig
       Ribosome.Data.WindowView
       Ribosome.Effect.Settings
       Ribosome.Embed
       Ribosome.Final
       Ribosome.Interpreter.Settings
+      Ribosome.Locks
       Ribosome.Mapping
       Ribosome.Menu.Action
       Ribosome.Menu.Combinators
@@ -109,6 +114,7 @@ library
       Ribosome.Stream.ChunkAfter
       Ribosome.Stream.Util
       Ribosome.Text
+      Ribosome.VariableWatcher
   hs-source-dirs:
       lib
   default-extensions:
@@ -214,6 +220,7 @@ test-suite ribosome-unit
       Ribosome.Test.Run
       Ribosome.Test.ScratchTest
       Ribosome.Test.Wait
+      Ribosome.Test.WatcherTest
   hs-source-dirs:
       test
   default-extensions:
@@ -287,6 +294,7 @@ test-suite ribosome-unit
     , lifted-async
     , lifted-base
     , lifted-stm
+    , messagepack
     , path
     , polysemy
     , polysemy-conc

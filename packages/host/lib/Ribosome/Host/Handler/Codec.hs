@@ -9,7 +9,7 @@ import Ribosome.Host.Data.Args (Args (Args))
 import Ribosome.Host.Data.Bar (Bar (Bar))
 import qualified Ribosome.Host.Data.HandlerError as HandlerError
 import Ribosome.Host.Data.HandlerError (HandlerError)
-import Ribosome.Host.Data.RpcHandler (RpcHandlerFun)
+import Ribosome.Host.Data.RpcHandler (RpcHandlerFun, Handler)
 
 decodeArg ::
   Member (Error HandlerError) r =>
@@ -53,21 +53,14 @@ instance (
     a : _ ->
       throw (HandlerError.simple [exon|Invalid type for Args: #{show a}|])
 
-class HandlerCodec h r where
+class HandlerCodec h r | h -> r where
   handlerCodec :: h -> RpcHandlerFun r
 
 instance (
     MsgpackEncode a
-  ) => HandlerCodec (Sem (Error HandlerError : r) a) r where
+  ) => HandlerCodec (Handler r a) r where
     handlerCodec h = \case
       [] -> toMsgpack <$> h
-      o -> extraError o
-
-instance {-# overlappable #-} (
-    MsgpackEncode a
-  ) => HandlerCodec a r where
-    handlerCodec a = \case
-      [] -> pure (toMsgpack a)
       o -> extraError o
 
 instance (
@@ -75,5 +68,5 @@ instance (
     HandlerCodec b r
   ) => HandlerCodec (a -> b) r where
   handlerCodec h o = do
-    (rest, a) <- handlerArg @a @(Error HandlerError : r) o
+    (rest, a) <- handlerArg o
     handlerCodec (h a) rest

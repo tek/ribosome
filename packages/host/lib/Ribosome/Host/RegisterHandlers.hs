@@ -47,10 +47,13 @@ rpcCall ::
   ChannelId ->
   RpcMethod ->
   Execution ->
-  Text ->
+  Maybe Text ->
   Text
 rpcCall (ChannelId i) (RpcMethod method) exec args =
-  [exon|call('#{trigger exec}', [#{show i}, '#{method}'] + #{args})|]
+  [exon|call('#{trigger exec}', [#{show i}, '#{method}']#{foldMap appendArgs args})|]
+  where
+    appendArgs a =
+      [exon| + #{a}|]
 
 registerType ::
   ChannelId ->
@@ -62,17 +65,17 @@ registerType ::
 registerType i method name exec = \case
   RpcType.Function ->
     [exon|function! #{name}(...) range
-return #{rpcCall i method exec "a:000"}
+return #{rpcCall i method exec (Just "a:000")}
 endfunction|]
   RpcType.Command options args ->
-    [exon|command! #{optionsText} #{name} call #{rpcCall i method exec argsText}|]
+    [exon|command! #{optionsText} #{name} call #{rpcCall i method exec (Just argsText)}|]
     where
       optionsText =
         Text.intercalate " " options
       argsText =
         [exon|[#{Text.intercalate ", " args}]|]
   RpcType.Autocmd (AutocmdEvent event) AutocmdOptions {..} ->
-    [exon|autocmd! #{fold group} #{event} #{fPattern} call #{rpcCall i method exec "[]"}|]
+    [exon|autocmd! #{fold group} #{event} #{fPattern} call #{rpcCall i method exec Nothing}|]
 
 registerHandler ::
   Members [Rpc !! RpcError, Log] r =>

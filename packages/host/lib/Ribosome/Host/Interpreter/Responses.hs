@@ -21,11 +21,21 @@ failAbsentKey k f = \case
   Nothing ->
     stop (RpcError [exon|No response registered for #{show k}|])
 
+waitAndRemove ::
+  Ord k =>
+  Members [AtomicState (Map k (MVar v)), Embed IO] r =>
+  k ->
+  MVar v ->
+  Sem r v
+waitAndRemove k mv = do
+  v <- embed (takeMVar mv)
+  v <$ atomicModify' (Map.delete k)
+
 interpretResponsesAtomic ::
   ∀ k v r .
   Ord k =>
   Show k =>
-  Members [Input k, AtomicState (Map k (MVar v)), Embed IO] r =>
+  Members [Input k, AtomicState (Map k (MVar v)), Log, Embed IO] r =>
   InterpreterFor (Responses k v !! RpcError) r
 interpretResponsesAtomic =
   interpretResumable \case
@@ -33,10 +43,11 @@ interpretResponsesAtomic =
       k <- input
       resp <- embed newEmptyMVar
       k <$ atomicModify' (Map.insert k resp)
-    Wait k ->
-      failAbsentKey k (embed . takeMVar) =<< atomicGets (Map.lookup k)
+    Wait k -> do
+      v <- atomicGets (Map.lookup k)
+      failAbsentKey k (waitAndRemove k) v
     Respond k v -> do
-      stored <- atomicState' (swap . Map.updateLookupWithKey (\ _ _ -> Nothing) k)
+      stored <- atomicGets (Map.lookup k)
       failAbsentKey k (void . embed . flip tryPutMVar v) stored
 
 interpretResponses ::
@@ -44,7 +55,7 @@ interpretResponses ::
   Ord k =>
   Num k =>
   Show k =>
-  Member (Embed IO) r =>
+  Members [Log, Embed IO] r =>
   InterpreterFor (Responses k v !! RpcError) r
 interpretResponses =
   interpretAtomic (mempty :: Map k (MVar v)) .

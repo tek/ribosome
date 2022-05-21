@@ -2,6 +2,7 @@ module Ribosome.Test.ScratchTest where
 
 import qualified Data.Map.Strict as Map
 import Polysemy.Test (UnitTest, assertEq, unitTest)
+import Test.Tasty (TestTree, testGroup)
 
 import Ribosome.Api.Buffer (currentBufferContent)
 import Ribosome.Data.FloatOptions (FloatOptions (FloatOptions), FloatRelative (Cursor))
@@ -19,7 +20,6 @@ import Ribosome.Host.Handler (rpcFunction)
 import Ribosome.Scratch (showInScratch)
 import Ribosome.Test.Run (rpcError, runTest)
 import Ribosome.Test.Wait (assertWait)
-import Test.Tasty (testGroup, TestTree)
 
 target :: [Text]
 target = ["line 1", "line 2"]
@@ -70,7 +70,7 @@ handlers =
 -- FIXME This only works if the rpc handler for the delete autocmd is Sync, otherwise it hangs
 scratchTest :: Text -> UnitTest
 scratchTest fun = do
-  runTest $ embedNvimPlugin "test" mempty handlers do
+  runTest $ embedNvimPlugin "test" mempty mempty handlers do
     () <- vimCallFunction fun []
     assertWait scratches (assertEq (1 :: Int))
     assertWait currentBufferContent (assertEq target)

@@ -160,6 +160,7 @@ test-suite ribosome-host-unit
   main-is: Main.hs
   other-modules:
       Ribosome.Host.Test.ApiInfoTest
+      Ribosome.Host.Test.AsyncTest
       Ribosome.Host.Test.AtomicTest
       Ribosome.Host.Test.AutocmdTest
       Ribosome.Host.Test.CommandArgsTest

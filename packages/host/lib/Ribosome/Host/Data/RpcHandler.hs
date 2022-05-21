@@ -10,8 +10,11 @@ import Ribosome.Host.Data.Request (RpcMethod (RpcMethod))
 import qualified Ribosome.Host.Data.RpcType as RpcType
 import Ribosome.Host.Data.RpcType (RpcType)
 
+type Handler r a =
+  Sem (Error HandlerError : r) a
+
 type RpcHandlerFun r =
-  [Object] -> Sem (Error HandlerError : r) Object
+  [Object] -> Handler r Object
 
 data RpcHandler r =
   RpcHandler {

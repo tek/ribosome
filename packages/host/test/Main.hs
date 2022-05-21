@@ -2,6 +2,7 @@ module Main where
 
 import Polysemy.Test (unitTest)
 import Ribosome.Host.Test.ApiInfoTest (test_parseType)
+import Ribosome.Host.Test.AsyncTest (test_async)
 import Ribosome.Host.Test.AtomicTest (test_atomic)
 import Ribosome.Host.Test.AutocmdTest (test_autocmd)
 import Ribosome.Host.Test.CommandArgsTest (test_args)
@@ -20,6 +21,7 @@ tests =
   testGroup "host" [
     unitTest "parse api info types" test_parseType,
     unitTest "function" test_function,
+    unitTest "async function" test_async,
     testGroup "command" [
       unitTest "args" test_args,
       unitTest "bang" test_bang,

@@ -144,6 +144,7 @@ in {
           "lifted-async"
           "lifted-base"
           "lifted-stm"
+          "messagepack"
           "path"
           "ribosome"
           "ribosome-host"

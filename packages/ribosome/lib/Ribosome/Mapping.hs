@@ -5,7 +5,6 @@ import Exon (exon)
 
 import Ribosome.Data.Mapping (Mapping (Mapping), MappingIdent (MappingIdent))
 import Ribosome.Data.PluginName (PluginName (PluginName))
-import Ribosome.Data.PluginState (PluginState, mappings)
 import Ribosome.Host.Api.Data (Buffer)
 import Ribosome.Host.Api.Effect (vimCommand)
 import Ribosome.Host.Data.HandlerError (HandlerError)
@@ -52,9 +51,9 @@ activateBufferMapping buffer mapping =
   bufdo buffer do
     mappingCmd " <buffer>" mapping
 
-mappingRequest ::
-  Members [AtomicState (PluginState r), Error HandlerError] r =>
+mappingHandler ::
+  Map MappingIdent (Sem (Error HandlerError : r) ()) ->
   MappingIdent ->
-  Sem r ()
-mappingRequest i =
-  fromMaybe (throw "No handler for this mapping") =<< atomicGets (Map.lookup i . mappings)
+  Sem (Error HandlerError : r) ()
+mappingHandler maps i =
+  join (note "No handler for this mapping" (Map.lookup i maps))

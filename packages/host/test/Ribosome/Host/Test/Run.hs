@@ -6,7 +6,8 @@ import Polysemy.Conc (interpretRace)
 import Polysemy.Test (Hedgehog, Test, TestError (TestError), UnitTest, runTestAuto)
 import Polysemy.Time (GhcTime, interpretTimeGhcConstant, mkDatetime)
 
-import Ribosome.Host.Data.HandlerError (HandlerError (HandlerError))
+import qualified Ribosome.Host.Data.HandlerError as HandlerError
+import Ribosome.Host.Data.HandlerError (HandlerError)
 import Ribosome.Host.Data.RpcError (RpcError (unRpcError))
 import Ribosome.Host.Data.RpcHandler (RpcHandler)
 import Ribosome.Host.Effect.Rpc (Rpc)
@@ -64,4 +65,4 @@ rpcError ::
   Members [Rpc !! RpcError, Error HandlerError] r =>
   InterpreterFor Rpc r
 rpcError =
-  resumeHoistError (HandlerError . unRpcError)
+  resumeHoistError (HandlerError.simple . unRpcError)

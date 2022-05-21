@@ -9,9 +9,9 @@ import Ribosome.Host.Class.Msgpack.Array (MsgpackArray (msgpackArray))
 import Ribosome.Host.Class.Msgpack.Decode (pattern Msgpack, MsgpackDecode (fromMsgpack))
 import Ribosome.Host.Class.Msgpack.Encode (MsgpackEncode (toMsgpack))
 import qualified Ribosome.Host.Data.Request as Request
-import Ribosome.Host.Data.Request (Request, TrackedRequest (TrackedRequest))
+import Ribosome.Host.Data.Request (Request, TrackedRequest (TrackedRequest), formatReq, formatTrackedReq)
 import qualified Ribosome.Host.Data.Response as Response
-import Ribosome.Host.Data.Response (TrackedResponse (TrackedResponse))
+import Ribosome.Host.Data.Response (TrackedResponse (TrackedResponse), formatTrackedResponse)
 import Ribosome.Host.Data.RpcError (RpcError (RpcError))
 
 decodeError :: Object -> RpcError
@@ -64,3 +64,12 @@ instance Serialize RpcMessage where
     Serialize.put . toMsgpack
   get =
     either (fail . toString) pure . fromMsgpack =<< Serialize.get
+
+formatRpcMsg :: RpcMessage -> Text
+formatRpcMsg = \case
+  Request req ->
+    formatTrackedReq req
+  Response res ->
+    formatTrackedResponse res
+  Notification req ->
+    formatReq req

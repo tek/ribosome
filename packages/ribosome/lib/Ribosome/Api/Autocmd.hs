@@ -2,9 +2,8 @@ module Ribosome.Api.Autocmd where
 
 import Exon (exon)
 
-import qualified Ribosome.Host.Api.Data as Data
-import Ribosome.Host.Api.Data (Buffer)
-import Ribosome.Host.Api.Effect (bufferGetNumber, nvimCommand, vimGetOption, vimSetOption)
+import Ribosome.Host.Api.Data (Buffer, nvimCommand)
+import Ribosome.Host.Api.Effect (bufferGetNumber, vimGetOption, vimSetOption)
 import qualified Ribosome.Host.Effect.Rpc as Rpc
 import Ribosome.Host.Effect.Rpc (Rpc)
 
@@ -13,7 +12,7 @@ doautocmd ::
   Text ->
   Sem r ()
 doautocmd name =
-  nvimCommand [exon|doautocmd #{name}|]
+  Rpc.notify (nvimCommand [exon|doautocmd #{name}|])
 
 uautocmd ::
   Member Rpc r =>
@@ -46,7 +45,7 @@ bufferAutocmd ::
 bufferAutocmd buffer grp event cmd = do
   number <- bufferGetNumber buffer
   Rpc.sync do
-    Data.nvimCommand [exon|augroup #{grp}|]
-    Data.nvimCommand [exon|autocmd #{event} <buffer=#{show number}> #{cmd}|]
-    Data.nvimCommand "augroup end"
+    nvimCommand [exon|augroup #{grp}|]
+    nvimCommand [exon|autocmd #{event} <buffer=#{show number}> #{cmd}|]
+    nvimCommand "augroup end"
     pure ()
