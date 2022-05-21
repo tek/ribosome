@@ -1,13 +1,14 @@
 module Ribosome.Host.Embed where
 
 import Data.Serialize (Serialize)
-import Polysemy.Conc (ChanConsumer, interpretEventsChan, ChanEvents)
+import Polysemy.Conc (ChanConsumer, ChanEvents, interpretEventsChan)
 import Polysemy.Log (Severity (Warn), interpretLogStdoutLevelConc)
 import qualified Polysemy.Process as Process
 import Polysemy.Process (Process, ProcessOptions, withProcess)
 import Polysemy.Process.Data.ProcessError (ProcessError)
 import System.Process.Typed (ProcessConfig, proc)
 
+import Ribosome.Host.Data.BootError (BootError (BootError))
 import Ribosome.Host.Data.Event (Event)
 import Ribosome.Host.Data.Request (RequestId)
 import Ribosome.Host.Data.Response (Response)
@@ -54,10 +55,10 @@ publishRequests =
 
 interpretRpcMsgpackProcessSingle ::
   Members [Scoped () (Process RpcMessage o) !! ProcessError, Events res RpcMessage] r =>
-  Members [Responses RequestId Response !! RpcError, Error ProcessError, Log, Async, Embed IO] r =>
+  Members [Responses RequestId Response !! RpcError, Error BootError, Log, Async, Embed IO] r =>
   InterpretersFor [Rpc !! RpcError, Process RpcMessage o] r
 interpretRpcMsgpackProcessSingle =
-  resumeError .
+  resumeHoistError (BootError . show) .
   withProcess @() .
   raiseUnder .
   publishRequests .
@@ -72,7 +73,7 @@ type RpcStack =
 
 interpretRpcMsgpackProcessNvimEmbed ::
   Members [Responses RequestId Response !! RpcError, Events res RpcMessage] r =>
-  Members [Error ProcessError, Log, Resource, Race, Async, Embed IO] r =>
+  Members [Error BootError, Log, Resource, Race, Async, Embed IO] r =>
   ProcessConfig () () () ->
   InterpretersFor RpcStack r
 interpretRpcMsgpackProcessNvimEmbed conf =
@@ -81,7 +82,7 @@ interpretRpcMsgpackProcessNvimEmbed conf =
 
 interpretRpcMsgpackProcessNvimEmbedDef ::
   Members [Responses RequestId Response !! RpcError, Events res RpcMessage] r =>
-  Members [Error ProcessError, Log, Resource, Race, Async, Embed IO] r =>
+  Members [Error BootError, Log, Resource, Race, Async, Embed IO] r =>
   InterpretersFor RpcStack r
 interpretRpcMsgpackProcessNvimEmbedDef =
   interpretProcessCerealNvimEmbed def .
@@ -89,7 +90,7 @@ interpretRpcMsgpackProcessNvimEmbedDef =
 
 interpretRpcEmbed ::
   Members [Events er Event, Events res RpcMessage, UserError] r =>
-  Members [Error ProcessError, Error Text, Log, Resource, Race, Async, Embed IO] r =>
+  Members [Error BootError, Log, Resource, Race, Async, Embed IO] r =>
   [RpcHandler (Rpc !! RpcError : r)] ->
   InterpreterFor (Rpc !! RpcError) r
 interpretRpcEmbed handlers =
@@ -104,8 +105,7 @@ type BasicEmbedDeps =
     ChanEvents Event,
     ChanConsumer Event,
     ChanEvents RpcMessage,
-    ChanConsumer RpcMessage,
-    Error ProcessError
+    ChanConsumer RpcMessage
   ]
 
 type BasicEmbedStack =
@@ -118,15 +118,14 @@ type EmbedStack =
   ]
 
 interpretBasicEmbedDeps ::
-  Members [Error Text, Resource, Race, Async, Embed IO] r =>
+  Members [Error BootError, Resource, Race, Async, Embed IO] r =>
   InterpretersFor BasicEmbedDeps r
 interpretBasicEmbedDeps =
-  mapError @ProcessError show .
   interpretEventsChan @RpcMessage .
   interpretEventsChan @Event
 
 runHostEmbedBasic ::
-  Members [Error Text, Resource, Race, Async, UserError, Log, Embed IO, Final IO] r =>
+  Members [Error BootError, Resource, Race, Async, UserError, Log, Embed IO, Final IO] r =>
   [RpcHandler (BasicEmbedStack ++ r)] ->
   InterpretersFor BasicEmbedStack r
 runHostEmbedBasic handlers =
@@ -134,7 +133,7 @@ runHostEmbedBasic handlers =
   interpretRpcEmbed handlers
 
 runHostEmbedLog ::
-  Members [Error Text, Resource, Race, Async, Embed IO, Final IO] r =>
+  Members [Error BootError, Resource, Race, Async, Embed IO, Final IO] r =>
   Severity ->
   [RpcHandler (EmbedStack ++ r)] ->
   InterpretersFor EmbedStack r
@@ -144,39 +143,39 @@ runHostEmbedLog logLevel handlers =
   runHostEmbedBasic handlers
 
 runHostEmbed ::
-  Members [Error Text, Resource, Race, Async, Embed IO, Final IO] r =>
+  Members [Error BootError, Resource, Race, Async, Embed IO, Final IO] r =>
   [RpcHandler (EmbedStack ++ r)] ->
   InterpretersFor EmbedStack r
 runHostEmbed =
   runHostEmbedLog Warn
 
 embedNvimBasic ::
-  Members [UserError, Log, Error Text, Resource, Race, Async, Embed IO, Final IO] r =>
+  Members [UserError, Log, Error BootError, Resource, Race, Async, Embed IO, Final IO] r =>
   [RpcHandler (BasicEmbedStack ++ r)] ->
   InterpretersFor (Rpc : BasicEmbedStack) r
 embedNvimBasic handlers =
   runHostEmbedBasic handlers .
-  resumeHoistError @_ @Rpc (show @Text)
+  resumeHoistError @_ @Rpc (BootError . show @Text)
 
 embedNvimLog ::
-  Members [Error Text, Resource, Race, Async, Embed IO, Final IO] r =>
+  Members [Error BootError, Resource, Race, Async, Embed IO, Final IO] r =>
   Severity ->
   [RpcHandler (EmbedStack ++ r)] ->
   InterpretersFor (Rpc : EmbedStack) r
 embedNvimLog level handlers =
   runHostEmbedLog level handlers .
-  resumeHoistError @_ @Rpc (show @Text)
+  resumeHoistError @_ @Rpc (BootError . show @Text)
 
 embedNvim ::
-  Members [Error Text, Resource, Race, Async, Embed IO, Final IO] r =>
+  Members [Error BootError, Resource, Race, Async, Embed IO, Final IO] r =>
   [RpcHandler (EmbedStack ++ r)] ->
   InterpretersFor (Rpc : EmbedStack) r
 embedNvim handlers =
   runHostEmbed handlers .
-  resumeHoistError @_ @Rpc (show @Text)
+  resumeHoistError @_ @Rpc (BootError . show @Text)
 
 embedNvim_ ::
-  Members [Error Text, Resource, Race, Async, Embed IO, Final IO] r =>
+  Members [Error BootError, Resource, Race, Async, Embed IO, Final IO] r =>
   InterpretersFor (Rpc : EmbedStack) r
 embedNvim_ =
   embedNvim []

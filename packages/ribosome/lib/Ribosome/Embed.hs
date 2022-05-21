@@ -9,6 +9,7 @@ import Ribosome.Data.Mapping (MappingIdent)
 import Ribosome.Data.PluginName (PluginName)
 import Ribosome.Data.Scratch (Scratch)
 import Ribosome.Data.WatchedVariable (WatchedVariable)
+import Ribosome.Host.Data.BootError (BootError)
 import Ribosome.Host.Data.RpcHandler (Handler, RpcHandler)
 import Ribosome.Host.Effect.Rpc (Rpc)
 import Ribosome.Host.Embed (EmbedStack, embedNvimBasic)
@@ -40,7 +41,7 @@ interpretPluginEffects name =
   runReader name
 
 embedNvimPluginLog ::
-  Members [Error Text, Resource, Race, Async, Embed IO, Final IO] r =>
+  Members [Error BootError, Resource, Race, Async, Embed IO, Final IO] r =>
   Severity ->
   PluginName ->
   Map MappingIdent (PluginHandler r) ->
@@ -54,7 +55,7 @@ embedNvimPluginLog level name maps vars handlers =
   embedNvimBasic (builtinHandlers name maps vars <> handlers)
 
 embedNvimPlugin ::
-  Members [Error Text, Resource, Race, Async, Embed IO, Final IO] r =>
+  Members [Error BootError, Resource, Race, Async, Embed IO, Final IO] r =>
   PluginName ->
   Map MappingIdent (PluginHandler r) ->
   Map WatchedVariable (Object -> PluginHandler r) ->
@@ -64,7 +65,7 @@ embedNvimPlugin =
   embedNvimPluginLog Warn
 
 embedNvimPlugin_ ::
-  Members [Error Text, Resource, Race, Async, Embed IO, Final IO] r =>
+  Members [Error BootError, Resource, Race, Async, Embed IO, Final IO] r =>
   PluginName ->
   Map MappingIdent (PluginHandler r) ->
   Map WatchedVariable (Object -> PluginHandler r) ->

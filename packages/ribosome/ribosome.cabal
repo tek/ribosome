@@ -40,6 +40,8 @@ library
       Ribosome.Data.FloatOptions
       Ribosome.Data.Locks
       Ribosome.Data.Mapping
+      Ribosome.Data.PersistError
+      Ribosome.Data.PersistPathError
       Ribosome.Data.PluginName
       Ribosome.Data.PluginState
       Ribosome.Data.Register
@@ -53,9 +55,13 @@ library
       Ribosome.Data.WatchedVariableHandler
       Ribosome.Data.WindowConfig
       Ribosome.Data.WindowView
+      Ribosome.Effect.Persist
+      Ribosome.Effect.PersistPath
       Ribosome.Effect.Settings
       Ribosome.Embed
       Ribosome.Final
+      Ribosome.Interpreter.Persist
+      Ribosome.Interpreter.PersistPath
       Ribosome.Interpreter.Settings
       Ribosome.Interpreter.UserError
       Ribosome.Locks
@@ -108,6 +114,7 @@ library
       Ribosome.Menu.Run
       Ribosome.Menu.UpdateState
       Ribosome.Path
+      Ribosome.Persist
       Ribosome.Plugin.Builtin
       Ribosome.PluginName
       Ribosome.Scratch
@@ -181,7 +188,8 @@ library
       StandaloneKindSignatures
   ghc-options: -Wall -Wredundant-constraints -Wincomplete-uni-patterns -Wmissing-deriving-strategies -Widentities -Wunused-packages -fplugin=Polysemy.Plugin
   build-depends:
-      base >=4.12 && <5
+      aeson
+    , base >=4.12 && <5
     , bytestring-trie
     , cereal
     , exceptions
@@ -197,6 +205,7 @@ library
     , monad-control
     , mtl
     , path
+    , path-io
     , polysemy
     , polysemy-plugin
     , polysemy-process
@@ -216,8 +225,10 @@ test-suite ribosome-unit
   main-is: Main.hs
   other-modules:
       Ribosome.Test.BufferTest
+      Ribosome.Test.Error
       Ribosome.Test.MappingTest
       Ribosome.Test.MenuTest
+      Ribosome.Test.PersistTest
       Ribosome.Test.Run
       Ribosome.Test.ScratchTest
       Ribosome.Test.Wait
@@ -287,7 +298,8 @@ test-suite ribosome-unit
       StandaloneKindSignatures
   ghc-options: -Wall -Wredundant-constraints -Wincomplete-uni-patterns -Wmissing-deriving-strategies -Widentities -Wunused-packages -fplugin=Polysemy.Plugin -threaded -rtsopts -with-rtsopts=-N
   build-depends:
-      base >=4.12 && <5
+      aeson
+    , base >=4.12 && <5
     , exceptions
     , hedgehog
     , incipit

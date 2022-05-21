@@ -4,12 +4,14 @@ import qualified Data.Map.Strict as Map
 import Data.MessagePack (Object)
 import qualified Data.Text as Text
 import Exon (exon)
+import Log (Severity)
 import Polysemy.Conc (withAsync_)
 import qualified Polysemy.Log as Log
 import Polysemy.Process (Process)
 
 import Ribosome.Host.Api.Effect (nvimEcho)
 import Ribosome.Host.Class.Msgpack.Encode (toMsgpack)
+import Ribosome.Host.Data.BootError (BootError)
 import Ribosome.Host.Data.Event (Event (Event), EventName (EventName))
 import Ribosome.Host.Data.HandlerError (HandlerError (HandlerError))
 import Ribosome.Host.Data.Request (Request (Request), RequestId, RpcMethod (RpcMethod))
@@ -25,7 +27,6 @@ import Ribosome.Host.Effect.Rpc (Rpc)
 import Ribosome.Host.Effect.UserError (UserError, userError)
 import Ribosome.Host.Listener (listener)
 import Ribosome.Host.RegisterHandlers (registerHandlers)
-import Log (Severity)
 
 handlersByName ::
   [RpcHandler r] ->
@@ -93,7 +94,7 @@ interpretRequestHandler (handlersByName -> handlers) =
       when (isNothing res) (publishEvent req)
 
 withRequestHandler ::
-  Members [Process RpcMessage (Either Text RpcMessage), Rpc !! RpcError, UserError, Log, Error Text] r =>
+  Members [Process RpcMessage (Either Text RpcMessage), Rpc !! RpcError, UserError, Log, Error BootError] r =>
   Members [Events er Event, Responses RequestId Response !! RpcError, Resource, Race, Async] r =>
   [RpcHandler r] ->
   InterpreterFor RequestHandler r
@@ -104,7 +105,7 @@ withRequestHandler handlers sem =
       sem
 
 runRequestHandler ::
-  Members [Process RpcMessage (Either Text RpcMessage), Rpc !! RpcError, UserError, Log, Error Text] r =>
+  Members [Process RpcMessage (Either Text RpcMessage), Rpc !! RpcError, UserError, Log, Error BootError] r =>
   Members [Events er Event, Responses RequestId Response !! RpcError, Resource, Race, Async] r =>
   [RpcHandler r] ->
   Sem r ()

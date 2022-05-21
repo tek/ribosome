@@ -112,6 +112,7 @@ in {
     synopsis = "Neovim plugin framework for Polysemy";
     description = "See https://hackage.haskell.org/package/ribosome/docs/Ribosome.html";
     library.dependencies = [
+      "aeson"
       "bytestring-trie"
       "cereal"
       "exceptions"
@@ -126,6 +127,7 @@ in {
       "monad-control"
       "mtl"
       "path"
+      "path-io"
       "polysemy-process"
       "ribosome-host"
       "streamly"
@@ -138,6 +140,7 @@ in {
     tests = {
       ribosome-unit = exe "ribosome" "test" {
         dependencies = [
+          "aeson"
           "exceptions"
           "hedgehog"
           "lens"

@@ -17,3 +17,14 @@ simple msg =
 instance IsString HandlerError where
   fromString =
     simple . toText
+
+class ToHandlerError e where
+  toHandlerError :: e -> HandlerError
+
+handlerError ::
+  ToHandlerError e =>
+  Member (Error HandlerError) r =>
+  Sem (Stop e : r) a ->
+  Sem r a
+handlerError =
+  stopToError . mapStop toHandlerError . raiseUnder

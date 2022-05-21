@@ -32,6 +32,7 @@ library
       Ribosome.Host.Data.Args
       Ribosome.Host.Data.Bang
       Ribosome.Host.Data.Bar
+      Ribosome.Host.Data.BootError
       Ribosome.Host.Data.ChannelId
       Ribosome.Host.Data.CommandMods
       Ribosome.Host.Data.CommandOptions
@@ -56,6 +57,7 @@ library
       Ribosome.Host.Handler
       Ribosome.Host.Handler.Codec
       Ribosome.Host.Handler.Command
+      Ribosome.Host.Interpret
       Ribosome.Host.Interpreter.Id
       Ribosome.Host.Interpreter.Process
       Ribosome.Host.Interpreter.RequestHandler

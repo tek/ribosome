@@ -16,6 +16,7 @@ import Ribosome.Host.Interpreter.Process (interpretProcessInputCereal, interpret
 import Ribosome.Host.Interpreter.RequestHandler (runRequestHandler)
 import Ribosome.Host.Interpreter.Responses (interpretResponses)
 import Ribosome.Host.Interpreter.Rpc (interpretRpcMsgpack)
+import Ribosome.Host.Data.BootError (BootError)
 
 interpretRpcMsgpackRemote ::
   Members [Log, Resource, Async, Race, Embed IO] r =>
@@ -30,7 +31,7 @@ interpretRpcMsgpackRemote =
   insertAt @2
 
 runNvimPlugin ::
-  Members [UserError, Error ProcessError, Error Text, Log, Resource, Async, Race, Embed IO] r =>
+  Members [UserError, Error ProcessError, Error BootError, Log, Resource, Async, Race, Embed IO] r =>
   [RpcHandler (Rpc !! RpcError : r)] ->
   Sem r ()
 runNvimPlugin =

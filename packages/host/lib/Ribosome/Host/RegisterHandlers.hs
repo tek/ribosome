@@ -7,10 +7,11 @@ import Prelude hiding (group)
 
 import Ribosome.Host.Api.Effect (nvimCommand, nvimGetApiInfo)
 import Ribosome.Host.Class.Msgpack.Decode (fromMsgpack)
+import Ribosome.Host.Data.BootError (BootError (BootError))
 import Ribosome.Host.Data.ChannelId (ChannelId (ChannelId))
 import Ribosome.Host.Data.Execution (Execution (Async, Sync))
 import Ribosome.Host.Data.Request (RpcMethod (RpcMethod))
-import Ribosome.Host.Data.RpcError (RpcError (RpcError, unRpcError))
+import Ribosome.Host.Data.RpcError (RpcError (RpcError))
 import Ribosome.Host.Data.RpcHandler (RpcHandler (RpcHandler), rpcMethod)
 import qualified Ribosome.Host.Data.RpcType as AutocmdOptions
 import qualified Ribosome.Host.Data.RpcType as RpcType
@@ -18,16 +19,15 @@ import Ribosome.Host.Data.RpcType (AutocmdEvent (AutocmdEvent), AutocmdOptions (
 import Ribosome.Host.Effect.Rpc (Rpc)
 
 channelId ::
-  Member (Error Text) r =>
-  Member (Rpc !! RpcError) r =>
+  Members [Rpc !! RpcError, Error BootError] r =>
   Sem r ChannelId
 channelId =
-  resumeHoistError unRpcError do
+  resumeHoistError coerce do
     nvimGetApiInfo >>= \case
       [fromMsgpack -> Right i, _] ->
         pure (ChannelId i)
       i ->
-        throw [exon|API info did not contain channel ID: #{show i}|]
+        throw (BootError [exon|API info did not contain channel ID: #{show i}|])
 
 registerFailed ::
   Member Log r =>
@@ -86,8 +86,7 @@ registerHandler i (RpcHandler tpe name exec _) =
   nvimCommand (registerType i (rpcMethod tpe name) name exec tpe) !! registerFailed tpe name
 
 registerHandlers ::
-  Member (Error Text) r =>
-  Members [Rpc !! RpcError, Log] r =>
+  Members [Rpc !! RpcError, Log, Error BootError] r =>
   [RpcHandler r] ->
   Sem r ()
 registerHandlers defs = do
