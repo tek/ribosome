@@ -4,10 +4,11 @@ import qualified Data.Map.Strict as Map
 import Data.MessagePack (Object)
 import qualified Data.Text as Text
 import Exon (exon)
-import Log (Severity)
 import Polysemy.Conc (withAsync_)
 import qualified Polysemy.Log as Log
+import Polysemy.Log (Severity (Error))
 import Polysemy.Process (Process)
+import System.IO.Error (IOError)
 
 import Ribosome.Host.Api.Effect (nvimEcho)
 import Ribosome.Host.Class.Msgpack.Encode (toMsgpack)
@@ -49,6 +50,14 @@ publishEvent ::
 publishEvent (Request (RpcMethod name) args) =
   publish (Event (EventName name) args)
 
+handlerIOError ::
+  Members [Error HandlerError, Final IO] r =>
+  Sem r a ->
+  Sem r a
+handlerIOError =
+  fromExceptionSemVia \ (e :: IOError) ->
+    HandlerError (ErrorMessage "Internal error" ["Handler exception", show e] Error) (Just "RequestHandler")
+
 echoError ::
   Members [Rpc !! RpcError, UserError, Log] r =>
   Text ->
@@ -60,13 +69,13 @@ echoError err severity =
       Log.error [exon|Couldn't echo handler error: #{show e'}|]
 
 executeRequest ::
-  Members [Rpc !! RpcError, UserError, Errors, Log] r =>
+  Members [Rpc !! RpcError, UserError, Errors, Log, Final IO] r =>
   Bool ->
   [Object] ->
   RpcHandlerFun r ->
   Sem r Response
 executeRequest notification args handler =
-  runError (handler args) >>= \case
+  runError (handlerIOError (handler args)) >>= \case
     Right a ->
       pure (Response.Success a)
     Left (HandlerError msg@(ErrorMessage e log severity) htag) -> do
@@ -76,7 +85,7 @@ executeRequest notification args handler =
       pure (Response.Error (RpcError e))
 
 handle ::
-  Members [Rpc !! RpcError, UserError, Errors, Log] r =>
+  Members [Rpc !! RpcError, UserError, Errors, Log, Final IO] r =>
   Bool ->
   Map RpcMethod (RpcHandlerFun r) ->
   Request ->
@@ -85,7 +94,7 @@ handle notification handlers (Request method args) =
   traverse (executeRequest notification args) (Map.lookup method handlers)
 
 interpretRequestHandler ::
-  Members [Rpc !! RpcError, UserError, Errors, Events er Event, Log] r =>
+  Members [Rpc !! RpcError, UserError, Errors, Events er Event, Log, Final IO] r =>
   [RpcHandler r] ->
   InterpreterFor RequestHandler r
 interpretRequestHandler (handlersByName -> handlers) =
@@ -97,8 +106,9 @@ interpretRequestHandler (handlersByName -> handlers) =
       when (isNothing res) (publishEvent req)
 
 withRequestHandler ::
-  Members [Errors, Events er Event, Responses RequestId Response !! RpcError, Resource, Race, Async] r =>
-  Members [Process RpcMessage (Either Text RpcMessage), Rpc !! RpcError, UserError, Log, Error BootError] r =>
+  Member (Process RpcMessage (Either Text RpcMessage)) r =>
+  Members [Rpc !! RpcError, UserError, Errors, Events er Event, Responses RequestId Response !! RpcError] r =>
+  Members [Log, Error BootError, Resource, Race, Async, Embed IO, Final IO] r =>
   [RpcHandler r] ->
   InterpreterFor RequestHandler r
 withRequestHandler handlers sem =
@@ -108,8 +118,9 @@ withRequestHandler handlers sem =
       sem
 
 runRequestHandler ::
-  Members [Errors, Events er Event, Responses RequestId Response !! RpcError, Resource, Race, Async] r =>
-  Members [Process RpcMessage (Either Text RpcMessage), Rpc !! RpcError, UserError, Log, Error BootError] r =>
+  Member (Process RpcMessage (Either Text RpcMessage)) r =>
+  Members [Rpc !! RpcError, UserError, Errors, Events er Event, Responses RequestId Response !! RpcError] r =>
+  Members [Log, Error BootError, Resource, Race, Async, Embed IO, Final IO] r =>
   [RpcHandler r] ->
   Sem r ()
 runRequestHandler handlers =

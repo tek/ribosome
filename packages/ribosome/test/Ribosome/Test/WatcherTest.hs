@@ -23,11 +23,14 @@ changed _ =
 test_varWatcher :: UnitTest
 test_varWatcher =
   runTest $ interpretAtomic 0 $ embedNvimPlugin "test" mempty [("trigger", changed)] mempty do
+    nvimSetVar "trigger" (4 :: Int)
+    doautocmd "CmdlineLeave"
+    assertWait atomicGet ((1 :: Int) ===)
     nvimSetVar "trigger" (5 :: Int)
     doautocmd "CmdlineLeave"
     doautocmd "CmdlineLeave"
     doautocmd "CmdlineLeave"
-    assertWait atomicGet ((1 :: Int) ===)
+    assertWait atomicGet ((2 :: Int) ===)
     nvimSetVar "trigger" (6 :: Int)
     doautocmd "CmdlineLeave"
-    assertWait atomicGet ((2 :: Int) ===)
+    assertWait atomicGet ((3 :: Int) ===)

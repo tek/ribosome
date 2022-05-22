@@ -11,12 +11,10 @@ import Ribosome.Data.PluginName (PluginName)
 import Ribosome.Data.Scratch (Scratch)
 import Ribosome.Data.ScratchOptions (ScratchOptions (ScratchOptions))
 import Ribosome.Embed (embedNvimPlugin)
-import Ribosome.Host.Api.Data (nvimFeedkeys)
-import Ribosome.Host.Api.Effect (vimCallFunction)
+import Ribosome.Host.Api.Data (nvimFeedkeys, vimCallFunction)
 import Ribosome.Host.Data.Execution (Execution (Sync))
-import Ribosome.Host.Data.HandlerError (HandlerError)
 import Ribosome.Host.Data.RpcError (RpcError)
-import Ribosome.Host.Data.RpcHandler (RpcHandler)
+import Ribosome.Host.Data.RpcHandler (Handler, RpcHandler)
 import qualified Ribosome.Host.Effect.Rpc as Rpc
 import Ribosome.Host.Effect.Rpc (Rpc)
 import Ribosome.Host.Handler (rpcFunction)
@@ -28,8 +26,8 @@ target :: [Text]
 target = ["line 1", "line 2"]
 
 mappingHandler ::
-  Members [Sync Int, Rpc !! RpcError, Error HandlerError] r =>
-  Sem r ()
+  Members [Sync Int, Rpc !! RpcError] r =>
+  Handler r ()
 mappingHandler =
   void (Sync.putWait (Seconds 5) 13)
 
@@ -38,8 +36,8 @@ mapping =
   Mapping (MappingIdent "mappingHandler") "a" "n" False True
 
 setupMappingScratch ::
-  Members [Rpc !! RpcError, AtomicState (Map Text Scratch), Reader PluginName, Error HandlerError, Log, Resource] r =>
-  Sem r ()
+  Members [Rpc !! RpcError, AtomicState (Map Text Scratch), Reader PluginName, Log, Resource] r =>
+  Handler r ()
 setupMappingScratch = do
   rpcError (void (showInScratch target options))
   where
@@ -52,13 +50,13 @@ handlers ::
   [RpcHandler r]
 handlers =
   [
-    rpcFunction "Setup" Sync (setupMappingScratch @(Error HandlerError : r))
+    rpcFunction "Setup" Sync setupMappingScratch
   ]
 
 test_mapping :: UnitTest
 test_mapping =
   runTest $ interpretSync $ embedNvimPlugin "test" [("mappingHandler", mappingHandler)] mempty handlers do
-    () <- vimCallFunction "Setup" []
+    () <- Rpc.sync (vimCallFunction @() "Setup" [])
     assertWait currentBufferContent (target ===)
     Rpc.notify (nvimFeedkeys "a" "x" False)
     assertJust (13 :: Int) =<< Sync.wait (Seconds 5)

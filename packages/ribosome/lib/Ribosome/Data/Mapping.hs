@@ -10,10 +10,10 @@ newtype MappingIdent =
 
 data Mapping =
   Mapping {
-    mappingIdent :: MappingIdent,
-    mappingLhs :: Text,
-    mappingMode :: Text,
-    mappingRemap :: Bool,
-    mappingBuffer :: Bool
+    id :: MappingIdent,
+    lhs :: Text,
+    mode :: Text,
+    remap :: Bool,
+    buffer :: Bool
   }
   deriving stock (Eq, Show)

@@ -92,7 +92,7 @@ interpretRpcMsgpackProcessNvimEmbedDef =
 
 interpretRpcEmbed ::
   Members [Events er Event, Events res RpcMessage, UserError, Errors] r =>
-  Members [Error BootError, Log, Resource, Race, Async, Embed IO] r =>
+  Members [Error BootError, Log, Resource, Race, Async, Embed IO, Final IO] r =>
   [RpcHandler (Rpc !! RpcError : r)] ->
   InterpreterFor (Rpc !! RpcError) r
 interpretRpcEmbed handlers =

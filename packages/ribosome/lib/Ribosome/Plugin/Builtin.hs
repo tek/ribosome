@@ -11,7 +11,8 @@ import Ribosome.Data.WatchedVariable (WatchedVariable)
 import Ribosome.Host.Data.Execution (Execution (Async))
 import Ribosome.Host.Data.HandlerError (HandlerError)
 import Ribosome.Host.Data.RpcError (RpcError)
-import Ribosome.Host.Data.RpcHandler (RpcHandler)
+import Ribosome.Host.Data.RpcHandler (Handler, RpcHandler)
+import Ribosome.Host.Data.RpcType (AutocmdEvent (unAutocmdEvent))
 import Ribosome.Host.Effect.Rpc (Rpc)
 import Ribosome.Host.Handler (rpcAutocmd, rpcFunction)
 import Ribosome.Mapping (mappingHandler)
@@ -19,7 +20,7 @@ import Ribosome.Scratch (killScratchByName)
 import Ribosome.Text (capitalize)
 import Ribosome.VariableWatcher (variableWatcherHandler)
 
-watcherEvents :: [Text]
+watcherEvents :: [AutocmdEvent]
 watcherEvents =
   [
     "CmdlineLeave",
@@ -29,23 +30,27 @@ watcherEvents =
 
 watcherRpc ::
   ∀ r .
-  Members [AtomicState (Map WatchedVariable Object), Sync WatcherLock, Rpc !! RpcError, Resource] r =>
-  Map WatchedVariable (Object -> Sem (Error HandlerError : r) ()) ->
-  Text ->
+  Members [AtomicState (Map WatchedVariable Object), Sync WatcherLock, Rpc !! RpcError, Resource, Race] r =>
+  Map WatchedVariable (Object -> Handler r ()) ->
+  PluginName ->
+  AutocmdEvent ->
   RpcHandler r
-watcherRpc vars event =
-  rpcAutocmd event Async def (variableWatcherHandler @(Error HandlerError : r) vars)
+watcherRpc vars (PluginName name) event =
+  rpcAutocmd method event def (variableWatcherHandler @(Error HandlerError : r) vars)
+  where
+    method =
+      [exon|#{capitalize name}VariableChanged#{unAutocmdEvent event}|]
 
 builtinHandlers ::
   ∀ r .
   Members [Rpc !! RpcError, AtomicState (Map Text Scratch), Log] r =>
-  Members [AtomicState (Map WatchedVariable Object), Sync WatcherLock, Resource] r =>
+  Members [AtomicState (Map WatchedVariable Object), Sync WatcherLock, Resource, Race] r =>
   PluginName ->
-  Map MappingIdent (Sem (Error HandlerError : r) ()) ->
-  Map WatchedVariable (Object -> Sem (Error HandlerError : r) ()) ->
+  Map MappingIdent (Handler r ()) ->
+  Map WatchedVariable (Object -> Handler r ()) ->
   [RpcHandler r]
-builtinHandlers (PluginName name) maps vars =
+builtinHandlers pn@(PluginName name) maps vars =
   [
     rpcFunction [exon|#{capitalize name}DeleteScratch|] Async (killScratchByName @(Error HandlerError : r)),
     rpcFunction [exon|#{capitalize name}Mapping|] Async (mappingHandler maps)
-  ] <> (watcherRpc vars <$> watcherEvents)
+  ] <> (watcherRpc vars pn <$> watcherEvents)

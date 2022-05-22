@@ -5,7 +5,7 @@ import Exon (exon)
 import qualified Polysemy.Log as Log
 import Prelude hiding (group)
 
-import Ribosome.Host.Api.Effect (nvimCommand, nvimGetApiInfo)
+import Ribosome.Host.Api.Effect (nvimGetApiInfo)
 import Ribosome.Host.Class.Msgpack.Decode (fromMsgpack)
 import Ribosome.Host.Data.BootError (BootError (BootError))
 import Ribosome.Host.Data.ChannelId (ChannelId (ChannelId))
@@ -17,6 +17,9 @@ import qualified Ribosome.Host.Data.RpcType as AutocmdOptions
 import qualified Ribosome.Host.Data.RpcType as RpcType
 import Ribosome.Host.Data.RpcType (AutocmdEvent (AutocmdEvent), AutocmdOptions (AutocmdOptions), RpcType)
 import Ribosome.Host.Effect.Rpc (Rpc)
+import Ribosome.Host.Api.Data (nvimCommand)
+import Ribosome.Host.Data.RpcCall (RpcCall)
+import qualified Ribosome.Host.Effect.Rpc as Rpc
 
 channelId ::
   Members [Rpc !! RpcError, Error BootError] r =>
@@ -31,12 +34,10 @@ channelId =
 
 registerFailed ::
   Member Log r =>
-  RpcType ->
-  Text ->
   RpcError ->
   Sem r ()
-registerFailed tpe name (RpcError e) =
-  Log.error [exon|Registering #{RpcType.methodPrefix tpe} '#{name}' failed: #{e}|]
+registerFailed (RpcError e) =
+  Log.error [exon|Registering rpc handlers failed: #{e}|]
 
 trigger :: Execution -> Text
 trigger = \case
@@ -78,12 +79,11 @@ endfunction|]
     [exon|autocmd! #{fold group} #{event} #{fPattern} call #{rpcCall i method exec Nothing}|]
 
 registerHandler ::
-  Members [Rpc !! RpcError, Log] r =>
   ChannelId ->
   RpcHandler r ->
-  Sem r ()
+  RpcCall ()
 registerHandler i (RpcHandler tpe name exec _) =
-  nvimCommand (registerType i (rpcMethod tpe name) name exec tpe) !! registerFailed tpe name
+  nvimCommand (registerType i (rpcMethod tpe name) name exec tpe)
 
 registerHandlers ::
   Members [Rpc !! RpcError, Log, Error BootError] r =>
@@ -91,4 +91,4 @@ registerHandlers ::
   Sem r ()
 registerHandlers defs = do
   i <- channelId
-  traverse_ (registerHandler i) defs
+  Rpc.sync (foldMap (registerHandler i) defs) !! registerFailed

@@ -27,6 +27,7 @@
       polysemy-plugin = hackage "0.4.3.0" "1r7j1ffsd6z2q2fgpg78brl2gb0dg8r5ywfiwdrsjd2fxkinjcg1";
       polysemy-process = source.package polysemy-conc "process";
       polysemy-test = source.package polysemy-test "polysemy-test";
+      ribosome = configure "--extra-prog-path=${pkgs.neovim}/bin" inputs;
       ribosome-host = configure "--extra-prog-path=${pkgs.neovim}/bin" inputs;
       streamly = hackage "0.8.1" "0ywyy7gxjnp32hx8kki0lfn94bnc9mzjh8g6mg65ff3vv28k2vdr";
       type-errors = notest;
@@ -39,9 +40,8 @@
       integration = ./packages/integration;
       ribosome = ./packages/ribosome;
       ribosome-host = ./packages/host;
-      # ribosome-test = ./packages/test;
     };
-    main = "ribosome-host";
+    main = "ribosome";
     inherit overrides;
     depsFull = [incipit];
     hpack.packages = import ./ops/hpack.nix { inherit config lib; };

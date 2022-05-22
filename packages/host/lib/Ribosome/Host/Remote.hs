@@ -40,7 +40,7 @@ type RemoteStack =
   ]
 
 runNvimPlugin ::
-  Members [UserError, Error BootError, Log, Resource, Async, Race, Embed IO] r =>
+  Members [UserError, Error BootError, Log, Resource, Async, Race, Embed IO, Final IO] r =>
   [RpcHandler (RemoteStack ++ r)] ->
   Sem r ()
 runNvimPlugin =

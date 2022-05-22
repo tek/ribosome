@@ -1,5 +1,6 @@
 module Ribosome.Host.Interpreter.Process where
 
+import qualified Data.ByteString as ByteString
 import qualified Data.Serialize as Serialize
 import Data.Serialize (Serialize, runGetPartial)
 import Exon (exon)
@@ -31,12 +32,15 @@ convertResult = \case
   Serialize.Partial cont ->
     Partial (convertResult . cont)
 
+type Parser a =
+  ByteString -> ProcessOutputParseResult a
+
 interpretProcessOutputCereal ::
   ∀ a r .
   Serialize a =>
   InterpreterFor (ProcessOutput 'Stdout (Either Text a)) r
 interpretProcessOutputCereal =
-  interpretProcessOutputIncremental (convertResult <$> runGetPartial Serialize.get)
+  interpretProcessOutputIncremental (convertResult . runGetPartial Serialize.get)
 
 interpretProcessOutputLog ::
   ∀ p a r .
@@ -45,7 +49,7 @@ interpretProcessOutputLog ::
 interpretProcessOutputLog =
   interpret \case
     Chunk _ msg ->
-      ([], "") <$ Log.debug [exon|Nvim stderr: #{decodeUtf8 msg}|]
+      ([], "") <$ unless (ByteString.null msg) (Log.debug [exon|Nvim stderr: #{decodeUtf8 msg}|])
 
 interpretProcessInputCereal ::
   Serialize a =>

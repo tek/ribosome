@@ -1,12 +1,11 @@
 module Ribosome.Host.Test.AutocmdTest where
 
-import Polysemy.Conc (interpretAtomic, interpretSync)
+import Polysemy.Conc (interpretSync)
 import qualified Polysemy.Conc.Sync as Sync
 import Polysemy.Test (UnitTest, assertJust)
 import Polysemy.Time (Seconds (Seconds))
 
 import Ribosome.Host.Api.Effect (nvimCommand, nvimGetVar, nvimSetVar)
-import Ribosome.Host.Data.Execution (Execution (Sync))
 import Ribosome.Host.Data.HandlerError (HandlerError)
 import Ribosome.Host.Data.RpcError (RpcError)
 import Ribosome.Host.Data.RpcHandler (RpcHandler)
@@ -36,17 +35,17 @@ bn = do
 
 regHandlers ::
   ∀ r .
-  Members [AtomicState Int, Rpc !! RpcError, Sync ()] r =>
+  Members [Rpc !! RpcError, Sync ()] r =>
   [RpcHandler r]
 regHandlers =
   [
-    rpcAutocmd "User" Sync def { fPattern = "Au" } (au @(Error HandlerError : r)),
-    rpcAutocmd "BufNew" Sync def (bn @(Error HandlerError : r))
+    rpcAutocmd "Au" "User" def { fPattern = "Au" } (au @(Error HandlerError : r)),
+    rpcAutocmd "Bn" "BufNew" def (bn @(Error HandlerError : r))
   ]
 
 test_autocmd :: UnitTest
 test_autocmd =
-  runTest $ interpretAtomic 0 $ interpretSync $ embedNvim regHandlers do
+  runTest $ interpretSync $ embedNvim regHandlers do
     nvimCommand "doautocmd User Au"
     Sync.takeWait (Seconds 5)
     assertJust @Int 12 =<< nvimGetVar var

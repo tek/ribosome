@@ -1125,11 +1125,11 @@
         "thax": "thax_18"
       },
       "locked": {
-        "lastModified": 1652447902,
-        "narHash": "sha256-9lNN7IHf3G9RiRxgW8UiY/VUyoNsYej5mBFzbRZ2ogU=",
+        "lastModified": 1652634463,
+        "narHash": "sha256-mlEfVPDcrEXbS+Cul2EtJw4vRAX3a6sTTY4C6F9AuqY=",
         "owner": "tek",
         "repo": "hix",
-        "rev": "4d26904202ffc121c7e85f7066da511f22b23eef",
+        "rev": "5e449ab014f7416e900fb3591896b48aaa81653c",
         "type": "github"
       },
       "original": {
@@ -5839,11 +5839,11 @@
         "polysemy-time": "polysemy-time_4"
       },
       "locked": {
-        "lastModified": 1651696991,
-        "narHash": "sha256-PbT7eg5VI/5Uhc+tqddbUyBdufAU54wWLNEK62QkpA0=",
+        "lastModified": 1653257052,
+        "narHash": "sha256-d/Zo/rmQd5qkMbTmJMBZkm93pz5mZ2zj7OhefbIzCeE=",
         "owner": "tek",
         "repo": "polysemy-conc",
-        "rev": "d6409e36cbb795c53312444a68b2566a673d1d47",
+        "rev": "fec2f10abaf6453d76fea889daf38d848b0983f8",
         "type": "github"
       },
       "original": {
