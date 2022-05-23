@@ -1,4 +1,4 @@
-module Ribosome.Stream.Accumulate where
+module Ribosome.Menu.Stream.Accumulate where
 
 import qualified Control.Concurrent.Lifted as Lifted
 import Control.Exception.Lifted (finally)

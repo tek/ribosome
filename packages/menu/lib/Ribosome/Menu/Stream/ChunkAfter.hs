@@ -1,4 +1,4 @@
-module Ribosome.Stream.ChunkAfter where
+module Ribosome.Menu.Stream.ChunkAfter where
 
 import Control.Monad.Catch (MonadThrow)
 import Control.Monad.Trans.Control (MonadBaseControl)

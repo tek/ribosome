@@ -12,6 +12,12 @@ cradle:
     - path: "./packages/ribosome/test"
       component: "ribosome:test:ribosome-unit"
 
+    - path: "./packages/menu/lib"
+      component: "lib:ribosome-menu"
+
+    - path: "./packages/menu/test"
+      component: "ribosome-menu:test:ribosome-menu-unit"
+
     - path: "./packages/integration/lib"
       component: "lib:integration"
 

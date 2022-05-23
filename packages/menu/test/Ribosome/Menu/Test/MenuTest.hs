@@ -1,4 +1,4 @@
-module Ribosome.Test.MenuTest where
+module Ribosome.Menu.Test.MenuTest where
 
 import Control.Concurrent.Lifted (threadDelay)
 import Control.Lens (use, view, (^.))

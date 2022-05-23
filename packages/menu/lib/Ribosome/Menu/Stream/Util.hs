@@ -1,4 +1,4 @@
-module Ribosome.Stream.Util where
+module Ribosome.Menu.Stream.Util where
 
 import Control.Concurrent.STM (atomically)
 import Control.Concurrent.STM.TMChan (TMChan, readTMChan)

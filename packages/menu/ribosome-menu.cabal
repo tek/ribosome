@@ -4,10 +4,10 @@ cabal-version: 2.2
 --
 -- see: https://github.com/sol/hpack
 
-name:           ribosome
+name:           ribosome-menu
 version:        0.1.0.0
-synopsis:       Neovim plugin framework for Polysemy
-description:    See https://hackage.haskell.org/package/ribosome/docs/Ribosome.html
+synopsis:       Menu widget for ribosome
+description:    See https://hackage.haskell.org/package/ribosome-menu/docs/Ribosome-Menu.html
 category:       Neovim
 author:         Torsten Schmits
 maintainer:     hackage@tryp.io
@@ -18,59 +18,56 @@ build-type:     Simple
 
 library
   exposed-modules:
-      Ribosome.Api.Autocmd
-      Ribosome.Api.Buffer
-      Ribosome.Api.Echo
-      Ribosome.Api.Function
-      Ribosome.Api.Input
-      Ribosome.Api.Mode
-      Ribosome.Api.Normal
-      Ribosome.Api.Option
-      Ribosome.Api.Path
-      Ribosome.Api.Process
-      Ribosome.Api.Register
-      Ribosome.Api.Sleep
-      Ribosome.Api.Syntax
-      Ribosome.Api.Tabpage
-      Ribosome.Api.Undo
-      Ribosome.Api.Variable
-      Ribosome.Api.Window
-      Ribosome.Config.Settings
-      Ribosome.Data.FileBuffer
-      Ribosome.Data.FloatOptions
-      Ribosome.Data.Locks
-      Ribosome.Data.Mapping
-      Ribosome.Data.PersistError
-      Ribosome.Data.PersistPathError
-      Ribosome.Data.PluginName
-      Ribosome.Data.Register
-      Ribosome.Data.RegisterType
-      Ribosome.Data.Scratch
-      Ribosome.Data.ScratchOptions
-      Ribosome.Data.Setting
-      Ribosome.Data.SettingError
-      Ribosome.Data.Syntax
-      Ribosome.Data.WatchedVariable
-      Ribosome.Data.WatchedVariableHandler
-      Ribosome.Data.WindowConfig
-      Ribosome.Data.WindowView
-      Ribosome.Effect.Persist
-      Ribosome.Effect.PersistPath
-      Ribosome.Effect.Settings
-      Ribosome.Embed
-      Ribosome.Final
-      Ribosome.Interpreter.Persist
-      Ribosome.Interpreter.PersistPath
-      Ribosome.Interpreter.Settings
-      Ribosome.Interpreter.UserError
-      Ribosome.Locks
-      Ribosome.Mapping
-      Ribosome.Path
-      Ribosome.Plugin.Builtin
-      Ribosome.PluginName
-      Ribosome.Scratch
-      Ribosome.Text
-      Ribosome.VariableWatcher
+      Ribosome.Menu.Action
+      Ribosome.Menu.Combinators
+      Ribosome.Menu.Consumer
+      Ribosome.Menu.Data.CursorIndex
+      Ribosome.Menu.Data.CursorLine
+      Ribosome.Menu.Data.Entry
+      Ribosome.Menu.Data.Menu
+      Ribosome.Menu.Data.MenuAction
+      Ribosome.Menu.Data.MenuConfig
+      Ribosome.Menu.Data.MenuConsumer
+      Ribosome.Menu.Data.MenuData
+      Ribosome.Menu.Data.MenuEvent
+      Ribosome.Menu.Data.MenuItem
+      Ribosome.Menu.Data.MenuItemFilter
+      Ribosome.Menu.Data.MenuRenderer
+      Ribosome.Menu.Data.MenuRenderEvent
+      Ribosome.Menu.Data.MenuResult
+      Ribosome.Menu.Data.MenuState
+      Ribosome.Menu.Data.MenuStateSem
+      Ribosome.Menu.Data.MenuView
+      Ribosome.Menu.Data.NvimMenuState
+      Ribosome.Menu.Data.QuitReason
+      Ribosome.Menu.Filters
+      Ribosome.Menu.ItemLens
+      Ribosome.Menu.Items
+      Ribosome.Menu.Items.Read
+      Ribosome.Menu.Main
+      Ribosome.Menu.Nvim
+      Ribosome.Menu.Prompt
+      Ribosome.Menu.Prompt.Data.Codes
+      Ribosome.Menu.Prompt.Data.CursorUpdate
+      Ribosome.Menu.Prompt.Data.InputEvent
+      Ribosome.Menu.Prompt.Data.Prompt
+      Ribosome.Menu.Prompt.Data.PromptConfig
+      Ribosome.Menu.Prompt.Data.PromptConsumed
+      Ribosome.Menu.Prompt.Data.PromptControlEvent
+      Ribosome.Menu.Prompt.Data.PromptEvent
+      Ribosome.Menu.Prompt.Data.PromptInputEvent
+      Ribosome.Menu.Prompt.Data.PromptRenderer
+      Ribosome.Menu.Prompt.Data.PromptState
+      Ribosome.Menu.Prompt.Data.PromptUpdate
+      Ribosome.Menu.Prompt.Data.TextUpdate
+      Ribosome.Menu.Prompt.Nvim
+      Ribosome.Menu.Prompt.Run
+      Ribosome.Menu.Prompt.Transition
+      Ribosome.Menu.Run
+      Ribosome.Menu.Stream.Accumulate
+      Ribosome.Menu.Stream.ChunkAfter
+      Ribosome.Menu.Stream.Util
+      Ribosome.Menu.UpdateState
   hs-source-dirs:
       lib
   default-extensions:
@@ -136,33 +133,32 @@ library
       StandaloneKindSignatures
   ghc-options: -Wall -Wredundant-constraints -Wincomplete-uni-patterns -Wmissing-deriving-strategies -Widentities -Wunused-packages -fplugin=Polysemy.Plugin
   build-depends:
-      aeson
-    , base >=4.12 && <5
+      base >=4.12 && <5
+    , bytestring-trie
+    , exceptions
     , exon
+    , fuzzyfind
     , incipit
     , lens
-    , messagepack
-    , path
-    , path-io
+    , lifted-base
+    , monad-control
+    , mtl
     , polysemy
     , polysemy-plugin
+    , ribosome
     , ribosome-host
+    , stm-chans
+    , streamly
+    , transformers
   mixins:
       base hiding (Prelude)
   default-language: Haskell2010
 
-test-suite ribosome-unit
+test-suite ribosome-menu-unit
   type: exitcode-stdio-1.0
   main-is: Main.hs
   other-modules:
-      Ribosome.Test.BufferTest
-      Ribosome.Test.Error
-      Ribosome.Test.MappingTest
-      Ribosome.Test.PersistTest
-      Ribosome.Test.Run
-      Ribosome.Test.ScratchTest
-      Ribosome.Test.Wait
-      Ribosome.Test.WatcherTest
+      Ribosome.Menu.Test.MenuTest
   hs-source-dirs:
       test
   default-extensions:
@@ -228,20 +224,20 @@ test-suite ribosome-unit
       StandaloneKindSignatures
   ghc-options: -Wall -Wredundant-constraints -Wincomplete-uni-patterns -Wmissing-deriving-strategies -Widentities -Wunused-packages -fplugin=Polysemy.Plugin -threaded -rtsopts -with-rtsopts=-N
   build-depends:
-      aeson
-    , base >=4.12 && <5
-    , hedgehog
+      base >=4.12 && <5
     , incipit
-    , messagepack
-    , path
+    , lens
+    , lifted-base
     , polysemy
     , polysemy-conc
     , polysemy-plugin
     , polysemy-test
     , ribosome
     , ribosome-host
+    , ribosome-menu
+    , streamly
     , tasty
-    , time
+    , transformers
   mixins:
       base hiding (Prelude)
   default-language: Haskell2010

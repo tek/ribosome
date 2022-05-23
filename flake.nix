@@ -40,8 +40,9 @@
       integration = ./packages/integration;
       ribosome = ./packages/ribosome;
       ribosome-host = ./packages/host;
+      ribosome-menu = ./packages/menu;
     };
-    main = "ribosome";
+    main = "ribosome-menu";
     inherit overrides;
     depsFull = [incipit];
     hpack.packages = import ./ops/hpack.nix { inherit config lib; };

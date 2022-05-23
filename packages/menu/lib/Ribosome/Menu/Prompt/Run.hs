@@ -40,7 +40,7 @@ import qualified Ribosome.Menu.Prompt.Data.PromptUpdate as PromptUpdate
 import Ribosome.Menu.Prompt.Data.PromptUpdate (PromptUpdate)
 import Ribosome.Menu.Prompt.Data.TextUpdate (TextUpdate)
 import qualified Ribosome.Menu.Prompt.Data.TextUpdate as TextUpdate (TextUpdate (..))
-import Ribosome.Stream.Util (chanStream, takeUntilNothing)
+import Ribosome.Menu.Stream.Util (chanStream, takeUntilNothing)
 
 updateCursor :: Int -> Text -> CursorUpdate -> Int
 updateCursor current text =

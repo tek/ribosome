@@ -35,7 +35,7 @@ import Ribosome.Menu.Prompt.Data.Prompt (
   )
 import qualified Ribosome.Menu.Prompt.Data.PromptEvent as PromptEvent
 import Ribosome.Menu.Prompt.Data.PromptEvent (PromptEvent)
-import Ribosome.Stream.Accumulate (mapMAccMaybe)
+import Ribosome.Menu.Stream.Accumulate (mapMAccMaybe)
 
 -- TODO parallelize
 refineFiltered ::

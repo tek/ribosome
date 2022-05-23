@@ -113,38 +113,61 @@ in {
     description = "See https://hackage.haskell.org/package/ribosome/docs/Ribosome.html";
     library.dependencies = [
       "aeson"
-      "bytestring-trie"
-      "exceptions"
       "exon"
-      "fuzzyfind"
       "lens"
-      "lifted-base"
       "messagepack"
-      "monad-control"
-      "mtl"
       "path"
       "path-io"
       "ribosome-host"
-      "streamly"
-      "stm-chans"
-      "transformers"
     ];
     tests = {
       ribosome-unit = exe "ribosome" "test" {
         dependencies = [
           "aeson"
           "hedgehog"
-          "lens"
-          "lifted-base"
           "messagepack"
           "path"
           "ribosome"
           "ribosome-host"
           "polysemy-conc"
           "polysemy-test"
-          "streamly"
           "tasty"
           "time"
+        ];
+      };
+    };
+  };
+
+  ribosome-menu = merge (project "ribosome-menu") {
+    synopsis = "Menu widget for ribosome";
+    description = "See https://hackage.haskell.org/package/ribosome-menu/docs/Ribosome-Menu.html";
+    library.dependencies = [
+      "bytestring-trie"
+      "exceptions"
+      "exon"
+      "fuzzyfind"
+      "lens"
+      "lifted-base"
+      "monad-control"
+      "mtl"
+      "ribosome"
+      "ribosome-host"
+      "stm-chans"
+      "streamly"
+      "transformers"
+    ];
+    tests = {
+      ribosome-menu-unit = exe "ribosome-menu" "test" {
+        dependencies = [
+          "lens"
+          "lifted-base"
+          "ribosome"
+          "ribosome-host"
+          "ribosome-menu"
+          "polysemy-conc"
+          "polysemy-test"
+          "streamly"
+          "tasty"
           "transformers"
         ];
       };
