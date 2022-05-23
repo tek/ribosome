@@ -62,12 +62,12 @@ appendBench = do
         promptStream =
           promptEvent lowerMaybe menuState fuzzyItemFilter events
         itemStream fs =
-          Stream.fromSerial (updateItems lowerMaybe menuState fuzzyItemFilter (menuItem <$> Stream.fromList (take 10 fs)))
+          Stream.fromSerial (updateItems lowerMaybe menuState fuzzyItemFilter (menuItem <$> Stream.fromList fs))
         menuItem =
           simpleMenuItem ()
       res <- Stream.toList (Stream.async promptStream (itemStream files))
       len <- length . view sortedEntries <$> readMenu menuState
-      when (len /= 1 && False) (Base.throw (userError [exon|length is #{show len}|]))
+      when (len /= 1401) (Base.throw (userError [exon|length is #{show len}|]))
       pur res
 
 bench_promptAppend :: IO [MenuEvent]

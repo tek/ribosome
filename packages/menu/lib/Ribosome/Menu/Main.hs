@@ -110,7 +110,6 @@ renderAction menu (runRenderer menu -> run) = \case
   _ ->
     unit
 
--- TODO Log
 menuStream ::
   ∀ i r a .
   Members [Resource, Log, Embed IO, Final IO] r =>
@@ -126,7 +125,7 @@ menuStream menu (MenuConfig items itemFilter (MenuConsumer consumer) renderer _)
     lowerMaybe =
       fmap ex . lower
     handleAction action = do
-      -- Log.debug [exon|menu consumer: #{show action}|]
+      void (lower (Log.debug [exon|menu consumer: #{show action}|]))
       renderAction menu renderer action
     prompt =
       promptEvent lowerMaybe menu itemFilter promptEvents
