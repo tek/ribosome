@@ -18,6 +18,9 @@ cradle:
     - path: "./packages/menu/test"
       component: "ribosome-menu:test:ribosome-menu-unit"
 
+    - path: "./packages/menu/benchmark"
+      component: "ribosome-menu:bench:ribosome-menu-bench"
+
     - path: "./packages/integration/lib"
       component: "lib:integration"
 

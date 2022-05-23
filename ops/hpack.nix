@@ -156,21 +156,36 @@ in {
       "streamly"
       "transformers"
     ];
-    tests = {
-      ribosome-menu-unit = exe "ribosome-menu" "test" {
-        dependencies = [
-          "lens"
-          "lifted-base"
-          "ribosome"
-          "ribosome-host"
-          "ribosome-menu"
-          "polysemy-conc"
-          "polysemy-test"
-          "streamly"
-          "tasty"
-          "transformers"
-        ];
-      };
+    tests.ribosome-menu-unit = exe "ribosome-menu" "test" {
+      dependencies = [
+        "lens"
+        "lifted-base"
+        "ribosome"
+        "ribosome-host"
+        "ribosome-menu"
+        "polysemy-conc"
+        "polysemy-test"
+        "streamly"
+        "tasty"
+        "transformers"
+      ];
+    };
+    benchmarks.ribosome-menu-bench = exe "ribosome-menu" "benchmark" {
+      dependencies = [
+        "criterion"
+        "exon"
+        "lens"
+        "lifted-base"
+        "ribosome"
+        "ribosome-host"
+        "ribosome-menu"
+        "path"
+        "polysemy-conc"
+        "polysemy-test"
+        "streamly"
+        "tasty"
+        "transformers"
+      ];
     };
   };
 
