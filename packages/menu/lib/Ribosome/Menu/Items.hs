@@ -17,7 +17,7 @@ import Ribosome.Menu.Data.MenuConsumer (MenuWidgetSem)
 import Ribosome.Menu.Data.MenuData (cursor, entries, history, items)
 import qualified Ribosome.Menu.Data.MenuItem as MenuItem
 import Ribosome.Menu.Data.MenuItem (MenuItem)
-import Ribosome.Menu.Data.MenuStateSem (CursorLock, ItemsLock, MenuSem, menuWriteSem, semState, unSemS)
+import Ribosome.Menu.Data.MenuState (CursorLock, ItemsLock, MenuSem, menuWrite, semState, unSemS)
 import Ribosome.Menu.ItemLens (focus, selected, selected')
 
 -- |Run an action with the focused entry if the menu is non-empty.
@@ -41,7 +41,7 @@ withFocus ::
   (i -> MenuSem r i (Sem r a)) ->
   MenuWidgetSem r i a
 withFocus f =
-  Just . maybe MenuAction.Continue MenuAction.success <$> menuWriteSem (withFocus' f)
+  Just . maybe MenuAction.Continue MenuAction.success <$> menuWrite (withFocus' f)
 
 withFocusM ::
   Members [Sync ItemsLock, Sync CursorLock, Resource, Embed IO] r =>
@@ -67,14 +67,14 @@ withSelection' f =
 -- |Run an action with the selection or the focused entry and quit the menu with the returned value.
 -- If the menu was empty, do nothing (i.e. skip the event).
 withSelection ::
-  Members [Resource, Embed IO] r =>
+  Members [Sync ItemsLock, Sync CursorLock, Resource, Embed IO] r =>
   (NonEmpty i -> MenuSem r i (Sem r a)) ->
   MenuWidgetSem r i a
 withSelection f =
-  Just . maybe MenuAction.Continue MenuAction.success <$> menuWriteSem (withSelection' f)
+  Just . maybe MenuAction.Continue MenuAction.success <$> menuWrite (withSelection' f)
 
 withSelectionM ::
-  Members [Resource, Embed IO] r =>
+  Members [Sync ItemsLock, Sync CursorLock, Resource, Embed IO] r =>
   (NonEmpty i -> Sem r a) ->
   MenuWidgetSem r i a
 withSelectionM f =
@@ -83,7 +83,7 @@ withSelectionM f =
 -- |Run an action with each entry in the selection or the focused entry and quit the menu with '()'.
 -- If the menu was empty, do nothing (i.e. skip the event).
 traverseSelection_ ::
-  Members [Resource, Embed IO] r =>
+  Members [Sync ItemsLock, Sync CursorLock, Resource, Embed IO] r =>
   (i -> MenuSem r i ()) ->
   MenuWidgetSem r i ()
 traverseSelection_ f =

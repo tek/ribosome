@@ -143,6 +143,7 @@ in {
     description = "See https://hackage.haskell.org/package/ribosome-menu/docs/Ribosome-Menu.html";
     library.dependencies = [
       "bytestring-trie"
+      "composition"
       "exceptions"
       "exon"
       "fuzzyfind"
@@ -175,16 +176,12 @@ in {
         "criterion"
         "exon"
         "lens"
-        "lifted-base"
         "ribosome"
-        "ribosome-host"
         "ribosome-menu"
         "path"
         "polysemy-conc"
         "polysemy-test"
         "streamly"
-        "tasty"
-        "transformers"
       ];
     };
   };

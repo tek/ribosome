@@ -36,7 +36,6 @@ library
       Ribosome.Menu.Data.MenuRenderEvent
       Ribosome.Menu.Data.MenuResult
       Ribosome.Menu.Data.MenuState
-      Ribosome.Menu.Data.MenuStateSem
       Ribosome.Menu.Data.MenuView
       Ribosome.Menu.Data.NvimMenuState
       Ribosome.Menu.Data.QuitReason
@@ -135,6 +134,7 @@ library
   build-depends:
       base >=4.12 && <5
     , bytestring-trie
+    , composition
     , exceptions
     , exon
     , fuzzyfind
@@ -315,18 +315,14 @@ benchmark ribosome-menu-bench
     , exon
     , incipit
     , lens
-    , lifted-base
     , path
     , polysemy
     , polysemy-conc
     , polysemy-plugin
     , polysemy-test
     , ribosome
-    , ribosome-host
     , ribosome-menu
     , streamly
-    , tasty
-    , transformers
   mixins:
       base hiding (Prelude)
   default-language: Haskell2010

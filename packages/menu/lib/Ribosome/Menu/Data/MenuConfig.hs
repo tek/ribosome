@@ -7,7 +7,7 @@ import Ribosome.Menu.Data.MenuConsumer (MenuConsumer, hoistMenuConsumer)
 import Ribosome.Menu.Data.MenuItem (MenuItem)
 import Ribosome.Menu.Data.MenuItemFilter (MenuItemFilter)
 import Ribosome.Menu.Data.MenuRenderer (MenuRenderer)
-import Ribosome.Menu.Data.MenuStateSem (MenuStateSem)
+import Ribosome.Menu.Data.MenuState (MenuStateSem)
 import Ribosome.Menu.Prompt.Data.PromptConfig (PromptConfig)
 
 data MenuConfig r m i a =

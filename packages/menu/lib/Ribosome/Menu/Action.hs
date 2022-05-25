@@ -9,7 +9,7 @@ import qualified Ribosome.Menu.Data.MenuAction as MenuAction
 import Ribosome.Menu.Data.MenuAction (MenuAction)
 import Ribosome.Menu.Data.MenuConsumer (MenuWidgetSem)
 import Ribosome.Menu.Data.MenuData (cursor, entries)
-import Ribosome.Menu.Data.MenuStateSem (MenuSem, SemS (SemS), menuRead, menuWriteSem, semState, unSemS)
+import Ribosome.Menu.Data.MenuState (MenuSem, SemS (SemS), menuRead, menuWrite, semState, unSemS)
 import Ribosome.Menu.Prompt.Data.Prompt (Prompt)
 
 act ::
@@ -63,7 +63,7 @@ menuModify ::
   MenuSem r i () ->
   MenuWidgetSem r i a
 menuModify action = do
-  menuWriteSem action
+  menuWrite action
   menuRender
 
 menuNavigate ::

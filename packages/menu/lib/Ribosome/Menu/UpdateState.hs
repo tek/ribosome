@@ -17,12 +17,13 @@ import qualified Ribosome.Menu.Data.MenuEvent as MenuEvent
 import Ribosome.Menu.Data.MenuEvent (MenuEvent)
 import Ribosome.Menu.Data.MenuItem (MenuItem)
 import Ribosome.Menu.Data.MenuItemFilter (MenuItemFilter (MenuItemFilter))
-import Ribosome.Menu.Data.MenuStateSem (
+import Ribosome.Menu.Data.MenuState (
   CursorLock,
   ItemsLock,
   MenuItemsSem,
   MenuItemsSemS,
   MenuState,
+  SemS (SemS),
   menuItemsStateSem,
   semState,
   setPrompt,
@@ -39,23 +40,27 @@ import Ribosome.Menu.Stream.Accumulate (mapMAccMaybe)
 
 -- TODO parallelize
 refineFiltered ::
+  Member (Embed IO) r =>
   MenuQuery ->
   MenuItemFilter i ->
   Entries i ->
   MenuItemsSemS r i ()
 refineFiltered query (MenuItemFilter _ _ itemFilter) ents =
-  push query (itemFilter query ents)
+  push query =<< SemS (embed (itemFilter query ents))
 
 resetFiltered ::
+  Member (Embed IO) r =>
   MenuQuery ->
   MenuItemFilter i ->
   MenuItemsSemS r i ()
 resetFiltered query (MenuItemFilter _ itemFilter _) = do
   its <- use items
-  entries .= itemFilter query its
+  new <- SemS (embed (itemFilter query its))
+  entries .= new
   currentQuery .= query
 
 popFiltered ::
+  Member (Embed IO) r =>
   MenuQuery ->
   MenuItemFilter i ->
   MenuItemsSemS r i ()
@@ -70,6 +75,7 @@ popFiltered query@(MenuQuery (encodeUtf8 -> queryBs)) itemFilter =
         refineFiltered query itemFilter f
 
 appendFilter ::
+  Member (Embed IO) r =>
   MenuQuery ->
   MenuItemFilter i ->
   MenuItemsSemS r i ()
@@ -77,6 +83,7 @@ appendFilter query filt =
   ifM (uses entries null) (resetFiltered query filt) (refineFiltered query filt =<< use entries)
 
 promptChange ::
+  Member (Embed IO) r =>
   PromptChange ->
   MenuQuery ->
   MenuItemFilter i ->
@@ -89,7 +96,6 @@ promptChange = \case
   PromptRandom ->
     resetFiltered
 
--- TODO try and see what happens if all 50k items are inserted at once
 insertItem ::
   MenuItemFilter i ->
   MenuItem i ->
@@ -106,7 +112,27 @@ insertItem (MenuItemFilter match _ _) item _ _ =
       entries %= insertFiltered score fitem
       history .= mempty
 
+insertItems ::
+  Member (Embed IO) r =>
+  MenuItemFilter i ->
+  [MenuItem i] ->
+  Prompt ->
+  MenuCursor ->
+  MenuItemsSem r i ()
+insertItems (MenuItemFilter _ filt _) new _ _ =
+  semState do
+    index <- use itemCount
+    itemCount += length new
+    let newI = IntMap.fromList (zip [index..] new)
+    items %= IntMap.union newI
+    query <- use currentQuery
+    ents <- SemS (embed (filt query newI))
+    entries %= IntMap.unionWith (<>) ents
+    unless (null ents) do
+      history .= mempty
+
 promptItemUpdate ::
+  Member (Embed IO) r =>
   MenuItemFilter i ->
   PromptChange ->
   Prompt ->
@@ -172,7 +198,6 @@ promptEvent lower menu itemFilter str =
 
 updateItems ::
   IsStream t =>
-  Functor (t IO) =>
   Members [Sync ItemsLock, Sync CursorLock, Log, Resource, Embed IO] r =>
   (∀ x . Sem r x -> IO (Maybe x)) ->
   MenuState i ->
@@ -180,13 +205,13 @@ updateItems ::
   t IO (MenuItem i) ->
   t IO MenuEvent
 updateItems lower menu itemFilter =
-  Stream.catMaybes .
-  Stream.foldIterateM chunker (pure Nothing) .
-  Stream.mapM \ item ->
-    MenuEvent.NewItem <$ lower (subsume (subsume (menuItemsStateSem menu (insertItem itemFilter item))))
+  Stream.mapM insert .
+  Stream.foldIterateM chunker (pure [])
   where
+    insert new =
+      MenuEvent.NewItem <$ lower (menuItemsStateSem menu (insertItems itemFilter new))
     chunker = pure . \case
-      Nothing ->
-        Fold.take 100 Fold.last
-      Just _ ->
-        Fold.take 10000 Fold.last
+      [] ->
+        Fold.take 100 Fold.toList
+      _ ->
+        Fold.take 10000 Fold.toList

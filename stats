@@ -1,0 +1,35 @@
+ghci:
+
+old:
+
+time                 5.522 s    (4.724 s .. 6.379 s)
+                     0.997 R²   (0.989 R² .. 1.000 R²)
+mean                 5.894 s    (5.619 s .. 6.119 s)
+std dev              292.7 ms   (126.5 ms .. 393.4 ms)
+variance introduced by outliers: 19% (moderately inflated)
+
+new:
+
+time                 6.211 s    (5.258 s .. NaN s)
+                     0.993 R²   (0.982 R² .. 1.000 R²)
+mean                 6.089 s    (5.864 s .. 6.213 s)
+std dev              216.0 ms   (70.04 ms .. 284.7 ms)
+variance introduced by outliers: 19% (moderately inflated)
+
+ghc:
+
+old:
+
+time                 5.533 s    (5.384 s .. 5.677 s)
+                     1.000 R²   (1.000 R² .. 1.000 R²)
+mean                 5.456 s    (5.345 s .. 5.494 s)
+std dev              75.98 ms   (7.047 ms .. 95.78 ms)
+variance introduced by outliers: 19% (moderately inflated)
+
+new:
+
+time                 5.839 s    (5.739 s .. 5.988 s)
+                     1.000 R²   (1.000 R² .. 1.000 R²)
+mean                 5.798 s    (5.772 s .. 5.825 s)
+std dev              33.12 ms   (14.62 ms .. 43.68 ms)
+variance introduced by outliers: 19% (moderately inflated)

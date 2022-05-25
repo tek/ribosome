@@ -8,7 +8,7 @@ import qualified Data.Trie as Trie
 
 import Ribosome.Menu.Data.Entry (Entries, Entry)
 import Ribosome.Menu.Data.MenuData (HasMenuItems, MenuQuery (MenuQuery), currentQuery, entries, history)
-import Ribosome.Menu.Data.MenuStateSem (MenuItemsSemS)
+import Ribosome.Menu.Data.MenuState (MenuItemsSemS)
 
 push ::
   MenuQuery ->

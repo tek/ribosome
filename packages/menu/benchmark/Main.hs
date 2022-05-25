@@ -2,26 +2,28 @@ module Main where
 
 import qualified Control.Exception as Base
 import Control.Lens (view)
-import Criterion.Main (bench, bgroup, defaultConfig, defaultMainWith, whnfIO)
+import Criterion.Main (bench, bgroup, defaultConfig, defaultMainWith, env, whnfIO)
 import Exon (exon)
 import Path (relfile)
 import Polysemy.Conc (interpretRace, interpretSyncAs)
 import Polysemy.Log (Severity (Warn), interpretLogStderrLevelConc)
 import qualified Polysemy.Test as Test
-import Polysemy.Test (Test, interpretTestInSubdir)
+import Polysemy.Test (Test, TestError, interpretTestInSubdir)
 import Ribosome.Final (inFinal)
 import Ribosome.Menu.Combinators (sortedEntries)
+import Ribosome.Menu.Data.Entry (Entries, Entry)
 import Ribosome.Menu.Data.MenuEvent (MenuEvent)
-import Ribosome.Menu.Data.MenuItem (simpleMenuItem)
-import Ribosome.Menu.Data.MenuStateSem (CursorLock (CursorLock), ItemsLock (ItemsLock), newMenuState, readMenu)
-import Ribosome.Menu.Filters (fuzzyItemFilter)
+import Ribosome.Menu.Data.MenuItem (MenuItem, simpleMenuItem)
+import Ribosome.Menu.Data.MenuState (CursorLock (CursorLock), ItemsLock (ItemsLock), newMenuState, readMenu)
+import Ribosome.Menu.Filters (filterFuzzy, fuzzyItemFilterPar, matchFuzzy)
 import Ribosome.Menu.Prompt.Data.Prompt (Prompt (Prompt))
 import qualified Ribosome.Menu.Prompt.Data.PromptEvent as PromptEvent
 import Ribosome.Menu.Prompt.Data.PromptEvent (PromptEvent)
 import qualified Ribosome.Menu.Prompt.Data.PromptState as PromptState
 import Ribosome.Menu.UpdateState (promptEvent, updateItems)
+import qualified Streamly.Data.Fold as Fold
 import qualified Streamly.Prelude as Stream
-import Streamly.Prelude (IsStream)
+import Streamly.Prelude (IsStream, parallel)
 import System.IO.Error (userError)
 
 events ::
@@ -46,49 +48,98 @@ events =
     p i =
       Prompt i PromptState.Insert
 
+fatalEither ::
+  Show e =>
+  Either e a ->
+  IO a
+fatalEither =
+  either (Base.throw . userError . show) pure
+
+runTest :: Sem [Test, Error TestError, Resource, Embed IO, Final IO] a -> IO a
+runTest =
+  fatalEither <=<
+  runFinal .
+  embedToFinal .
+  resourceToIOFinal .
+  errorToIOFinal .
+  interpretTestInSubdir "benchmark"
+
+fileList :: IO [Text]
+fileList =
+  runTest do
+    lines <$> Test.fixture [relfile|menu/nixpkgs-files|]
+
 appendBench ::
   ∀ r .
-  Members [Test, Log, Resource, Race, Embed IO, Final IO] r =>
+  Members [Log, Resource, Race, Embed IO, Final IO] r =>
+  [Text] ->
   Sem r [MenuEvent]
-appendBench = do
-  files <- lines <$> Test.fixture [relfile|menu/nixpkgs-files|]
+appendBench files = do
   menuState <- newMenuState
   interpretSyncAs CursorLock $ interpretSyncAs ItemsLock do
     inFinal \ _ lower pur ex -> do
       let
+        filt =
+          fuzzyItemFilterPar
         lowerMaybe :: ∀ x . Sem (Sync ItemsLock : Sync CursorLock : r) x -> IO (Maybe x)
         lowerMaybe =
           fmap ex . lower
         promptStream =
-          promptEvent lowerMaybe menuState fuzzyItemFilter events
-        itemStream fs =
-          Stream.fromSerial (updateItems lowerMaybe menuState fuzzyItemFilter (menuItem <$> Stream.fromList fs))
+          promptEvent lowerMaybe menuState filt events
+        itemStream =
+          Stream.fromSerial (updateItems lowerMaybe menuState filt (menuItem <$> Stream.fromList files))
         menuItem =
           simpleMenuItem ()
-      res <- Stream.toList (Stream.async promptStream (itemStream files))
+      res <- Stream.toList (Stream.async promptStream itemStream)
       len <- length . view sortedEntries <$> readMenu menuState
       when (len /= 1401) (Base.throw (userError [exon|length is #{show len}|]))
       pur res
 
-bench_promptAppend :: IO [MenuEvent]
-bench_promptAppend = do
-  res <- runFinal $
-    errorToIOFinal $
-    embedToFinal $
-    resourceToIOFinal $
-    asyncToIOFinal $
-    interpretRace $
-    interpretLogStderrLevelConc (Just Warn) $
-    interpretTestInSubdir "benchmark" do
-    appendBench
-  either (Base.throw . userError . show) pure res
+filtBenchSer ::
+  [Text] ->
+  IO (Entries ())
+filtBenchSer files = do
+  pure (filterFuzzy "pkgspe" (zip [1..] menuItems))
+  where
+    menuItems =
+      simpleMenuItem () <$> files
+
+filtP ::
+  String ->
+  [(Int, MenuItem a)] ->
+  IO [(Int, Entry a)]
+filtP (toText -> query) is =
+  Stream.toList $
+    -- Stream.maxThreads 12 $
+    Stream.fromParallel $
+    Stream.concatMapWith parallel (Stream.fromList . mapMaybe (uncurry (matchFuzzy False query))) $
+    Stream.chunksOf 100 Fold.toList $
+    Stream.fromList is
+
+filtBenchPar ::
+  [Text] ->
+  IO [(Int, Entry ())]
+filtBenchPar files =
+  filtP "pkgspe" (zip [1..] (simpleMenuItem () <$> files))
+
+runBench :: Sem [Log, Race, Async, Resource, Embed IO, Final IO] a -> IO a
+runBench =
+  runFinal .
+  embedToFinal .
+  resourceToIOFinal .
+  asyncToIOFinal .
+  interpretRace .
+  interpretLogStderrLevelConc (Just Warn)
 
 main :: IO ()
 main =
   defaultMainWith conf [
-    bgroup "menu" [
-      bench "prompt updates with 50k items" (whnfIO bench_promptAppend)
-    ]
+    env fileList \ fs ->
+      bgroup "menu" [
+        -- bench "filter initial items serially" (whnfIO (filtBenchSer fs)),
+        -- bench "filter initial items parallelly" (whnfIO (filtBenchPar fs))
+        bench "prompt updates with 29k items" (whnfIO (runBench (appendBench fs)))
+      ]
   ]
   where
     conf =

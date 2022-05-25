@@ -2,7 +2,7 @@ module Ribosome.Menu.Data.MenuConsumer where
 
 import Ribosome.Menu.Data.MenuAction (MenuAction, hoistMenuAction)
 import Ribosome.Menu.Data.MenuEvent (MenuEvent)
-import Ribosome.Menu.Data.MenuStateSem (MenuStateSem)
+import Ribosome.Menu.Data.MenuState (MenuStateSem)
 
 type MenuWidgetSem r i a =
   MenuStateSem r i (Maybe (MenuAction r a))

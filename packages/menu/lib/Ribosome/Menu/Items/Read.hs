@@ -11,7 +11,7 @@ import qualified Ribosome.Menu.Data.MenuAction as MenuAction
 import Ribosome.Menu.Data.MenuConsumer (MenuWidgetSem)
 import qualified Ribosome.Menu.Data.MenuItem as MenuItem
 import Ribosome.Menu.Data.MenuItem (MenuItem)
-import Ribosome.Menu.Data.MenuStateSem (MenuSem, menuRead, semState)
+import Ribosome.Menu.Data.MenuState (MenuSem, menuRead, semState)
 import Ribosome.Menu.ItemLens (focus, selected, selected')
 
 -- |Run an action with the focused entry if the menu is non-empty.

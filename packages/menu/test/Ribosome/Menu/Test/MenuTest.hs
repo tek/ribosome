@@ -31,7 +31,7 @@ import Ribosome.Menu.Data.MenuItem (Items, MenuItem, simpleMenuItem)
 import qualified Ribosome.Menu.Data.MenuRenderEvent as MenuRenderEvent
 import Ribosome.Menu.Data.MenuRenderEvent (MenuRenderEvent)
 import Ribosome.Menu.Data.MenuRenderer (MenuRenderer (MenuRenderer))
-import Ribosome.Menu.Data.MenuStateSem (menuRead, semState)
+import Ribosome.Menu.Data.MenuState (menuRead, semState)
 import Ribosome.Menu.Filters (fuzzyItemFilter)
 import Ribosome.Menu.ItemLens (focus, selected', selectedOnly, unselected)
 import Ribosome.Menu.Items (deleteSelected, popSelection)

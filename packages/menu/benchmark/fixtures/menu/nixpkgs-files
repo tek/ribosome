@@ -1,4 +1,3 @@
-nixpkgs-files
 pkgs/development/perl-modules/catalyst-plugin-static-simple-etag.patch
 pkgs/development/perl-modules/CatalystXScriptServerStarman-fork-arg.patch
 pkgs/development/perl-modules/perl-opengl-gl-extensions.txt

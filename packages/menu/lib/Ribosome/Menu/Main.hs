@@ -24,7 +24,13 @@ import qualified Ribosome.Menu.Data.MenuRenderEvent as MenuRenderEvent (MenuRend
 import Ribosome.Menu.Data.MenuRenderer (MenuRenderer (MenuRenderer))
 import qualified Ribosome.Menu.Data.MenuResult as MenuResult
 import Ribosome.Menu.Data.MenuResult (MenuResult)
-import Ribosome.Menu.Data.MenuStateSem (CursorLock (CursorLock), ItemsLock (ItemsLock), MenuState, newMenuState, readMenuForRender)
+import Ribosome.Menu.Data.MenuState (
+  CursorLock (CursorLock),
+  ItemsLock (ItemsLock),
+  MenuState,
+  newMenuState,
+  readMenuForRender,
+  )
 import qualified Ribosome.Menu.Data.QuitReason as QuitReason
 import Ribosome.Menu.Prompt.Data.Prompt (Prompt)
 import qualified Ribosome.Menu.Prompt.Data.PromptControlEvent as PromptControlEvent
@@ -130,7 +136,7 @@ menuStream menu (MenuConfig items itemFilter (MenuConsumer consumer) renderer _)
     prompt =
       promptEvent lowerMaybe menu itemFilter promptEvents
     menuItems =
-      Stream.fromSerial (updateItems lowerMaybe menu itemFilter items)
+      updateItems lowerMaybe menu itemFilter (Stream.fromSerial items)
     consume event = do
       menuAction <- lower (runReader menu (consumer event))
       pure (fromMaybe (eventAction event) (join (ex menuAction)))
