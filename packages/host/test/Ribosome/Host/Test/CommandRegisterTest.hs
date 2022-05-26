@@ -12,6 +12,7 @@ import Ribosome.Host.Data.RpcHandler (RpcHandler)
 import Ribosome.Host.Effect.Rpc (Rpc)
 import Ribosome.Host.Embed (embedNvim)
 import Ribosome.Host.Handler (rpcCommand)
+import Ribosome.Host.Interpreter.Handlers (interpretHandlers)
 import Ribosome.Host.Test.Run (rpcError, runTest)
 
 var :: Text
@@ -36,6 +37,6 @@ regHandlers =
 
 test_register :: UnitTest
 test_register =
-  runTest $ interpretAtomic 0 $ embedNvim regHandlers do
+  runTest $ interpretAtomic 0 $ embedNvim (interpretHandlers regHandlers) do
     nvimCommand "Register x"
     assertJust @Text "x" =<< nvimGetVar var

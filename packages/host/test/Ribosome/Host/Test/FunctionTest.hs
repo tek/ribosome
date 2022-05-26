@@ -15,9 +15,10 @@ import Ribosome.Host.Data.RpcError (RpcError)
 import Ribosome.Host.Data.RpcHandler (RpcHandler)
 import qualified Ribosome.Host.Effect.Rpc as Rpc
 import Ribosome.Host.Effect.Rpc (Rpc)
-import Ribosome.Host.Handler (rpcFunction)
-import Ribosome.Host.Test.Run (rpcError, runTest)
 import Ribosome.Host.Embed (embedNvim)
+import Ribosome.Host.Handler (rpcFunction)
+import Ribosome.Host.Interpreter.Handlers (interpretHandlers)
+import Ribosome.Host.Test.Run (rpcError, runTest)
 
 var :: Text
 var =
@@ -32,7 +33,7 @@ hand ::
 hand Bar _ n = do
   atomicGet >>= \case
     13 ->
-      throw "already 13"
+      stop "already 13"
     _ -> do
       rpcError (nvimSetVar var n)
       47 <$ atomicPut 13
@@ -59,7 +60,7 @@ callTest n =
 
 test_function :: UnitTest
 test_function =
-  runTest $ interpretAtomic 0 $ embedNvim handlers $ interpretSync do
+  runTest $ interpretAtomic 0 $ embedNvim (interpretHandlers handlers) $ interpretSync do
     nvimSetVar var (10 :: Int)
     Rpc.async (Data.nvimGetVar var) (void . Sync.putTry)
     assertRight (10 :: Int) =<< evalMaybe =<< Sync.wait (Seconds 5)

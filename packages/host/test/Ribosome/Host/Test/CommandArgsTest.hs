@@ -10,9 +10,10 @@ import Ribosome.Host.Data.HandlerError (HandlerError)
 import Ribosome.Host.Data.RpcError (RpcError)
 import Ribosome.Host.Data.RpcHandler (RpcHandler)
 import Ribosome.Host.Effect.Rpc (Rpc)
-import Ribosome.Host.Handler (rpcCommand)
-import Ribosome.Host.Test.Run (rpcError, runTest)
 import Ribosome.Host.Embed (embedNvim)
+import Ribosome.Host.Handler (rpcCommand)
+import Ribosome.Host.Interpreter.Handlers (interpretHandlers)
+import Ribosome.Host.Test.Run (rpcError, runTest)
 
 var :: Text
 var =
@@ -36,6 +37,6 @@ argsHandlers =
 
 test_args :: UnitTest
 test_args =
-  runTest $ interpretAtomic 0 $ embedNvim argsHandlers do
+  runTest $ interpretAtomic 0 $ embedNvim (interpretHandlers argsHandlers) do
     nvimCommand "Args 1 2 3 4 5"
     assertJust @Text "1 2 3 4 5" =<< nvimGetVar var

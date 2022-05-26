@@ -9,7 +9,7 @@ import qualified Ribosome.Host.Api.Data as Data
 import Ribosome.Host.Class.Msgpack.Encode (toMsgpack)
 import Ribosome.Host.Data.Event (Event (Event))
 import qualified Ribosome.Host.Effect.Rpc as Rpc
-import Ribosome.Host.Embed (embedNvim)
+import Ribosome.Host.Embed (embedNvim_)
 import Ribosome.Host.Test.Run (runTest)
 
 listenEvent ::
@@ -25,7 +25,7 @@ target =
 
 test_errorEvent :: UnitTest
 test_errorEvent =
-  runTest $ interpretSync $ embedNvim [] do
+  runTest $ interpretSync $ embedNvim_ do
     withAsync_ listenEvent do
       Rpc.notify (Data.nvimCommand "write")
       assertJust target =<< Sync.wait (Seconds 5)

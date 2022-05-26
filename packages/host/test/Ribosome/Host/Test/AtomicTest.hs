@@ -46,8 +46,8 @@ test_atomic =
       assert . not =<< Rpc.sync (not <$> nvimGetOption "modifiable")
       void tryConsume
       void tryConsume
-      assertJust (req 4 (Request "nvim_call_atomic" atomicPayload)) =<< tryConsume
-      assertJust (req 5 (Request "nvim_get_option" (msgpackArray ("modifiable" :: Text)))) =<< tryConsume
+      assertJust (req 3 (Request "nvim_call_atomic" atomicPayload)) =<< tryConsume
+      assertJust (req 4 (Request "nvim_get_option" (msgpackArray ("modifiable" :: Text)))) =<< tryConsume
   where
     tryConsume =
       Race.timeoutMaybe (Seconds 5) consume

@@ -19,6 +19,7 @@ import Ribosome.Host.Data.RpcHandler (RpcHandler)
 import Ribosome.Host.Effect.Rpc (Rpc)
 import Ribosome.Host.Embed (embedNvim)
 import Ribosome.Host.Handler (rpcCommand)
+import Ribosome.Host.Interpreter.Handlers (interpretHandlers)
 import Ribosome.Host.Test.Run (rpcError, runTest)
 
 var :: Text
@@ -34,7 +35,7 @@ rangeFile = \case
   Range l (Just h) ->
     \ i -> rpcError (nvimSetVar var (l, h, i))
   Range _ Nothing ->
-    const (throw "no upper range bound given")
+    const (stop "no upper range bound given")
 
 rangeLine ::
   Members [Rpc !! RpcError, Stop HandlerError] r =>
@@ -44,7 +45,7 @@ rangeLine = \case
   Range l (Just h) ->
     rpcError (nvimSetVar var (l, h))
   Range _ Nothing ->
-    throw "no upper range bound given"
+    stop "no upper range bound given"
 
 rangeLineDefault ::
   Members [Rpc !! RpcError, Stop HandlerError] r =>
@@ -54,7 +55,7 @@ rangeLineDefault = \case
   Range l Nothing ->
     rpcError (nvimSetVar var l)
   Range _ (Just _) ->
-    throw "range line count function got upper bound"
+    stop "range line count function got upper bound"
 
 rangeCountImplicit ::
   Members [Rpc !! RpcError, Stop HandlerError] r =>
@@ -62,7 +63,7 @@ rangeCountImplicit ::
   Sem r ()
 rangeCountImplicit = \case
   Range _ (Just _) ->
-    throw "range count function got upper bound"
+    stop "range count function got upper bound"
   Range l Nothing ->
     rpcError (nvimSetVar var l)
 
@@ -72,7 +73,7 @@ rangeCountDefault ::
   Sem r ()
 rangeCountDefault = \case
   Range _ (Just _) ->
-    throw "range count function got upper bound"
+    stop "range count function got upper bound"
   Range l Nothing ->
     rpcError (nvimSetVar var l)
 
@@ -91,7 +92,7 @@ rangeHandlers =
 
 test_range :: UnitTest
 test_range =
-  runTest $ embedNvim rangeHandlers do
+  runTest $ embedNvim (interpretHandlers rangeHandlers) do
     buf <- nvimGetCurrentBuf
     win <- nvimGetCurrentWin
     nvimBufSetLines buf 0 1 True ["1", "2", "3", "4", "5"]
