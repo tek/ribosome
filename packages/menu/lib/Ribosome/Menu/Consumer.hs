@@ -4,11 +4,11 @@ import Data.Map.Strict ((!?))
 import qualified Data.Map.Strict as Map (fromList, union)
 
 import Ribosome.Menu.Action (menuCycle, menuToggle, menuToggleAll)
-import Ribosome.Menu.Data.MenuConsumer (MenuApp (MenuApp), MenuConsumer (MenuConsumer), MenuWidgetSem)
+import Ribosome.Menu.Data.MenuConsumer (MenuApp (MenuApp), MenuConsumer (MenuConsumer), MenuWidget)
 import qualified Ribosome.Menu.Data.MenuEvent as MenuEvent (MenuEvent (..))
 
 type Mappings r i a =
-  Map Text (MenuWidgetSem r i a)
+  Map Text (MenuWidget i r a)
 
 forApp ::
   MenuApp r i a ->

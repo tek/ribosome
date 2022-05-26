@@ -159,6 +159,7 @@ in {
     ];
     tests.ribosome-menu-unit = exe "ribosome-menu" "test" {
       dependencies = [
+        "hedgehog"
         "lens"
         "lifted-base"
         "ribosome"
@@ -168,6 +169,7 @@ in {
         "polysemy-test"
         "streamly"
         "tasty"
+        "time"
         "transformers"
       ];
     };

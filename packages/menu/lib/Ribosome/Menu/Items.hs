@@ -13,7 +13,7 @@ import Ribosome.Menu.Data.CursorIndex (CursorIndex (CursorIndex))
 import qualified Ribosome.Menu.Data.Entry as Entry
 import Ribosome.Menu.Data.Entry (Entries, Entry)
 import qualified Ribosome.Menu.Data.MenuAction as MenuAction
-import Ribosome.Menu.Data.MenuConsumer (MenuWidgetSem)
+import Ribosome.Menu.Data.MenuConsumer (MenuWidget)
 import Ribosome.Menu.Data.MenuData (cursor, entries, history, items)
 import qualified Ribosome.Menu.Data.MenuItem as MenuItem
 import Ribosome.Menu.Data.MenuItem (MenuItem)
@@ -22,15 +22,15 @@ import Ribosome.Menu.ItemLens (focus, selected, selected')
 
 -- |Run an action with the focused entry if the menu is non-empty.
 withFocusItem ::
-  (MenuItem i -> MenuSem r i a) ->
-  MenuSem r i (Maybe a)
+  (MenuItem i -> MenuSem i r a) ->
+  MenuSem i r (Maybe a)
 withFocusItem f =
   traverse f =<< unSemS (use focus)
 
 -- |Run an action with the focused entry if the menu is non-empty, extracting the item payload.
 withFocus' ::
-  (i -> MenuSem r i a) ->
-  MenuSem r i (Maybe a)
+  (i -> MenuSem i r a) ->
+  MenuSem i r (Maybe a)
 withFocus' f =
   withFocusItem (f . MenuItem._meta)
 
@@ -38,29 +38,29 @@ withFocus' f =
 -- If the menu was empty, do nothing (i.e. skip the event).
 withFocus ::
   Members [Sync ItemsLock, Sync CursorLock, Resource, Embed IO] r =>
-  (i -> MenuSem r i (Sem r a)) ->
-  MenuWidgetSem r i a
+  (i -> MenuSem i r (Sem r a)) ->
+  MenuWidget i r a
 withFocus f =
   Just . maybe MenuAction.Continue MenuAction.success <$> menuWrite (withFocus' f)
 
 withFocusM ::
   Members [Sync ItemsLock, Sync CursorLock, Resource, Embed IO] r =>
   (i -> Sem r a) ->
-  MenuWidgetSem r i a
+  MenuWidget i r a
 withFocusM f =
   withFocus (pure . f)
 
 -- |Run an action with the selection or the focused entry if the menu is non-empty.
 withSelectionItems ::
-  (NonEmpty (MenuItem i) -> MenuSem r i a) ->
-  MenuSem r i (Maybe a)
+  (NonEmpty (MenuItem i) -> MenuSem i r a) ->
+  MenuSem i r (Maybe a)
 withSelectionItems f =
   traverse f =<< semState (use selected')
 
 -- |Run an action with the selection or the focused entry if the menu is non-empty, extracting the item payloads.
 withSelection' ::
-  (NonEmpty i -> MenuSem r i a) ->
-  MenuSem r i (Maybe a)
+  (NonEmpty i -> MenuSem i r a) ->
+  MenuSem i r (Maybe a)
 withSelection' f =
   traverse f =<< semState (use selected)
 
@@ -68,15 +68,15 @@ withSelection' f =
 -- If the menu was empty, do nothing (i.e. skip the event).
 withSelection ::
   Members [Sync ItemsLock, Sync CursorLock, Resource, Embed IO] r =>
-  (NonEmpty i -> MenuSem r i (Sem r a)) ->
-  MenuWidgetSem r i a
+  (NonEmpty i -> MenuSem i r (Sem r a)) ->
+  MenuWidget i r a
 withSelection f =
   Just . maybe MenuAction.Continue MenuAction.success <$> menuWrite (withSelection' f)
 
 withSelectionM ::
   Members [Sync ItemsLock, Sync CursorLock, Resource, Embed IO] r =>
   (NonEmpty i -> Sem r a) ->
-  MenuWidgetSem r i a
+  MenuWidget i r a
 withSelectionM f =
   withSelection (pure . f)
 
@@ -84,8 +84,8 @@ withSelectionM f =
 -- If the menu was empty, do nothing (i.e. skip the event).
 traverseSelection_ ::
   Members [Sync ItemsLock, Sync CursorLock, Resource, Embed IO] r =>
-  (i -> MenuSem r i ()) ->
-  MenuWidgetSem r i ()
+  (i -> MenuSem i r ()) ->
+  MenuWidget i r ()
 traverseSelection_ f =
   withSelection ((unit <$) . traverse_ f)
 
@@ -153,7 +153,7 @@ popSelection curs initial =
         (([curs], [i]), IntMap.update (Just . Seq.deleteAt si) score initial)
 
 deleteSelected ::
-  MenuSem r i ()
+  MenuSem i r ()
 deleteSelected =
   semState do
     CursorIndex curs <- use cursor

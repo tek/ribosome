@@ -1,5 +1,6 @@
 module Ribosome.Menu.Test.MenuTest where
 
+import Data.Composition ((.:))
 import Control.Concurrent.Lifted (threadDelay)
 import Control.Lens (use, view, (^.))
 import qualified Control.Monad.Trans.State.Strict as MTL
@@ -21,7 +22,7 @@ import Ribosome.Menu.Data.Entry (Entries, Entry (Entry), simpleIntEntries)
 import qualified Ribosome.Menu.Data.Menu as Menu
 import Ribosome.Menu.Data.Menu (Menu, consMenu)
 import Ribosome.Menu.Data.MenuConfig (MenuConfig (MenuConfig), hoistMenuConfig)
-import Ribosome.Menu.Data.MenuConsumer (MenuApp (MenuApp), MenuConsumer, MenuWidgetSem)
+import Ribosome.Menu.Data.MenuConsumer (MenuApp (MenuApp), MenuConsumer, MenuWidget)
 import qualified Ribosome.Menu.Data.MenuData as MenuItems
 import Ribosome.Menu.Data.MenuData (cursor)
 import qualified Ribosome.Menu.Data.MenuEvent as MenuEvent
@@ -72,7 +73,7 @@ menuItems =
 storePrompt ::
   Members [AtomicState [Prompt], Resource, Embed IO] r =>
   MenuEvent ->
-  MenuWidgetSem r Text a
+  MenuWidget Text r a
 storePrompt = \case
     MenuEvent.PromptEdit ->
       store
@@ -113,8 +114,8 @@ menuTest consumer items chars = do
   embed (readMVar itemsVar)
   where
     conf itemsVar =
-      hoistMenuConfig raise raise3Under $
-      MenuConfig (menuItems items) fuzzyItemFilter consumer (MenuRenderer (render itemsVar)) promptConfig
+      hoistMenuConfig raise (insertAt @5) $
+      MenuConfig (menuItems items) fuzzyItemFilter consumer (MenuRenderer (embed .: render itemsVar)) promptConfig
     promptConfig =
       PromptConfig (PromptInput (const (promptInput chars))) basicTransition noPromptRenderer [StartInsert]
 
@@ -210,7 +211,7 @@ items3 =
 
 exec ::
   Members [AtomicState [Text], Resource, Embed IO] r =>
-  MenuWidgetSem r Text a
+  MenuWidget Text r a
 exec =
   menuRead do
     fs <- semState (use sortedEntries)
@@ -240,7 +241,7 @@ itemsMulti =
 
 execMulti ::
   Members [AtomicState (Maybe (NonEmpty Text)), Resource, Embed IO] r =>
-  MenuWidgetSem r Text a
+  MenuWidget Text r a
 execMulti = do
   menuRead do
     selection <- semState (use selected')
@@ -272,7 +273,7 @@ itemsToggle =
 
 execToggle ::
   Members [AtomicState (Maybe (NonEmpty Text)), Resource, Embed IO] r =>
-  MenuWidgetSem r Text a
+  MenuWidget Text r a
 execToggle = do
   menuRead do
     selection <- semState (use selectedOnly)
@@ -298,7 +299,7 @@ itemsExecuteThunk =
 
 execExecuteThunk ::
   Members [AtomicState [Text], Resource, Embed IO] r =>
-  MenuWidgetSem r Text a
+  MenuWidget Text r a
 execExecuteThunk =
   menuRead do
     sel <- semState (use focus)

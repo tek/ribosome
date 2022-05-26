@@ -22,11 +22,13 @@ import Ribosome.Menu.Data.MenuState (
   ItemsLock,
   MenuItemsSem,
   MenuItemsSemS,
-  MenuState,
+  MenuStateSem,
+  MenuStateStack,
   SemS (SemS),
   menuItemsStateSem,
   semState,
   setPrompt,
+  subsumeMenuStateSem,
   )
 import qualified Ribosome.Menu.Data.QuitReason as QuitReason
 import Ribosome.Menu.Prompt.Data.Prompt (
@@ -148,11 +150,10 @@ diffPrompt (Prompt _ _ (PromptText new)) (MenuQuery old)
 
 queryUpdate ::
   Members [Resource, Embed IO] r =>
-  MenuState i ->
   MenuItemFilter i ->
-  Sem (Sync ItemsLock : Sync CursorLock : r) MenuEvent
-queryUpdate menu itemFilter =
-  menuItemsStateSem menu \ prompt _ ->
+  MenuStateSem i r MenuEvent
+queryUpdate itemFilter =
+  menuItemsStateSem \ prompt _ ->
     semState do
       change <- uses currentQuery (diffPrompt prompt)
       promptItemUpdate itemFilter change prompt
@@ -174,42 +175,41 @@ classifyEvent = \case
     Just (MenuEvent.Quit (QuitReason.Error e))
 
 setPromptAndClassify ::
-  Member (Embed IO) r =>
+  Members [AtomicState Prompt, Embed IO] r =>
   Member Log r =>
-  MenuState i ->
   Prompt ->
   PromptEvent ->
   Sem r (Maybe MenuEvent)
-setPromptAndClassify menu prompt event = do
+setPromptAndClassify prompt event = do
   Log.debug [exon|prompt event: #{show @Text event}|]
-  classifyEvent event <$ setPrompt menu prompt
+  classifyEvent event <$ setPrompt prompt
 
 promptEvent ::
-  Members [Sync ItemsLock, Sync CursorLock, Log, Resource, Embed IO] r =>
+  Members (MenuStateStack i) r =>
+  Members [Log, Resource, Embed IO] r =>
   (∀ x . Sem r x -> IO (Maybe x)) ->
-  MenuState i ->
   MenuItemFilter i ->
   AsyncT IO (Prompt, PromptEvent) ->
   SerialT IO MenuEvent
-promptEvent lower menu itemFilter str =
+promptEvent lower itemFilter str =
   Stream.fromAsync $
-  mapMAccMaybe (fmap join . lower . uncurry (setPromptAndClassify menu)) (fromMaybe MenuEvent.PromptEdit <$> lower (subsume (subsume (queryUpdate menu itemFilter)))) $
+  mapMAccMaybe (fmap join . lower . uncurry setPromptAndClassify) (fromMaybe MenuEvent.PromptEdit <$> lower (subsumeMenuStateSem (queryUpdate itemFilter))) $
   Stream.mkAsync str
 
 updateItems ::
+  Members (MenuStateStack i) r =>
   IsStream t =>
   Members [Sync ItemsLock, Sync CursorLock, Log, Resource, Embed IO] r =>
   (∀ x . Sem r x -> IO (Maybe x)) ->
-  MenuState i ->
   MenuItemFilter i ->
   t IO (MenuItem i) ->
   t IO MenuEvent
-updateItems lower menu itemFilter =
+updateItems lower itemFilter =
   Stream.mapM insert .
   Stream.foldIterateM chunker (pure [])
   where
     insert new =
-      MenuEvent.NewItem <$ lower (menuItemsStateSem menu (insertItems itemFilter new))
+      MenuEvent.NewItem <$ lower (subsumeMenuStateSem (menuItemsStateSem (insertItems itemFilter new)))
     chunker = pure . \case
       [] ->
         Fold.take 100 Fold.toList

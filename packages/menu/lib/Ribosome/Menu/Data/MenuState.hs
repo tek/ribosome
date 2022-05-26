@@ -1,13 +1,12 @@
 module Ribosome.Menu.Data.MenuState where
 
-import Control.Concurrent.STM (STM, TVar, atomically, modifyTVar, newTVarIO, readTVar, writeTVar)
 import Control.Lens ((.~), (^.))
 import qualified Control.Monad.State as State
 import Control.Monad.State (MonadState)
 import qualified Polysemy.Conc as Sync
 
 import Ribosome.Menu.Data.Menu (Menu (Menu), cursor, prompt)
-import Ribosome.Menu.Data.MenuData (MenuCursor, MenuItems, dirty)
+import Ribosome.Menu.Data.MenuData (MenuCursor, MenuItems (_dirty), dirty)
 import Ribosome.Menu.Prompt.Data.Prompt (Prompt)
 
 data ItemsLock =
@@ -21,6 +20,10 @@ itemsLock ::
 itemsLock =
   Sync.lock ItemsLock
 
+data CursorLock =
+  CursorLock
+  deriving stock (Eq, Show)
+
 cursorLock ::
   Members [Sync CursorLock, Resource] r =>
   Sem r a ->
@@ -28,25 +31,44 @@ cursorLock ::
 cursorLock =
   Sync.lock CursorLock
 
-data CursorLock =
-  CursorLock
-  deriving stock (Eq, Show)
+type MenuStateEffects i =
+  [
+    AtomicState (MenuItems i),
+    AtomicState MenuCursor,
+    AtomicState Prompt
+  ]
 
-data MenuState i =
-  MenuState {
-    menuItems :: TVar (MenuItems i),
-    menuCursor :: TVar MenuCursor,
-    menuPrompt :: TVar Prompt
-  }
+type MenuStateStack i =
+  [
+    AtomicState (MenuItems i),
+    AtomicState MenuCursor,
+    AtomicState Prompt,
+    Sync ItemsLock,
+    Sync CursorLock
+  ]
 
-type MenuStateSem r i a =
-  Sem (Reader (MenuState i) : Sync ItemsLock : Sync CursorLock : r) a
+type WithMenu es i r a =
+  Sem (es ++ MenuStateStack i ++ r) a
 
-type MenuSem r i a =
+type MenuStateSem i r a =
+  WithMenu '[] i r a
+
+type MenuSem i r a =
   Sem (State (Menu i) : r) a
 
 type MenuItemsSem r i a =
-  Sem (State (MenuItems i) : r) a
+  WithMenu '[State (MenuItems i)] i r a
+
+subsumeMenuStateSem ::
+  Members (MenuStateStack i) r =>
+  MenuStateSem i r a ->
+  Sem r a
+subsumeMenuStateSem =
+  subsume .
+  subsume .
+  subsume .
+  subsume .
+  subsume
 
 newtype SemS s r a =
   SemS { unSemS :: Sem (State s : r) a }
@@ -63,123 +85,92 @@ instance MonadState s (SemS s r) where
   get = SemS get
   put = SemS . put
 
-newMenuState ::
-  Member (Embed IO) r =>
-  Sem r (MenuState i)
-newMenuState =
-  embed do
-    menuItems <- newTVarIO def
-    menuCursor <- newTVarIO def
-    menuPrompt <- newTVarIO def
-    pure MenuState {..}
-
-readMenuSTM ::
-  MenuState i ->
-  STM (Menu i)
-readMenuSTM MenuState {..} =
-  Menu <$> readTVar menuItems <*> readTVar menuCursor <*> readTVar menuPrompt
-
 readMenu ::
-  MonadIO m =>
-  MenuState i ->
-  m (Menu i)
+  Members (MenuStateEffects i) r =>
+  Sem r (Menu i)
 readMenu =
-  liftIO . atomically . readMenuSTM
+  Menu <$> atomicGet <*> atomicGet <*> atomicGet
 
+-- TODO probably unnecessary
 readMenuForRender ::
-  MonadIO m =>
-  MenuState i ->
-  m (Menu i)
-readMenuForRender menuState@MenuState {..} =
-  liftIO $ atomically do
-    m <- readMenuSTM menuState
-    modifyTVar menuItems (dirty .~ False)
-    pure m
+  ∀ i r .
+  Members (MenuStateEffects i) r =>
+  Sem r (Menu i)
+readMenuForRender = do
+  atomicModify' @(MenuItems i) (dirty .~ False)
+  readMenu
 
 modifyMenuCursor ::
-  Members [Sync ItemsLock, Sync CursorLock, Resource, Embed IO] r =>
-  MenuState i ->
-  Sem (Reader (Menu i) : r) (a, MenuCursor) ->
-  Sem r a
-modifyMenuCursor menuState@MenuState {menuCursor} f =
+  Members [Resource, Embed IO] r =>
+  Sem (Reader (Menu i) : MenuStateStack i ++ r) (a, MenuCursor) ->
+  MenuStateSem i r a
+modifyMenuCursor f =
   cursorLock do
-    menu <- readMenu menuState
+    menu <- readMenu
     (result, newCursor) <- runReader menu f
-    embed $ atomically do
-      writeTVar menuCursor newCursor
+    atomicPut newCursor
     pure result
 
 modifyMenuItems ::
-  Members [Sync ItemsLock, Sync CursorLock, Resource, Embed IO] r =>
-  MenuState i ->
-  Sem (Reader (Menu i) : r) (MenuItems i, a) ->
-  Sem r a
-modifyMenuItems menuState@MenuState {menuItems} f =
+  Members [Resource, Embed IO] r =>
+  WithMenu '[Reader (Menu i)] i r (MenuItems i, a) ->
+  MenuStateSem i r a
+modifyMenuItems f =
   itemsLock do
-    menu <- readMenu menuState
+    menu <- readMenu
     (newItems, result) <- runReader menu f
-    embed $ atomically do
-      writeTVar menuItems newItems
-      modifyTVar menuItems (dirty .~ True)
+    atomicPut (newItems & dirty .~ True)
     pure result
 
 menuItemsStateSem ::
-  Members [Sync ItemsLock, Sync CursorLock, Resource, Embed IO] r =>
-  MenuState i ->
+  Members [Resource, Embed IO] r =>
   (Prompt -> MenuCursor -> MenuItemsSem r i a) ->
-  Sem r a
-menuItemsStateSem menuState f =
-  modifyMenuItems menuState do
+  MenuStateSem i r a
+menuItemsStateSem f =
+  modifyMenuItems do
     Menu i s p <- ask
     raise (runState i (f p s))
 
 runMenuM ::
   Members [Resource, Embed IO] r =>
-  MenuState i ->
   (Prompt -> Sem (State (Menu i) : r) a) ->
-  Sem (Sync ItemsLock : Sync CursorLock : r) a
-runMenuM menuState@MenuState {..} f =
+  MenuStateSem i r a
+runMenuM f =
   itemsLock do
     cursorLock do
-      menu <- readMenu menuState
+      menu <- readMenu
       (Menu newItems newState _, result) <- insertAt @0 (runState menu (f (menu ^. prompt)))
-      embed $ atomically do
-        writeTVar menuItems newItems
-        writeTVar menuCursor newState
-        modifyTVar menuItems (dirty .~ True)
+      atomicPut newItems { _dirty = True }
+      atomicPut newState
       pure result
 
 runMenuMRead ::
   Members [Resource, Embed IO] r =>
-  MenuState i ->
-  (Prompt -> MenuSem r i a) ->
-  Sem (Sync ItemsLock : Sync CursorLock : r) a
-runMenuMRead menuState@MenuState {menuCursor} action =
+  (Prompt -> MenuSem i r a) ->
+  MenuStateSem i r a
+runMenuMRead action =
   cursorLock do
-    menu <- readMenu menuState
+    menu <- readMenu
     (newMenu, a) <- insertAt @0 (runState menu (action (menu ^. prompt)))
-    a <$ embed (atomically (writeTVar menuCursor (newMenu ^. cursor)))
+    a <$ atomicPut (newMenu ^. cursor)
 
 setPrompt ::
-  Member (Embed IO) r =>
-  MenuState i ->
+  Member (AtomicState Prompt) r =>
   Prompt ->
   Sem r ()
-setPrompt MenuState {menuPrompt} p =
-  embed (atomically (writeTVar menuPrompt p))
+setPrompt =
+  atomicPut
 
 menuWrite ::
   Members [Resource, Embed IO] r =>
-  MenuSem r i a ->
-  MenuStateSem r i a
-menuWrite action = do
-  menuState <- ask
-  insertAt @0 (runMenuM menuState (const action))
+  MenuSem i r a ->
+  MenuStateSem i r a
+menuWrite action =
+  insertAt @0 (runMenuM (const action))
 
 menuRead ::
   Members [Resource, Embed IO] r =>
-  MenuSem r i a ->
-  MenuStateSem r i a
-menuRead action = do
-  menuState <- ask
-  insertAt @0 (runMenuMRead menuState (const action))
+  MenuSem i r a ->
+  MenuStateSem i r a
+menuRead action =
+  insertAt @0 (runMenuMRead (const action))

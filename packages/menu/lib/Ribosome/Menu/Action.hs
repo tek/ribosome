@@ -7,7 +7,7 @@ import Ribosome.Menu.Data.CursorIndex (CursorIndex (CursorIndex))
 import qualified Ribosome.Menu.Data.Entry as Entry
 import qualified Ribosome.Menu.Data.MenuAction as MenuAction
 import Ribosome.Menu.Data.MenuAction (MenuAction)
-import Ribosome.Menu.Data.MenuConsumer (MenuWidgetSem)
+import Ribosome.Menu.Data.MenuConsumer (MenuWidget)
 import Ribosome.Menu.Data.MenuData (cursor, entries)
 import Ribosome.Menu.Data.MenuState (MenuSem, SemS (SemS), menuRead, menuWrite, semState, unSemS)
 import Ribosome.Menu.Prompt.Data.Prompt (Prompt)
@@ -52,7 +52,7 @@ menuResult =
 
 cycleMenu ::
   Int ->
-  MenuSem r i ()
+  MenuSem i r ()
 cycleMenu offset = do
   unSemS do
     count <- use (to numVisible)
@@ -60,16 +60,16 @@ cycleMenu offset = do
 
 menuModify ::
   Members [Resource, Embed IO] r =>
-  MenuSem r i () ->
-  MenuWidgetSem r i a
+  MenuSem i r () ->
+  MenuWidget i r a
 menuModify action = do
   menuWrite action
   menuRender
 
 menuNavigate ::
   Members [Resource, Embed IO] r =>
-  MenuSem r i () ->
-  MenuWidgetSem r i a
+  MenuSem i r () ->
+  MenuWidget i r a
 menuNavigate action = do
   menuRead action
   menuRender
@@ -77,12 +77,12 @@ menuNavigate action = do
 menuCycle ::
   Members [Resource, Embed IO] r =>
   Int ->
-  MenuWidgetSem r i a
+  MenuWidget i r a
 menuCycle offset =
   menuNavigate (cycleMenu offset)
 
 toggleSelected ::
-  MenuSem r i ()
+  MenuSem i r ()
 toggleSelected = do
   semState do
     CursorIndex cur <- use cursor
@@ -94,19 +94,19 @@ toggleSelected = do
 
 menuToggle ::
   Members [Resource, Embed IO] r =>
-  MenuWidgetSem r i a
+  MenuWidget i r a
 menuToggle =
   menuModify toggleSelected
 
 menuToggleAll ::
   Members [Resource, Embed IO] r =>
-  MenuWidgetSem r i a
+  MenuWidget i r a
 menuToggleAll =
   menuModify $ semState do
     entries %= overEntries (const (Entry.selected %~ not))
 
 menuUpdatePrompt ::
   Prompt ->
-  MenuWidgetSem r i a
+  MenuWidget i r a
 menuUpdatePrompt prompt =
   act (MenuAction.UpdatePrompt prompt)

@@ -8,8 +8,6 @@ import qualified Data.Map.Strict as Map
 import Data.Monoid (Sum (Sum, getSum))
 import qualified Data.Sequence as Seq
 import qualified Data.Text as Text (cons, snoc)
-import Polysemy.Conc (interpretAtomic)
-import Polysemy.Final (withWeavingToFinal)
 import qualified Polysemy.Log as Log
 
 import Ribosome.Api.Window (redraw, restoreView, setLine)
@@ -182,6 +180,10 @@ runSR ma = do
   atomicPut s'
   pure a
 
+-- TODO looks like the only thing needed from `Menu` here is `cursor`.
+-- this obviates most of what `readMenuForRender` does, in particular `dirty` appears not to be used.
+-- check whether `dirty` was just not implemented yet and might be useful. probably its function is now fulfilled by the
+-- stream not producing menu events if nothing was changed
 updateMenu ::
   Members [AtomicState NvimMenuState, Reader (Menu i), Rpc, Rpc !! RpcError, Log, Embed IO] r =>
   ScratchOptions ->
@@ -211,15 +213,13 @@ renderNvimMenu options scratch =
     redraw
 
 nvimMenuRenderer ::
-  Members [Rpc, Rpc !! RpcError, AtomicState (Map Text Scratch), Log, Embed IO, Final IO] r =>
+  Members [AtomicState NvimMenuState, Rpc, Rpc !! RpcError, AtomicState (Map Text Scratch), Log, Embed IO, Final IO] r =>
   ScratchOptions ->
   Scratch ->
-  Sem r (MenuRenderer IO i)
+  MenuRenderer r i
 nvimMenuRenderer options scratch =
-  interpretAtomic (def :: NvimMenuState) $
-  withWeavingToFinal \ s wv _ ->
-    pure $ (<$ s) $ MenuRenderer \ menu -> \case
-      MenuRenderEvent.Render ->
-        void (wv (runReader menu (renderNvimMenu options scratch) <$ s))
-      MenuRenderEvent.Quit ->
-        void (wv (killScratch scratch <$ s))
+  MenuRenderer \ menu -> \case
+  MenuRenderEvent.Render ->
+    runReader menu (renderNvimMenu options scratch)
+  MenuRenderEvent.Quit ->
+    killScratch scratch

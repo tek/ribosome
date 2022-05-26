@@ -4,14 +4,14 @@ import Control.Concurrent.STM (atomically)
 import Control.Concurrent.STM.TMChan (TMChan, writeTMChan)
 import Control.Lens ((^.))
 import Exon (exon)
-import Polysemy.Conc (interpretSyncAs)
+import Polysemy.Conc (interpretAtomic, interpretSyncAs)
 import qualified Polysemy.Log as Log
 import Prelude hiding (consume)
+import Ribosome.Final (inFinal)
 import qualified Streamly.Internal.Data.Fold as Fold
 import qualified Streamly.Internal.Data.Stream.IsStream as Stream
 import Streamly.Prelude (AsyncT, SerialT)
 
-import Ribosome.Final (inFinal)
 import Ribosome.Menu.Data.MenuAction (MenuAction)
 import qualified Ribosome.Menu.Data.MenuAction as MenuAction (MenuAction (..))
 import qualified Ribosome.Menu.Data.MenuConfig as MenuConfig
@@ -27,8 +27,7 @@ import Ribosome.Menu.Data.MenuResult (MenuResult)
 import Ribosome.Menu.Data.MenuState (
   CursorLock (CursorLock),
   ItemsLock (ItemsLock),
-  MenuState,
-  newMenuState,
+  MenuStateSem,
   readMenuForRender,
   )
 import qualified Ribosome.Menu.Data.QuitReason as QuitReason
@@ -93,22 +92,18 @@ outputAction promptControl = \case
 
 -- TODO Log
 runRenderer ::
-  MonadIO m =>
-  MenuState i ->
-  MenuRenderer m i ->
+  MenuRenderer r i ->
   MenuRenderEvent ->
-  m ()
-runRenderer menu (MenuRenderer render) event = do
+  MenuStateSem i r ()
+runRenderer (MenuRenderer render) event = do
   -- Log.debug [exon|render: #{show event}|]
-  flip render event =<< readMenuForRender menu
+  insertAt @0 . flip render event =<< readMenuForRender
 
 renderAction ::
-  MonadIO m =>
-  MenuState i ->
-  MenuRenderer m i ->
+  MenuRenderer r i ->
   MenuAction r a ->
-  m ()
-renderAction menu (runRenderer menu -> run) = \case
+  MenuStateSem i r ()
+renderAction (runRenderer -> run) = \case
   MenuAction.Render ->
     run MenuRenderEvent.Render
   MenuAction.Quit _ ->
@@ -119,30 +114,33 @@ renderAction menu (runRenderer menu -> run) = \case
 menuStream ::
   ∀ i r a .
   Members [Resource, Log, Embed IO, Final IO] r =>
-  MenuState i ->
   MenuConfig r IO i a ->
   TMChan PromptControlEvent ->
   AsyncT IO (Prompt, PromptEvent) ->
-  Sem (Sync ItemsLock : Sync CursorLock : r) (SerialT IO (Sem r (MenuResult a)))
-menuStream menu (MenuConfig items itemFilter (MenuConsumer consumer) renderer _) promptControl promptEvents =
+  MenuStateSem i r (SerialT IO (Sem r (MenuResult a)))
+menuStream (MenuConfig items itemFilter (MenuConsumer consumer) renderer _) promptControl promptEvents =
   inFinal \ _ lower pur ex ->
   let
-    lowerMaybe :: ∀ x . Sem (Sync ItemsLock : Sync CursorLock : r) x -> IO (Maybe x)
+    lowerMaybe :: ∀ x . MenuStateSem i r x -> IO (Maybe x)
     lowerMaybe =
       fmap ex . lower
+    lowerUnit :: ∀ x . MenuStateSem i r x -> IO ()
+    lowerUnit =
+      fmap (fromMaybe ()) . lowerMaybe . void
     handleAction action = do
-      void (lower (Log.debug [exon|menu consumer: #{show action}|]))
-      renderAction menu renderer action
+      lowerUnit do
+        Log.debug [exon|menu consumer: #{show action}|]
+        insertAt @0 (renderAction renderer action)
     prompt =
-      promptEvent lowerMaybe menu itemFilter promptEvents
+      promptEvent lowerMaybe itemFilter promptEvents
     menuItems =
-      updateItems lowerMaybe menu itemFilter (Stream.fromSerial items)
+      updateItems lowerMaybe itemFilter (Stream.fromSerial items)
     consume event = do
-      menuAction <- lower (runReader menu (consumer event))
+      menuAction <- lower (consumer event)
       pure (fromMaybe (eventAction event) (join (ex menuAction)))
     quit = do
       liftIO (atomically (writeTMChan promptControl PromptControlEvent.Quit))
-      runRenderer menu renderer MenuRenderEvent.Quit
+      lowerUnit (insertAt @0 (runRenderer renderer MenuRenderEvent.Quit))
     in
       pur $
       Stream.finally quit $
@@ -172,9 +170,12 @@ menuMain ::
   Members [Log, Race, Resource, Embed IO, Final IO] r =>
   MenuConfig r IO i a ->
   Sem r (MenuResult a)
-menuMain conf = do
-  menu <- newMenuState
-  interpretSyncAs CursorLock $ interpretSyncAs ItemsLock do
+menuMain conf =
+  interpretSyncAs CursorLock $
+  interpretSyncAs ItemsLock $
+  interpretAtomic def $
+  interpretAtomic def $
+  interpretAtomic def do
     (promptControl, promptEvents) <- promptStream (conf ^. MenuConfig.prompt)
-    stream <- menuStream menu conf promptControl (Stream.fromSerial promptEvents)
+    stream <- menuStream conf promptControl (Stream.fromSerial promptEvents)
     insertAt @0 . menuResult =<< embed (Stream.last stream)

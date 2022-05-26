@@ -2,6 +2,7 @@ module Ribosome.Menu.Run where
 
 import Control.Lens ((%~), (<>~), (^.))
 import qualified Data.Text as Text
+import Polysemy.Conc (interpretAtomic)
 import qualified Streamly.Internal.Data.Stream.IsStream as Stream
 import Streamly.Prelude (SerialT)
 
@@ -23,9 +24,10 @@ import Ribosome.Host.Data.RpcError (RpcError)
 import Ribosome.Host.Effect.Rpc (Rpc)
 import qualified Ribosome.Menu.Data.MenuConfig as MenuConfig
 import Ribosome.Menu.Data.MenuConfig (MenuConfig (MenuConfig))
-import Ribosome.Menu.Data.MenuConsumer (MenuConsumer)
+import Ribosome.Menu.Data.MenuConsumer (MenuConsumer, hoistMenuConsumer)
 import Ribosome.Menu.Data.MenuItem (MenuItem)
 import Ribosome.Menu.Data.MenuResult (MenuResult)
+import Ribosome.Menu.Data.NvimMenuState (NvimMenuState)
 import Ribosome.Menu.Filters (fuzzyItemFilter)
 import Ribosome.Menu.Main (menuMain)
 import Ribosome.Menu.Nvim (menuSyntax, nvimMenuRenderer)
@@ -76,9 +78,9 @@ nvimMenu options items consumer promptConfig = do
   run =<< showInScratch @[] [] (withSyntax (ensureSize options))
   where
     run scratch = do
-      renderer <- nvimMenuRenderer options scratch
       windowSetOption (scratchWindow scratch) "cursorline" (toMsgpack True)
-      runMenu (MenuConfig items fuzzyItemFilter consumer renderer promptConfig)
+      interpretAtomic (def :: NvimMenuState) do
+        runMenu (MenuConfig items fuzzyItemFilter (hoistMenuConsumer raise (insertAt @5) consumer) (nvimMenuRenderer options scratch) promptConfig)
     ensureSize =
       ScratchOptions.size %~ (<|> Just 1)
     withSyntax =
