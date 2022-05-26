@@ -160,6 +160,7 @@ test-suite ribosome-menu-unit
   other-modules:
       Ribosome.Menu.Test.MenuTest
       Ribosome.Menu.Test.NvimMenuTest
+      Ribosome.Menu.Test.PromptTest
       Ribosome.Menu.Test.Run
   hs-source-dirs:
       test
