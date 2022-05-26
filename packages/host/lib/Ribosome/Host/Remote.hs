@@ -16,7 +16,7 @@ import Ribosome.Host.Effect.Rpc (Rpc)
 import Ribosome.Host.Effect.UserError (UserError)
 import Ribosome.Host.Interpreter.Errors (interpretErrors)
 import Ribosome.Host.Interpreter.Process (interpretProcessInputCereal, interpretProcessOutputCereal)
-import Ribosome.Host.Interpreter.RequestHandler (runRequestHandler)
+import Ribosome.Host.Interpreter.Host (runHost)
 import Ribosome.Host.Interpreter.Responses (interpretResponses)
 import Ribosome.Host.Interpreter.Rpc (interpretRpcMsgpack)
 
@@ -48,5 +48,5 @@ runNvimPlugin =
   interpretEventsChan .
   interpretResponses .
   interpretRpcMsgpackRemote .
-  runRequestHandler .
+  runHost .
   fmap (hoistRpcHandler (insertAt @2))

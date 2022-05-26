@@ -22,7 +22,7 @@ import Ribosome.Host.Data.BootError (unBootError)
 import Ribosome.Host.Data.RpcError (RpcError)
 import Ribosome.Host.Effect.Rpc (Rpc)
 import Ribosome.Host.Embed (basicCliArgs, interpretBasicEmbedDeps, interpretRpcMsgpackProcessNvimEmbed)
-import Ribosome.Host.Interpreter.RequestHandler (withRequestHandler)
+import Ribosome.Host.Interpreter.Host (withHost)
 import Ribosome.Host.Interpreter.Responses (interpretResponses)
 import Ribosome.Host.Interpreter.UserError (interpretUserErrorInfo)
 
@@ -53,7 +53,7 @@ testPlugin riboRoot =
     interpretBasicEmbedDeps $
       interpretResponses $
       interpretRpcMsgpackProcessNvimEmbed (conf target) $
-      withRequestHandler mempty do
+      withHost mempty do
         resumeHoistError @RpcError @Rpc (TestError . show @Text) do
           Conc.timeout_ (liftH (failWith Nothing "RPC function did not appear")) (Minutes 2) do
             Time.while (MilliSeconds 500) (resumeAs @RpcError True (False <$ nvimCallFunction @Int "Test" []))

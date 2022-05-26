@@ -12,8 +12,8 @@ import Ribosome.Host.Data.Response (Response, TrackedResponse (TrackedResponse),
 import Ribosome.Host.Data.RpcError (RpcError (RpcError))
 import qualified Ribosome.Host.Data.RpcMessage as RpcMessage
 import Ribosome.Host.Data.RpcMessage (RpcMessage, formatRpcMsg)
-import qualified Ribosome.Host.Effect.RequestHandler as RequestHandler
-import Ribosome.Host.Effect.RequestHandler (RequestHandler)
+import qualified Ribosome.Host.Effect.Host as Host
+import Ribosome.Host.Effect.Host (Host)
 import qualified Ribosome.Host.Effect.Responses as Responses
 import Ribosome.Host.Effect.Responses (Responses)
 import Ribosome.Host.Text (ellipsize)
@@ -88,19 +88,19 @@ sendWhenReady i response =
 
 dispatch ::
   Members [AtomicState RequestId, Sync ResponseLock, Events res ResponseSent, EventConsumer res ResponseSent] r =>
-  Members [RequestHandler, Process RpcMessage a, Responses RequestId Response !! RpcError, Log, Resource, Async] r =>
+  Members [Host, Process RpcMessage a, Responses RequestId Response !! RpcError, Log, Resource, Async] r =>
   RpcMessage ->
   Sem r ()
 dispatch = \case
   RpcMessage.Request (TrackedRequest i req) ->
-    void (async (sendWhenReady i =<< RequestHandler.request req))
+    void (async (sendWhenReady i =<< Host.request req))
   RpcMessage.Response (TrackedResponse i response) ->
     Responses.respond i response !! \ (RpcError e) -> Log.error e
   RpcMessage.Notification req ->
-    void (async (RequestHandler.notification req))
+    void (async (Host.notification req))
 
 listener ::
-  Members [RequestHandler, Process RpcMessage (Either Text RpcMessage)] r =>
+  Members [Host, Process RpcMessage (Either Text RpcMessage)] r =>
   Members [Responses RequestId Response !! RpcError, Log, Resource, Race, Async, Embed IO] r =>
   Sem r ()
 listener =

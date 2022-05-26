@@ -21,7 +21,7 @@ import Ribosome.Host.Effect.Rpc (Rpc)
 import Ribosome.Host.Effect.UserError (UserError)
 import Ribosome.Host.Interpreter.Errors (interpretErrors)
 import Ribosome.Host.Interpreter.Process (interpretProcessCerealNative)
-import Ribosome.Host.Interpreter.RequestHandler (withRequestHandler)
+import Ribosome.Host.Interpreter.Host (withHost)
 import Ribosome.Host.Interpreter.Responses (interpretResponses)
 import Ribosome.Host.Interpreter.Rpc (interpretRpcMsgpack)
 import Ribosome.Host.Interpreter.UserError (interpretUserErrorInfo)
@@ -98,7 +98,7 @@ interpretRpcEmbed ::
 interpretRpcEmbed handlers =
   interpretResponses .
   interpretRpcMsgpackProcessNvimEmbedDef .
-  withRequestHandler (hoistRpcHandler (insertAt @2) <$> handlers) .
+  withHost (hoistRpcHandler (insertAt @2) <$> handlers) .
   insertAt @2 .
   raise
 

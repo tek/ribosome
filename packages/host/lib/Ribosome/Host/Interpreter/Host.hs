@@ -1,4 +1,4 @@
-module Ribosome.Host.Interpreter.RequestHandler where
+module Ribosome.Host.Interpreter.Host where
 
 import qualified Data.Map.Strict as Map
 import Data.MessagePack (Object)
@@ -23,8 +23,8 @@ import Ribosome.Host.Data.RpcHandler (RpcHandler (RpcHandler), RpcHandlerFun, rp
 import Ribosome.Host.Data.RpcMessage (RpcMessage)
 import qualified Ribosome.Host.Effect.Errors as Errors
 import Ribosome.Host.Effect.Errors (Errors)
-import qualified Ribosome.Host.Effect.RequestHandler as RequestHandler
-import Ribosome.Host.Effect.RequestHandler (RequestHandler ())
+import qualified Ribosome.Host.Effect.Host as Host
+import Ribosome.Host.Effect.Host (Host ())
 import Ribosome.Host.Effect.Responses (Responses)
 import Ribosome.Host.Effect.Rpc (Rpc)
 import Ribosome.Host.Effect.UserError (UserError, userError)
@@ -56,7 +56,7 @@ handlerIOError ::
   Sem r a
 handlerIOError =
   fromExceptionSemVia \ (e :: IOError) ->
-    HandlerError (ErrorMessage "Internal error" ["Handler exception", show e] Error) (Just "RequestHandler")
+    HandlerError (ErrorMessage "Internal error" ["Handler exception", show e] Error) (Just "Host")
 
 echoError ::
   Members [Rpc !! RpcError, UserError, Log] r =>
@@ -93,37 +93,37 @@ handle ::
 handle notification handlers (Request method args) =
   traverse (executeRequest notification args) (Map.lookup method handlers)
 
-interpretRequestHandler ::
+interpretHost ::
   Members [Rpc !! RpcError, UserError, Errors, Events er Event, Log, Final IO] r =>
   [RpcHandler r] ->
-  InterpreterFor RequestHandler r
-interpretRequestHandler (handlersByName -> handlers) =
+  InterpreterFor Host r
+interpretHost (handlersByName -> handlers) =
   interpret \case
-    RequestHandler.Request req ->
+    Host.Request req ->
       fromMaybe (invalidMethod req) <$> handle False handlers req
-    RequestHandler.Notification req -> do
+    Host.Notification req -> do
       res <- handle True handlers req
       when (isNothing res) (publishEvent req)
 
-withRequestHandler ::
+withHost ::
   Member (Process RpcMessage (Either Text RpcMessage)) r =>
   Members [Rpc !! RpcError, UserError, Errors, Events er Event, Responses RequestId Response !! RpcError] r =>
   Members [Log, Error BootError, Resource, Race, Async, Embed IO, Final IO] r =>
   [RpcHandler r] ->
-  InterpreterFor RequestHandler r
-withRequestHandler handlers sem =
-  interpretRequestHandler handlers do
+  InterpreterFor Host r
+withHost handlers sem =
+  interpretHost handlers do
     withAsync_ listener do
       raise (registerHandlers handlers)
       sem
 
-runRequestHandler ::
+runHost ::
   Member (Process RpcMessage (Either Text RpcMessage)) r =>
   Members [Rpc !! RpcError, UserError, Errors, Events er Event, Responses RequestId Response !! RpcError] r =>
   Members [Log, Error BootError, Resource, Race, Async, Embed IO, Final IO] r =>
   [RpcHandler r] ->
   Sem r ()
-runRequestHandler handlers =
-  interpretRequestHandler handlers do
+runHost handlers =
+  interpretHost handlers do
     withAsync_ (raise (registerHandlers handlers)) do
       listener
