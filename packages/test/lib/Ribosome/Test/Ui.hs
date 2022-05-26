@@ -1,31 +1,36 @@
 module Ribosome.Test.Ui where
 
-import Hedgehog (TestT, (===))
+import Polysemy.Test (Hedgehog, assertEq, (===))
+
 import Ribosome.Api.Window (currentCursor, cursor)
 import Ribosome.Host.Api.Data (Window)
 import Ribosome.Host.Api.Effect (nvimListWins)
+import Ribosome.Host.Effect.Rpc (Rpc)
 
 windowCountIs ::
-  Member Rpc r =>
+  Monad m =>
+  Members [Rpc, Hedgehog m] r =>
   Int ->
-  TestT m ()
+  Sem r ()
 windowCountIs count = do
   wins <- nvimListWins
-  count === (length wins)
+  count === length wins
 
 cursorIs ::
-  Member Rpc r =>
+  Monad m =>
+  Members [Rpc, Hedgehog m] r =>
   Int ->
   Int ->
   Window ->
-  TestT m ()
+  Sem r ()
 cursorIs line col =
-  ((line, col) ===) <=< lift . cursor
+  assertEq (line, col) <=< cursor
 
 currentCursorIs ::
-  Member Rpc r =>
+  Monad m =>
+  Members [Rpc, Hedgehog m] r =>
   Int ->
   Int ->
-  TestT m ()
+  Sem r ()
 currentCursorIs line col =
-  ((line, col) ===) =<< lift currentCursor
+  assertEq (line, col) =<< currentCursor

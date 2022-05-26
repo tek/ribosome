@@ -19,6 +19,9 @@ build-type:     Simple
 library
   exposed-modules:
       Ribosome.Test.Run
+      Ribosome.Test.Screenshot
+      Ribosome.Test.Tmux
+      Ribosome.Test.Ui
   hs-source-dirs:
       lib
   default-extensions:
