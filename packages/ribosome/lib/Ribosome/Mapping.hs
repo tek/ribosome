@@ -52,8 +52,8 @@ activateBufferMapping buffer mapping =
     mappingCmd " <buffer>" mapping
 
 mappingHandler ::
-  Map MappingIdent (Sem (Error HandlerError : r) ()) ->
+  Map MappingIdent (Sem (Stop HandlerError : r) ()) ->
   MappingIdent ->
-  Sem (Error HandlerError : r) ()
+  Sem (Stop HandlerError : r) ()
 mappingHandler maps i =
-  join (note "No handler for this mapping" (Map.lookup i maps))
+  join (stopNote "No handler for this mapping" (Map.lookup i maps))

@@ -11,7 +11,7 @@ import qualified Ribosome.Host.Data.RpcType as RpcType
 import Ribosome.Host.Data.RpcType (RpcType)
 
 type Handler r a =
-  Sem (Error HandlerError : r) a
+  Sem (Stop HandlerError : r) a
 
 type RpcHandlerFun r =
   [Object] -> Handler r Object
@@ -30,14 +30,14 @@ instance Show (RpcHandler m) where
     showParen (p > 10) [exon|RpcHandler #{showsPrec 11 t} #{showsPrec 11 n} #{showsPrec 11 e}|]
 
 hoistRpcHandler ::
-  (∀ x . Sem (Error HandlerError : r) x -> Sem (Error HandlerError : r1) x) ->
+  (∀ x . Sem (Stop HandlerError : r) x -> Sem (Stop HandlerError : r1) x) ->
   RpcHandler r ->
   RpcHandler r1
 hoistRpcHandler f RpcHandler {..} =
   RpcHandler {handler = f . handler, ..}
 
 hoistRpcHandlers ::
-  (∀ x . Sem (Error HandlerError : r) x -> Sem (Error HandlerError : r1) x) ->
+  (∀ x . Sem (Stop HandlerError : r) x -> Sem (Stop HandlerError : r1) x) ->
   [RpcHandler r] ->
   [RpcHandler r1]
 hoistRpcHandlers f =

@@ -19,7 +19,7 @@ var =
   "test_var"
 
 reg ::
-  Members [Rpc !! RpcError, Error HandlerError] r =>
+  Members [Rpc !! RpcError, Stop HandlerError] r =>
   CommandRegister ->
   Sem r ()
 reg (CommandRegister r) =
@@ -31,7 +31,7 @@ regHandlers ::
   [RpcHandler r]
 regHandlers =
   [
-    rpcCommand "Register" Sync (reg @(Error HandlerError : r))
+    rpcCommand "Register" Sync (reg @(Stop HandlerError : r))
   ]
 
 test_register :: UnitTest

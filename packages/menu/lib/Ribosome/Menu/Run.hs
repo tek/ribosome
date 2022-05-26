@@ -65,11 +65,12 @@ runMenu config =
       bracket (embed acquire) (embed . release) \ _ -> menuMain config
 
 nvimMenu ::
+  ∀ i a r .
   Members [Rpc !! RpcError, Settings !! SettingError] r =>
   Members [Rpc, AtomicState (Map Text Scratch), Reader PluginName, Log, Resource, Race, Embed IO, Final IO] r =>
   ScratchOptions ->
   SerialT IO (MenuItem i) ->
-  MenuConsumer r i a ->
+  MenuConsumer i r a ->
   PromptConfig IO ->
   Sem r (MenuResult a)
 nvimMenu options items consumer promptConfig = do
@@ -91,7 +92,7 @@ staticNvimMenu ::
   Members [Rpc, AtomicState (Map Text Scratch), Reader PluginName, Log, Resource, Race, Embed IO, Final IO] r =>
   ScratchOptions ->
   [MenuItem i] ->
-  MenuConsumer r i a ->
+  MenuConsumer i r a ->
   PromptConfig IO ->
   Sem r (MenuResult a)
 staticNvimMenu options items =

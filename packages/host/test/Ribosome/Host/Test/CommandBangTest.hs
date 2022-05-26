@@ -20,7 +20,7 @@ var =
   "test_var"
 
 bang ::
-  Members [Rpc !! RpcError, Error HandlerError] r =>
+  Members [Rpc !! RpcError, Stop HandlerError] r =>
   Bang ->
   Int64 ->
   Sem r ()
@@ -36,7 +36,7 @@ bangHandlers ::
   [RpcHandler r]
 bangHandlers =
   [
-    rpcCommand "Bang" Sync (bang @(Error HandlerError : r))
+    rpcCommand "Bang" Sync (bang @(Stop HandlerError : r))
   ]
 
 test_bang :: UnitTest

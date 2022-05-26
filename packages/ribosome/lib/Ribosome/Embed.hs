@@ -8,11 +8,16 @@ import Ribosome.Data.Locks (WatcherLock (WatcherLock))
 import Ribosome.Data.Mapping (MappingIdent)
 import Ribosome.Data.PluginName (PluginName)
 import Ribosome.Data.Scratch (Scratch)
+import Ribosome.Data.SettingError (SettingError)
 import Ribosome.Data.WatchedVariable (WatchedVariable)
+import Ribosome.Effect.Settings (Settings)
 import Ribosome.Host.Data.BootError (BootError)
 import Ribosome.Host.Data.RpcHandler (Handler, RpcHandler)
 import Ribosome.Host.Effect.Rpc (Rpc)
-import Ribosome.Host.Embed (EmbedStack, embedNvimBasic)
+import Ribosome.Host.Embed (EmbedStack, interpretHostStack)
+import Ribosome.Host.Interpreter.Handlers (interpretHandlers)
+import Ribosome.Host.Interpreter.Host (testHost)
+import Ribosome.Interpreter.Settings (interpretSettingsRpc)
 import Ribosome.Interpreter.UserError (interpretUserErrorPrefixed)
 import Ribosome.Plugin.Builtin (builtinHandlers)
 
@@ -25,7 +30,7 @@ type PluginEffects =
   ]
 
 type PluginStack =
-  EmbedStack ++ PluginEffects
+  Settings !! SettingError : EmbedStack ++ PluginEffects
 
 type PluginHandler r =
   Handler (PluginStack ++ r) ()
@@ -52,7 +57,11 @@ embedNvimPluginLog level name maps vars handlers =
   interpretPluginEffects name .
   interpretLogStdoutLevelConc (Just level) .
   interpretUserErrorPrefixed .
-  embedNvimBasic (builtinHandlers name maps vars <> handlers)
+  interpretHostStack .
+  interpretSettingsRpc .
+  interpretHandlers (builtinHandlers name maps vars <> handlers) .
+  testHost .
+  insertAt @1
 
 embedNvimPlugin ::
   Members [Error BootError, Resource, Race, Async, Embed IO, Final IO] r =>

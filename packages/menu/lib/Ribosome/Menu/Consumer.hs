@@ -7,18 +7,18 @@ import Ribosome.Menu.Action (menuCycle, menuToggle, menuToggleAll)
 import Ribosome.Menu.Data.MenuConsumer (MenuApp (MenuApp), MenuConsumer (MenuConsumer), MenuWidget)
 import qualified Ribosome.Menu.Data.MenuEvent as MenuEvent (MenuEvent (..))
 
-type Mappings r i a =
+type Mappings i r a =
   Map Text (MenuWidget i r a)
 
 forApp ::
-  MenuApp r i a ->
-  MenuConsumer r i a
+  MenuApp i r a ->
+  MenuConsumer i r a
 forApp (MenuApp consumer) =
   MenuConsumer consumer
 
 forMappings ::
-  Mappings r i a ->
-  MenuConsumer r i a
+  Mappings i r a ->
+  MenuConsumer i r a
 forMappings mappings =
   forApp $ MenuApp \case
     MenuEvent.Mapping char ->
@@ -28,7 +28,7 @@ forMappings mappings =
 
 defaultMappings ::
   Members [Resource, Embed IO] r =>
-  Mappings r i a
+  Mappings i r a
 defaultMappings =
   Map.fromList [
     ("k", menuCycle 1),
@@ -41,13 +41,13 @@ defaultMappings =
 
 withMappings ::
   Members [Resource, Embed IO] r =>
-  Mappings r i a ->
-  MenuConsumer r i a
+  Mappings i r a ->
+  MenuConsumer i r a
 withMappings extraMappings =
   forMappings (Map.union extraMappings defaultMappings)
 
 basic ::
   Members [Resource, Embed IO] r =>
-  MenuConsumer r i a
+  MenuConsumer i r a
 basic =
   withMappings mempty

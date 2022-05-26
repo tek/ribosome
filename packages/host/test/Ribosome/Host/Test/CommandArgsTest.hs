@@ -19,7 +19,7 @@ var =
   "test_var"
 
 args ::
-  Members [Rpc !! RpcError, Error HandlerError] r =>
+  Members [Rpc !! RpcError, Stop HandlerError] r =>
   Args ->
   Sem r ()
 args (Args a) =
@@ -31,7 +31,7 @@ argsHandlers ::
   [RpcHandler r]
 argsHandlers =
   [
-    rpcCommand "Args" Sync (args @(Error HandlerError : r))
+    rpcCommand "Args" Sync (args @(Stop HandlerError : r))
   ]
 
 test_args :: UnitTest

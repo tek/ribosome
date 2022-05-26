@@ -14,7 +14,7 @@ import Ribosome.Test.Run (runTest)
 import Ribosome.Test.Wait (assertWait)
 
 changed ::
-  Members [AtomicState Int, Rpc !! RpcError ,Error HandlerError] r =>
+  Members [AtomicState Int, Rpc !! RpcError ,Stop HandlerError] r =>
   Object ->
   Sem r ()
 changed _ =

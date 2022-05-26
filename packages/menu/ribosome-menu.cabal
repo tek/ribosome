@@ -159,6 +159,8 @@ test-suite ribosome-menu-unit
   main-is: Main.hs
   other-modules:
       Ribosome.Menu.Test.MenuTest
+      Ribosome.Menu.Test.NvimMenuTest
+      Ribosome.Menu.Test.Run
   hs-source-dirs:
       test
   default-extensions:
@@ -225,9 +227,11 @@ test-suite ribosome-menu-unit
   ghc-options: -Wall -Wredundant-constraints -Wincomplete-uni-patterns -Wmissing-deriving-strategies -Widentities -Wunused-packages -fplugin=Polysemy.Plugin -threaded -rtsopts -with-rtsopts=-N
   build-depends:
       base >=4.12 && <5
+    , hedgehog
     , incipit
     , lens
     , lifted-base
+    , messagepack
     , polysemy
     , polysemy-conc
     , polysemy-plugin
@@ -237,6 +241,7 @@ test-suite ribosome-menu-unit
     , ribosome-menu
     , streamly
     , tasty
+    , time
     , transformers
   mixins:
       base hiding (Prelude)

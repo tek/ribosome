@@ -20,14 +20,14 @@ var =
   "test_var"
 
 au ::
-  Members [Rpc !! RpcError, Sync (), Error HandlerError] r =>
+  Members [Rpc !! RpcError, Sync (), Stop HandlerError] r =>
   Sem r ()
 au = do
   rpcError (nvimSetVar var (12 :: Int))
   void $ Sync.putWait (Seconds 5) ()
 
 bn ::
-  Members [Rpc !! RpcError, Sync (), Error HandlerError] r =>
+  Members [Rpc !! RpcError, Sync (), Stop HandlerError] r =>
   Sem r ()
 bn = do
   rpcError (nvimSetVar var (21 :: Int))
@@ -39,8 +39,8 @@ regHandlers ::
   [RpcHandler r]
 regHandlers =
   [
-    rpcAutocmd "Au" "User" def { fPattern = "Au" } (au @(Error HandlerError : r)),
-    rpcAutocmd "Bn" "BufNew" def (bn @(Error HandlerError : r))
+    rpcAutocmd "Au" "User" def { fPattern = "Au" } (au @(Stop HandlerError : r)),
+    rpcAutocmd "Bn" "BufNew" def (bn @(Stop HandlerError : r))
   ]
 
 test_autocmd :: UnitTest

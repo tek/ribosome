@@ -9,32 +9,32 @@ import Ribosome.Host.Data.Args (Args (Args))
 import Ribosome.Host.Data.Bar (Bar (Bar))
 import qualified Ribosome.Host.Data.HandlerError as HandlerError
 import Ribosome.Host.Data.HandlerError (HandlerError)
-import Ribosome.Host.Data.RpcHandler (RpcHandlerFun, Handler)
+import Ribosome.Host.Data.RpcHandler (Handler, RpcHandlerFun)
 
 decodeArg ::
-  Member (Error HandlerError) r =>
+  Member (Stop HandlerError) r =>
   MsgpackDecode a =>
   Object ->
   Sem r a
 decodeArg =
-  fromEither . first HandlerError.simple . fromMsgpack
+  stopEither . first HandlerError.simple . fromMsgpack
 
 extraError ::
-  Member (Error HandlerError) r =>
+  Member (Stop HandlerError) r =>
   [Object] ->
   Sem r a
 extraError o =
-  throw (HandlerError.simple [exon|Extraneous arguments: #{show o}|])
+  stop (HandlerError.simple [exon|Extraneous arguments: #{show o}|])
 
 class HandlerArg a r where
   handlerArg :: [Object] -> Sem r ([Object], a)
 
 instance {-# overlappable #-} (
-    Member (Error HandlerError) r,
+    Member (Stop HandlerError) r,
     MsgpackDecode a
   ) => HandlerArg a r where
   handlerArg = \case
-    [] -> throw "too few arguments"
+    [] -> stop "too few arguments"
     (o : rest) -> do
       a <- decodeArg o
       pure (rest, a)
@@ -44,14 +44,14 @@ instance HandlerArg Bar r where
     pure (os, Bar)
 
 instance (
-    Member (Error HandlerError) r
+    Member (Stop HandlerError) r
   ) => HandlerArg Args r where
   handlerArg = \case
-    [] -> throw "Too few arguments"
+    [] -> stop "Too few arguments"
     (Msgpack a : rest) ->
       pure (rest, Args a)
     a : _ ->
-      throw (HandlerError.simple [exon|Invalid type for Args: #{show a}|])
+      stop (HandlerError.simple [exon|Invalid type for Args: #{show a}|])
 
 class HandlerCodec h r | h -> r where
   handlerCodec :: h -> RpcHandlerFun r
@@ -64,7 +64,7 @@ instance (
       o -> extraError o
 
 instance (
-    HandlerArg a (Error HandlerError : r),
+    HandlerArg a (Stop HandlerError : r),
     HandlerCodec b r
   ) => HandlerCodec (a -> b) r where
   handlerCodec h o = do

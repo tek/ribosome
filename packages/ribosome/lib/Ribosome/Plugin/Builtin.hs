@@ -36,7 +36,7 @@ watcherRpc ::
   AutocmdEvent ->
   RpcHandler r
 watcherRpc vars (PluginName name) event =
-  rpcAutocmd method event def (variableWatcherHandler @(Error HandlerError : r) vars)
+  rpcAutocmd method event def (variableWatcherHandler @(Stop HandlerError : r) vars)
   where
     method =
       [exon|#{capitalize name}VariableChanged#{unAutocmdEvent event}|]
@@ -51,6 +51,6 @@ builtinHandlers ::
   [RpcHandler r]
 builtinHandlers pn@(PluginName name) maps vars =
   [
-    rpcFunction [exon|#{capitalize name}DeleteScratch|] Async (killScratchByName @(Error HandlerError : r)),
+    rpcFunction [exon|#{capitalize name}DeleteScratch|] Async (killScratchByName @(Stop HandlerError : r)),
     rpcFunction [exon|#{capitalize name}Mapping|] Async (mappingHandler maps)
   ] <> (watcherRpc vars pn <$> watcherEvents)

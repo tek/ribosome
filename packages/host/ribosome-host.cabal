@@ -50,6 +50,7 @@ library
       Ribosome.Host.Data.RpcMessage
       Ribosome.Host.Data.RpcType
       Ribosome.Host.Effect.Errors
+      Ribosome.Host.Effect.Handlers
       Ribosome.Host.Effect.Host
       Ribosome.Host.Effect.Responses
       Ribosome.Host.Effect.Rpc
@@ -60,6 +61,7 @@ library
       Ribosome.Host.Handler.Command
       Ribosome.Host.Interpret
       Ribosome.Host.Interpreter.Errors
+      Ribosome.Host.Interpreter.Handlers
       Ribosome.Host.Interpreter.Host
       Ribosome.Host.Interpreter.Id
       Ribosome.Host.Interpreter.Process

@@ -31,7 +31,7 @@ name =
   "buffi"
 
 makeScratch ::
-  Members [Rpc !! RpcError, AtomicState (Map Text Scratch), Reader PluginName, Log, Resource, Error HandlerError] r =>
+  Members [Rpc !! RpcError, AtomicState (Map Text Scratch), Reader PluginName, Log, Resource, Stop HandlerError] r =>
   Sem r ()
 makeScratch =
   rpcError (void (showInScratch target options))
@@ -44,7 +44,7 @@ floatOptions =
   FloatOptions Cursor 30 2 1 1 True def Nothing def False True (Just def) Nothing
 
 makeFloatScratch ::
-  Members [Rpc !! RpcError, AtomicState (Map Text Scratch), Reader PluginName, Log, Resource, Error HandlerError] r =>
+  Members [Rpc !! RpcError, AtomicState (Map Text Scratch), Reader PluginName, Log, Resource, Stop HandlerError] r =>
   Sem r ()
 makeFloatScratch =
   rpcError (void (showInScratch target options))
@@ -64,8 +64,8 @@ handlers ::
   [RpcHandler r]
 handlers =
   [
-    rpcFunction "MakeFloatScratch" Sync (makeFloatScratch @(Error HandlerError : r)),
-    rpcFunction "MakeScratch" Sync (makeScratch @(Error HandlerError : r))
+    rpcFunction "MakeFloatScratch" Sync (makeFloatScratch @(Stop HandlerError : r)),
+    rpcFunction "MakeScratch" Sync (makeScratch @(Stop HandlerError : r))
   ]
 
 scratchTest :: Text -> UnitTest

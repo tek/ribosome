@@ -162,6 +162,7 @@ in {
         "hedgehog"
         "lens"
         "lifted-base"
+        "messagepack"
         "ribosome"
         "ribosome-host"
         "ribosome-menu"

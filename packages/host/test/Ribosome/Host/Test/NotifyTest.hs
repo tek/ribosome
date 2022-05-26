@@ -18,7 +18,7 @@ import Ribosome.Host.Handler (rpcFunction)
 import Ribosome.Host.Test.Run (runTest)
 
 hand ::
-  Members [Rpc !! RpcError, Sync Int, Error HandlerError] r =>
+  Members [Rpc !! RpcError, Sync Int, Stop HandlerError] r =>
   Int ->
   Sem r ()
 hand =
@@ -30,7 +30,7 @@ handlers ::
   [RpcHandler r]
 handlers =
   [
-    rpcFunction "Fun" Async (hand @(Error HandlerError : r))
+    rpcFunction "Fun" Async (hand @(Stop HandlerError : r))
   ]
 
 test_notify :: UnitTest

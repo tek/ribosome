@@ -19,7 +19,7 @@ var =
   "test_var"
 
 mods ::
-  Members [Rpc !! RpcError, Error HandlerError] r =>
+  Members [Rpc !! RpcError, Stop HandlerError] r =>
   CommandMods ->
   Sem r ()
 mods = \case
@@ -32,7 +32,7 @@ modsHandlers ::
   [RpcHandler r]
 modsHandlers =
   [
-    rpcCommand "Mods" Sync (mods @(Error HandlerError : r))
+    rpcCommand "Mods" Sync (mods @(Stop HandlerError : r))
   ]
 
 test_mods :: UnitTest

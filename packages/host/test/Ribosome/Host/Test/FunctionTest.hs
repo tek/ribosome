@@ -24,7 +24,7 @@ var =
   "test_var"
 
 hand ::
-  Members [AtomicState Int, Rpc !! RpcError, Error HandlerError] r =>
+  Members [AtomicState Int, Rpc !! RpcError, Stop HandlerError] r =>
   Bar ->
   Bool ->
   Int ->
@@ -43,7 +43,7 @@ handlers ::
   [RpcHandler r]
 handlers =
   [
-    rpcFunction "Fun" Sync (hand @(Error HandlerError : r))
+    rpcFunction "Fun" Sync (hand @(Stop HandlerError : r))
   ]
 
 targetError :: RpcError

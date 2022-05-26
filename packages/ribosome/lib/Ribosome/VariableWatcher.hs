@@ -38,7 +38,7 @@ checkVar var handler = do
 
 variableWatcherHandler ::
   Member (AtomicState (Map WatchedVariable Object)) r =>
-  Members [Rpc !! RpcError, Sync WatcherLock, Resource, Error HandlerError] r =>
+  Members [Rpc !! RpcError, Sync WatcherLock, Resource, Stop HandlerError] r =>
   Map WatchedVariable (Object -> Sem r ()) ->
   Sem r ()
 variableWatcherHandler vars =

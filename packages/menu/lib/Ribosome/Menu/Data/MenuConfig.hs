@@ -14,7 +14,7 @@ data MenuConfig r m i a =
   MenuConfig {
     _items :: SerialT m (MenuItem i),
     _itemFilter :: MenuItemFilter i,
-    _consumer :: MenuConsumer r i a,
+    _consumer :: MenuConsumer i r a,
     _render :: MenuRenderer r i,
     _prompt :: PromptConfig m
   }

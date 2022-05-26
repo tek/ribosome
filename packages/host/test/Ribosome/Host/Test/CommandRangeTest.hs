@@ -26,7 +26,7 @@ var =
   "test_var"
 
 rangeFile ::
-  Members [Rpc !! RpcError, Error HandlerError] r =>
+  Members [Rpc !! RpcError, Stop HandlerError] r =>
   Range 'RangeFile ->
   Int64 ->
   Sem r ()
@@ -37,7 +37,7 @@ rangeFile = \case
     const (throw "no upper range bound given")
 
 rangeLine ::
-  Members [Rpc !! RpcError, Error HandlerError] r =>
+  Members [Rpc !! RpcError, Stop HandlerError] r =>
   Range ('RangeLine 'Nothing) ->
   Sem r ()
 rangeLine = \case
@@ -47,7 +47,7 @@ rangeLine = \case
     throw "no upper range bound given"
 
 rangeLineDefault ::
-  Members [Rpc !! RpcError, Error HandlerError] r =>
+  Members [Rpc !! RpcError, Stop HandlerError] r =>
   Range ('RangeLine ('Just 13)) ->
   Sem r ()
 rangeLineDefault = \case
@@ -57,7 +57,7 @@ rangeLineDefault = \case
     throw "range line count function got upper bound"
 
 rangeCountImplicit ::
-  Members [Rpc !! RpcError, Error HandlerError] r =>
+  Members [Rpc !! RpcError, Stop HandlerError] r =>
   Range ('RangeCount 'Nothing) ->
   Sem r ()
 rangeCountImplicit = \case
@@ -67,7 +67,7 @@ rangeCountImplicit = \case
     rpcError (nvimSetVar var l)
 
 rangeCountDefault ::
-  Members [Rpc !! RpcError, Error HandlerError] r =>
+  Members [Rpc !! RpcError, Stop HandlerError] r =>
   Range ('RangeCount ('Just 23)) ->
   Sem r ()
 rangeCountDefault = \case
@@ -82,11 +82,11 @@ rangeHandlers ::
   [RpcHandler r]
 rangeHandlers =
   [
-    rpcCommand "RangeFile" Sync (rangeFile @(Error HandlerError : r)),
-    rpcCommand "RangeLine" Sync (rangeLine @(Error HandlerError : r)),
-    rpcCommand "RangeLineDefault" Sync (rangeLineDefault @(Error HandlerError : r)),
-    rpcCommand "RangeCountImplicit" Sync (rangeCountImplicit @(Error HandlerError : r)),
-    rpcCommand "RangeCountDefault" Sync (rangeCountDefault @(Error HandlerError : r))
+    rpcCommand "RangeFile" Sync (rangeFile @(Stop HandlerError : r)),
+    rpcCommand "RangeLine" Sync (rangeLine @(Stop HandlerError : r)),
+    rpcCommand "RangeLineDefault" Sync (rangeLineDefault @(Stop HandlerError : r)),
+    rpcCommand "RangeCountImplicit" Sync (rangeCountImplicit @(Stop HandlerError : r)),
+    rpcCommand "RangeCountDefault" Sync (rangeCountDefault @(Stop HandlerError : r))
   ]
 
 test_range :: UnitTest

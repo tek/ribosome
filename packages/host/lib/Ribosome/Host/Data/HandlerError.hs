@@ -43,17 +43,17 @@ toHandlerError htag e =
 
 handlerErrorFrom ::
   ToErrorMessage e =>
-  Member (Error HandlerError) r =>
+  Member (Stop HandlerError) r =>
   HandlerTag ->
   Sem (Stop e : r) a ->
   Sem r a
 handlerErrorFrom t =
-  stopToError . mapStop (toHandlerError (Just t)) . raiseUnder
+  mapStop (toHandlerError (Just t))
 
 handlerError ::
   ToErrorMessage e =>
-  Member (Error HandlerError) r =>
+  Member (Stop HandlerError) r =>
   Sem (Stop e : r) a ->
   Sem r a
 handlerError =
-  stopToError . mapStop (toHandlerError Nothing) . raiseUnder
+  mapStop (toHandlerError Nothing)

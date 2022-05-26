@@ -1,11 +1,15 @@
-module Ribosome.Host.Test.Run where
+module Ribosome.Menu.Test.Run where
 
+import Data.MessagePack (Object)
 import Data.Time (UTCTime)
 import Hedgehog.Internal.Property (Failure)
 import Polysemy.Conc (interpretRace)
 import Polysemy.Test (Hedgehog, Test, TestError (TestError), UnitTest, runTestAuto)
 import Polysemy.Time (GhcTime, interpretTimeGhcConstant, mkDatetime)
 
+import Ribosome.Data.Mapping (MappingIdent)
+import Ribosome.Data.WatchedVariable (WatchedVariable)
+import Ribosome.Embed (PluginHandler, PluginStack, embedNvimPlugin, embedNvimPlugin_)
 import Ribosome.Host.Data.BootError (BootError (unBootError))
 import qualified Ribosome.Host.Data.HandlerError as HandlerError
 import Ribosome.Host.Data.HandlerError (HandlerError)
@@ -13,6 +17,7 @@ import Ribosome.Host.Data.RpcError (RpcError (unRpcError))
 import Ribosome.Host.Data.RpcHandler (RpcHandler)
 import Ribosome.Host.Effect.Rpc (Rpc)
 import Ribosome.Host.Embed (EmbedStack, embedNvim, embedNvim_)
+import Ribosome.Host.Interpreter.Handlers (interpretHandlers)
 
 type TestStack =
   [
@@ -32,6 +37,9 @@ type TestStack =
 
 type EmbedTestStack =
   EmbedStack ++ TestStack
+
+type PluginTestStack =
+  PluginStack ++ TestStack
 
 testTime :: UTCTime
 testTime =
@@ -53,7 +61,7 @@ embedTest ::
   UnitTest
 embedTest handlers =
   runTest .
-  embedNvim handlers
+  embedNvim (interpretHandlers handlers)
 
 embedTest_ ::
   Sem (Rpc : EmbedTestStack) () ->
@@ -62,8 +70,27 @@ embedTest_ =
   runTest .
   embedNvim_
 
+embedPluginTest ::
+  Map MappingIdent (PluginHandler TestStack) ->
+  Map WatchedVariable (Object -> PluginHandler TestStack) ->
+  [RpcHandler PluginTestStack] ->
+  Sem (Rpc : PluginTestStack) () ->
+  UnitTest
+embedPluginTest maps vars handlers =
+  runTest .
+  embedNvimPlugin "test" maps vars handlers
+
+embedPluginTest_ ::
+  Map MappingIdent (PluginHandler TestStack) ->
+  Map WatchedVariable (Object -> PluginHandler TestStack) ->
+  Sem (Rpc : PluginTestStack) () ->
+  UnitTest
+embedPluginTest_ maps vars =
+  runTest .
+  embedNvimPlugin_ "test" maps vars
+
 rpcError ::
-  Members [Rpc !! RpcError, Stop HandlerError] r =>
-  InterpreterFor Rpc r
+  Members [eff !! RpcError, Stop HandlerError] r =>
+  InterpreterFor eff r
 rpcError =
-  resumeHoistError (HandlerError.simple . unRpcError)
+  resumeHoist (HandlerError.simple . unRpcError)

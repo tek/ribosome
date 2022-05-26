@@ -104,7 +104,7 @@ render varItems menu = \case
 
 menuTest ::
   Members [Resource, Race, Embed IO, Final IO] r =>
-  MenuConsumer r Text a ->
+  MenuConsumer Text r a ->
   [Text] ->
   [Text] ->
   Sem r [[Entry Text]]
