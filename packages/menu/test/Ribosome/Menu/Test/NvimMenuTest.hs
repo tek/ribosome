@@ -18,7 +18,6 @@ import Ribosome.Data.Scratch (Scratch)
 import Ribosome.Data.ScratchOptions (ScratchOptions (_maxSize))
 import Ribosome.Data.SettingError (SettingError)
 import Ribosome.Effect.Settings (Settings)
-import Ribosome.Embed (embedNvimPlugin_)
 import Ribosome.Host.Api.Effect (bufferGetName, vimGetBuffers, vimGetWindows)
 import Ribosome.Host.Data.RpcError (RpcError)
 import Ribosome.Host.Effect.Rpc (Rpc)
@@ -51,7 +50,7 @@ import qualified Ribosome.Menu.Prompt.Data.PromptInputEvent as PromptInputEvent 
 import Ribosome.Menu.Prompt.Nvim (getCharStream, nvimPromptRenderer)
 import Ribosome.Menu.Prompt.Transition (basicTransition)
 import Ribosome.Menu.Run (nvimMenu, staticNvimMenu)
-import Ribosome.Menu.Test.Run (embedPluginTest_, runTest)
+import Ribosome.Test.Run (embedPluginTest_)
 
 sleep ::
   Double ->
@@ -142,7 +141,7 @@ nvimMenuTest =
 
 test_nvimMenuPure :: UnitTest
 test_nvimMenuPure =
-  runTest $ embedNvimPlugin_ "test" mempty mempty $ interpretSettingsRpc do
+  embedPluginTest_ $ interpretSettingsRpc do
     nvimMenuTest (promptInput pureChars)
 
 nativeChars :: [Text]
@@ -161,14 +160,14 @@ withInput delay interval chrs =
 
 test_nvimMenuNative :: UnitTest
 test_nvimMenuNative =
-  embedPluginTest_ mempty mempty do
+  embedPluginTest_ do
     inp <- getCharStream (MilliSeconds 10)
     withInput Nothing (Just (MilliSeconds 10)) nativeChars do
       nvimMenuTest inp
 
 test_nvimMenuInterrupt :: UnitTest
 test_nvimMenuInterrupt =
-  embedPluginTest_ mempty mempty do
+  embedPluginTest_ do
     (MenuResult.Aborted ===) =<< withInput (Just (MilliSeconds 50)) Nothing ["<c-c>", "<cr>"] do
       conf <- promptConfig <$> getCharStream (MilliSeconds 10)
       nvimMenu @_ @() def (menuItems items) Consumer.basic conf
@@ -192,14 +191,14 @@ navMappings =
 
 test_nvimMenuNav :: UnitTest
 test_nvimMenuNav =
-  embedPluginTest_ mempty mempty do
+  embedPluginTest_ do
     assertEq (MenuResult.Success "toem") =<< do
       withInput Nothing (Just (MilliSeconds 10)) navChars do
         runNvimMenu navMappings =<< getCharStream (MilliSeconds 10)
 
 test_nvimMenuQuit :: UnitTest
 test_nvimMenuQuit =
-  embedPluginTest_ mempty mempty do
+  embedPluginTest_ do
     void $ staticNvimMenu def [] Consumer.basic (PromptConfig inp basicTransition nvimPromptRenderer [])
     assertEq [""] =<< traverse bufferGetName =<< filterM buflisted =<< vimGetBuffers
   where
@@ -248,7 +247,7 @@ test_entrySlice =
 
 test_menuScrollUp :: UnitTest
 test_menuScrollUp =
-  embedPluginTest_ mempty mempty do
+  embedPluginTest_ do
     let prompt = PromptConfig (promptInputWith (Just 0.2) (Just 0.01) chars) basicTransition nvimPromptRenderer []
     Success a <- nvimMenu def { _maxSize = Just 4 } (menuItems its) consumer prompt
     4 === length a

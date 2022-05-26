@@ -20,7 +20,7 @@ import qualified Ribosome.Host.Effect.Rpc as Rpc
 import Ribosome.Host.Effect.Rpc (Rpc)
 import Ribosome.Host.Handler (rpcFunction)
 import Ribosome.Scratch (showInScratch)
-import Ribosome.Test.Run (rpcError, runTest)
+import Ribosome.Host.Test.Run (rpcError, runTest)
 import Ribosome.Test.Wait (assertWait)
 
 target :: [Text]

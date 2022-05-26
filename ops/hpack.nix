@@ -92,20 +92,29 @@ in {
       "type-errors-pretty"
       "typed-process"
     ];
-    tests = {
-      ribosome-host-unit = exe "ribosome-host" "test" {
-        dependencies = [
-          "deepseq"
-          "hedgehog"
-          "messagepack"
-          "ribosome-host"
-          "polysemy-conc"
-          "polysemy-test"
-          "tasty"
-          "time"
-        ];
-      };
+    tests.ribosome-host-unit = exe "ribosome-host" "test" {
+      dependencies = [
+        "deepseq"
+        "hedgehog"
+        "messagepack"
+        "ribosome-host"
+        "polysemy-conc"
+        "polysemy-test"
+        "tasty"
+        "time"
+      ];
     };
+  };
+
+  ribosome-host-test = merge (project "ribosome-host-test") {
+    synopsis = "Test tools for Ribosome";
+    description = "See https://hackage.haskell.org/package/ribosome-host-test/docs/Ribosome.Host.Test.html";
+    library.dependencies = [
+      "hedgehog"
+      "ribosome-host"
+      "polysemy-test"
+      "time"
+    ];
   };
 
   ribosome = merge (project "ribosome") {
@@ -120,22 +129,33 @@ in {
       "path-io"
       "ribosome-host"
     ];
-    tests = {
-      ribosome-unit = exe "ribosome" "test" {
-        dependencies = [
-          "aeson"
-          "hedgehog"
-          "messagepack"
-          "path"
-          "ribosome"
-          "ribosome-host"
-          "polysemy-conc"
-          "polysemy-test"
-          "tasty"
-          "time"
-        ];
-      };
+    tests.ribosome-unit = exe "ribosome" "test" {
+      dependencies = [
+        "aeson"
+        "hedgehog"
+        "messagepack"
+        "path"
+        "ribosome"
+        "ribosome-host"
+        "ribosome-host-test"
+        "polysemy-conc"
+        "polysemy-test"
+        "tasty"
+        "time"
+      ];
     };
+  };
+
+  ribosome-test = merge (project "ribosome-test") {
+    synopsis = "Test tools for Ribosome";
+    description = "See https://hackage.haskell.org/package/ribosome-test/docs/Ribosome.Test.html";
+    library.dependencies = [
+      "hedgehog"
+      "ribosome"
+      "ribosome-host"
+      "polysemy-test"
+      "time"
+    ];
   };
 
   ribosome-menu = merge (project "ribosome-menu") {
@@ -166,6 +186,7 @@ in {
         "ribosome"
         "ribosome-host"
         "ribosome-menu"
+        "ribosome-test"
         "polysemy-conc"
         "polysemy-test"
         "streamly"
@@ -192,21 +213,19 @@ in {
   integration = merge (removeAttrs (project "integration") ["library"]) {
     synopsis = "Neovim plugin host for Polysemy";
     description = "Internal project for testing ribosome-host";
-    tests = {
-      integration = exe "integration" "test" {
-        dependencies = [
-          "exon"
-          "hedgehog"
-          "ribosome-host"
-          "path"
-          "path-io"
-          "polysemy-conc"
-          "polysemy-process"
-          "polysemy-test"
-          "tasty"
-          "typed-process"
-        ];
-      };
+    tests.integration = exe "integration" "test" {
+      dependencies = [
+        "exon"
+        "hedgehog"
+        "ribosome-host"
+        "path"
+        "path-io"
+        "polysemy-conc"
+        "polysemy-process"
+        "polysemy-test"
+        "tasty"
+        "typed-process"
+      ];
     };
   };
 

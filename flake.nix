@@ -40,7 +40,9 @@
       integration = ./packages/integration;
       ribosome = ./packages/ribosome;
       ribosome-host = ./packages/host;
+      ribosome-host-test = ./packages/host-test;
       ribosome-menu = ./packages/menu;
+      ribosome-test = ./packages/test;
     };
     main = "ribosome-menu";
     inherit overrides;

@@ -10,7 +10,7 @@ import Ribosome.Host.Embed (embedNvim_)
 import Ribosome.Interpreter.Persist (interpretPersist)
 import Ribosome.Interpreter.PersistPath (interpretPersistPathAt)
 import Ribosome.Test.Error (testError)
-import Ribosome.Test.Run (runTest)
+import Ribosome.Host.Test.Run (runTest)
 
 data Thing =
   Thing {

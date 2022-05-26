@@ -8,7 +8,7 @@ import Ribosome.Host.Api.Data (Window)
 import Ribosome.Host.Api.Effect (bufferSetOption, nvimCommand, vimGetCurrentBuffer, vimGetCurrentWindow, vimGetWindows)
 import Ribosome.Host.Class.Msgpack.Encode (toMsgpack)
 import Ribosome.Host.Effect.Rpc (Rpc)
-import Ribosome.Test.Run (embedTest_)
+import Ribosome.Host.Test.Run (embedTest_)
 
 setCurrentNofile ::
   Member Rpc r =>

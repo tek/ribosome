@@ -161,7 +161,6 @@ test-suite ribosome-menu-unit
       Ribosome.Menu.Test.MenuTest
       Ribosome.Menu.Test.NvimMenuTest
       Ribosome.Menu.Test.PromptTest
-      Ribosome.Menu.Test.Run
       Ribosome.Menu.Test.StreamTest
   hs-source-dirs:
       test
@@ -241,6 +240,7 @@ test-suite ribosome-menu-unit
     , ribosome
     , ribosome-host
     , ribosome-menu
+    , ribosome-test
     , streamly
     , tasty
     , time

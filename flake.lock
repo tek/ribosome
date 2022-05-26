@@ -5839,11 +5839,11 @@
         "polysemy-time": "polysemy-time_4"
       },
       "locked": {
-        "lastModified": 1653257052,
-        "narHash": "sha256-d/Zo/rmQd5qkMbTmJMBZkm93pz5mZ2zj7OhefbIzCeE=",
+        "lastModified": 1653601723,
+        "narHash": "sha256-mUNTKCm9vBovs1NE+SnAN0ZKWny8QIUP043NFyjMHi4=",
         "owner": "tek",
         "repo": "polysemy-conc",
-        "rev": "fec2f10abaf6453d76fea889daf38d848b0983f8",
+        "rev": "e6616d8cae816971f599927530694fbfd9b3dc3b",
         "type": "github"
       },
       "original": {

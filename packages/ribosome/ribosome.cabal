@@ -243,6 +243,7 @@ test-suite ribosome-unit
     , polysemy-test
     , ribosome
     , ribosome-host
+    , ribosome-host-test
     , tasty
     , time
   mixins:

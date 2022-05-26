@@ -6,11 +6,17 @@ cradle:
     - path: "./packages/host/test"
       component: "ribosome-host:test:ribosome-host-unit"
 
+    - path: "./packages/host-test/lib"
+      component: "lib:ribosome-host-test"
+
     - path: "./packages/ribosome/lib"
       component: "lib:ribosome"
 
     - path: "./packages/ribosome/test"
       component: "ribosome:test:ribosome-unit"
+
+    - path: "./packages/test/lib"
+      component: "lib:ribosome-test"
 
     - path: "./packages/menu/lib"
       component: "lib:ribosome-menu"

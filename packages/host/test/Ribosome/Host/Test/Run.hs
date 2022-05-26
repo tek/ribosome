@@ -13,6 +13,7 @@ import Ribosome.Host.Data.RpcError (RpcError (unRpcError))
 import Ribosome.Host.Data.RpcHandler (RpcHandler)
 import Ribosome.Host.Effect.Rpc (Rpc)
 import Ribosome.Host.Embed (EmbedStack, embedNvim, embedNvim_)
+import Ribosome.Host.Interpreter.Handlers (interpretHandlers)
 
 type TestStack =
   [
@@ -53,7 +54,7 @@ embedTest ::
   UnitTest
 embedTest handlers =
   runTest .
-  embedNvim handlers
+  embedNvim (interpretHandlers handlers)
 
 embedTest_ ::
   Sem (Rpc : EmbedTestStack) () ->
@@ -66,4 +67,4 @@ rpcError ::
   Members [Rpc !! RpcError, Stop HandlerError] r =>
   InterpreterFor Rpc r
 rpcError =
-  resumeHoistError (HandlerError.simple . unRpcError)
+  resumeHoist (HandlerError.simple . unRpcError)

@@ -10,7 +10,7 @@ import Ribosome.Host.Api.Effect (nvimSetVar)
 import Ribosome.Host.Data.HandlerError (HandlerError)
 import Ribosome.Host.Data.RpcError (RpcError)
 import Ribosome.Host.Effect.Rpc (Rpc)
-import Ribosome.Test.Run (runTest)
+import Ribosome.Host.Test.Run (runTest)
 import Ribosome.Test.Wait (assertWait)
 
 changed ::

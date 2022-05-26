@@ -378,7 +378,7 @@ test_menuUnselectedCursor =
 
 test_menu :: TestTree
 test_menu =
-  testGroup "menu" [
+  testGroup "basic" [
     unitTest "change mode" test_pureMenuModeChange,
     unitTest "filter items" test_pureMenuFilter,
     unitTest "execute an action" test_pureMenuExecute,
