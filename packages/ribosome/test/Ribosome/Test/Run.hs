@@ -1,12 +1,15 @@
 module Ribosome.Test.Run where
 
+import Data.MessagePack (Object)
 import Data.Time (UTCTime)
 import Hedgehog.Internal.Property (Failure)
 import Polysemy.Conc (interpretRace)
 import Polysemy.Test (Hedgehog, Test, TestError (TestError), UnitTest, runTestAuto)
 import Polysemy.Time (GhcTime, interpretTimeGhcConstant, mkDatetime)
 
-import Ribosome.Embed (embedNvimPlugin)
+import Ribosome.Data.Mapping (MappingIdent)
+import Ribosome.Data.WatchedVariable (WatchedVariable)
+import Ribosome.Embed (PluginHandler, PluginStack, embedNvimPlugin)
 import Ribosome.Host.Data.BootError (BootError (unBootError))
 import qualified Ribosome.Host.Data.HandlerError as HandlerError
 import Ribosome.Host.Data.HandlerError (HandlerError)
@@ -14,6 +17,7 @@ import Ribosome.Host.Data.RpcError (RpcError (unRpcError))
 import Ribosome.Host.Data.RpcHandler (RpcHandler)
 import Ribosome.Host.Effect.Rpc (Rpc)
 import Ribosome.Host.Embed (EmbedStack, embedNvim, embedNvim_)
+import Ribosome.Host.Interpreter.Handlers (interpretHandlers)
 
 type TestStack =
   [
@@ -57,7 +61,7 @@ embedTest ::
   UnitTest
 embedTest handlers =
   runTest .
-  embedNvim handlers
+  embedNvim (interpretHandlers handlers)
 
 embedTest_ ::
   Sem (Rpc : EmbedTestStack) () ->
@@ -67,15 +71,23 @@ embedTest_ =
   embedNvim_
 
 embedPluginTest ::
+  Map MappingIdent (PluginHandler TestStack) ->
+  Map WatchedVariable (Object -> PluginHandler TestStack) ->
   [RpcHandler PluginTestStack] ->
   Sem (Rpc : PluginTestStack) () ->
   UnitTest
-embedPluginTest =
+embedPluginTest maps vars handlers =
   runTest .
-  embedNvimPlugin handlers
+  embedNvimPlugin "test" maps vars handlers
+
+embedPluginTest_ ::
+  Sem (Rpc : PluginTestStack) () ->
+  UnitTest
+embedPluginTest_ =
+  embedPluginTest mempty mempty mempty
 
 rpcError ::
   Members [eff !! RpcError, Stop HandlerError] r =>
   InterpreterFor eff r
 rpcError =
-  resumeHoistError (HandlerError.simple . unRpcError)
+  resumeHoist (HandlerError.simple . unRpcError)
