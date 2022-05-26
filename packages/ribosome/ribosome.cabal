@@ -162,8 +162,10 @@ test-suite ribosome-unit
       Ribosome.Test.Run
       Ribosome.Test.ScratchTest
       Ribosome.Test.SettingTest
+      Ribosome.Test.SyntaxTest
       Ribosome.Test.Wait
       Ribosome.Test.WatcherTest
+      Ribosome.Test.WindowTest
   hs-source-dirs:
       test
   default-extensions:
