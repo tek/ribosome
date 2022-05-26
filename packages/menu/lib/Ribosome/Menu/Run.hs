@@ -3,6 +3,7 @@ module Ribosome.Menu.Run where
 import Control.Lens ((%~), (<>~), (^.))
 import qualified Data.Text as Text
 import Polysemy.Conc (interpretAtomic)
+import qualified Polysemy.Log as Log
 import qualified Streamly.Internal.Data.Stream.IsStream as Stream
 import Streamly.Prelude (SerialT)
 
@@ -32,7 +33,7 @@ import Ribosome.Menu.Filters (fuzzyItemFilter)
 import Ribosome.Menu.Main (menuMain)
 import Ribosome.Menu.Nvim (menuSyntax, nvimMenuRenderer)
 import qualified Ribosome.Menu.Prompt.Data.PromptConfig as PromptConfig
-import Ribosome.Menu.Prompt.Data.PromptConfig (PromptConfig)
+import Ribosome.Menu.Prompt.Data.PromptConfig (PromptConfig, hoistPromptConfig)
 import Ribosome.Menu.Prompt.Data.PromptRenderer (PromptRenderer (PromptRenderer))
 import Ribosome.Scratch (showInScratch)
 
@@ -62,16 +63,16 @@ runMenu config =
   bracketPrompt (config ^. MenuConfig.prompt . PromptConfig.render)
   where
     bracketPrompt (PromptRenderer acquire release _) =
-      bracket (embed acquire) (embed . release) \ _ -> menuMain config
+      bracket acquire release \ _ -> menuMain config
 
 nvimMenu ::
   ∀ i a r .
-  Members [Rpc !! RpcError, Settings !! SettingError] r =>
-  Members [Rpc, AtomicState (Map Text Scratch), Reader PluginName, Log, Resource, Race, Embed IO, Final IO] r =>
+  Members [Rpc, Rpc !! RpcError, Settings !! SettingError] r =>
+  Members [AtomicState (Map Text Scratch), Reader PluginName, Log, Resource, Race, Embed IO, Final IO] r =>
   ScratchOptions ->
   SerialT IO (MenuItem i) ->
   MenuConsumer i r a ->
-  PromptConfig IO ->
+  PromptConfig IO r ->
   Sem r (MenuResult a)
 nvimMenu options items consumer promptConfig = do
   _ :: Int <- vimCallFunction "inputsave" []
@@ -79,9 +80,9 @@ nvimMenu options items consumer promptConfig = do
   run =<< showInScratch @[] [] (withSyntax (ensureSize options))
   where
     run scratch = do
-      windowSetOption (scratchWindow scratch) "cursorline" (toMsgpack True)
+      windowSetOption (scratchWindow scratch) "cursorline" (toMsgpack True) !>> Log.debug "Failed to set cursorline"
       interpretAtomic (def :: NvimMenuState) do
-        runMenu (MenuConfig items fuzzyItemFilter (hoistMenuConsumer raise (insertAt @5) consumer) (nvimMenuRenderer options scratch) promptConfig)
+        runMenu (MenuConfig items fuzzyItemFilter (hoistMenuConsumer raise (insertAt @5) consumer) (nvimMenuRenderer options scratch) (hoistPromptConfig raise promptConfig))
     ensureSize =
       ScratchOptions.size %~ (<|> Just 1)
     withSyntax =
@@ -93,7 +94,7 @@ staticNvimMenu ::
   ScratchOptions ->
   [MenuItem i] ->
   MenuConsumer i r a ->
-  PromptConfig IO ->
+  PromptConfig IO r ->
   Sem r (MenuResult a)
 staticNvimMenu options items =
   nvimMenu (ensureSize options) (Stream.fromList items)

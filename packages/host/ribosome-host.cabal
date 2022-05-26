@@ -49,6 +49,7 @@ library
       Ribosome.Host.Data.RpcHandler
       Ribosome.Host.Data.RpcMessage
       Ribosome.Host.Data.RpcType
+      Ribosome.Host.Data.Tuple
       Ribosome.Host.Effect.Errors
       Ribosome.Host.Effect.Handlers
       Ribosome.Host.Effect.Host

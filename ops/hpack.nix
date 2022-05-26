@@ -189,12 +189,9 @@ in {
     };
   };
 
-  integration = merge (project "integration") {
+  integration = merge (removeAttrs (project "integration") ["library"]) {
     synopsis = "Neovim plugin host for Polysemy";
     description = "Internal project for testing ribosome-host";
-    library.dependencies = [
-      "ribosome-host"
-    ];
     tests = {
       integration = exe "integration" "test" {
         dependencies = [

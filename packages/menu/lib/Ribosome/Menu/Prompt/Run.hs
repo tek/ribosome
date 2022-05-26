@@ -12,6 +12,8 @@ import qualified Streamly.Data.Fold as Fold
 import qualified Streamly.Internal.Data.Stream.IsStream as Stream
 import Streamly.Prelude (SerialT)
 
+import Ribosome.Final (inFinal_)
+import Ribosome.Host.Data.Tuple (dup)
 import Ribosome.Menu.Prompt.Data.CursorUpdate (CursorUpdate)
 import qualified Ribosome.Menu.Prompt.Data.CursorUpdate as CursorUpdate (CursorUpdate (..))
 import qualified Ribosome.Menu.Prompt.Data.Prompt as Prompt
@@ -86,12 +88,10 @@ updateLastChange ::
   Text ->
   Text ->
   PromptChange
-updateLastChange old new =
-  if Text.length old + 1 == Text.length new && Text.isPrefixOf old new
-  then PromptAppend
-  else if Text.length new + 1 == Text.length old && Text.isPrefixOf new old
-  then PromptUnappend
-  else PromptRandom
+updateLastChange old new
+  | Text.length old + 1 == Text.length new && Text.isPrefixOf old new = PromptAppend
+  | Text.length new + 1 == Text.length old && Text.isPrefixOf new old = PromptUnappend
+  | otherwise = PromptRandom
 
 modifyPrompt :: PromptState -> CursorUpdate -> TextUpdate -> Prompt -> Prompt
 modifyPrompt newState cursorUpdate textUpdate (Prompt cursor _ (PromptText text)) =
@@ -164,20 +164,21 @@ processPromptEvent prompt (PromptEventHandler handleEvent) = \case
   Left PromptControlEvent.Quit ->
     pure Nothing
   Left (PromptControlEvent.Set (Prompt cursor state (PromptText text))) -> do
-    newPrompt <- modifyMVar prompt (pure . (\ a -> (a, a)) . modifyPrompt state (CursorUpdate.Index cursor) (TextUpdate.Set text))
+    newPrompt <- modifyMVar prompt (pure . dup . modifyPrompt state (CursorUpdate.Index cursor) (TextUpdate.Set text))
     pure(Just (newPrompt, PromptEvent.Edit))
 
 promptWithControl ::
   MonadIO m =>
   MonadCatch m =>
   MonadBaseControl IO m =>
+  (Sem r () -> IO ()) ->
   MVar Prompt ->
-  PromptConfig m ->
+  PromptConfig m r ->
   SerialT m PromptControlEvent ->
   MVar () ->
   SerialT m (Prompt, PromptEvent)
-promptWithControl prompt (PromptConfig (PromptInput source) handler renderer flags) control listenQuit =
-  Stream.tapAsync (Fold.drainBy (render renderer . fst)) $
+promptWithControl lower prompt (PromptConfig (PromptInput source) handler renderer flags) control listenQuit =
+  Stream.tapAsync (Fold.drainBy (liftIO . lower . render renderer . fst)) $
   takeUntilNothing $
   Stream.mapM (processPromptEvent prompt (handler flags)) $
   Stream.parallelMin (Left <$> control) (Right <$> sourceWithInit)
@@ -197,23 +198,23 @@ controlChannel = do
   pure (chan, listenQuit, liftIO (putMVar listenQuit () *> atomically (closeTMChan chan)), chanStream chan)
 
 promptStream ::
-  Member (Embed IO) r =>
+  Members [Embed IO, Final IO] r =>
   MonadIO m =>
   MonadCatch m =>
   MonadBaseControl IO m =>
-  PromptConfig m ->
+  PromptConfig m r ->
   Sem r (TMChan PromptControlEvent, SerialT m (Prompt, PromptEvent))
 promptStream config = do
   (chan, listenQuit, close, control) <- controlChannel
   prompt <- embed (newMVar (pristinePrompt (startInsert (config ^. PromptConfig.flags))))
-  pure (chan, Stream.finally close (promptWithControl prompt config control listenQuit))
+  inFinal_ \ lower pur ->
+    pur (chan, Stream.finally close (promptWithControl lower prompt config control listenQuit))
 
 pristinePrompt :: Bool -> Prompt
 pristinePrompt insert =
   Prompt 0 (if insert then PromptState.Insert else PromptState.Normal) ""
 
 noPromptRenderer ::
-  Applicative m =>
-  PromptRenderer m
+  PromptRenderer r
 noPromptRenderer =
   PromptRenderer unit (const unit) (const unit)

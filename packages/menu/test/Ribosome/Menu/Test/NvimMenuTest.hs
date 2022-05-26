@@ -1,11 +1,11 @@
-{-# OPTIONS_GHC -Wno-unused-imports #-}
 module Ribosome.Menu.Test.NvimMenuTest where
 
-import Control.Concurrent.Lifted (fork, killThread, threadDelay)
+import Control.Concurrent.Lifted (threadDelay)
 import Control.Lens (element, use, (^?))
 import qualified Data.Map.Strict as Map
-import Polysemy.Conc (interpretAtomic, interpretRace, withAsync_)
+import Polysemy.Conc (withAsync_)
 import Polysemy.Test (Hedgehog, UnitTest, assertEq, runTestAuto, unitTest, (===))
+import qualified Polysemy.Time as Time
 import Polysemy.Time (MilliSeconds (MilliSeconds), convert)
 import qualified Streamly.Internal.Data.Stream.IsStream as Stream
 import Streamly.Prelude (SerialT)
@@ -113,10 +113,9 @@ exec =
 promptConfig ::
   Members [Rpc, Rpc !! RpcError, Final IO] r =>
   PromptInput IO ->
-  Sem r (PromptConfig IO)
-promptConfig source = do
-  ren <- nvimPromptRenderer
-  pure (PromptConfig source basicTransition ren [StartInsert])
+  PromptConfig IO r
+promptConfig source =
+  PromptConfig source basicTransition nvimPromptRenderer [StartInsert]
 
 runNvimMenu ::
   Members [Rpc !! RpcError, Settings !! SettingError] r =>
@@ -124,9 +123,8 @@ runNvimMenu ::
   Mappings Text r a ->
   PromptInput IO ->
   Sem r (MenuResult a)
-runNvimMenu maps source = do
-  conf <- promptConfig source
-  nvimMenu def { _maxSize = Just 4 } (menuItems items) (Consumer.withMappings maps) conf
+runNvimMenu maps source =
+  nvimMenu def { _maxSize = Just 4 } (menuItems items) (Consumer.withMappings maps) (promptConfig source)
 
 mappings ::
   Members [Resource, Embed IO] r =>
@@ -154,26 +152,27 @@ nativeChars =
 withInput ::
   Members [Rpc, Resource, Race, Async, Time t d] r =>
   Maybe MilliSeconds ->
+  Maybe MilliSeconds ->
   [Text] ->
   Sem r a ->
   Sem r a
-withInput delay chrs =
-  withAsync_ (syntheticInput (convert <$> delay) chrs)
+withInput delay interval chrs =
+  withAsync_ (traverse_ Time.sleep delay *> syntheticInput (convert <$> interval) chrs)
 
 test_nvimMenuNative :: UnitTest
 test_nvimMenuNative =
   embedPluginTest_ mempty mempty do
     inp <- getCharStream (MilliSeconds 10)
-    withInput (Just (MilliSeconds 10)) nativeChars do
+    withInput Nothing (Just (MilliSeconds 10)) nativeChars do
       nvimMenuTest inp
 
 test_nvimMenuInterrupt :: UnitTest
 test_nvimMenuInterrupt =
   embedPluginTest_ mempty mempty do
-    (MenuResult.Aborted ===) =<< withInput (Just (MilliSeconds 10)) ["<c-c>", "<cr>"] do
-      conf <- promptConfig =<< getCharStream (MilliSeconds 10)
+    (MenuResult.Aborted ===) =<< withInput (Just (MilliSeconds 50)) Nothing ["<c-c>", "<cr>"] do
+      conf <- promptConfig <$> getCharStream (MilliSeconds 10)
       nvimMenu @_ @() def (menuItems items) Consumer.basic conf
-    (1 ===) . length =<< vimGetWindows
+    assertEq 1 . length =<< vimGetWindows
 
 returnPrompt ::
   MenuSem Text r (Maybe (MenuAction r Text))
@@ -195,14 +194,13 @@ test_nvimMenuNav :: UnitTest
 test_nvimMenuNav =
   embedPluginTest_ mempty mempty do
     assertEq (MenuResult.Success "toem") =<< do
-      withInput (Just (MilliSeconds 10)) navChars do
+      withInput Nothing (Just (MilliSeconds 10)) navChars do
         runNvimMenu navMappings =<< getCharStream (MilliSeconds 10)
 
 test_nvimMenuQuit :: UnitTest
 test_nvimMenuQuit =
   embedPluginTest_ mempty mempty do
-    ren <- nvimPromptRenderer
-    void $ staticNvimMenu def [] Consumer.basic (PromptConfig inp basicTransition ren [])
+    void $ staticNvimMenu def [] Consumer.basic (PromptConfig inp basicTransition nvimPromptRenderer [])
     assertEq [""] =<< traverse bufferGetName =<< filterM buflisted =<< vimGetBuffers
   where
     inp =
@@ -251,8 +249,7 @@ test_entrySlice =
 test_menuScrollUp :: UnitTest
 test_menuScrollUp =
   embedPluginTest_ mempty mempty do
-    ren <- nvimPromptRenderer
-    let prompt = PromptConfig (promptInputWith (Just 0.2) (Just 0.01) chars) basicTransition ren []
+    let prompt = PromptConfig (promptInputWith (Just 0.2) (Just 0.01) chars) basicTransition nvimPromptRenderer []
     Success a <- nvimMenu def { _maxSize = Just 4 } (menuItems its) consumer prompt
     4 === length a
   where

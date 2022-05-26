@@ -142,15 +142,7 @@ nvimRelease (NvimPromptResources gc) = do
   vimCallFunction "inputrestore" []
 
 nvimPromptRenderer ::
-  Members [Rpc, Rpc !! RpcError, Final IO] r =>
-  Sem r (PromptRenderer IO)
+  Members [Rpc, Rpc !! RpcError] r =>
+  PromptRenderer r
 nvimPromptRenderer =
-  withWeavingToFinal \ s wv _ -> do
-    let
-      acquire =
-        wv (nvimAcquire <$ s)
-      release a =
-        void (wv (nvimRelease <$> a))
-      render p =
-        void (wv (nvimRenderPrompt p <$ s))
-    pure (PromptRenderer acquire release render <$ s)
+  PromptRenderer nvimAcquire nvimRelease nvimRenderPrompt

@@ -3,6 +3,7 @@ module Ribosome.Menu.Data.Entry where
 import Control.Lens (makeClassy)
 import qualified Data.IntMap.Strict as IntMap
 
+import Ribosome.Host.Data.Tuple (dup)
 import Ribosome.Menu.Data.MenuItem (HasMenuItem (menuItem), MenuItem (_truncated), simpleMenuItem)
 
 data Entry a =
@@ -44,4 +45,4 @@ intEntries nums =
 
 simpleIntEntries :: [Int] -> Entries Int
 simpleIntEntries =
-  intEntries . fmap \ a -> (a, a)
+  intEntries . fmap dup

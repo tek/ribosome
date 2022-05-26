@@ -7,11 +7,11 @@ import Exon (exon)
 import Polysemy.Conc (interpretAtomic, interpretSyncAs)
 import qualified Polysemy.Log as Log
 import Prelude hiding (consume)
-import Ribosome.Final (inFinal)
 import qualified Streamly.Internal.Data.Fold as Fold
 import qualified Streamly.Internal.Data.Stream.IsStream as Stream
 import Streamly.Prelude (AsyncT, SerialT)
 
+import Ribosome.Final (inFinal)
 import Ribosome.Menu.Data.MenuAction (MenuAction)
 import qualified Ribosome.Menu.Data.MenuAction as MenuAction (MenuAction (..))
 import qualified Ribosome.Menu.Data.MenuConfig as MenuConfig
@@ -32,6 +32,7 @@ import Ribosome.Menu.Data.MenuState (
   )
 import qualified Ribosome.Menu.Data.QuitReason as QuitReason
 import Ribosome.Menu.Prompt.Data.Prompt (Prompt)
+import Ribosome.Menu.Prompt.Data.PromptConfig (hoistPromptConfig)
 import qualified Ribosome.Menu.Prompt.Data.PromptControlEvent as PromptControlEvent
 import Ribosome.Menu.Prompt.Data.PromptControlEvent (PromptControlEvent)
 import Ribosome.Menu.Prompt.Data.PromptEvent (PromptEvent)
@@ -176,6 +177,6 @@ menuMain conf =
   interpretAtomic def $
   interpretAtomic def $
   interpretAtomic def do
-    (promptControl, promptEvents) <- promptStream (conf ^. MenuConfig.prompt)
+    (promptControl, promptEvents) <- promptStream (hoistPromptConfig (insertAt @0) (conf ^. MenuConfig.prompt))
     stream <- menuStream conf promptControl (Stream.fromSerial promptEvents)
     insertAt @0 . menuResult =<< embed (Stream.last stream)
