@@ -1,11 +1,12 @@
-module Ribosome.Test.StreamTest where
+module Ribosome.Menu.Test.StreamTest where
 
 import Hedgehog ((===))
+import Polysemy.Test (UnitTest)
 import qualified Streamly.Prelude as Stream
 
-import Ribosome.Stream.Accumulate (mapMAcc)
-import Ribosome.System.Time (sleep)
-import Ribosome.Test.Run (UnitTest)
+import Ribosome.Menu.Stream.Accumulate (mapMAcc)
+import Control.Monad.Trans.Class (lift)
+import Control.Concurrent (threadDelay)
 
 data ADat =
   Normal Int
@@ -37,16 +38,16 @@ classifyAcc = pure . \case
   Normal a -> Left (Normal a)
 
 consumeAcc ::
-  MonadIO m =>
   NonEmpty ADat ->
-  m [ADat]
+  IO [ADat]
 consumeAcc ds = do
-  sleep 0.05
+  threadDelay 50000
   pure (toList ds)
 
 test_mapMAcc :: UnitTest
 test_mapMAcc = do
-  r <- Stream.toList $
+  r <- lift $
+    Stream.toList $
     mapMAcc classifyAcc consumeAcc $
     Stream.delay 0.02 $
     Stream.fromList inputAcc
