@@ -8,6 +8,6 @@ interpretUserErrorInfo :: InterpreterFor UserError r
 interpretUserErrorInfo =
   interpret \case
     UserError e severity | severity >= Info ->
-      pure (Just e)
+      pure (Just [e])
     UserError _ _ ->
       pure Nothing

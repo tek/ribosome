@@ -60,7 +60,7 @@ callTest n =
 
 test_function :: UnitTest
 test_function =
-  runTest $ interpretAtomic 0 $ embedNvim (interpretHandlers handlers) $ interpretSync do
+  runTest $ interpretAtomic 0 $ embedNvim def (interpretHandlers handlers) $ interpretSync do
     nvimSetVar var (10 :: Int)
     Rpc.async (Data.nvimGetVar var) (void . Sync.putTry)
     assertRight (10 :: Int) =<< evalMaybe =<< Sync.wait (Seconds 5)

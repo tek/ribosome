@@ -1,6 +1,10 @@
 module Ribosome.Host.Data.HandlerError where
 
+import Exon (exon)
 import Polysemy.Log (Severity (Error))
+import Prelude hiding (tag)
+import Text.Show (showParen, showsPrec)
+import GHC.Stack (withFrozenCallStack)
 
 newtype HandlerTag =
   HandlerTag { unHandlerTag :: Text }
@@ -15,16 +19,33 @@ data ErrorMessage =
   }
   deriving stock (Eq, Show)
 
-data HandlerError =
-  HandlerError {
+data HandlerError :: Type where
+  HandlerError :: HasCallStack => {
     msg :: ErrorMessage,
     tag :: Maybe HandlerTag
-  }
-  deriving stock (Eq, Show)
+  } -> HandlerError
 
-simple :: Text -> HandlerError
+instance Show HandlerError where
+  showsPrec d HandlerError {..} =
+    showParen (d > 10) [exon|HandlerError { msg = #{showsPrec 0 msg}, tag = #{showsPrec 0 tag} }|]
+
+simple ::
+  HasCallStack =>
+  Text ->
+  HandlerError
 simple msg =
-  HandlerError (ErrorMessage msg [msg] Error) Nothing
+  withFrozenCallStack do
+    HandlerError (ErrorMessage msg [msg] Error) Nothing
+
+handlerError ::
+  Member (Stop HandlerError) r =>
+  HasCallStack =>
+  ErrorMessage ->
+  Maybe HandlerTag ->
+  Sem r a
+handlerError msg tag =
+  withFrozenCallStack do
+    stop (HandlerError msg tag)
 
 instance IsString HandlerError where
   fromString =
@@ -50,10 +71,10 @@ handlerErrorFrom ::
 handlerErrorFrom t =
   mapStop (toHandlerError (Just t))
 
-handlerError ::
+mapHandlerError ::
   ToErrorMessage e =>
   Member (Stop HandlerError) r =>
   Sem (Stop e : r) a ->
   Sem r a
-handlerError =
+mapHandlerError =
   mapStop (toHandlerError Nothing)

@@ -2,7 +2,7 @@ module Ribosome.Embed where
 
 import Data.MessagePack (Object)
 import Polysemy.Conc (interpretAtomic)
-import Polysemy.Log (Severity (Warn), interpretLogStdoutLevelConc)
+import Time (GhcTime)
 
 import Ribosome.Data.Mapping (MappingIdent)
 import Ribosome.Data.PluginName (PluginName)
@@ -11,9 +11,10 @@ import Ribosome.Data.SettingError (SettingError)
 import Ribosome.Data.WatchedVariable (WatchedVariable)
 import Ribosome.Effect.Settings (Settings)
 import Ribosome.Host.Data.BootError (BootError)
+import Ribosome.Host.Data.HostConfig (HostConfig)
 import Ribosome.Host.Data.RpcHandler (Handler, RpcHandler, hoistRpcHandlers)
 import Ribosome.Host.Effect.Rpc (Rpc)
-import Ribosome.Host.Embed (EmbedStack, interpretHostStack)
+import Ribosome.Host.Embed (EmbedStack, interpretCoreDeps, interpretHostEmbedCore)
 import Ribosome.Host.Interpreter.Handlers (interpretHandlers)
 import Ribosome.Host.Interpreter.Host (testHost)
 import Ribosome.Interpreter.BuiltinHandlers (interpretBuiltinHandlers)
@@ -41,16 +42,16 @@ type PluginHandler r =
   Handler (HandlerStack ++ r) ()
 
 interpretPluginStack ::
-  Members [Error BootError, Resource, Race, Async, Embed IO] r =>
-  Severity ->
+  Members [Error BootError, GhcTime, Resource, Race, Async, Embed IO] r =>
+  HostConfig ->
   PluginName ->
   InterpretersFor BasicPluginStack r
-interpretPluginStack level name =
+interpretPluginStack conf name =
   interpretAtomic mempty .
   runReader name .
-  interpretLogStdoutLevelConc (Just level) .
+  interpretCoreDeps conf .
   interpretUserErrorPrefixed .
-  interpretHostStack
+  interpretHostEmbedCore
 
 testPlugin ::
   ∀ r r' .
@@ -70,29 +71,29 @@ testPlugin name maps vars handlers =
   insertAt @1
 
 embedNvimPluginLog ::
-  Members [Error BootError, Resource, Race, Async, Embed IO, Final IO] r =>
-  Severity ->
+  Members [Error BootError, GhcTime, Resource, Race, Async, Embed IO, Final IO] r =>
+  HostConfig ->
   PluginName ->
   Map MappingIdent (PluginHandler r) ->
   Map WatchedVariable (Object -> PluginHandler r) ->
   [RpcHandler (PluginStack ++ r)] ->
   InterpretersFor (Rpc : PluginStack) r
-embedNvimPluginLog level name maps vars handlers =
-  interpretPluginStack level name .
+embedNvimPluginLog conf name maps vars handlers =
+  interpretPluginStack conf name .
   testPlugin name maps vars handlers
 
 embedNvimPlugin ::
-  Members [Error BootError, Resource, Race, Async, Embed IO, Final IO] r =>
+  Members [Error BootError, GhcTime, Resource, Race, Async, Embed IO, Final IO] r =>
   PluginName ->
   Map MappingIdent (PluginHandler r) ->
   Map WatchedVariable (Object -> Handler (HandlerStack ++ r) ()) ->
   [RpcHandler (PluginStack ++ r)] ->
   InterpretersFor (Rpc : PluginStack) r
 embedNvimPlugin =
-  embedNvimPluginLog Warn
+  embedNvimPluginLog def
 
 embedNvimPlugin_ ::
-  Members [Error BootError, Resource, Race, Async, Embed IO, Final IO] r =>
+  Members [Error BootError, GhcTime, Resource, Race, Async, Embed IO, Final IO] r =>
   PluginName ->
   Map MappingIdent (PluginHandler r) ->
   Map WatchedVariable (Object -> Handler (HandlerStack ++ r) ()) ->

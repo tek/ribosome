@@ -38,6 +38,6 @@ modsHandlers =
 
 test_mods :: UnitTest
 test_mods =
-  runTest $ interpretAtomic 0 $ embedNvim (interpretHandlers modsHandlers) do
+  runTest $ interpretAtomic 0 $ embedNvim def (interpretHandlers modsHandlers) do
     nvimCommand "belowright silent lockmarks Mods"
     assertJust @Text "belowright lockmarks silent" =<< nvimGetVar var

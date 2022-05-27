@@ -7,7 +7,6 @@ import Ribosome.Data.Locks (WatcherLock (WatcherLock))
 import Ribosome.Data.Mapping (MappingIdent)
 import Ribosome.Data.WatchedVariable (WatchedVariable)
 import Ribosome.Effect.BuiltinHandlers (BuiltinHandlers (Mapping, Variable))
-import Ribosome.Effect.VariableWatcher (VariableWatcher)
 import Ribosome.Host.Data.HandlerError (HandlerError)
 import Ribosome.Host.Data.RpcError (RpcError)
 import Ribosome.Host.Data.RpcHandler (Handler)
@@ -22,7 +21,7 @@ type VarEffects =
   ]
 
 interpretBuiltinHandlers ::
-  Members [VariableWatcher !! HandlerError, Rpc !! RpcError, Race, Resource, Embed IO] r =>
+  Members [Rpc !! RpcError, Race, Resource, Embed IO] r =>
   Map MappingIdent (Handler r ()) ->
   Map WatchedVariable (Object -> Handler r ()) ->
   InterpreterFor (BuiltinHandlers !! HandlerError) r

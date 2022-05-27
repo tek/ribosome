@@ -35,7 +35,7 @@ interpretResponsesAtomic ::
   ∀ k v r .
   Ord k =>
   Show k =>
-  Members [Input k, AtomicState (Map k (MVar v)), Log, Embed IO] r =>
+  Members [Input k, AtomicState (Map k (MVar v)), Embed IO] r =>
   InterpreterFor (Responses k v !! RpcError) r
 interpretResponsesAtomic =
   interpretResumable \case
@@ -55,7 +55,7 @@ interpretResponses ::
   Ord k =>
   Num k =>
   Show k =>
-  Members [Log, Embed IO] r =>
+  Member (Embed IO) r =>
   InterpreterFor (Responses k v !! RpcError) r
 interpretResponses =
   interpretAtomic (mempty :: Map k (MVar v)) .

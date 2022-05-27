@@ -37,6 +37,6 @@ argsHandlers =
 
 test_args :: UnitTest
 test_args =
-  runTest $ interpretAtomic 0 $ embedNvim (interpretHandlers argsHandlers) do
+  runTest $ interpretAtomic 0 $ embedNvim def (interpretHandlers argsHandlers) do
     nvimCommand "Args 1 2 3 4 5"
     assertJust @Text "1 2 3 4 5" =<< nvimGetVar var

@@ -12,6 +12,6 @@ interpretUserErrorPrefixed ::
 interpretUserErrorPrefixed =
   interpret \case
     UserError e severity | severity >= Info ->
-      Just <$> pluginNamePrefixed e
+      Just . pure <$> pluginNamePrefixed e
     UserError _ _ ->
       pure Nothing

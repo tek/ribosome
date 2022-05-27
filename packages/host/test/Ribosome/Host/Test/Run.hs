@@ -9,6 +9,7 @@ import Polysemy.Time (GhcTime, interpretTimeGhcConstant, mkDatetime)
 import Ribosome.Host.Data.BootError (BootError (unBootError))
 import qualified Ribosome.Host.Data.HandlerError as HandlerError
 import Ribosome.Host.Data.HandlerError (HandlerError)
+import Ribosome.Host.Data.HostConfig (HostConfig)
 import Ribosome.Host.Data.RpcError (RpcError (unRpcError))
 import Ribosome.Host.Data.RpcHandler (RpcHandler)
 import Ribosome.Host.Effect.Rpc (Rpc)
@@ -48,20 +49,28 @@ runTest =
   interpretRace .
   interpretTimeGhcConstant testTime
 
+embedTestConf ::
+  HostConfig ->
+  [RpcHandler EmbedTestStack] ->
+  Sem (Rpc : EmbedTestStack) () ->
+  UnitTest
+embedTestConf conf handlers =
+  runTest .
+  embedNvim conf (interpretHandlers handlers)
+
 embedTest ::
   [RpcHandler EmbedTestStack] ->
   Sem (Rpc : EmbedTestStack) () ->
   UnitTest
-embedTest handlers =
-  runTest .
-  embedNvim (interpretHandlers handlers)
+embedTest =
+  embedTestConf def
 
 embedTest_ ::
   Sem (Rpc : EmbedTestStack) () ->
   UnitTest
 embedTest_ =
   runTest .
-  embedNvim_
+  embedNvim_ def
 
 rpcError ::
   Members [Rpc !! RpcError, Stop HandlerError] r =>

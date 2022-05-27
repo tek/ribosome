@@ -4,6 +4,7 @@ import qualified Data.Text as Text
 import qualified Data.Text.IO as Text
 import Exon (exon)
 import Hedgehog.Internal.Property (failWith)
+import Log (Severity (Debug))
 import Path (Abs, Dir, Path, reldir, relfile, toFilePath, (</>))
 import Path.IO (copyDirRecur)
 import qualified Polysemy.Conc as Conc
@@ -18,12 +19,12 @@ import System.Process.Typed (ProcessConfig, proc)
 
 import Ribosome.Host.Api.Effect (nvimCallFunction)
 import Ribosome.Host.Data.BootError (unBootError)
+import Ribosome.Host.Data.HostConfig (log, logLevelStderr)
 import Ribosome.Host.Data.RpcError (RpcError)
 import Ribosome.Host.Effect.Rpc (Rpc)
-import Ribosome.Host.Embed (basicCliArgs, interpretHostStack, interpretRpcMsgpackProcessNvimEmbed)
+import Ribosome.Host.Embed (basicCliArgs, interpretCoreDeps, interpretHostEmbedCore)
 import Ribosome.Host.Interpreter.Handlers (interpretHandlersNull)
 import Ribosome.Host.Interpreter.Host (withHost)
-import Ribosome.Host.Interpreter.Responses (interpretResponses)
 import Ribosome.Host.Interpreter.UserError (interpretUserErrorInfo)
 
 conf ::
@@ -49,9 +50,8 @@ testPlugin riboRoot =
     let flake = toFilePath (target </> [relfile|flake.nix|])
     old <- embed (Text.readFile flake)
     embed (Text.writeFile flake (Text.replace "RIBOSOME" (toText riboRoot) old))
-    interpretHostStack $
-      interpretResponses $
-      interpretRpcMsgpackProcessNvimEmbed (conf target) $
+    interpretCoreDeps def { log = def { logLevelStderr = Debug } } $
+      interpretHostEmbedCore Nothing (Just (conf target)) $
       interpretHandlersNull $
       withHost do
         resumeHoistError @RpcError @Rpc (TestError . show @Text) do

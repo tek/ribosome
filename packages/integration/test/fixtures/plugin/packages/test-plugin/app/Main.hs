@@ -50,6 +50,4 @@ main =
   runError $
   mapError unBootError $
   interpretTimeGhc $
-  interpretLogStderrLevelConc (Just Warn) $
-  interpretUserErrorInfo $
-  embed (Text.writeFile "/home/tek/test-log" "start") *> Log.error "starting" *> runNvimPlugin (interpretHandlers handlers)
+  runNvimPlugin def (interpretHandlers handlers)

@@ -46,7 +46,7 @@ regHandlers =
 
 test_autocmd :: UnitTest
 test_autocmd =
-  runTest $ interpretSync $ embedNvim (interpretHandlers regHandlers) do
+  runTest $ interpretSync $ embedNvim def (interpretHandlers regHandlers) do
     nvimCommand "doautocmd User Au"
     Sync.takeWait (Seconds 5)
     assertJust @Int 12 =<< nvimGetVar var

@@ -7,10 +7,10 @@ import Polysemy.Test (UnitTest, assertJust)
 
 import qualified Ribosome.Effect.Persist as Persist
 import Ribosome.Host.Embed (embedNvim_)
+import Ribosome.Host.Test.Run (runTest)
 import Ribosome.Interpreter.Persist (interpretPersist)
 import Ribosome.Interpreter.PersistPath (interpretPersistPathAt)
 import Ribosome.Test.Error (testError)
-import Ribosome.Host.Test.Run (runTest)
 
 data Thing =
   Thing {
@@ -26,7 +26,7 @@ thing =
 
 test_persist :: UnitTest
 test_persist =
-  runTest $ embedNvim_ do
+  runTest $ embedNvim_ def do
     dir <- Test.tempDir [reldir|persist|]
     raiseResumable (interpretPersistPathAt dir) $ interpretPersist "thing" $ testError do
       Persist.store thing

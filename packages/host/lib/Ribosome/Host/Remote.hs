@@ -1,12 +1,14 @@
 module Ribosome.Host.Remote where
 
 import Polysemy.Conc (ChanConsumer, ChanEvents, interpretEventsChan)
-import Polysemy.Log (Severity (Warn), interpretLogStdoutLevelConc)
 import Polysemy.Process (Process, interpretProcessCurrent)
+import Time (GhcTime)
 
 import Ribosome.Host.Data.BootError (BootError (BootError))
 import Ribosome.Host.Data.Event (Event)
 import Ribosome.Host.Data.HandlerError (HandlerError)
+import Ribosome.Host.Data.HostConfig (HostConfig)
+import Ribosome.Host.Data.HostError (HostError)
 import Ribosome.Host.Data.Request (RequestId)
 import Ribosome.Host.Data.Response (Response)
 import Ribosome.Host.Data.RpcError (RpcError)
@@ -16,18 +18,20 @@ import Ribosome.Host.Effect.Handlers (Handlers)
 import Ribosome.Host.Effect.Responses (Responses)
 import Ribosome.Host.Effect.Rpc (Rpc)
 import Ribosome.Host.Effect.UserError (UserError)
+import Ribosome.Host.Embed (CoreDeps, interpretCoreDeps)
 import Ribosome.Host.Interpreter.Errors (interpretErrors)
 import Ribosome.Host.Interpreter.Host (runHost)
+import Ribosome.Host.Interpreter.Log (interpretDataLogRpc)
 import Ribosome.Host.Interpreter.Process (interpretProcessInputCereal, interpretProcessOutputCereal)
 import Ribosome.Host.Interpreter.Responses (interpretResponses)
 import Ribosome.Host.Interpreter.Rpc (interpretRpc)
 import Ribosome.Host.Interpreter.UserError (interpretUserErrorInfo)
 
-interpretRpcMsgpackRemote ::
+interpretRpcRemote ::
   Members [Error BootError, Log, Resource, Async, Race, Embed IO] r =>
   Member (Responses RequestId Response !! RpcError) r =>
   InterpretersFor [Rpc !! RpcError, Process RpcMessage (Either Text RpcMessage)] r
-interpretRpcMsgpackRemote =
+interpretRpcRemote =
   interpretProcessOutputCereal .
   interpretProcessInputCereal .
   interpretProcessCurrent def .
@@ -36,8 +40,9 @@ interpretRpcMsgpackRemote =
   interpretRpc .
   insertAt @2
 
-type BasicRemoteStack =
+type CoreRemoteStack =
   [
+    DataLog HostError,
     Rpc !! RpcError,
     Process RpcMessage (Either Text RpcMessage),
     Responses RequestId Response !! RpcError,
@@ -49,33 +54,32 @@ type BasicRemoteStack =
   ]
 
 type RemoteStack =
-  BasicRemoteStack ++ [
-    UserError,
-    Log
-  ]
+  CoreRemoteStack ++ UserError : CoreDeps
 
-interpretRemoteStack ::
-  Members [Error BootError, Log, Resource, Race, Async, Embed IO] r =>
-  InterpretersFor BasicRemoteStack r
-interpretRemoteStack =
+interpretHostRemoteCore ::
+  Members [UserError, Error BootError, Log, Resource, Race, Async, Embed IO] r =>
+  InterpretersFor CoreRemoteStack r
+interpretHostRemoteCore =
   interpretErrors .
   interpretEventsChan @RpcMessage .
   interpretEventsChan @Event .
   interpretResponses .
-  interpretRpcMsgpackRemote
+  interpretRpcRemote .
+  interpretDataLogRpc
 
-interpretRemoteStackLog ::
-  Members [Error BootError, Resource, Race, Async, Embed IO] r =>
-  Severity ->
+interpretHostRemote ::
+  Members [Error BootError, GhcTime, Resource, Race, Async, Embed IO] r =>
+  HostConfig ->
   InterpretersFor RemoteStack r
-interpretRemoteStackLog logLevel =
-  interpretLogStdoutLevelConc (Just logLevel) .
+interpretHostRemote conf =
+  interpretCoreDeps conf .
   interpretUserErrorInfo .
-  interpretRemoteStack
+  interpretHostRemoteCore
 
 runNvimPlugin ::
-  Members [UserError, Error BootError, Log, Resource, Async, Race, Embed IO, Final IO] r =>
+  Members [Error BootError, GhcTime, Resource, Async, Race, Embed IO, Final IO] r =>
+  HostConfig ->
   InterpreterFor (Handlers !! HandlerError) (RemoteStack ++ r) ->
   Sem r ()
-runNvimPlugin handlers =
-  interpretRemoteStackLog Warn (handlers runHost)
+runNvimPlugin conf handlers =
+  interpretHostRemote conf (handlers runHost)
