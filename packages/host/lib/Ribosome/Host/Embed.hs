@@ -25,7 +25,7 @@ import Ribosome.Host.Interpreter.Handlers (interpretHandlersNull)
 import Ribosome.Host.Interpreter.Host (testHost, withHost)
 import Ribosome.Host.Interpreter.Process (interpretProcessCerealNative)
 import Ribosome.Host.Interpreter.Responses (interpretResponses)
-import Ribosome.Host.Interpreter.Rpc (interpretRpcMsgpack)
+import Ribosome.Host.Interpreter.Rpc (interpretRpc)
 import Ribosome.Host.Interpreter.UserError (interpretUserErrorInfo)
 
 basicCliArgs :: [String]
@@ -57,46 +57,23 @@ publishRequests =
     e ->
       send @(Process i o) (coerce e)
 
-interpretRpcMsgpackProcessSingle ::
+interpretRpcSingle ::
   Members [Scoped () (Process RpcMessage o) !! ProcessError, Events res RpcMessage] r =>
   Members [Responses RequestId Response !! RpcError, Error BootError, Log, Async, Embed IO] r =>
   InterpretersFor [Rpc !! RpcError, Process RpcMessage o] r
-interpretRpcMsgpackProcessSingle =
+interpretRpcSingle =
   resumeHoistError (BootError . show) .
   withProcess @() .
   raiseUnder .
   publishRequests .
-  interpretRpcMsgpack
+  interpretRpc
 
-type RpcStack =
+type BasicEmbedStack =
   [
     Rpc !! RpcError,
     Process RpcMessage (Either Text RpcMessage),
-    Scoped () (Process RpcMessage (Either Text RpcMessage)) !! ProcessError
-  ]
-
-type RpcEmbedStack =
-  RpcStack ++ '[Responses RequestId Response !! RpcError]
-
-interpretRpcMsgpackProcessNvimEmbed ::
-  Members [Responses RequestId Response !! RpcError, Events res RpcMessage] r =>
-  Members [Error BootError, Log, Resource, Race, Async, Embed IO] r =>
-  ProcessConfig () () () ->
-  InterpretersFor RpcStack r
-interpretRpcMsgpackProcessNvimEmbed conf =
-  interpretProcessCerealNative def conf .
-  interpretRpcMsgpackProcessSingle
-
-interpretRpcMsgpackProcessNvimEmbedDef ::
-  Members [Responses RequestId Response !! RpcError, Events res RpcMessage] r =>
-  Members [Error BootError, Log, Resource, Race, Async, Embed IO] r =>
-  InterpretersFor RpcStack r
-interpretRpcMsgpackProcessNvimEmbedDef =
-  interpretProcessCerealNvimEmbed def .
-  interpretRpcMsgpackProcessSingle
-
-type BasicEmbedStack =
-  RpcEmbedStack ++ [
+    Scoped () (Process RpcMessage (Either Text RpcMessage)) !! ProcessError,
+    Responses RequestId Response !! RpcError,
     ChanEvents Event,
     ChanConsumer Event,
     ChanEvents RpcMessage,
@@ -118,7 +95,8 @@ interpretHostStack =
   interpretEventsChan @RpcMessage .
   interpretEventsChan @Event .
   interpretResponses .
-  interpretRpcMsgpackProcessNvimEmbedDef
+  interpretProcessCerealNvimEmbed def .
+  interpretRpcSingle
 
 interpretHostStackLog ::
   Members [Error BootError, Resource, Race, Async, Embed IO] r =>

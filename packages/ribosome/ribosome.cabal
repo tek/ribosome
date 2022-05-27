@@ -54,11 +54,13 @@ library
       Ribosome.Data.WatchedVariableHandler
       Ribosome.Data.WindowConfig
       Ribosome.Data.WindowView
+      Ribosome.Effect.BuiltinHandlers
       Ribosome.Effect.Persist
       Ribosome.Effect.PersistPath
       Ribosome.Effect.Settings
       Ribosome.Embed
       Ribosome.Final
+      Ribosome.Interpreter.BuiltinHandlers
       Ribosome.Interpreter.Persist
       Ribosome.Interpreter.PersistPath
       Ribosome.Interpreter.Settings

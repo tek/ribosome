@@ -8,8 +8,7 @@ import Path (Abs, Dir, Path, reldir, relfile, toFilePath, (</>))
 import Path.IO (copyDirRecur)
 import qualified Polysemy.Conc as Conc
 import Polysemy.Conc (interpretRace)
-import Polysemy.Log (Severity (Debug), interpretLogStdoutLevelConc)
-import Polysemy.Process.Data.ProcessError (ProcessError)
+import Polysemy.Log (Severity (Warn), interpretLogStdoutLevelConc)
 import qualified Polysemy.Test as Test
 import Polysemy.Test (Hedgehog, Test, TestError (TestError), UnitTest, assertEq, liftH, runTestAuto)
 import qualified Polysemy.Time as Time
@@ -21,7 +20,8 @@ import Ribosome.Host.Api.Effect (nvimCallFunction)
 import Ribosome.Host.Data.BootError (unBootError)
 import Ribosome.Host.Data.RpcError (RpcError)
 import Ribosome.Host.Effect.Rpc (Rpc)
-import Ribosome.Host.Embed (basicCliArgs, interpretBasicEmbedDeps, interpretRpcMsgpackProcessNvimEmbed)
+import Ribosome.Host.Embed (basicCliArgs, interpretHostStack, interpretRpcMsgpackProcessNvimEmbed)
+import Ribosome.Host.Interpreter.Handlers (interpretHandlersNull)
 import Ribosome.Host.Interpreter.Host (withHost)
 import Ribosome.Host.Interpreter.Responses (interpretResponses)
 import Ribosome.Host.Interpreter.UserError (interpretUserErrorInfo)
@@ -41,19 +41,19 @@ testPlugin riboRoot =
   interpretRace $
   interpretTimeGhc $
   interpretUserErrorInfo $
-  interpretLogStdoutLevelConc (Just Debug) $
-  mapError (TestError . unBootError) $
-  mapError (show @_ @ProcessError) do
+  interpretLogStdoutLevelConc (Just Warn) $
+  mapError (TestError . unBootError) do
     source <- Test.fixturePath [reldir|plugin|]
     target <- Test.tempDir [reldir|plugin|]
     embed (copyDirRecur source target)
     let flake = toFilePath (target </> [relfile|flake.nix|])
     old <- embed (Text.readFile flake)
     embed (Text.writeFile flake (Text.replace "RIBOSOME" (toText riboRoot) old))
-    interpretBasicEmbedDeps $
+    interpretHostStack $
       interpretResponses $
       interpretRpcMsgpackProcessNvimEmbed (conf target) $
-      withHost mempty do
+      interpretHandlersNull $
+      withHost do
         resumeHoistError @RpcError @Rpc (TestError . show @Text) do
           Conc.timeout_ (liftH (failWith Nothing "RPC function did not appear")) (Minutes 2) do
             Time.while (MilliSeconds 500) (resumeAs @RpcError True (False <$ nvimCallFunction @Int "Test" []))

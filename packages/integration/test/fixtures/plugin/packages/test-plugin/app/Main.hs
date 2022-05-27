@@ -15,6 +15,7 @@ import Ribosome.Host.Data.RpcError (RpcError (RpcError))
 import Ribosome.Host.Data.RpcHandler (RpcHandler (RpcHandler))
 import qualified Ribosome.Host.Data.RpcType as RpcType
 import Ribosome.Host.Effect.Rpc (Rpc)
+import Ribosome.Host.Interpreter.Handlers (interpretHandlers)
 import Ribosome.Host.Interpreter.UserError (interpretUserErrorInfo)
 import Ribosome.Host.Remote (runNvimPlugin)
 import System.IO (stderr)
@@ -48,8 +49,7 @@ main =
   runConc $
   runError $
   mapError unBootError $
-  mapError @ProcessError show $
   interpretTimeGhc $
   interpretLogStderrLevelConc (Just Warn) $
   interpretUserErrorInfo $
-  embed (Text.writeFile "/home/tek/test-log" "start") *> Log.error "starting" *> runNvimPlugin handlers
+  embed (Text.writeFile "/home/tek/test-log" "start") *> Log.error "starting" *> runNvimPlugin (interpretHandlers handlers)

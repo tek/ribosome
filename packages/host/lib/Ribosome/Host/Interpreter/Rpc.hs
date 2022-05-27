@@ -6,7 +6,7 @@ import qualified Polysemy.Log as Log
 import qualified Polysemy.Process as Process
 import Polysemy.Process (Process)
 
-import Ribosome.Host.Data.Request (TrackedRequest (TrackedRequest), RequestId, Request, formatTrackedReq, formatReq)
+import Ribosome.Host.Data.Request (Request, RequestId, TrackedRequest (TrackedRequest), formatReq, formatTrackedReq)
 import qualified Ribosome.Host.Data.Response as Response
 import Ribosome.Host.Data.Response (Response)
 import Ribosome.Host.Data.RpcCall (RpcCall)
@@ -48,11 +48,11 @@ handleCall call handle =
     Left a ->
       pure a
 
-interpretRpcMsgpack ::
+interpretRpc ::
   ∀ o r .
   Members [Responses RequestId Response !! RpcError, Process RpcMessage o, Log, Async] r =>
   InterpreterFor (Rpc !! RpcError) r
-interpretRpcMsgpack =
+interpretRpc =
   interpretResumableH \case
     Rpc.Sync call ->
       pureT =<< handleCall call (request "sync")

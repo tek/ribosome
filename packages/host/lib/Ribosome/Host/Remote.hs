@@ -20,33 +20,27 @@ import Ribosome.Host.Interpreter.Errors (interpretErrors)
 import Ribosome.Host.Interpreter.Host (runHost)
 import Ribosome.Host.Interpreter.Process (interpretProcessInputCereal, interpretProcessOutputCereal)
 import Ribosome.Host.Interpreter.Responses (interpretResponses)
-import Ribosome.Host.Interpreter.Rpc (interpretRpcMsgpack)
+import Ribosome.Host.Interpreter.Rpc (interpretRpc)
 import Ribosome.Host.Interpreter.UserError (interpretUserErrorInfo)
-
-type RpcStack =
-  [
-    Rpc !! RpcError,
-    Process RpcMessage (Either Text RpcMessage)
-  ]
-
-type RpcRemoteStack =
-  RpcStack ++ '[Responses RequestId Response !! RpcError]
 
 interpretRpcMsgpackRemote ::
   Members [Error BootError, Log, Resource, Async, Race, Embed IO] r =>
   Member (Responses RequestId Response !! RpcError) r =>
-  InterpretersFor RpcStack r
+  InterpretersFor [Rpc !! RpcError, Process RpcMessage (Either Text RpcMessage)] r
 interpretRpcMsgpackRemote =
   interpretProcessOutputCereal .
   interpretProcessInputCereal .
   interpretProcessCurrent def .
   raiseUnder2 .
   resumeHoistError (BootError . show @Text) .
-  interpretRpcMsgpack .
+  interpretRpc .
   insertAt @2
 
 type BasicRemoteStack =
-  RpcRemoteStack ++ [
+  [
+    Rpc !! RpcError,
+    Process RpcMessage (Either Text RpcMessage),
+    Responses RequestId Response !! RpcError,
     ChanEvents Event,
     ChanConsumer Event,
     ChanEvents RpcMessage,

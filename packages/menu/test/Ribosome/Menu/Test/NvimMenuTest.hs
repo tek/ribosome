@@ -89,7 +89,7 @@ pureChars =
 items :: [Text]
 items =
   (mappend "item" . show <$> [(1 :: Int)..8])
-  ++
+  <>
   (mappend "its" . show <$> [(5 :: Int)..9])
 
 exec ::
