@@ -58,7 +58,7 @@ getCharStream ::
   TimeUnit u =>
   Members [Rpc, Rpc !! RpcError, Time t d, Race, Embed IO, Final IO] r =>
   u ->
-  Sem r (PromptInput IO)
+  Sem r PromptInput
 getCharStream interval =
   withWeavingToFinal \ s wv ex ->
     pure $ (<$ s) $ PromptInput \ quit -> do

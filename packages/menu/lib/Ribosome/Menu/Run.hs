@@ -56,8 +56,8 @@ closeFloats = do
   traverse_ closeWindow =<< filterM isFloat =<< vimGetWindows
 
 runMenu ::
-  Members [Log, Resource, Race, Embed IO, Final IO] r =>
-  MenuConfig r IO i a ->
+  Members [Log, Mask res, Resource, Race, Embed IO, Final IO] r =>
+  MenuConfig r i a ->
   Sem r (MenuResult a)
 runMenu config =
   bracketPrompt (config ^. MenuConfig.prompt . PromptConfig.render)
@@ -66,13 +66,13 @@ runMenu config =
       bracket acquire release \ _ -> menuMain config
 
 nvimMenu ::
-  ∀ i a r .
+  ∀ i a res r .
   Members [Rpc, Rpc !! RpcError, Settings !! SettingError] r =>
-  Members [AtomicState (Map Text Scratch), Reader PluginName, Log, Resource, Race, Embed IO, Final IO] r =>
+  Members [AtomicState (Map Text Scratch), Reader PluginName, Log, Mask res, Resource, Race, Embed IO, Final IO] r =>
   ScratchOptions ->
   SerialT IO (MenuItem i) ->
   MenuConsumer i r a ->
-  PromptConfig IO r ->
+  PromptConfig r ->
   Sem r (MenuResult a)
 nvimMenu options items consumer promptConfig = do
   _ :: Int <- vimCallFunction "inputsave" []
@@ -89,12 +89,12 @@ nvimMenu options items consumer promptConfig = do
       ScratchOptions.syntax <>~ [menuSyntax]
 
 staticNvimMenu ::
-  Members [Rpc !! RpcError, Settings !! SettingError] r =>
-  Members [Rpc, AtomicState (Map Text Scratch), Reader PluginName, Log, Resource, Race, Embed IO, Final IO] r =>
+  Members [Rpc !! RpcError, Rpc, Settings !! SettingError] r =>
+  Members [AtomicState (Map Text Scratch), Reader PluginName, Log, Mask res, Resource, Race, Embed IO, Final IO] r =>
   ScratchOptions ->
   [MenuItem i] ->
   MenuConsumer i r a ->
-  PromptConfig IO r ->
+  PromptConfig r ->
   Sem r (MenuResult a)
 staticNvimMenu options items =
   nvimMenu (ensureSize options) (Stream.fromList items)

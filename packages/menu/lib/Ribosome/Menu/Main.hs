@@ -36,7 +36,7 @@ import Ribosome.Menu.Prompt.Data.PromptConfig (hoistPromptConfig)
 import qualified Ribosome.Menu.Prompt.Data.PromptControlEvent as PromptControlEvent
 import Ribosome.Menu.Prompt.Data.PromptControlEvent (PromptControlEvent)
 import Ribosome.Menu.Prompt.Data.PromptEvent (PromptEvent)
-import Ribosome.Menu.Prompt.Run (promptStream)
+import Ribosome.Menu.Prompt.Run (withPromptStream)
 import Ribosome.Menu.UpdateState (promptEvent, updateItems)
 
 eventAction ::
@@ -115,7 +115,7 @@ renderAction (runRenderer -> run) = \case
 menuStream ::
   ∀ i r a .
   Members [Resource, Log, Embed IO, Final IO] r =>
-  MenuConfig r IO i a ->
+  MenuConfig r i a ->
   TMChan PromptControlEvent ->
   AsyncT IO (Prompt, PromptEvent) ->
   MenuStateSem i r (SerialT IO (Sem r (MenuResult a)))
@@ -168,15 +168,15 @@ menuResult = \case
       MenuResult.Aborted -> "user interrupt"
 
 menuMain ::
-  Members [Log, Race, Resource, Embed IO, Final IO] r =>
-  MenuConfig r IO i a ->
+  Members [Log, Mask res, Race, Resource, Embed IO, Final IO] r =>
+  MenuConfig r i a ->
   Sem r (MenuResult a)
 menuMain conf =
   interpretSyncAs CursorLock $
   interpretSyncAs ItemsLock $
   interpretAtomic def $
   interpretAtomic def $
-  interpretAtomic def do
-    (promptControl, promptEvents) <- promptStream (hoistPromptConfig (insertAt @0) (conf ^. MenuConfig.prompt))
+  interpretAtomic def $
+  withPromptStream (hoistPromptConfig (insertAt @0) (conf ^. MenuConfig.prompt)) \ (promptControl, promptEvents) -> do
     stream <- menuStream conf promptControl (Stream.fromSerial promptEvents)
     insertAt @0 . menuResult =<< embed (Stream.last stream)

@@ -14,16 +14,16 @@ data PromptFlag =
   OnlyInsert
   deriving stock (Eq, Show)
 
-newtype PromptInput m =
-  PromptInput { unPromptInput :: MVar () -> SerialT m PromptInputEvent }
+newtype PromptInput =
+  PromptInput { unPromptInput :: MVar () -> SerialT IO PromptInputEvent }
 
-newtype PromptEventHandler m =
-  PromptEventHandler { unPromptEventHandler :: PromptInputEvent -> PromptState -> m PromptUpdate }
+newtype PromptEventHandler r =
+  PromptEventHandler { unPromptEventHandler :: PromptInputEvent -> PromptState -> Sem r PromptUpdate }
 
-data PromptConfig m r =
+data PromptConfig r =
   PromptConfig {
-    _source :: PromptInput m,
-    _handleEvent :: [PromptFlag] -> PromptEventHandler m,
+    _source :: PromptInput,
+    _handleEvent :: [PromptFlag] -> PromptEventHandler r,
     _render :: PromptRenderer r,
     _flags :: [PromptFlag]
   }
@@ -32,10 +32,11 @@ makeClassy ''PromptConfig
 
 hoistPromptConfig ::
   (∀ x . Sem r x -> Sem r' x) ->
-  PromptConfig m r ->
-  PromptConfig m r'
+  PromptConfig r ->
+  PromptConfig r'
 hoistPromptConfig f PromptConfig {..} =
   PromptConfig {
+    _handleEvent = \ flg -> PromptEventHandler \ e s -> f (unPromptEventHandler (_handleEvent flg) e s),
     _render = hoistPromptRenderer f _render,
     ..
   }
@@ -47,7 +48,7 @@ instance TestPromptFlag [PromptFlag] where
   promptFlag =
     elem
 
-instance TestPromptFlag (PromptConfig m r) where
+instance TestPromptFlag (PromptConfig r) where
   promptFlag flag =
     promptFlag flag . view flags
 

@@ -85,9 +85,8 @@ basicTransitionInsert flags = \case
       PromptUpdate.Modify PromptState.Normal CursorUpdate.OneLeft TextUpdate.Unmodified
 
 basicTransition ::
-  Applicative m =>
   [PromptFlag] ->
-  PromptEventHandler m
+  PromptEventHandler r
 basicTransition flags =
   PromptEventHandler \case
     event -> pure . \case

@@ -1,13 +1,13 @@
 module Ribosome.Menu.Test.MenuTest where
 
-import Data.Composition ((.:))
 import Control.Concurrent.Lifted (threadDelay)
 import Control.Lens (use, view, (^.))
 import qualified Control.Monad.Trans.State.Strict as MTL
+import Data.Composition ((.:))
 import qualified Data.IntMap.Strict as IntMap
 import qualified Data.Map.Strict as Map (fromList)
 import Polysemy (run)
-import Polysemy.Conc (interpretAtomic, interpretRace)
+import Polysemy.Conc (interpretAtomic, interpretMaskFinal, interpretRace)
 import Polysemy.Log (interpretLogNull)
 import Polysemy.Test (UnitTest, runTestAuto, unitTest, (===))
 import qualified Streamly.Prelude as Streamly
@@ -110,11 +110,11 @@ menuTest ::
   Sem r [[Entry Text]]
 menuTest consumer items chars = do
   itemsVar <- embed (newMVar [])
-  _ <- interpretLogNull $ runMenu (conf itemsVar)
+  _ <- interpretLogNull $ interpretMaskFinal $ runMenu (conf itemsVar)
   embed (readMVar itemsVar)
   where
     conf itemsVar =
-      hoistMenuConfig raise (insertAt @5) $
+      hoistMenuConfig (raise . raise) (insertAt @5) $
       MenuConfig (menuItems items) fuzzyItemFilter consumer (MenuRenderer (embed .: render itemsVar)) promptConfig
     promptConfig =
       PromptConfig (PromptInput (const (promptInput chars))) basicTransition noPromptRenderer [StartInsert]

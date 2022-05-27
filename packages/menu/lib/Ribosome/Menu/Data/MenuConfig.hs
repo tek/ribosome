@@ -10,13 +10,13 @@ import Ribosome.Menu.Data.MenuRenderer (MenuRenderer, hoistMenuRenderer)
 import Ribosome.Menu.Data.MenuState (MenuStateSem)
 import Ribosome.Menu.Prompt.Data.PromptConfig (PromptConfig, hoistPromptConfig)
 
-data MenuConfig r m i a =
+data MenuConfig r i a =
   MenuConfig {
-    _items :: SerialT m (MenuItem i),
+    _items :: SerialT IO (MenuItem i),
     _itemFilter :: MenuItemFilter i,
     _consumer :: MenuConsumer i r a,
     _render :: MenuRenderer r i,
-    _prompt :: PromptConfig m r
+    _prompt :: PromptConfig r
   }
 
 makeClassy ''MenuConfig
@@ -24,8 +24,8 @@ makeClassy ''MenuConfig
 hoistMenuConfig ::
   (∀ x . Sem r x -> Sem r' x) ->
   (∀ x . MenuStateSem i r x -> MenuStateSem i r' x) ->
-  MenuConfig r m i a ->
-  MenuConfig r' m i a
+  MenuConfig r i a ->
+  MenuConfig r' i a
 hoistMenuConfig f g MenuConfig {..} =
   MenuConfig {
     _consumer = hoistMenuConsumer f g _consumer,

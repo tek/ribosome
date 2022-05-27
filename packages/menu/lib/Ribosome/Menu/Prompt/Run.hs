@@ -1,18 +1,19 @@
 module Ribosome.Menu.Prompt.Run where
 
-import Control.Concurrent.Lifted (modifyMVar)
 import Control.Concurrent.STM (atomically)
 import Control.Concurrent.STM.TMChan (TMChan, closeTMChan, newTMChan)
 import Control.Lens ((^.))
-import Control.Monad.Catch (MonadCatch, MonadThrow)
-import Control.Monad.Trans.Control (MonadBaseControl)
 import qualified Data.Text as Text (drop, dropEnd, isPrefixOf, length, splitAt)
+import Exon (exon)
+import Polysemy.Conc (interpretSyncAs)
+import qualified Polysemy.Conc.Sync as Sync
+import qualified Polysemy.Log as Log
 import Prelude hiding (input, modifyMVar, output)
 import qualified Streamly.Data.Fold as Fold
 import qualified Streamly.Internal.Data.Stream.IsStream as Stream
 import Streamly.Prelude (SerialT)
 
-import Ribosome.Final (inFinal_)
+import Ribosome.Final (inFinal)
 import Ribosome.Host.Data.Tuple (dup)
 import Ribosome.Menu.Prompt.Data.CursorUpdate (CursorUpdate)
 import qualified Ribosome.Menu.Prompt.Data.CursorUpdate as CursorUpdate (CursorUpdate (..))
@@ -137,15 +138,14 @@ updatePrompt handleEvent input prompt = do
     PromptUpdate.Quit ->
       Nothing
 
--- TODO Log
 updatePromptState ::
-  Monad m =>
-  (PromptInputEvent -> PromptState -> m PromptUpdate) ->
+  Member Log r =>
+  (PromptInputEvent -> PromptState -> Sem r PromptUpdate) ->
   PromptInputEvent ->
   Prompt ->
-  m (Prompt, Maybe (Prompt, PromptEvent))
+  Sem r (Prompt, Maybe (Prompt, PromptEvent))
 updatePromptState handleEvent input old = do
-  -- Log.debug [exon|prompt input event: #{show input}|]
+  Log.debug [exon|prompt input event: #{show input}|]
   updatePrompt handleEvent input old <&> \case
     Just (new, output) ->
       (new, Just (new, output))
@@ -153,34 +153,30 @@ updatePromptState handleEvent input old = do
       (old, Nothing)
 
 processPromptEvent ::
-  MonadBaseControl IO m =>
-  MVar Prompt ->
-  PromptEventHandler m ->
+  Members [Sync Prompt, Mask res, Log, Resource] r =>
+  PromptEventHandler r ->
   Either PromptControlEvent PromptInputEvent ->
-  m (Maybe (Prompt, PromptEvent))
-processPromptEvent prompt (PromptEventHandler handleEvent) = \case
+  Sem r (Maybe (Prompt, PromptEvent))
+processPromptEvent (PromptEventHandler handleEvent) = \case
   Right event ->
-    modifyMVar prompt (updatePromptState handleEvent event)
+    Sync.modify (updatePromptState handleEvent event)
   Left PromptControlEvent.Quit ->
     pure Nothing
   Left (PromptControlEvent.Set (Prompt cursor state (PromptText text))) -> do
-    newPrompt <- modifyMVar prompt (pure . dup . modifyPrompt state (CursorUpdate.Index cursor) (TextUpdate.Set text))
-    pure(Just (newPrompt, PromptEvent.Edit))
+    newPrompt <- Sync.modify (pure . dup . modifyPrompt state (CursorUpdate.Index cursor) (TextUpdate.Set text))
+    pure (Just (newPrompt, PromptEvent.Edit))
 
 promptWithControl ::
-  MonadIO m =>
-  MonadCatch m =>
-  MonadBaseControl IO m =>
-  (Sem r () -> IO ()) ->
-  MVar Prompt ->
-  PromptConfig m r ->
-  SerialT m PromptControlEvent ->
+  Members [Sync Prompt, Mask res, Log, Resource] r =>
+  (∀ x . Sem r x -> IO (Maybe x)) ->
+  PromptConfig r ->
+  SerialT IO PromptControlEvent ->
   MVar () ->
-  SerialT m (Prompt, PromptEvent)
-promptWithControl lower prompt (PromptConfig (PromptInput source) handler renderer flags) control listenQuit =
-  Stream.tapAsync (Fold.drainBy (liftIO . lower . render renderer . fst)) $
+  SerialT IO (Prompt, PromptEvent)
+promptWithControl lower (PromptConfig (PromptInput source) handler renderer flags) control listenQuit =
+  Stream.tapAsync (Fold.drainBy (lower . render renderer . fst)) $
   takeUntilNothing $
-  Stream.mapM (processPromptEvent prompt (handler flags)) $
+  Stream.mapM (liftIO . fmap join . lower . processPromptEvent (handler flags)) $
   Stream.parallelMin (Left <$> control) (Right <$> sourceWithInit)
   where
     sourceWithInit =
@@ -188,27 +184,23 @@ promptWithControl lower prompt (PromptConfig (PromptInput source) handler render
 
 controlChannel ::
   Member (Embed IO) r =>
-  MonadIO m =>
-  MonadThrow m =>
-  MonadBaseControl IO m =>
-  Sem r (TMChan a, MVar (), m (), SerialT m a)
+  Sem r (TMChan a, MVar (), IO (), SerialT IO a)
 controlChannel = do
   listenQuit <- embed newEmptyMVar
   chan <- embed (atomically newTMChan)
-  pure (chan, listenQuit, liftIO (putMVar listenQuit () *> atomically (closeTMChan chan)), chanStream chan)
+  pure (chan, listenQuit, putMVar listenQuit () *> atomically (closeTMChan chan), chanStream chan)
 
-promptStream ::
-  Members [Embed IO, Final IO] r =>
-  MonadIO m =>
-  MonadCatch m =>
-  MonadBaseControl IO m =>
-  PromptConfig m r ->
-  Sem r (TMChan PromptControlEvent, SerialT m (Prompt, PromptEvent))
-promptStream config = do
+withPromptStream ::
+  Members [Mask res, Log, Resource, Race, Embed IO, Final IO] r =>
+  PromptConfig (Sync Prompt : r) ->
+  ((TMChan PromptControlEvent, SerialT IO (Prompt, PromptEvent)) -> Sem r a) ->
+  Sem r a
+withPromptStream config use = do
   (chan, listenQuit, close, control) <- controlChannel
-  prompt <- embed (newMVar (pristinePrompt (startInsert (config ^. PromptConfig.flags))))
-  inFinal_ \ lower pur ->
-    pur (chan, Stream.finally close (promptWithControl lower prompt config control listenQuit))
+  interpretSyncAs (pristinePrompt (startInsert (config ^. PromptConfig.flags))) do
+    res <- inFinal \ _ lower pur ex ->
+      pur (chan, Stream.finally close (promptWithControl (fmap ex . lower) config control listenQuit))
+    raise (use res)
 
 pristinePrompt :: Bool -> Prompt
 pristinePrompt insert =

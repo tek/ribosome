@@ -24,6 +24,7 @@
       scheduler = hackage "1.5.0" "143bsd0kfknrhdz37599k2didxmplljdpnf1ixmdfh4r9hnrp9f3";
       integration = inputs;
       polysemy = hackage "1.7.1.0" "0qwli1kx3hk68hqsgw65mk81bx0djw1wlk17v8ggym7mf3lailyc";
+      polysemy-conc = source.package polysemy-conc "conc";
       polysemy-plugin = hackage "0.4.3.0" "1r7j1ffsd6z2q2fgpg78brl2gb0dg8r5ywfiwdrsjd2fxkinjcg1";
       polysemy-process = source.package polysemy-conc "process";
       polysemy-test = source.package polysemy-test "polysemy-test";
