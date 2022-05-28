@@ -12,10 +12,10 @@ import Ribosome.Api.Tabpage (closeTabpage)
 import Ribosome.Api.Window (closeWindow)
 import Ribosome.Data.FloatOptions (FloatOptions, enter)
 import Ribosome.Data.PluginName (PluginName (PluginName))
-import Ribosome.Data.Scratch (Scratch (Scratch))
-import qualified Ribosome.Data.Scratch as Scratch (Scratch (scratchBuffer, scratchPrevious, scratchWindow))
 import qualified Ribosome.Data.ScratchOptions as ScratchOptions
 import Ribosome.Data.ScratchOptions (ScratchOptions (ScratchOptions))
+import qualified Ribosome.Data.ScratchState as ScratchState
+import Ribosome.Data.ScratchState (ScratchId (ScratchId, unScratchId), ScratchState (ScratchState))
 import Ribosome.Host.Api.Data (Buffer, Tabpage, Window)
 import Ribosome.Host.Api.Effect (
   bufferGetName,
@@ -133,12 +133,12 @@ configureScratchBuffer ::
   Member Rpc r =>
   Buffer ->
   Maybe Text ->
-  Text ->
+  ScratchId ->
   Sem r ()
-configureScratchBuffer buffer ft name = do
-  bufferSetOption buffer "bufhidden" (toMsgpack ("wipe" :: Text))
-  bufferSetOption buffer "buftype" (toMsgpack ("nofile" :: Text))
-  bufferSetOption buffer "swapfile" (toMsgpack False)
+configureScratchBuffer buffer ft (ScratchId name) = do
+  bufferSetOption buffer "bufhidden" ("wipe" :: Text)
+  bufferSetOption buffer "buftype" ("nofile" :: Text)
+  bufferSetOption buffer "swapfile" False
   traverse_ (bufferSetOption buffer "filetype") ft
   bufferSetName buffer name
 
@@ -147,7 +147,7 @@ setupScratchBuffer ::
   Window ->
   Buffer ->
   Maybe Text ->
-  Text ->
+  ScratchId ->
   Sem r Buffer
 setupScratchBuffer window buffer ft name = do
   valid <- nvimBufIsLoaded buffer
@@ -158,37 +158,37 @@ setupScratchBuffer window buffer ft name = do
 
 setupDeleteAutocmd ::
   Members [Rpc, Reader PluginName] r =>
-  Scratch ->
+  ScratchState ->
   Sem r ()
-setupDeleteAutocmd (Scratch name buffer _ _ _) = do
+setupDeleteAutocmd (ScratchState name buffer _ _ _) = do
   PluginName pname <- pluginNameCapitalized
   bufferAutocmd buffer "RibosomeScratch" "BufDelete" (deleteCall pname)
   where
     deleteCall pname =
-      [exon|silent! call #{pname}DeleteScratch('#{name}')|]
+      [exon|silent! call #{pname}DeleteScratch('#{coerce name}')|]
 
 setupScratchIn ::
-  Members [Rpc, AtomicState (Map Text Scratch), Reader PluginName, Log] r =>
+  Members [Rpc, AtomicState (Map ScratchId ScratchState), Reader PluginName, Log] r =>
   Buffer ->
   Window ->
   Window ->
   Maybe Tabpage ->
   ScratchOptions ->
-  Sem r Scratch
+  Sem r ScratchState
 setupScratchIn buffer previous window tab (ScratchOptions _ _ _ focus _ _ _ _ _ _ syntax mappings ft name) = do
   validBuffer <- setupScratchBuffer window buffer ft name
   traverse_ (executeWindowSyntax window) syntax
   traverse_ (activateBufferMapping validBuffer) mappings
   unless focus $ vimSetCurrentWindow previous
-  let scratch = Scratch name validBuffer window previous tab
+  let scratch = ScratchState name validBuffer window previous tab
   atomicModify' (Map.insert name scratch)
   setupDeleteAutocmd scratch
   pure scratch
 
 createScratch ::
-  Members [Rpc, AtomicState (Map Text Scratch), Reader PluginName, Log, Resource] r =>
+  Members [Rpc, AtomicState (Map ScratchId ScratchState), Reader PluginName, Log, Resource] r =>
   ScratchOptions ->
-  Sem r Scratch
+  Sem r ScratchState
 createScratch options = do
   Log.debug [exon|creating new scratch: #{show options}|]
   previous <- vimGetCurrentWindow
@@ -197,10 +197,10 @@ createScratch options = do
 
 bufferStillLoaded ::
   Members [Rpc !! RpcError, Rpc] r =>
-  Text ->
+  ScratchId ->
   Buffer ->
   Sem r Bool
-bufferStillLoaded name buffer =
+bufferStillLoaded (ScratchId name) buffer =
   (&&) <$> loaded <*> loadedName
   where
     loaded =
@@ -209,12 +209,12 @@ bufferStillLoaded name buffer =
       resumeAs @RpcError False ((name ==) <$> bufferGetName buffer)
 
 updateScratch ::
-  Members [Rpc !! RpcError, Rpc, AtomicState (Map Text Scratch), Reader PluginName, Log, Resource] r =>
-  Scratch ->
+  Members [Rpc !! RpcError, Rpc, AtomicState (Map ScratchId ScratchState), Reader PluginName, Log, Resource] r =>
+  ScratchState ->
   ScratchOptions ->
-  Sem r Scratch
-updateScratch oldScratch@(Scratch name oldBuffer oldWindow _ _) options = do
-  Log.debug [exon|updating existing scratch '#{name}'|]
+  Sem r ScratchState
+updateScratch oldScratch@(ScratchState name oldBuffer oldWindow _ _) options = do
+  Log.debug [exon|updating existing scratch '#{coerce name}'|]
   ifM (windowIsValid oldWindow) attemptReuseWindow reset
   where
     attemptReuseWindow =
@@ -225,16 +225,16 @@ updateScratch oldScratch@(Scratch name oldBuffer oldWindow _ _) options = do
       createScratch options
 
 lookupScratch ::
-  Member (AtomicState (Map Text Scratch)) r =>
-  Text ->
-  Sem r (Maybe Scratch)
+  Member (AtomicState (Map ScratchId ScratchState)) r =>
+  ScratchId ->
+  Sem r (Maybe ScratchState)
 lookupScratch name =
   atomicGets (Map.lookup name)
 
 ensureScratch ::
-  Members [Rpc !! RpcError, Rpc, AtomicState (Map Text Scratch), Reader PluginName, Log, Resource] r =>
+  Members [Rpc !! RpcError, Rpc, AtomicState (Map ScratchId ScratchState), Reader PluginName, Log, Resource] r =>
   ScratchOptions ->
-  Sem r Scratch
+  Sem r ScratchState
 ensureScratch options = do
   f <- maybe createScratch updateScratch <$> lookupScratch (ScratchOptions._name options)
   f options
@@ -252,17 +252,17 @@ withModifiable buffer options thunk =
       ScratchOptions._modify options
     wrap =
       update True *> thunk <* update False
-    update value =
-      bufferSetOption buffer "modifiable" (toMsgpack value)
+    update =
+      bufferSetOption buffer "modifiable"
 
 setScratchContent ::
   Foldable t =>
   Members [Rpc !! RpcError, Rpc] r =>
   ScratchOptions ->
-  Scratch ->
+  ScratchState ->
   t Text ->
   Sem r ()
-setScratchContent options (Scratch _ buffer win _ _) lines' = do
+setScratchContent options (ScratchState _ buffer win _ _) lines' = do
   withModifiable buffer options $ setBufferContent buffer (toList lines')
   when (ScratchOptions._resize options) (resume_ @RpcError @Rpc (setSize win size))
   where
@@ -279,29 +279,29 @@ setScratchContent options (Scratch _ buffer win _ _) lines' = do
 
 showInScratch ::
   Foldable t =>
-  Members [Rpc !! RpcError, Rpc, AtomicState (Map Text Scratch), Reader PluginName, Log, Resource] r =>
+  Members [Rpc !! RpcError, Rpc, AtomicState (Map ScratchId ScratchState), Reader PluginName, Log, Resource] r =>
   t Text ->
   ScratchOptions ->
-  Sem r Scratch
+  Sem r ScratchState
 showInScratch lines' options = do
   scratch <- ensureScratch options
   scratch <$ setScratchContent options scratch lines'
 
 showInScratchDef ::
   Foldable t =>
-  Members [Rpc !! RpcError, Rpc, AtomicState (Map Text Scratch), Reader PluginName, Log, Resource] r =>
+  Members [Rpc !! RpcError, Rpc, AtomicState (Map ScratchId ScratchState), Reader PluginName, Log, Resource] r =>
   t Text ->
-  Sem r Scratch
+  Sem r ScratchState
 showInScratchDef lines' =
   showInScratch lines' def
 
 killScratch ::
-  Members [Rpc !! RpcError, AtomicState (Map Text Scratch), Log] r =>
-  Scratch ->
+  Members [Rpc !! RpcError, AtomicState (Map ScratchId ScratchState), Log] r =>
+  ScratchState ->
   Sem r ()
-killScratch (Scratch name buffer window _ tab) = do
-  Log.debug [exon|Killing scratch buffer '#{name}'|]
-  atomicModify' (Map.delete @_ @Scratch name)
+killScratch (ScratchState name buffer window _ tab) = do
+  Log.debug [exon|Killing scratch buffer '#{unScratchId name}'|]
+  atomicModify' (Map.delete @_ @ScratchState name)
   resume_ @RpcError @Rpc do
       number <- bufferGetNumber buffer
       vimCommand [exon|autocmd! RibosomeScratch BufDelete <buffer=#{show number}>|]
@@ -309,30 +309,23 @@ killScratch (Scratch name buffer window _ tab) = do
   resume_ @RpcError @Rpc (closeWindow window)
   resume_ @RpcError @Rpc (wipeBuffer buffer)
 
-killScratchByName ::
-  Members [Rpc !! RpcError, AtomicState (Map Text Scratch), Log] r =>
-  Text ->
-  Sem r ()
-killScratchByName =
-  traverse_ killScratch <=< lookupScratch
-
 scratchPreviousWindow ::
-  Member (AtomicState (Map Text Scratch)) r =>
-  Text ->
+  Member (AtomicState (Map ScratchId ScratchState)) r =>
+  ScratchId ->
   Sem r (Maybe Window)
 scratchPreviousWindow =
-  fmap (fmap Scratch.scratchPrevious) <$> lookupScratch
+  fmap (fmap ScratchState.previous) . lookupScratch
 
 scratchWindow ::
-  Member (AtomicState (Map Text Scratch)) r =>
-  Text ->
+  Member (AtomicState (Map ScratchId ScratchState)) r =>
+  ScratchId ->
   Sem r (Maybe Window)
 scratchWindow =
-  fmap (fmap Scratch.scratchWindow) <$> lookupScratch
+  fmap (fmap ScratchState.window) . lookupScratch
 
 scratchBuffer ::
-  Member (AtomicState (Map Text Scratch)) r =>
-  Text ->
+  Member (AtomicState (Map ScratchId ScratchState)) r =>
+  ScratchId ->
   Sem r (Maybe Buffer)
 scratchBuffer =
-  fmap (fmap Scratch.scratchBuffer) <$> lookupScratch
+  fmap (fmap ScratchState.buffer) . lookupScratch

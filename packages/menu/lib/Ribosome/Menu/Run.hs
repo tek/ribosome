@@ -10,9 +10,9 @@ import Streamly.Prelude (SerialT)
 import Ribosome.Api.Window (closeWindow)
 import qualified Ribosome.Config.Settings as Settings
 import Ribosome.Data.PluginName (PluginName)
-import Ribosome.Data.Scratch (Scratch, scratchWindow)
 import qualified Ribosome.Data.ScratchOptions as ScratchOptions
 import Ribosome.Data.ScratchOptions (ScratchOptions)
+import Ribosome.Data.ScratchState (ScratchState, scratchWindow)
 import Ribosome.Data.SettingError (SettingError)
 import Ribosome.Data.WindowConfig (WindowConfig (WindowConfig))
 import qualified Ribosome.Effect.Settings as Settings
@@ -68,7 +68,7 @@ runMenu config =
 nvimMenu ::
   ∀ i a res r .
   Members [Rpc, Rpc !! RpcError, Settings !! SettingError] r =>
-  Members [AtomicState (Map Text Scratch), Reader PluginName, Log, Mask res, Resource, Race, Embed IO, Final IO] r =>
+  Members [AtomicState (Map Text ScratchState), Reader PluginName, Log, Mask res, Resource, Race, Embed IO, Final IO] r =>
   ScratchOptions ->
   SerialT IO (MenuItem i) ->
   MenuConsumer i r a ->
@@ -90,7 +90,7 @@ nvimMenu options items consumer promptConfig = do
 
 staticNvimMenu ::
   Members [Rpc !! RpcError, Rpc, Settings !! SettingError] r =>
-  Members [AtomicState (Map Text Scratch), Reader PluginName, Log, Mask res, Resource, Race, Embed IO, Final IO] r =>
+  Members [AtomicState (Map Text ScratchState), Reader PluginName, Log, Mask res, Resource, Race, Embed IO, Final IO] r =>
   ScratchOptions ->
   [MenuItem i] ->
   MenuConsumer i r a ->

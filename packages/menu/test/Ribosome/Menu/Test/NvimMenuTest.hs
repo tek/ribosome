@@ -15,7 +15,7 @@ import Test.Tasty (TestTree, testGroup)
 import Ribosome.Api.Buffer (bufferContent, buflisted)
 import Ribosome.Api.Input (syntheticInput)
 import Ribosome.Data.PluginName (PluginName)
-import Ribosome.Data.Scratch (Scratch)
+import Ribosome.Data.ScratchState (ScratchState)
 import Ribosome.Data.ScratchOptions (ScratchOptions (_maxSize))
 import Ribosome.Data.SettingError (SettingError)
 import Ribosome.Effect.Settings (Settings)
@@ -112,7 +112,7 @@ promptConfig source =
 
 runNvimMenu ::
   Members [Rpc !! RpcError, Settings !! SettingError] r =>
-  Members [Rpc, AtomicState (Map Text Scratch), Reader PluginName, Log, Resource, Race, Embed IO, Final IO] r =>
+  Members [Rpc, AtomicState (Map Text ScratchState), Reader PluginName, Log, Resource, Race, Embed IO, Final IO] r =>
   Mappings Text (Mask Restoration : r) a ->
   PromptInput ->
   Sem r (MenuResult a)
@@ -128,7 +128,7 @@ mappings =
 
 nvimMenuTest ::
   Members [Rpc !! RpcError, Settings !! SettingError, Hedgehog IO] r =>
-  Members [Rpc, AtomicState (Map Text Scratch), Reader PluginName, Log, Resource, Race, Embed IO, Final IO] r =>
+  Members [Rpc, AtomicState (Map Text ScratchState), Reader PluginName, Log, Resource, Race, Embed IO, Final IO] r =>
   PromptInput ->
   Sem r ()
 nvimMenuTest =

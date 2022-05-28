@@ -45,8 +45,8 @@ library
       Ribosome.Data.PluginName
       Ribosome.Data.Register
       Ribosome.Data.RegisterType
-      Ribosome.Data.Scratch
       Ribosome.Data.ScratchOptions
+      Ribosome.Data.ScratchState
       Ribosome.Data.Setting
       Ribosome.Data.SettingError
       Ribosome.Data.Syntax
@@ -57,12 +57,14 @@ library
       Ribosome.Effect.BuiltinHandlers
       Ribosome.Effect.Persist
       Ribosome.Effect.PersistPath
+      Ribosome.Effect.Scratch
       Ribosome.Effect.Settings
       Ribosome.Embed
       Ribosome.Final
       Ribosome.Interpreter.BuiltinHandlers
       Ribosome.Interpreter.Persist
       Ribosome.Interpreter.PersistPath
+      Ribosome.Interpreter.Scratch
       Ribosome.Interpreter.Settings
       Ribosome.Interpreter.UserError
       Ribosome.Locks

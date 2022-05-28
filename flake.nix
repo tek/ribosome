@@ -3,7 +3,7 @@
 
   inputs = {
     hix.url = github:tek/hix;
-    chiasma.url = github:tek/chiasma/main;
+    chiasma.url = path:/home/tek/code/tek/haskell/chiasma;
     polysemy-conc.url = github:tek/polysemy-conc;
     polysemy-test.url = github:tek/polysemy-test;
     incipit.url = github:tek/incipit;

@@ -7,19 +7,19 @@ import Polysemy.Time (Seconds (Seconds))
 
 import Ribosome.Api.Buffer (currentBufferContent)
 import Ribosome.Data.Mapping (Mapping (Mapping), MappingIdent (MappingIdent))
-import Ribosome.Data.PluginName (PluginName)
-import Ribosome.Data.Scratch (Scratch)
 import Ribosome.Data.ScratchOptions (ScratchOptions (ScratchOptions))
+import qualified Ribosome.Effect.Scratch as Scratch
+import Ribosome.Effect.Scratch (Scratch)
 import Ribosome.Embed (embedNvimPlugin)
 import Ribosome.Host.Api.Data (nvimFeedkeys, vimCallFunction)
 import Ribosome.Host.Data.Execution (Execution (Sync))
+import Ribosome.Host.Data.HandlerError (resumeHandlerError)
 import Ribosome.Host.Data.RpcError (RpcError)
 import Ribosome.Host.Data.RpcHandler (Handler, RpcHandler)
 import qualified Ribosome.Host.Effect.Rpc as Rpc
 import Ribosome.Host.Effect.Rpc (Rpc)
 import Ribosome.Host.Handler (rpcFunction)
-import Ribosome.Host.Test.Run (rpcError, runTest)
-import Ribosome.Scratch (showInScratch)
+import Ribosome.Host.Test.Run (runTest)
 import Ribosome.Test.Wait (assertWait)
 
 target :: [Text]
@@ -36,17 +36,17 @@ mapping =
   Mapping (MappingIdent "mappingHandler") "a" "n" False True
 
 setupMappingScratch ::
-  Members [Rpc !! RpcError, AtomicState (Map Text Scratch), Reader PluginName, Log, Resource] r =>
+  Member (Scratch !! RpcError) r =>
   Handler r ()
 setupMappingScratch = do
-  rpcError (void (showInScratch target options))
+  resumeHandlerError (void (Scratch.show target options))
   where
     options =
       ScratchOptions False True False True True True False Nothing Nothing Nothing [] [mapping] Nothing "mappo"
 
 handlers ::
   ∀ r .
-  Members [Rpc !! RpcError, AtomicState (Map Text Scratch), Reader PluginName, Log, Resource] r =>
+  Member (Scratch !! RpcError) r =>
   [RpcHandler r]
 handlers =
   [

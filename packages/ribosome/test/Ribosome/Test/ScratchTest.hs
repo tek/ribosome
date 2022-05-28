@@ -1,40 +1,38 @@
 module Ribosome.Test.ScratchTest where
 
-import qualified Data.Map.Strict as Map
 import Polysemy.Test (UnitTest, assertEq, unitTest)
 import Test.Tasty (TestTree, testGroup)
 
 import Ribosome.Api.Buffer (currentBufferContent)
 import Ribosome.Data.FloatOptions (FloatOptions (FloatOptions), FloatRelative (Cursor))
-import Ribosome.Data.PluginName (PluginName)
-import Ribosome.Data.Scratch (Scratch)
 import Ribosome.Data.ScratchOptions (ScratchOptions (ScratchOptions))
+import Ribosome.Data.ScratchState (ScratchId)
+import qualified Ribosome.Effect.Scratch as Scratch
+import Ribosome.Effect.Scratch (Scratch)
 import Ribosome.Embed (embedNvimPlugin)
 import Ribosome.Host.Api.Data (nvimCommand)
 import Ribosome.Host.Api.Effect (vimCallFunction)
 import Ribosome.Host.Data.Execution (Execution (Sync))
-import Ribosome.Host.Data.HandlerError (HandlerError)
+import Ribosome.Host.Data.HandlerError (resumeHandlerError)
 import Ribosome.Host.Data.RpcError (RpcError)
-import Ribosome.Host.Data.RpcHandler (RpcHandler)
+import Ribosome.Host.Data.RpcHandler (Handler, RpcHandler)
 import qualified Ribosome.Host.Effect.Rpc as Rpc
-import Ribosome.Host.Effect.Rpc (Rpc)
 import Ribosome.Host.Handler (rpcFunction)
-import Ribosome.Scratch (showInScratch)
-import Ribosome.Host.Test.Run (rpcError, runTest)
+import Ribosome.Host.Test.Run (runTest)
 import Ribosome.Test.Wait (assertWait)
 
 target :: [Text]
 target = ["line 1", "line 2"]
 
-name :: Text
+name :: ScratchId
 name =
   "buffi"
 
 makeScratch ::
-  Members [Rpc !! RpcError, AtomicState (Map Text Scratch), Reader PluginName, Log, Resource, Stop HandlerError] r =>
-  Sem r ()
+  Member (Scratch !! RpcError) r =>
+  Handler r ()
 makeScratch =
-  rpcError (void (showInScratch target options))
+  resumeHandlerError (void (Scratch.show target options))
   where
     options =
       ScratchOptions False True False True True True False Nothing Nothing Nothing [] [] Nothing name
@@ -44,28 +42,28 @@ floatOptions =
   FloatOptions Cursor 30 2 1 1 True def Nothing def False True (Just def) Nothing
 
 makeFloatScratch ::
-  Members [Rpc !! RpcError, AtomicState (Map Text Scratch), Reader PluginName, Log, Resource, Stop HandlerError] r =>
-  Sem r ()
+  Member (Scratch !! RpcError) r =>
+  Handler r ()
 makeFloatScratch =
-  rpcError (void (showInScratch target options))
+  resumeHandlerError (void (Scratch.show target options))
   where
     options =
       ScratchOptions False True False True True True False (Just floatOptions) Nothing (Just 0) [] [] Nothing name
 
 scratchCount ::
-  Member (AtomicState (Map Text Scratch)) r =>
+  Member (Scratch !! RpcError) r =>
   Sem r Int
 scratchCount =
-  length . Map.toList <$> atomicGet
+  (-1) <! (length <$> Scratch.get)
 
 handlers ::
   ∀ r .
-  Members [Rpc !! RpcError, AtomicState (Map Text Scratch), Reader PluginName, Log, Resource] r =>
+  Member (Scratch !! RpcError) r =>
   [RpcHandler r]
 handlers =
   [
-    rpcFunction "MakeFloatScratch" Sync (makeFloatScratch @(Stop HandlerError : r)),
-    rpcFunction "MakeScratch" Sync (makeScratch @(Stop HandlerError : r))
+    rpcFunction "MakeFloatScratch" Sync makeFloatScratch,
+    rpcFunction "MakeScratch" Sync makeScratch
   ]
 
 scratchTest :: Text -> UnitTest

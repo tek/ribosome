@@ -6,6 +6,7 @@ import Prelude hiding (modify)
 import Ribosome.Data.FloatOptions (FloatOptions)
 import Ribosome.Data.Mapping (Mapping)
 import Ribosome.Data.Syntax (Syntax)
+import Ribosome.Data.ScratchState (ScratchId)
 
 data ScratchOptions =
   ScratchOptions {
@@ -22,13 +23,13 @@ data ScratchOptions =
     _syntax :: [Syntax],
     _mappings :: [Mapping],
     _filetype :: Maybe Text,
-    _name :: Text
+    _name :: ScratchId
   }
   deriving stock (Eq, Show)
 
 makeClassy ''ScratchOptions
 
-defaultScratchOptions :: Text -> ScratchOptions
+defaultScratchOptions :: ScratchId -> ScratchOptions
 defaultScratchOptions =
   ScratchOptions False False False False True True False Nothing Nothing Nothing [] [] Nothing
 

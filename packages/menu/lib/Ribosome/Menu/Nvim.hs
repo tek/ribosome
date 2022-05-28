@@ -11,7 +11,7 @@ import qualified Data.Text as Text (cons, snoc)
 import qualified Polysemy.Log as Log
 
 import Ribosome.Api.Window (redraw, restoreView, setLine)
-import Ribosome.Data.Scratch (Scratch (scratchWindow), scratchBuffer)
+import Ribosome.Data.ScratchState (ScratchState (scratchWindow), scratchBuffer)
 import Ribosome.Data.ScratchOptions (ScratchOptions, maxSize)
 import Ribosome.Data.Syntax (HiLink (..), Syntax (Syntax), SyntaxItem (..), syntaxMatch)
 import Ribosome.Data.WindowView (PartialWindowView (PartialWindowView))
@@ -187,7 +187,7 @@ runSR ma = do
 updateMenu ::
   Members [AtomicState NvimMenuState, Reader (Menu i), Rpc, Rpc !! RpcError, Log, Embed IO] r =>
   ScratchOptions ->
-  Scratch ->
+  ScratchState ->
   Sem r ()
 updateMenu options scratch = do
   nvimSetCurrentWin win
@@ -205,7 +205,7 @@ renderNvimMenu ::
   ∀ i r .
   Members [AtomicState NvimMenuState, Reader (Menu i), Rpc, Rpc !! RpcError, Log, Embed IO] r =>
   ScratchOptions ->
-  Scratch ->
+  ScratchState ->
   Sem r ()
 renderNvimMenu options scratch =
   whenM (nvimBufIsLoaded (scratchBuffer scratch)) do
@@ -213,9 +213,9 @@ renderNvimMenu options scratch =
     redraw
 
 nvimMenuRenderer ::
-  Members [AtomicState NvimMenuState, Rpc, Rpc !! RpcError, AtomicState (Map Text Scratch), Log, Embed IO, Final IO] r =>
+  Members [AtomicState NvimMenuState, Rpc, Rpc !! RpcError, AtomicState (Map Text ScratchState), Log, Embed IO, Final IO] r =>
   ScratchOptions ->
-  Scratch ->
+  ScratchState ->
   MenuRenderer r i
 nvimMenuRenderer options scratch =
   MenuRenderer \ menu -> \case
