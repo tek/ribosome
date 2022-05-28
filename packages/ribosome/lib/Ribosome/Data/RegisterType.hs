@@ -2,6 +2,7 @@ module Ribosome.Data.RegisterType where
 
 import Ribosome.Host.Class.Msgpack.Decode (MsgpackDecode (..), msgpackFromString)
 import Ribosome.Host.Class.Msgpack.Encode (MsgpackEncode (..))
+import Prettyprinter (Pretty (pretty))
 
 data RegisterType =
   Character
@@ -40,3 +41,16 @@ instance MsgpackEncode RegisterType where
     toMsgpack ("b" <> show width :: Text)
   toMsgpack (Unknown _) =
     toMsgpack ("" :: Text)
+
+instance Pretty RegisterType where
+  pretty = \case
+    Character ->
+      "c"
+    Line ->
+      "v"
+    Block ->
+      "<c-v>"
+    BlockWidth width ->
+      "<c-v>" <> pretty width
+    Unknown a ->
+      pretty a

@@ -3,6 +3,7 @@ module Ribosome.Data.Register where
 import Data.Char (isAlpha, isNumber)
 import qualified Data.Text as Text
 import Exon (exon)
+import Prettyprinter (Pretty (pretty))
 
 import Ribosome.Host.Class.Msgpack.Decode (MsgpackDecode (..), msgpackFromString)
 import Ribosome.Host.Class.Msgpack.Encode (MsgpackEncode (..))
@@ -42,13 +43,24 @@ instance MsgpackEncode Register where
   toMsgpack Empty =
     toMsgpack ("" :: Text)
 
+quoted :: Text -> Text
+quoted a =
+  [exon|"#{a}|]
+
 registerRepr :: Register -> Text
 registerRepr = \case
   Named a ->
-    [exon|"#{a}|]
+    quoted a
   Numbered a ->
-    [exon|"#{a}|]
+    quoted a
   Special a ->
-    [exon|"#{a}|]
+    quoted a
   Empty ->
     ""
+
+instance Pretty Register where
+  pretty = \case
+    Empty ->
+      "no register"
+    a ->
+      pretty (registerRepr a)

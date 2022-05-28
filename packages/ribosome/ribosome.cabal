@@ -149,6 +149,7 @@ library
     , polysemy
     , polysemy-chronos
     , polysemy-plugin
+    , prettyprinter
     , ribosome-host
   mixins:
       base hiding (Prelude)
