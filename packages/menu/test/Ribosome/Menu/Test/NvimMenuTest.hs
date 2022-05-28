@@ -163,7 +163,7 @@ test_nvimMenuNative =
 test_nvimMenuInterrupt :: UnitTest
 test_nvimMenuInterrupt =
   embedPluginTest_ $ interpretMaskFinal do
-    (MenuResult.Aborted ===) =<< withInput (Just (MilliSeconds 50)) Nothing ["<c-c>", "<cr>"] do
+    (MenuResult.Aborted ===) =<< withInput (Just (MilliSeconds 500)) Nothing ["<c-c>", "<cr>"] do
       conf <- promptConfig <$> getCharStream (MilliSeconds 10)
       nvimMenu @_ @() def (menuItems items) Consumer.basic conf
     assertEq 1 . length =<< vimGetWindows

@@ -51,7 +51,7 @@ interpretPluginStack conf name =
   runReader name .
   interpretCoreDeps conf .
   interpretUserErrorPrefixed .
-  interpretHostEmbedCore
+  interpretHostEmbedCore Nothing Nothing
 
 testPlugin ::
   ∀ r r' .
@@ -86,7 +86,7 @@ embedNvimPlugin ::
   Members [Error BootError, GhcTime, Resource, Race, Async, Embed IO, Final IO] r =>
   PluginName ->
   Map MappingIdent (PluginHandler r) ->
-  Map WatchedVariable (Object -> Handler (HandlerStack ++ r) ()) ->
+  Map WatchedVariable (Object -> PluginHandler r) ->
   [RpcHandler (PluginStack ++ r)] ->
   InterpretersFor (Rpc : PluginStack) r
 embedNvimPlugin =
@@ -96,7 +96,7 @@ embedNvimPlugin_ ::
   Members [Error BootError, GhcTime, Resource, Race, Async, Embed IO, Final IO] r =>
   PluginName ->
   Map MappingIdent (PluginHandler r) ->
-  Map WatchedVariable (Object -> Handler (HandlerStack ++ r) ()) ->
+  Map WatchedVariable (Object -> PluginHandler r) ->
   InterpretersFor (Rpc : PluginStack) r
 embedNvimPlugin_ name maps vars =
   embedNvimPlugin name maps vars []

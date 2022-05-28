@@ -5,7 +5,7 @@ import Polysemy.Final (withWeavingToFinal)
 inFinal ::
   ∀ r a .
   Member (Final IO) r =>
-  (∀ f . f () -> (∀ x . Sem r x -> IO (f x)) -> (∀ x . x -> IO (f x)) -> (∀ x . f x -> Maybe x) -> IO (f a)) ->
+  (∀ f . Functor f => f () -> (∀ x . Sem r x -> IO (f x)) -> (∀ x . x -> IO (f x)) -> (∀ x . f x -> Maybe x) -> IO (f a)) ->
   Sem r a
 inFinal f =
   withWeavingToFinal \ s wv ex ->
@@ -14,7 +14,7 @@ inFinal f =
 inFinal_ ::
   ∀ r a .
   Member (Final IO) r =>
-  (∀ f . (Sem r () -> IO ()) -> (∀ x . x -> IO (f x)) -> IO (f a)) ->
+  (∀ f . Functor f => (Sem r () -> IO ()) -> (∀ x . x -> IO (f x)) -> IO (f a)) ->
   Sem r a
 inFinal_ f =
   withWeavingToFinal \ s wv ex ->

@@ -143,7 +143,6 @@ in {
         "polysemy-conc"
         "polysemy-test"
         "tasty"
-        "time"
       ];
     };
   };
@@ -152,11 +151,11 @@ in {
     synopsis = "Test tools for Ribosome";
     description = "See https://hackage.haskell.org/package/ribosome-test/docs/Ribosome.Test.html";
     library.dependencies = [
-      "hedgehog"
+      "messagepack"
       "ribosome"
       "ribosome-host"
+      "ribosome-host-test"
       "polysemy-test"
-      "time"
     ];
   };
 
@@ -181,12 +180,14 @@ in {
     ];
     tests.ribosome-menu-unit = exe "ribosome-menu" "test" {
       dependencies = [
+        "composition"
         "hedgehog"
         "lens"
         "lifted-base"
         "messagepack"
         "ribosome"
         "ribosome-host"
+        "ribosome-host-test"
         "ribosome-menu"
         "ribosome-test"
         "polysemy-conc"

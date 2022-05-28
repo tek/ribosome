@@ -15,6 +15,7 @@
 
     overrides = { hackage, source, configure, pkgs, buildInputs, jailbreak, notest, ... }:
     let
+      nvimBin = configure "--extra-prog-path=${pkgs.neovim}/bin";
       inputs = buildInputs [pkgs.neovim pkgs.tmux pkgs.rxvt-unicode];
     in {
       bytestring-trie = hackage "0.2.6" "0hlgdl7plif58r73hza2148671jf6l2pim84a0a7xf13n8bkrmh7";
@@ -28,8 +29,9 @@
       polysemy-plugin = hackage "0.4.3.0" "1r7j1ffsd6z2q2fgpg78brl2gb0dg8r5ywfiwdrsjd2fxkinjcg1";
       polysemy-process = source.package polysemy-conc "process";
       polysemy-test = source.package polysemy-test "polysemy-test";
-      ribosome = configure "--extra-prog-path=${pkgs.neovim}/bin" inputs;
-      ribosome-host = configure "--extra-prog-path=${pkgs.neovim}/bin" inputs;
+      ribosome = nvimBin inputs;
+      ribosome-host = nvimBin inputs;
+      ribosome-menu = nvimBin inputs;
       streamly = hackage "0.8.1" "0ywyy7gxjnp32hx8kki0lfn94bnc9mzjh8g6mg65ff3vv28k2vdr";
       type-errors = notest;
       type-errors-pretty = notest jailbreak;

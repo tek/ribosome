@@ -247,7 +247,6 @@ test-suite ribosome-unit
     , ribosome-host
     , ribosome-host-test
     , tasty
-    , time
   mixins:
       base hiding (Prelude)
   default-language: Haskell2010

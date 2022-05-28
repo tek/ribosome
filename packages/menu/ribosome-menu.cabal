@@ -228,6 +228,7 @@ test-suite ribosome-menu-unit
   ghc-options: -Wall -Wredundant-constraints -Wincomplete-uni-patterns -Wmissing-deriving-strategies -Widentities -Wunused-packages -fplugin=Polysemy.Plugin -threaded -rtsopts -with-rtsopts=-N
   build-depends:
       base >=4.12 && <5
+    , composition
     , hedgehog
     , incipit
     , lens
@@ -239,6 +240,7 @@ test-suite ribosome-menu-unit
     , polysemy-test
     , ribosome
     , ribosome-host
+    , ribosome-host-test
     , ribosome-menu
     , ribosome-test
     , streamly

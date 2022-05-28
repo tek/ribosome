@@ -11,7 +11,7 @@ import Ribosome.Menu.Prompt.Transition (basicTransition)
 defaultPrompt ::
   Members [Rpc, Rpc !! RpcError, Time t d, Race, Embed IO, Final IO] r =>
   [PromptFlag] ->
-  Sem r (PromptConfig IO r)
+  Sem r (PromptConfig r)
 defaultPrompt flags = do
   promptInput <- getCharStream (MilliSeconds 33)
   pure (PromptConfig promptInput basicTransition nvimPromptRenderer flags)

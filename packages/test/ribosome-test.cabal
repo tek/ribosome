@@ -88,14 +88,14 @@ library
   ghc-options: -Wall -Wredundant-constraints -Wincomplete-uni-patterns -Wmissing-deriving-strategies -Widentities -Wunused-packages -fplugin=Polysemy.Plugin
   build-depends:
       base >=4.12 && <5
-    , hedgehog
     , incipit
+    , messagepack
     , polysemy
     , polysemy-plugin
     , polysemy-test
     , ribosome
     , ribosome-host
-    , time
+    , ribosome-host-test
   mixins:
       base hiding (Prelude)
   default-language: Haskell2010
