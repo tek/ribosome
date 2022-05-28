@@ -74,6 +74,7 @@ toHandlerError htag e =
   HandlerError (toErrorMessage e) htag
 
 handlerErrorFrom ::
+  ∀ e r a .
   ToErrorMessage e =>
   Member (Stop HandlerError) r =>
   HandlerTag ->
@@ -83,6 +84,7 @@ handlerErrorFrom t =
   mapStop (toHandlerError t)
 
 mapHandlerError ::
+  ∀ e r a .
   ToErrorMessage e =>
   Member (Stop HandlerError) r =>
   Sem (Stop e : r) a ->
@@ -91,6 +93,7 @@ mapHandlerError =
   mapStop (toHandlerError GlobalTag)
 
 resumeHandlerErrorFrom ::
+  ∀ eff e r a .
   ToErrorMessage e =>
   Members [eff !! e, Stop HandlerError] r =>
   HandlerTag ->
@@ -100,6 +103,7 @@ resumeHandlerErrorFrom t =
   resumeHoist (toHandlerError t)
 
 resumeHandlerError ::
+  ∀ eff e r a .
   ToErrorMessage e =>
   Members [eff !! e, Stop HandlerError] r =>
   Sem (eff : r) a ->

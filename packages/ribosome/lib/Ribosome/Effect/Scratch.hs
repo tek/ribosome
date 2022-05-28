@@ -8,5 +8,6 @@ data Scratch :: Effect where
   Update :: ScratchId -> ScratchOptions -> Scratch m ScratchState
   Kill :: ScratchId -> Scratch m ()
   Get :: Scratch m [ScratchState]
+  Find :: ScratchId -> Scratch m (Maybe ScratchState)
 
 makeSem ''Scratch

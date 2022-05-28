@@ -6,7 +6,7 @@ import Exon (exon)
 
 import Ribosome.Data.PluginName (PluginName)
 import Ribosome.Data.ScratchState (ScratchId (unScratchId), ScratchState)
-import Ribosome.Effect.Scratch (Scratch (Get, Kill, Show, Update))
+import Ribosome.Effect.Scratch (Scratch (Find, Get, Kill, Show, Update))
 import Ribosome.Host.Data.RpcError (RpcError (RpcError))
 import Ribosome.Host.Effect.Rpc (Rpc)
 import Ribosome.Scratch (killScratch, lookupScratch, showInScratch, updateScratch)
@@ -25,6 +25,8 @@ interpretScratchAtomic =
       traverse_ killScratch =<< lookupScratch i
     Get ->
       atomicGets Map.elems
+    Find i ->
+      atomicGets (Map.lookup i)
 
 interpretScratch ::
   Members [Rpc !! RpcError, Reader PluginName, Log, Resource, Embed IO] r =>
