@@ -81,24 +81,29 @@ in {
     description = "See https://hackage.haskell.org/package/ribosome-host/docs/Ribosome-Host.html";
     library.dependencies = [
       "cereal"
+      "chronos"
       "exon"
       "flatparse"
       "lens"
       "messagepack"
       "path"
+      "polysemy-chronos"
       "polysemy-conc"
       "polysemy-log"
       "polysemy-process"
       "template-haskell"
+      "time"
       "type-errors-pretty"
       "typed-process"
     ];
     tests.ribosome-host-unit = exe "ribosome-host" "test" {
       dependencies = [
+        "chronos"
         "deepseq"
         "hedgehog"
         "messagepack"
         "path"
+        "polysemy-chronos"
         "polysemy-conc"
         "polysemy-test"
         "ribosome-host"
@@ -112,8 +117,10 @@ in {
     synopsis = "Test tools for Ribosome";
     description = "See https://hackage.haskell.org/package/ribosome-host-test/docs/Ribosome.Host.Test.html";
     library.dependencies = [
+      "chronos"
       "hedgehog"
       "ribosome-host"
+      "polysemy-chronos"
       "polysemy-test"
       "time"
     ];
@@ -129,6 +136,8 @@ in {
       "messagepack"
       "path"
       "path-io"
+      "polysemy-chronos"
+      "prettyprinter"
       "ribosome-host"
     ];
     tests.ribosome-unit = exe "ribosome" "test" {

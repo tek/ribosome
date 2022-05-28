@@ -2,7 +2,7 @@ module Ribosome.Embed where
 
 import Data.MessagePack (Object)
 import Polysemy.Conc (interpretAtomic)
-import Time (GhcTime)
+import Polysemy.Chronos (ChronosTime)
 
 import Ribosome.Data.Mapping (MappingIdent)
 import Ribosome.Data.PluginName (PluginName)
@@ -42,7 +42,7 @@ type PluginHandler r =
   Handler (HandlerStack ++ r) ()
 
 interpretPluginStack ::
-  Members [Error BootError, GhcTime, Resource, Race, Async, Embed IO] r =>
+  Members [Error BootError, ChronosTime, Resource, Race, Async, Embed IO] r =>
   HostConfig ->
   PluginName ->
   InterpretersFor BasicPluginStack r
@@ -71,7 +71,7 @@ testPlugin name maps vars handlers =
   insertAt @1
 
 embedNvimPluginLog ::
-  Members [Error BootError, GhcTime, Resource, Race, Async, Embed IO, Final IO] r =>
+  Members [Error BootError, ChronosTime, Resource, Race, Async, Embed IO, Final IO] r =>
   HostConfig ->
   PluginName ->
   Map MappingIdent (PluginHandler r) ->
@@ -83,7 +83,7 @@ embedNvimPluginLog conf name maps vars handlers =
   testPlugin name maps vars handlers
 
 embedNvimPlugin ::
-  Members [Error BootError, GhcTime, Resource, Race, Async, Embed IO, Final IO] r =>
+  Members [Error BootError, ChronosTime, Resource, Race, Async, Embed IO, Final IO] r =>
   PluginName ->
   Map MappingIdent (PluginHandler r) ->
   Map WatchedVariable (Object -> PluginHandler r) ->
@@ -93,7 +93,7 @@ embedNvimPlugin =
   embedNvimPluginLog def
 
 embedNvimPlugin_ ::
-  Members [Error BootError, GhcTime, Resource, Race, Async, Embed IO, Final IO] r =>
+  Members [Error BootError, ChronosTime, Resource, Race, Async, Embed IO, Final IO] r =>
   PluginName ->
   Map MappingIdent (PluginHandler r) ->
   Map WatchedVariable (Object -> PluginHandler r) ->

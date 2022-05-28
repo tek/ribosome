@@ -6,7 +6,7 @@ import qualified Polysemy.Process as Process
 import Polysemy.Process (Process, ProcessOptions, withProcess)
 import Polysemy.Process.Data.ProcessError (ProcessError)
 import System.Process.Typed (ProcessConfig, proc)
-import Time (GhcTime)
+import Polysemy.Chronos (ChronosTime)
 
 import Ribosome.Host.Config (interpretLogConfig)
 import Ribosome.Host.Data.BootError (BootError (BootError))
@@ -111,7 +111,7 @@ type EmbedStack =
 
 interpretHostEmbedCore ::
   Members CoreDeps r =>
-  Members [UserError, GhcTime, Error BootError, Resource, Race, Async, Embed IO] r =>
+  Members [UserError, ChronosTime, Error BootError, Resource, Race, Async, Embed IO] r =>
   Maybe ProcessOptions ->
   Maybe (ProcessConfig () () ()) ->
   InterpretersFor CoreStack r
@@ -124,7 +124,7 @@ interpretHostEmbedCore options conf =
   interpretDataLogRpc
 
 interpretCoreDeps ::
-  Members [GhcTime, Error BootError, Resource, Race, Async, Embed IO] r =>
+  Members [ChronosTime, Error BootError, Resource, Race, Async, Embed IO] r =>
   HostConfig ->
   InterpretersFor CoreDeps r
 interpretCoreDeps conf =
@@ -134,7 +134,7 @@ interpretCoreDeps conf =
   interpretLogStderrFile
 
 interpretHostEmbed ::
-  Members [GhcTime, Error BootError, Resource, Race, Async, Embed IO] r =>
+  Members [ChronosTime, Error BootError, Resource, Race, Async, Embed IO] r =>
   HostConfig ->
   InterpretersFor EmbedStack r
 interpretHostEmbed conf =
@@ -143,7 +143,7 @@ interpretHostEmbed conf =
   interpretHostEmbedCore Nothing Nothing
 
 withHostEmbed ::
-  Members [Error BootError, GhcTime, Resource, Race, Async, Embed IO, Final IO] r =>
+  Members [Error BootError, ChronosTime, Resource, Race, Async, Embed IO, Final IO] r =>
   HostConfig ->
   InterpreterFor (Handlers !! HandlerError) (EmbedStack ++ r) ->
   InterpretersFor EmbedStack r
@@ -154,7 +154,7 @@ withHostEmbed conf handlers =
   insertAt @0
 
 embedNvim ::
-  Members [Error BootError, GhcTime, Resource, Race, Async, Embed IO, Final IO] r =>
+  Members [Error BootError, ChronosTime, Resource, Race, Async, Embed IO, Final IO] r =>
   HostConfig ->
   InterpreterFor (Handlers !! HandlerError) (EmbedStack ++ r) ->
   InterpretersFor (Rpc : EmbedStack) r
@@ -165,7 +165,7 @@ embedNvim conf handlers =
   insertAt @1
 
 embedNvim_ ::
-  Members [Error BootError, GhcTime, Resource, Race, Async, Embed IO, Final IO] r =>
+  Members [Error BootError, ChronosTime, Resource, Race, Async, Embed IO, Final IO] r =>
   HostConfig ->
   InterpretersFor (Rpc : EmbedStack) r
 embedNvim_ conf =

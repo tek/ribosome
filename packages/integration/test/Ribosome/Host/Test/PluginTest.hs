@@ -13,7 +13,7 @@ import Polysemy.Log (Severity (Warn), interpretLogStdoutLevelConc)
 import qualified Polysemy.Test as Test
 import Polysemy.Test (Hedgehog, Test, TestError (TestError), UnitTest, assertEq, liftH, runTestAuto)
 import qualified Polysemy.Time as Time
-import Polysemy.Time (MilliSeconds (MilliSeconds), Minutes (Minutes), interpretTimeGhc)
+import Polysemy.Time (MilliSeconds (MilliSeconds), Minutes (Minutes), interpretTimeChronos)
 import System.Environment (lookupEnv)
 import System.Process.Typed (ProcessConfig, proc)
 
@@ -40,7 +40,7 @@ testPlugin ::
 testPlugin riboRoot =
   asyncToIOFinal $
   interpretRace $
-  interpretTimeGhc $
+  interpretTimeChronos $
   interpretUserErrorInfo $
   interpretLogStdoutLevelConc (Just Warn) $
   mapError (TestError . unBootError) do

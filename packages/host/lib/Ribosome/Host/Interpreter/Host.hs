@@ -42,7 +42,7 @@ handlerIOError ::
   Sem r a
 handlerIOError =
   fromExceptionSemVia \ (e :: IOError) ->
-    HandlerError (ErrorMessage "Internal error" ["Handler exception", show e] Error) (Just "Host")
+    HandlerError (ErrorMessage "Internal error" ["Handler exception", show e] Error) "Host"
 
 handle ::
   Members [Handlers !! HandlerError, Rpc !! RpcError, DataLog HostError, Log, Final IO] r =>

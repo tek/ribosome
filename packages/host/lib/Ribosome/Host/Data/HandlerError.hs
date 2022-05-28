@@ -1,15 +1,26 @@
 module Ribosome.Host.Data.HandlerError where
 
 import Exon (exon)
+import GHC.Stack (withFrozenCallStack)
 import Polysemy.Log (Severity (Error))
 import Prelude hiding (tag)
 import Text.Show (showParen, showsPrec)
-import GHC.Stack (withFrozenCallStack)
 
-newtype HandlerTag =
-  HandlerTag { unHandlerTag :: Text }
+data HandlerTag =
+  GlobalTag
+  |
+  HandlerTag Text
   deriving stock (Eq, Show)
-  deriving newtype (IsString, Ord)
+
+instance Ord HandlerTag where
+  compare GlobalTag GlobalTag = EQ
+  compare GlobalTag (HandlerTag _) = LT
+  compare (HandlerTag _) GlobalTag = GT
+  compare (HandlerTag l) (HandlerTag r) = compare l r
+
+instance IsString HandlerTag where
+  fromString =
+    HandlerTag . toText
 
 data ErrorMessage =
   ErrorMessage {
@@ -22,7 +33,7 @@ data ErrorMessage =
 data HandlerError :: Type where
   HandlerError :: HasCallStack => {
     msg :: ErrorMessage,
-    tag :: Maybe HandlerTag
+    tag :: HandlerTag
   } -> HandlerError
 
 instance Show HandlerError where
@@ -35,13 +46,13 @@ simple ::
   HandlerError
 simple msg =
   withFrozenCallStack do
-    HandlerError (ErrorMessage msg [msg] Error) Nothing
+    HandlerError (ErrorMessage msg [msg] Error) GlobalTag
 
 handlerError ::
   Member (Stop HandlerError) r =>
   HasCallStack =>
   ErrorMessage ->
-  Maybe HandlerTag ->
+  HandlerTag ->
   Sem r a
 handlerError msg tag =
   withFrozenCallStack do
@@ -56,7 +67,7 @@ class ToErrorMessage e where
 
 toHandlerError ::
   ToErrorMessage e =>
-  Maybe HandlerTag ->
+  HandlerTag ->
   e ->
   HandlerError
 toHandlerError htag e =
@@ -69,7 +80,7 @@ handlerErrorFrom ::
   Sem (Stop e : r) a ->
   Sem r a
 handlerErrorFrom t =
-  mapStop (toHandlerError (Just t))
+  mapStop (toHandlerError t)
 
 mapHandlerError ::
   ToErrorMessage e =>
@@ -77,4 +88,21 @@ mapHandlerError ::
   Sem (Stop e : r) a ->
   Sem r a
 mapHandlerError =
-  mapStop (toHandlerError Nothing)
+  mapStop (toHandlerError GlobalTag)
+
+resumeHandlerErrorFrom ::
+  ToErrorMessage e =>
+  Members [eff !! e, Stop HandlerError] r =>
+  HandlerTag ->
+  Sem (eff : r) a ->
+  Sem r a
+resumeHandlerErrorFrom t =
+  resumeHoist (toHandlerError t)
+
+resumeHandlerError ::
+  ToErrorMessage e =>
+  Members [eff !! e, Stop HandlerError] r =>
+  Sem (eff : r) a ->
+  Sem r a
+resumeHandlerError =
+  resumeHandlerErrorFrom GlobalTag

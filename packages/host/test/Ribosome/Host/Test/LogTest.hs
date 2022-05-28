@@ -20,7 +20,7 @@ import qualified Data.Text as Text
 
 stopper :: Handler r ()
 stopper =
-  handlerError (ErrorMessage "error" ["error", "meltdown"] Crit) (Just "test")
+  handlerError (ErrorMessage "error" ["error", "meltdown"] Crit) "test"
 
 handlers :: [RpcHandler r]
 handlers =

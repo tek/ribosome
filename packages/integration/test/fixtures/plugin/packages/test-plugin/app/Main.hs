@@ -6,7 +6,7 @@ import Exon (exon)
 import qualified Polysemy.Log as Log
 import Polysemy.Log (Severity (Warn), interpretLogStderrLevelConc)
 import Polysemy.Process.Data.ProcessError (ProcessError)
-import Polysemy.Time (interpretTimeGhc)
+import Polysemy.Time (interpretTimeChronos)
 import Ribosome.Host.Api.Effect (nvimEcho)
 import Ribosome.Host.Class.Msgpack.Encode (toMsgpack)
 import Ribosome.Host.Data.BootError (unBootError)
@@ -49,5 +49,5 @@ main =
   runConc $
   runError $
   mapError unBootError $
-  interpretTimeGhc $
+  interpretTimeChronos $
   runNvimPlugin def (interpretHandlers handlers)

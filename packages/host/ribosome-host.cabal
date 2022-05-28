@@ -52,6 +52,7 @@ library
       Ribosome.Host.Data.RpcHandler
       Ribosome.Host.Data.RpcMessage
       Ribosome.Host.Data.RpcType
+      Ribosome.Host.Data.StoredError
       Ribosome.Host.Data.Tuple
       Ribosome.Host.Effect.Errors
       Ribosome.Host.Effect.Handlers
@@ -152,6 +153,7 @@ library
   build-depends:
       base >=4.12 && <5
     , cereal
+    , chronos
     , exon
     , flatparse
     , incipit
@@ -159,11 +161,13 @@ library
     , messagepack
     , path
     , polysemy
+    , polysemy-chronos
     , polysemy-conc
     , polysemy-log
     , polysemy-plugin
     , polysemy-process
     , template-haskell
+    , time
     , type-errors-pretty
     , typed-process
   mixins:
@@ -256,12 +260,14 @@ test-suite ribosome-host-unit
   ghc-options: -Wall -Wredundant-constraints -Wincomplete-uni-patterns -Wmissing-deriving-strategies -Widentities -Wunused-packages -fplugin=Polysemy.Plugin -threaded -rtsopts -with-rtsopts=-N
   build-depends:
       base >=4.12 && <5
+    , chronos
     , deepseq
     , hedgehog
     , incipit
     , messagepack
     , path
     , polysemy
+    , polysemy-chronos
     , polysemy-conc
     , polysemy-plugin
     , polysemy-test

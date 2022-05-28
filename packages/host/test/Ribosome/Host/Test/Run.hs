@@ -1,10 +1,12 @@
 module Ribosome.Host.Test.Run where
 
+import qualified Chronos
 import Data.Time (UTCTime)
 import Hedgehog.Internal.Property (Failure)
+import Polysemy.Chronos (ChronosTime, interpretTimeChronosConstant)
 import Polysemy.Conc (interpretRace)
 import Polysemy.Test (Hedgehog, Test, TestError (TestError), UnitTest, runTestAuto)
-import Polysemy.Time (GhcTime, interpretTimeGhcConstant, mkDatetime)
+import Time (mkDatetime)
 
 import Ribosome.Host.Data.BootError (BootError (unBootError))
 import qualified Ribosome.Host.Data.HandlerError as HandlerError
@@ -18,7 +20,7 @@ import Ribosome.Host.Interpreter.Handlers (interpretHandlers)
 
 type TestStack =
   [
-    GhcTime,
+    ChronosTime,
     Race,
     Async,
     Error BootError,
@@ -35,9 +37,9 @@ type TestStack =
 type EmbedTestStack =
   EmbedStack ++ TestStack
 
-testTime :: UTCTime
+testTime :: Chronos.Time
 testTime =
-  mkDatetime 2025 6 15 12 30 30
+  Chronos.datetimeToTime (mkDatetime 2025 6 15 12 30 30)
 
 runTest ::
   Sem TestStack () ->
@@ -47,7 +49,7 @@ runTest =
   mapError (TestError . unBootError) .
   asyncToIOFinal .
   interpretRace .
-  interpretTimeGhcConstant testTime
+  interpretTimeChronosConstant testTime
 
 embedTestConf ::
   HostConfig ->

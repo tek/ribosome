@@ -147,6 +147,7 @@ library
     , path
     , path-io
     , polysemy
+    , polysemy-chronos
     , polysemy-plugin
     , ribosome-host
   mixins:

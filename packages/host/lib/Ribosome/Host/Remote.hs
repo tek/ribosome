@@ -2,7 +2,7 @@ module Ribosome.Host.Remote where
 
 import Polysemy.Conc (ChanConsumer, ChanEvents, interpretEventsChan)
 import Polysemy.Process (Process, interpretProcessCurrent)
-import Time (GhcTime)
+import Polysemy.Chronos (ChronosTime)
 
 import Ribosome.Host.Data.BootError (BootError (BootError))
 import Ribosome.Host.Data.Event (Event)
@@ -57,7 +57,7 @@ type RemoteStack =
   CoreRemoteStack ++ UserError : CoreDeps
 
 interpretHostRemoteCore ::
-  Members [UserError, Error BootError, Log, Resource, Race, Async, Embed IO] r =>
+  Members [UserError, Error BootError, ChronosTime, Log, Resource, Race, Async, Embed IO] r =>
   InterpretersFor CoreRemoteStack r
 interpretHostRemoteCore =
   interpretErrors .
@@ -68,7 +68,7 @@ interpretHostRemoteCore =
   interpretDataLogRpc
 
 interpretHostRemote ::
-  Members [Error BootError, GhcTime, Resource, Race, Async, Embed IO] r =>
+  Members [Error BootError, ChronosTime, Resource, Race, Async, Embed IO] r =>
   HostConfig ->
   InterpretersFor RemoteStack r
 interpretHostRemote conf =
@@ -77,7 +77,7 @@ interpretHostRemote conf =
   interpretHostRemoteCore
 
 runNvimPlugin ::
-  Members [Error BootError, GhcTime, Resource, Async, Race, Embed IO, Final IO] r =>
+  Members [Error BootError, ChronosTime, Resource, Async, Race, Embed IO, Final IO] r =>
   HostConfig ->
   InterpreterFor (Handlers !! HandlerError) (RemoteStack ++ r) ->
   Sem r ()

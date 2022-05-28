@@ -5,11 +5,11 @@ import Exon (exon)
 import qualified Log
 import Log (Log (Log), Severity, formatLogEntry, interceptDataLogConc, interpretLogDataLogConc, interpretLogNull, setLogLevel)
 import Path (Abs, File, Path, toFilePath)
+import Polysemy.Chronos (ChronosTime, interpretTimeChronos)
 import Polysemy.Log (interpretLogStderrLevelConc)
 import Polysemy.Log.Handle (interpretDataLogHandleWith)
 import Polysemy.Log.Log (interpretDataLog)
 import System.IO (Handle, IOMode (AppendMode), hClose, openFile)
-import Time (GhcTime, interpretTimeGhc)
 
 import Ribosome.Host.Api.Effect (nvimEcho)
 import Ribosome.Host.Class.Msgpack.Encode (toMsgpack)
@@ -39,13 +39,10 @@ logHandlerError ::
   Members [Rpc !! e, Errors, UserError, Log] r =>
   HostError ->
   Sem r ()
-logHandlerError (HostError notification (HandlerError msg@(ErrorMessage user log severity) htag)) = do
-  Log.log severity logLines
+logHandlerError (HostError asy (HandlerError msg@(ErrorMessage user log severity) htag)) = do
+  Log.log severity (Text.unlines log)
   Errors.store htag msg
-  when notification (echoError user severity)
-  where
-    logLines =
-      Text.unlines log
+  when asy (echoError user severity)
 
 interpretDataLogRpc ::
   Show e =>
@@ -64,20 +61,20 @@ interpretLogStderrFile =
       fileLog (send (Log m)) *> stderrLog (send (Log m))
 
 interpretLogHandleLevel ::
-  Members [Resource, GhcTime, Race, Async, Embed IO] r =>
+  Members [Resource, ChronosTime, Race, Async, Embed IO] r =>
   Handle ->
   Maybe Severity ->
   InterpreterFor Log r
 interpretLogHandleLevel handle level =
   interpretDataLogHandleWith handle formatLogEntry .
   setLogLevel level .
-  interpretTimeGhc .
+  interpretTimeChronos .
   interpretLogDataLogConc 64 .
   raiseUnder2
 {-# inline interpretLogHandleLevel #-}
 
 interpretLogFileLevel ::
-  Members [Resource, GhcTime, Race, Async, Embed IO] r =>
+  Members [Resource, ChronosTime, Race, Async, Embed IO] r =>
   Maybe Severity ->
   Path Abs File ->
   InterpreterFor Log r
@@ -90,7 +87,7 @@ interpretLogFileLevel level path sem =
 {-# inline interpretLogFileLevel #-}
 
 interpretLogs ::
-  Members [Reader LogConfig, Resource, GhcTime, Race, Async, Embed IO] r =>
+  Members [Reader LogConfig, Resource, ChronosTime, Race, Async, Embed IO] r =>
   InterpretersFor [StderrLog, FileLog] r
 interpretLogs sem =
   ask >>= \ LogConfig {..} ->
