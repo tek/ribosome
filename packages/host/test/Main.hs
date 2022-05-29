@@ -13,6 +13,7 @@ import Ribosome.Host.Test.CommandRangeTest (test_range)
 import Ribosome.Host.Test.CommandRegisterTest (test_register)
 import Ribosome.Host.Test.EventTest (test_errorEvent)
 import Ribosome.Host.Test.FunctionTest (test_function)
+import Ribosome.Host.Test.LogTest (test_logFile)
 import Ribosome.Host.Test.NotifyTest (test_notify)
 import Test.Tasty (TestTree, defaultMain, testGroup)
 
@@ -33,7 +34,8 @@ tests =
     unitTest "autocmd" test_autocmd,
     unitTest "notify" test_notify,
     unitTest "error event" test_errorEvent,
-    unitTest "atomic" test_atomic
+    unitTest "atomic" test_atomic,
+    unitTest "log to ile" test_logFile
   ]
 
 main :: IO ()

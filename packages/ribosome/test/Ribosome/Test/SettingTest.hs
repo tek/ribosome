@@ -7,7 +7,7 @@ import Ribosome.Data.Setting (Setting (Setting))
 import Ribosome.Data.SettingError (SettingError)
 import qualified Ribosome.Effect.Settings as Settings
 import Ribosome.Effect.Settings (Settings)
-import Ribosome.Test.Error (testError)
+import Ribosome.Test.Error (resumeTestError)
 import Ribosome.Test.Run (embedPluginTest_)
 
 setting :: Setting Int
@@ -21,7 +21,7 @@ settingDefault =
 test_settingUpdate :: UnitTest
 test_settingUpdate =
   embedPluginTest_ do
-    testError @Settings do 
+    resumeTestError @Settings do 
       Settings.update setting 5
       r <- Settings.get setting
       5 === r
@@ -31,7 +31,7 @@ test_settingUnset =
   embedPluginTest_ do
     ea <- resumeEither @SettingError (Settings.get setting)
     assertLeft () (first unit ea)
-    assertEq 13 =<< testError @Settings (Settings.get settingDefault)
+    assertEq 13 =<< resumeTestError @Settings (Settings.get settingDefault)
 
 test_settings :: TestTree
 test_settings =

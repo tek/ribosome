@@ -37,6 +37,6 @@ regHandlers =
 
 test_register :: UnitTest
 test_register =
-  runTest $ interpretAtomic 0 $ embedNvim def (interpretHandlers regHandlers) do
+  runTest $ interpretAtomic 0 $ embedNvim (interpretHandlers regHandlers) do
     nvimCommand "Register x"
     assertJust @Text "x" =<< nvimGetVar var

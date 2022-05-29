@@ -1,5 +1,7 @@
 module Ribosome.Host.Test.LogTest where
 
+import qualified Data.Text as Text
+import qualified Data.Text.IO as Text
 import Log (Severity (Crit))
 import Path (relfile, toFilePath)
 import qualified Polysemy.Test as Test
@@ -11,12 +13,10 @@ import Ribosome.Host.Data.HandlerError (ErrorMessage (ErrorMessage), handlerErro
 import Ribosome.Host.Data.HostConfig (HostConfig (log), LogConfig (logFile))
 import Ribosome.Host.Data.RpcError (RpcError)
 import Ribosome.Host.Data.RpcHandler (Handler, RpcHandler)
-import Ribosome.Host.Embed (embedNvim)
+import Ribosome.Host.Embed (embedNvimConf)
 import Ribosome.Host.Handler (rpcFunction)
 import Ribosome.Host.Interpreter.Handlers (interpretHandlers)
 import Ribosome.Host.Test.Run (runTest)
-import qualified Data.Text.IO as Text
-import qualified Data.Text as Text
 
 stopper :: Handler r ()
 stopper =
@@ -38,6 +38,6 @@ test_logFile :: UnitTest
 test_logFile =
   runTest do
     file <- Test.tempFile [] [relfile|log/log|] 
-    embedNvim def { log = def { logFile = Just file } } (interpretHandlers handlers) do
+    embedNvimConf def { log = def { logFile = Just file } } (interpretHandlers handlers) do
       assertLeft () . first unit =<< resumeEither @RpcError @_ @_ @() (nvimCallFunction "Stopper" [])
     assertEq fileTarget . Text.lines =<< embed (Text.readFile (toFilePath file))

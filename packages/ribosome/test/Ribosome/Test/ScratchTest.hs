@@ -9,7 +9,6 @@ import Ribosome.Data.ScratchId (ScratchId)
 import Ribosome.Data.ScratchOptions (ScratchOptions (ScratchOptions))
 import qualified Ribosome.Effect.Scratch as Scratch
 import Ribosome.Effect.Scratch (Scratch)
-import Ribosome.Embed (embedNvimPlugin)
 import Ribosome.Host.Api.Data (nvimCommand)
 import Ribosome.Host.Api.Effect (vimCallFunction)
 import Ribosome.Host.Data.Execution (Execution (Sync))
@@ -18,7 +17,7 @@ import Ribosome.Host.Data.RpcError (RpcError)
 import Ribosome.Host.Data.RpcHandler (Handler, RpcHandler)
 import qualified Ribosome.Host.Effect.Rpc as Rpc
 import Ribosome.Host.Handler (rpcFunction)
-import Ribosome.Host.Test.Run (runTest)
+import Ribosome.Test.Run (embedPluginTest)
 import Ribosome.Test.Wait (assertWait)
 
 target :: [Text]
@@ -68,7 +67,7 @@ handlers =
 
 scratchTest :: Text -> UnitTest
 scratchTest fun = do
-  runTest $ embedNvimPlugin "test" mempty mempty handlers do
+  embedPluginTest mempty mempty handlers do
     () <- vimCallFunction fun []
     assertWait scratchCount (assertEq (1 :: Int))
     assertWait currentBufferContent (assertEq target)

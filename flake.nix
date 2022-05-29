@@ -60,6 +60,5 @@
       extensions = ["StandaloneKindSignatures" "OverloadedLabels"];
     };
     compat.enable = false;
-    localPackage = { fast, ... }: fast;
   });
 }

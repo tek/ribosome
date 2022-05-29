@@ -92,7 +92,7 @@ rangeHandlers =
 
 test_range :: UnitTest
 test_range =
-  runTest $ embedNvim def (interpretHandlers rangeHandlers) do
+  runTest $ embedNvim (interpretHandlers rangeHandlers) do
     buf <- nvimGetCurrentBuf
     win <- nvimGetCurrentWin
     nvimBufSetLines buf 0 1 True ["1", "2", "3", "4", "5"]

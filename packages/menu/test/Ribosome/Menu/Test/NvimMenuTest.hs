@@ -7,7 +7,7 @@ import Polysemy.Conc (interpretMaskFinal, withAsync_)
 import Polysemy.Conc.Interpreter.Mask (Restoration)
 import Polysemy.Test (Hedgehog, TestError, UnitTest, assertEq, runTestAuto, unitTest, (===))
 import qualified Polysemy.Time as Time
-import Polysemy.Time (MilliSeconds (MilliSeconds), Seconds (Seconds), convert)
+import Polysemy.Time (MilliSeconds (MilliSeconds), convert)
 import qualified Streamly.Internal.Data.Stream.IsStream as Stream
 import Streamly.Prelude (SerialT)
 import Test.Tasty (TestTree, testGroup)
@@ -51,7 +51,7 @@ import qualified Ribosome.Menu.Prompt.Data.PromptInputEvent as PromptInputEvent 
 import Ribosome.Menu.Prompt.Nvim (getCharStream, nvimPromptRenderer)
 import Ribosome.Menu.Prompt.Transition (basicTransition)
 import Ribosome.Menu.Run (nvimMenu, staticNvimMenu)
-import Ribosome.Test.Error (testError)
+import Ribosome.Test.Error (resumeTestError)
 import Ribosome.Test.Run (embedPluginTest_)
 
 sleep ::
@@ -118,7 +118,7 @@ runNvimMenu ::
   PromptInput ->
   Sem r (MenuResult a)
 runNvimMenu maps source =
-  interpretMaskFinal $ testError @Scratch do
+  interpretMaskFinal $ resumeTestError @Scratch do
     nvimMenu def { maxSize = Just 4 } (menuItems items) (Consumer.withMappings maps) (promptConfig source)
 
 mappings ::
@@ -166,7 +166,7 @@ test_nvimMenuInterrupt =
   embedPluginTest_ $ interpretMaskFinal do
     (MenuResult.Aborted ===) =<< withInput (Just (MilliSeconds 2000)) (Just (MilliSeconds 50)) ["<c-c>", "<cr>"] do
       conf <- promptConfig <$> getCharStream (MilliSeconds 10)
-      testError (nvimMenu @_ @() def (menuItems items) Consumer.basic conf)
+      resumeTestError (nvimMenu @_ @() def (menuItems items) Consumer.basic conf)
     assertEq 1 . length =<< vimGetWindows
 
 returnPrompt ::
@@ -194,7 +194,7 @@ test_nvimMenuNav =
 
 test_nvimMenuQuit :: UnitTest
 test_nvimMenuQuit =
-  embedPluginTest_ $ interpretMaskFinal $ testError @Scratch do
+  embedPluginTest_ $ interpretMaskFinal $ resumeTestError @Scratch do
     void $ staticNvimMenu def [] Consumer.basic (PromptConfig inp basicTransition nvimPromptRenderer [])
     assertEq [""] =<< traverse bufferGetName =<< filterM buflisted =<< vimGetBuffers
   where
@@ -243,7 +243,7 @@ test_entrySlice =
 
 test_menuScrollUp :: UnitTest
 test_menuScrollUp =
-  embedPluginTest_ $ interpretMaskFinal $ testError @Scratch do
+  embedPluginTest_ $ interpretMaskFinal $ resumeTestError @Scratch do
     let prompt = PromptConfig (promptInputWith (Just 0.2) (Just 0.01) chars) basicTransition nvimPromptRenderer []
     Success a <- nvimMenu def { maxSize = Just 4 } (menuItems its) consumer prompt
     4 === length a

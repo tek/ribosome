@@ -25,7 +25,7 @@ target =
 
 test_errorEvent :: UnitTest
 test_errorEvent =
-  runTest $ interpretSync $ embedNvim_ def do
+  runTest $ interpretSync $ embedNvim_ do
     withAsync_ listenEvent do
       Rpc.notify (Data.nvimCommand "write")
       assertJust target =<< Sync.wait (Seconds 5)

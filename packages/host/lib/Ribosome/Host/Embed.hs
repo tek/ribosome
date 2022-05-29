@@ -1,12 +1,12 @@
 module Ribosome.Host.Embed where
 
 import Data.Serialize (Serialize)
+import Polysemy.Chronos (ChronosTime)
 import Polysemy.Conc (ChanConsumer, ChanEvents, interpretEventsChan)
 import qualified Polysemy.Process as Process
 import Polysemy.Process (Process, ProcessOptions, withProcess)
 import Polysemy.Process.Data.ProcessError (ProcessError)
 import System.Process.Typed (ProcessConfig, proc)
-import Polysemy.Chronos (ChronosTime)
 
 import Ribosome.Host.Config (interpretLogConfig)
 import Ribosome.Host.Data.BootError (BootError (BootError))
@@ -153,20 +153,26 @@ withHostEmbed conf handlers =
   withHost .
   insertAt @0
 
-embedNvim ::
+embedNvimConf ::
   Members [Error BootError, ChronosTime, Resource, Race, Async, Embed IO, Final IO] r =>
   HostConfig ->
   InterpreterFor (Handlers !! HandlerError) (EmbedStack ++ r) ->
   InterpretersFor (Rpc : EmbedStack) r
-embedNvim conf handlers =
+embedNvimConf conf handlers =
   interpretHostEmbed conf .
   handlers .
   testHost .
   insertAt @1
 
+embedNvim ::
+  Members [Error BootError, ChronosTime, Resource, Race, Async, Embed IO, Final IO] r =>
+  InterpreterFor (Handlers !! HandlerError) (EmbedStack ++ r) ->
+  InterpretersFor (Rpc : EmbedStack) r
+embedNvim =
+  embedNvimConf def
+
 embedNvim_ ::
   Members [Error BootError, ChronosTime, Resource, Race, Async, Embed IO, Final IO] r =>
-  HostConfig ->
   InterpretersFor (Rpc : EmbedStack) r
-embedNvim_ conf =
-  embedNvim conf interpretHandlersNull
+embedNvim_ =
+  embedNvim interpretHandlersNull

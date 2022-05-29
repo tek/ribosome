@@ -3,7 +3,7 @@ module Ribosome.Host.Test.Run where
 import qualified Chronos
 import Conc (Restoration, interpretMaskFinal)
 import Hedgehog.Internal.Property (Failure)
-import Polysemy.Chronos (ChronosTime, interpretTimeChronosConstant)
+import Polysemy.Chronos (ChronosTime, interpretTimeChronos, interpretTimeChronosConstant)
 import Polysemy.Conc (interpretRace)
 import Polysemy.Test (Hedgehog, Test, TestError (TestError), UnitTest, runTestAuto)
 import Time (mkDatetime)
@@ -11,12 +11,12 @@ import Time (mkDatetime)
 import Ribosome.Host.Data.BootError (BootError (unBootError))
 import qualified Ribosome.Host.Data.HandlerError as HandlerError
 import Ribosome.Host.Data.HandlerError (HandlerError)
-import Ribosome.Host.Data.HostConfig (HostConfig)
 import Ribosome.Host.Data.RpcError (RpcError (unRpcError))
 import Ribosome.Host.Data.RpcHandler (RpcHandler)
 import Ribosome.Host.Effect.Rpc (Rpc)
-import Ribosome.Host.Embed (EmbedStack, embedNvim, embedNvim_)
+import Ribosome.Host.Embed (EmbedStack, embedNvimConf, embedNvim_)
 import Ribosome.Host.Interpreter.Handlers (interpretHandlers)
+import Ribosome.Host.Test.Data.TestConfig (TestConfig (TestConfig))
 
 type TestStack =
   [
@@ -42,25 +42,32 @@ testTime :: Chronos.Time
 testTime =
   Chronos.datetimeToTime (mkDatetime 2025 6 15 12 30 30)
 
-runTest ::
+runTestConf ::
+  Bool ->
   Sem TestStack () ->
   UnitTest
-runTest =
+runTestConf freezeTime =
   runTestAuto .
   mapError (TestError . unBootError) .
   asyncToIOFinal .
   interpretRace .
   interpretMaskFinal .
-  interpretTimeChronosConstant testTime
+  (if freezeTime then interpretTimeChronosConstant testTime else interpretTimeChronos)
+
+runTest ::
+  Sem TestStack () ->
+  UnitTest
+runTest =
+  runTestConf True
 
 embedTestConf ::
-  HostConfig ->
+  TestConfig ->
   [RpcHandler EmbedTestStack] ->
   Sem (Rpc : EmbedTestStack) () ->
   UnitTest
-embedTestConf conf handlers =
-  runTest .
-  embedNvim conf (interpretHandlers handlers)
+embedTestConf (TestConfig freeze conf) handlers =
+  runTestConf freeze .
+  embedNvimConf conf (interpretHandlers handlers)
 
 embedTest ::
   [RpcHandler EmbedTestStack] ->
@@ -73,8 +80,8 @@ embedTest_ ::
   Sem (Rpc : EmbedTestStack) () ->
   UnitTest
 embedTest_ =
-  runTest .
-  embedNvim_ def
+  runTestConf True .
+  embedNvim_
 
 rpcError ::
   Members [Rpc !! RpcError, Stop HandlerError] r =>

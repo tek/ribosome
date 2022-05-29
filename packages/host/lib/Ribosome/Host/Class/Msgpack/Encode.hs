@@ -19,6 +19,7 @@ import GHC.Generics (
   (:+:) (..),
   )
 import Path (Path, toFilePath)
+import Time (MicroSeconds, MilliSeconds (unMilliSeconds), NanoSeconds (unNanoSeconds), Seconds, unMicroSeconds, unSeconds)
 
 import qualified Ribosome.Host.Class.Msgpack.Util as Util (assembleMap, string, text)
 
@@ -124,3 +125,19 @@ instance (MsgpackEncode a, MsgpackEncode b, MsgpackEncode c) => MsgpackEncode (a
 
 instance MsgpackEncode (Path b t) where
   toMsgpack = ObjectString . encodeUtf8 . toFilePath
+
+instance MsgpackEncode NanoSeconds where
+  toMsgpack =
+    toMsgpack . unNanoSeconds
+
+instance MsgpackEncode MicroSeconds where
+  toMsgpack =
+    toMsgpack . unMicroSeconds
+
+instance MsgpackEncode MilliSeconds where
+  toMsgpack =
+    toMsgpack . unMilliSeconds
+
+instance MsgpackEncode Seconds where
+  toMsgpack =
+    toMsgpack . unSeconds

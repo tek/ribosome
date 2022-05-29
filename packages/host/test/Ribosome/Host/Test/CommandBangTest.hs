@@ -42,7 +42,7 @@ bangHandlers =
 
 test_bang :: UnitTest
 test_bang =
-  runTest $ interpretAtomic 0 $ embedNvim def (interpretHandlers bangHandlers) do
+  runTest $ interpretAtomic 0 $ embedNvim (interpretHandlers bangHandlers) do
     nvimCommand "Bang! 9"
     assertJust @(_, Int) (True, 9) =<< nvimGetVar var
     nvimCommand "Bang 10"

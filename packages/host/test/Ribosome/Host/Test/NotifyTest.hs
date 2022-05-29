@@ -36,7 +36,7 @@ handlers =
 
 test_notify :: UnitTest
 test_notify =
-  runTest $ interpretSync $ embedNvim def (interpretHandlers handlers) do
+  runTest $ interpretSync $ embedNvim (interpretHandlers handlers) do
     Rpc.notify (nvimCallFunction @() "Fun" [toMsgpack i])
     assertJust i =<< Sync.takeWait (Seconds 5)
   where

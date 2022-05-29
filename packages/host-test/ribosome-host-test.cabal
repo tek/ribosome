@@ -18,6 +18,7 @@ build-type:     Simple
 
 library
   exposed-modules:
+      Ribosome.Host.Test.Data.TestConfig
       Ribosome.Host.Test.Run
   hs-source-dirs:
       lib
