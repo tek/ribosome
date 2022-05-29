@@ -235,6 +235,14 @@ instance (MsgpackDecode a, MsgpackDecode b, MsgpackDecode c) => MsgpackDecode (a
       _ ->
         Left Nothing
 
+instance (MsgpackDecode a, MsgpackDecode b, MsgpackDecode c, MsgpackDecode d) => MsgpackDecode (a, b, c, d) where
+  fromMsgpack =
+    decodeTuple 4 \case
+      [a, b, c, d] ->
+        first Just ((,,,) <$> fromMsgpack a <*> fromMsgpack b <*> fromMsgpack c <*> fromMsgpack d)
+      _ ->
+        Left Nothing
+
 class DecodePath b t where
   decodePath :: FilePath -> Either SomeException (Path b t)
 

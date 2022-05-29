@@ -27,6 +27,7 @@ library
       Ribosome.Api.Normal
       Ribosome.Api.Option
       Ribosome.Api.Path
+      Ribosome.Api.Position
       Ribosome.Api.Process
       Ribosome.Api.Register
       Ribosome.Api.Sleep
