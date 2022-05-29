@@ -161,6 +161,7 @@ in {
     synopsis = "Test tools for Ribosome";
     description = "See https://hackage.haskell.org/package/ribosome-test/docs/Ribosome.Test.html";
     library.dependencies = [
+      "hedgehog"
       "messagepack"
       "ribosome"
       "ribosome-host"

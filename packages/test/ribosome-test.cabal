@@ -23,6 +23,7 @@ library
       Ribosome.Test.Screenshot
       Ribosome.Test.Tmux
       Ribosome.Test.Ui
+      Ribosome.Test.Wait
   hs-source-dirs:
       lib
   default-extensions:
@@ -90,6 +91,7 @@ library
   ghc-options: -Wall -Wredundant-constraints -Wincomplete-uni-patterns -Wmissing-deriving-strategies -Widentities -Wunused-packages -fplugin=Polysemy.Plugin
   build-depends:
       base >=4.12 && <5
+    , hedgehog
     , incipit
     , messagepack
     , polysemy
