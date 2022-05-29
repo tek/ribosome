@@ -4,11 +4,11 @@ module Ribosome.Host (
   sync,
   async,
   notify,
-  runNvimPlugin,
+  runNvimHost,
 ) where
 
 import Prelude hiding (async)
 
 import Ribosome.Host.Data.RpcError (RpcError (RpcError))
 import Ribosome.Host.Effect.Rpc (Rpc, async, notify, sync)
-import Ribosome.Host.Remote (runNvimPlugin)
+import Ribosome.Host.Remote (runNvimHost)

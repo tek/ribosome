@@ -1,6 +1,7 @@
 module Ribosome.Host.Test.Run where
 
 import qualified Chronos
+import Conc (Restoration, interpretMaskFinal)
 import Hedgehog.Internal.Property (Failure)
 import Polysemy.Chronos (ChronosTime, interpretTimeChronosConstant)
 import Polysemy.Conc (interpretRace)
@@ -20,6 +21,7 @@ import Ribosome.Host.Interpreter.Handlers (interpretHandlers)
 type TestStack =
   [
     ChronosTime,
+    Mask Restoration,
     Race,
     Async,
     Error BootError,
@@ -48,6 +50,7 @@ runTest =
   mapError (TestError . unBootError) .
   asyncToIOFinal .
   interpretRace .
+  interpretMaskFinal .
   interpretTimeChronosConstant testTime
 
 embedTestConf ::

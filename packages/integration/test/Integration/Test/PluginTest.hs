@@ -1,4 +1,4 @@
-module Ribosome.Host.Test.PluginTest where
+module Integration.Test.PluginTest where
 
 import qualified Data.Text as Text
 import qualified Data.Text.IO as Text
@@ -7,16 +7,14 @@ import Hedgehog.Internal.Property (failWith)
 import Log (Severity (Debug))
 import Path (Abs, Dir, Path, reldir, relfile, toFilePath, (</>))
 import Path.IO (copyDirRecur)
+import Polysemy.Chronos (interpretTimeChronos)
 import qualified Polysemy.Conc as Conc
 import Polysemy.Conc (interpretRace)
 import Polysemy.Log (Severity (Warn), interpretLogStdoutLevelConc)
 import qualified Polysemy.Test as Test
 import Polysemy.Test (Hedgehog, Test, TestError (TestError), UnitTest, assertEq, liftH, runTestAuto)
 import qualified Polysemy.Time as Time
-import Polysemy.Time (MilliSeconds (MilliSeconds), Minutes (Minutes), interpretTimeChronos)
-import System.Environment (lookupEnv)
-import System.Process.Typed (ProcessConfig, proc)
-
+import Polysemy.Time (MilliSeconds (MilliSeconds), Minutes (Minutes))
 import Ribosome.Host.Api.Effect (nvimCallFunction)
 import Ribosome.Host.Data.BootError (unBootError)
 import Ribosome.Host.Data.HostConfig (log, logLevelStderr)
@@ -26,6 +24,8 @@ import Ribosome.Host.Embed (basicCliArgs, interpretCoreDeps, interpretHostEmbedC
 import Ribosome.Host.Interpreter.Handlers (interpretHandlersNull)
 import Ribosome.Host.Interpreter.Host (withHost)
 import Ribosome.Host.Interpreter.UserError (interpretUserErrorInfo)
+import System.Environment (lookupEnv)
+import System.Process.Typed (ProcessConfig, proc)
 
 conf ::
   Path Abs Dir ->

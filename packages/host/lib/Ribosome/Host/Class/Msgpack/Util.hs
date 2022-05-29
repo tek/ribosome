@@ -6,13 +6,16 @@ import Data.MessagePack (Object (..))
 import Exon (exon)
 
 string :: ConvertUtf8 a ByteString => a -> Object
-string = ObjectString . encodeUtf8
+string =
+  ObjectString . encodeUtf8
 
 binary :: ConvertUtf8 a ByteString => a -> Object
-binary = ObjectBinary . encodeUtf8
+binary =
+  ObjectBinary . encodeUtf8
 
 text :: Text -> Object
-text = ObjectString . encodeUtf8
+text =
+  ObjectString . encodeUtf8
 
 assembleMap :: [(String, Object)] -> Object
 assembleMap =

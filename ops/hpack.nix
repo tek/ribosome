@@ -84,6 +84,7 @@ in {
       "chronos"
       "exon"
       "flatparse"
+      "generics-sop"
       "lens"
       "messagepack"
       "path"
@@ -122,7 +123,6 @@ in {
       "ribosome-host"
       "polysemy-chronos"
       "polysemy-test"
-      "time"
     ];
   };
 
@@ -192,11 +192,9 @@ in {
     ];
     tests.ribosome-menu-unit = exe "ribosome-menu" "test" {
       dependencies = [
-        "composition"
         "hedgehog"
         "lens"
         "lifted-base"
-        "messagepack"
         "ribosome"
         "ribosome-host"
         "ribosome-host-test"
@@ -206,7 +204,6 @@ in {
         "polysemy-test"
         "streamly"
         "tasty"
-        "time"
         "transformers"
       ];
     };
@@ -225,9 +222,24 @@ in {
     };
   };
 
-  integration = merge (removeAttrs (project "integration") ["library"]) {
+  integration = merge (project "integration") {
     synopsis = "Neovim plugin host for Polysemy";
     description = "Internal project for testing ribosome-host";
+    library.dependencies = [
+        "exon"
+        "hedgehog"
+        "messagepack"
+        "ribosome"
+        "ribosome-host"
+        "path"
+        "path-io"
+        "polysemy-chronos"
+        "polysemy-conc"
+        "polysemy-process"
+        "polysemy-test"
+        "tasty"
+        "typed-process"
+    ];
     tests.integration = exe "integration" "test" {
       dependencies = [
         "exon"
@@ -235,6 +247,7 @@ in {
         "ribosome-host"
         "path"
         "path-io"
+        "polysemy-chronos"
         "polysemy-conc"
         "polysemy-process"
         "polysemy-test"

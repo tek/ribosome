@@ -1,31 +1,19 @@
 cabal-version: 2.2
 name: test-plugin
 version: 0
-synopsis: Internal project for testing ribosome-host
+synopsis: Internal project for testing ribosome
 
 executable test-plugin
   main-is: Main.hs
   hs-source-dirs:
       app
-  default-extensions:
-    DataKinds
-    LambdaCase
-    OverloadedStrings
-    QuasiQuotes
-    TemplateHaskell
-    TypeApplications
-    TypeOperators
   ghc-options: -Wall -Wredundant-constraints -Wincomplete-uni-patterns -Wmissing-deriving-strategies -Widentities -Wunused-packages -fplugin=Polysemy.Plugin -threaded -rtsopts -with-rtsopts=-N
   build-depends:
       base >=4.12 && <5
-    , exon
     , incipit
-    , messagepack
-    , nvim-hs
+    , integration
     , polysemy
     , polysemy-plugin
-    , polysemy-process
-    , ribosome-host
   mixins:
       base hiding (Prelude)
   default-language: Haskell2010

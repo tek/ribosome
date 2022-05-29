@@ -42,6 +42,7 @@ library
       Ribosome.Data.Mapping
       Ribosome.Data.PersistError
       Ribosome.Data.PersistPathError
+      Ribosome.Data.PluginConfig
       Ribosome.Data.PluginName
       Ribosome.Data.Register
       Ribosome.Data.RegisterType
@@ -73,6 +74,7 @@ library
       Ribosome.Path
       Ribosome.Plugin.Builtin
       Ribosome.PluginName
+      Ribosome.Remote
       Ribosome.Scratch
       Ribosome.Text
       Ribosome.VariableWatcher

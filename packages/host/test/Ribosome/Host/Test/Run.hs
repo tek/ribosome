@@ -1,7 +1,6 @@
 module Ribosome.Host.Test.Run where
 
 import qualified Chronos
-import Data.Time (UTCTime)
 import Hedgehog.Internal.Property (Failure)
 import Polysemy.Chronos (ChronosTime, interpretTimeChronosConstant)
 import Polysemy.Conc (interpretRace)

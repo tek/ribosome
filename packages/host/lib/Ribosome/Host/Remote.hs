@@ -1,8 +1,8 @@
 module Ribosome.Host.Remote where
 
-import Polysemy.Conc (ChanConsumer, ChanEvents, interpretEventsChan)
+import Conc (ChanConsumer, ChanEvents, interpretEventsChan, ConcStack)
 import Polysemy.Process (Process, interpretProcessCurrent)
-import Polysemy.Chronos (ChronosTime)
+import Polysemy.Chronos (ChronosTime, interpretTimeChronos)
 
 import Ribosome.Host.Data.BootError (BootError (BootError))
 import Ribosome.Host.Data.Event (Event)
@@ -26,19 +26,10 @@ import Ribosome.Host.Interpreter.Process (interpretProcessInputCereal, interpret
 import Ribosome.Host.Interpreter.Responses (interpretResponses)
 import Ribosome.Host.Interpreter.Rpc (interpretRpc)
 import Ribosome.Host.Interpreter.UserError (interpretUserErrorInfo)
-
-interpretRpcRemote ::
-  Members [Error BootError, Log, Resource, Async, Race, Embed IO] r =>
-  Member (Responses RequestId Response !! RpcError) r =>
-  InterpretersFor [Rpc !! RpcError, Process RpcMessage (Either Text RpcMessage)] r
-interpretRpcRemote =
-  interpretProcessOutputCereal .
-  interpretProcessInputCereal .
-  interpretProcessCurrent def .
-  raiseUnder2 .
-  resumeHoistError (BootError . show @Text) .
-  interpretRpc .
-  insertAt @2
+import qualified Data.Text.IO as Text
+import System.IO (stderr)
+import Ribosome.Host.Data.RpcHandler (RpcHandler)
+import Ribosome.Host.Interpreter.Handlers (interpretHandlers)
 
 type CoreRemoteStack =
   [
@@ -56,8 +47,32 @@ type CoreRemoteStack =
 type RemoteStack =
   CoreRemoteStack ++ UserError : CoreDeps
 
+type IOStack =
+  [
+    ChronosTime,
+    Error BootError
+  ] ++ ConcStack
+
+type HostIOStack =
+  RemoteStack ++
+  IOStack
+
+interpretRpcRemote ::
+  Members IOStack r =>
+  Members [Responses RequestId Response !! RpcError, Log] r =>
+  InterpretersFor [Rpc !! RpcError, Process RpcMessage (Either Text RpcMessage)] r
+interpretRpcRemote =
+  interpretProcessOutputCereal .
+  interpretProcessInputCereal .
+  interpretProcessCurrent def .
+  raiseUnder2 .
+  resumeHoistError (BootError . show @Text) .
+  interpretRpc .
+  insertAt @2
+
 interpretHostRemoteCore ::
-  Members [UserError, Error BootError, ChronosTime, Log, Resource, Race, Async, Embed IO] r =>
+  Members IOStack r =>
+  Members [UserError, Log] r =>
   InterpretersFor CoreRemoteStack r
 interpretHostRemoteCore =
   interpretErrors .
@@ -68,7 +83,7 @@ interpretHostRemoteCore =
   interpretDataLogRpc
 
 interpretHostRemote ::
-  Members [Error BootError, ChronosTime, Resource, Race, Async, Embed IO] r =>
+  Members IOStack r =>
   HostConfig ->
   InterpretersFor RemoteStack r
 interpretHostRemote conf =
@@ -76,10 +91,39 @@ interpretHostRemote conf =
   interpretUserErrorInfo .
   interpretHostRemoteCore
 
-runNvimPlugin ::
-  Members [Error BootError, ChronosTime, Resource, Async, Race, Embed IO, Final IO] r =>
+runNvimHost ::
+  Members IOStack r =>
   HostConfig ->
   InterpreterFor (Handlers !! HandlerError) (RemoteStack ++ r) ->
   Sem r ()
-runNvimPlugin conf handlers =
+runNvimHost conf handlers =
   interpretHostRemote conf (handlers runHost)
+
+errorStderr :: IO (Either BootError ()) -> IO ()
+errorStderr ma =
+  ma >>= \case
+    Left (BootError err) -> Text.hPutStrLn stderr err
+    Right () -> unit
+
+runIOStack ::
+  Sem IOStack () ->
+  IO ()
+runIOStack =
+  errorStderr .
+  runConc .
+  errorToIOFinal .
+  interpretTimeChronos
+
+runNvimHostIO ::
+  HostConfig ->
+  InterpreterFor (Handlers !! HandlerError) HostIOStack ->
+  IO ()
+runNvimHostIO conf handlers =
+  runIOStack (runNvimHost conf handlers)
+
+runNvimHostHandlersIO ::
+  HostConfig ->
+  [RpcHandler HostIOStack] ->
+  IO ()
+runNvimHostHandlersIO conf handlers =
+  runNvimHostIO conf (interpretHandlers handlers)

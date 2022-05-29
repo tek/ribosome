@@ -2,6 +2,7 @@ module Ribosome.Host.Class.Msgpack.Decode where
 
 import qualified Data.Map.Strict as Map (empty, fromList, toList)
 import Data.MessagePack (Object (..))
+import Exon (exon)
 import GHC.Float (double2Float, float2Double)
 import GHC.Generics (
   C1,
@@ -19,9 +20,9 @@ import GHC.Generics (
   (:+:) (..),
   )
 import Path (Abs, Dir, File, Path, Rel, parseAbsDir, parseAbsFile, parseRelDir, parseRelFile)
+import Time (MicroSeconds, MilliSeconds, NanoSeconds, Seconds (Seconds))
 
 import qualified Ribosome.Host.Class.Msgpack.Util as Util (illegalType, invalid, lookupObjectMap, missingRecordKey)
-import Exon (exon)
 
 class MsgpackDecode a where
   fromMsgpack :: Object -> Either Text a
@@ -264,6 +265,33 @@ decodePathE =
 instance DecodePath b t => MsgpackDecode (Path b t) where
   fromMsgpack =
     msgpackText "Path" decodePathE
+
+timeUnit ::
+  Integral a =>
+  Fractional a =>
+  Text ->
+  Object ->
+  Either Text a
+timeUnit name = \case
+  Msgpack d -> Right (realToFrac @Double d)
+  Msgpack i -> Right (fromIntegral @Int64 i)
+  o -> Util.illegalType name o
+
+instance MsgpackDecode NanoSeconds where
+  fromMsgpack =
+    timeUnit "NanoSeconds"
+
+instance MsgpackDecode MicroSeconds where
+  fromMsgpack =
+    timeUnit "MicroSeconds"
+
+instance MsgpackDecode MilliSeconds where
+  fromMsgpack =
+    timeUnit "MilliSeconds"
+
+instance MsgpackDecode Seconds where
+  fromMsgpack =
+    fmap Seconds . fromMsgpack
 
 msgpackFromString :: IsString a => Text -> Object -> Either Text a
 msgpackFromString name o =

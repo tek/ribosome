@@ -23,6 +23,7 @@ library
       Ribosome.Host.Api.Effect
       Ribosome.Host.Class.Msgpack.Array
       Ribosome.Host.Class.Msgpack.Decode
+      Ribosome.Host.Class.Msgpack.DecodeSOP
       Ribosome.Host.Class.Msgpack.Encode
       Ribosome.Host.Class.Msgpack.Error
       Ribosome.Host.Class.Msgpack.Map
@@ -194,6 +195,7 @@ test-suite ribosome-host-unit
       Ribosome.Host.Test.EventTest
       Ribosome.Host.Test.FunctionTest
       Ribosome.Host.Test.LogTest
+      Ribosome.Host.Test.MsgpackTest
       Ribosome.Host.Test.NotifyTest
       Ribosome.Host.Test.Run
   hs-source-dirs:

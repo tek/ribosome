@@ -1,9 +1,9 @@
 module Ribosome.Menu.Test.MenuTest where
 
+import Conc (Restoration, interpretSyncAs)
 import Control.Concurrent.Lifted (threadDelay)
 import Control.Lens (use, view, (^.))
 import qualified Control.Monad.Trans.State.Strict as MTL
-import Data.Composition ((.:))
 import qualified Data.IntMap.Strict as IntMap
 import qualified Data.Map.Strict as Map (fromList)
 import Polysemy (run)
@@ -11,7 +11,8 @@ import Polysemy.Conc (interpretAtomic, interpretMaskFinal, interpretRace)
 import Polysemy.Log (interpretLogNull)
 import Polysemy.Test (UnitTest, runTestAuto, unitTest, (===))
 import qualified Streamly.Prelude as Streamly
-import Streamly.Prelude (MonadAsync, SerialT)
+import Streamly.Prelude (SerialT)
+import qualified Sync
 import Test.Tasty (TestTree, testGroup)
 
 import Ribosome.Menu.Action (menuIgnore, menuQuit)
@@ -21,7 +22,7 @@ import qualified Ribosome.Menu.Data.Entry as Entry
 import Ribosome.Menu.Data.Entry (Entries, Entry (Entry), simpleIntEntries)
 import qualified Ribosome.Menu.Data.Menu as Menu
 import Ribosome.Menu.Data.Menu (Menu, consMenu)
-import Ribosome.Menu.Data.MenuConfig (MenuConfig (MenuConfig), hoistMenuConfig)
+import Ribosome.Menu.Data.MenuConfig (MenuConfig (MenuConfig))
 import Ribosome.Menu.Data.MenuConsumer (MenuApp (MenuApp), MenuConsumer, MenuWidget)
 import qualified Ribosome.Menu.Data.MenuData as MenuItems
 import Ribosome.Menu.Data.MenuData (cursor)
@@ -36,7 +37,7 @@ import Ribosome.Menu.Data.MenuState (menuRead, semState)
 import Ribosome.Menu.Filters (fuzzyItemFilter)
 import Ribosome.Menu.ItemLens (focus, selected', selectedOnly, unselected)
 import Ribosome.Menu.Items (deleteSelected, popSelection)
-import Ribosome.Menu.Prompt.Data.Prompt (Prompt (Prompt))
+import Ribosome.Menu.Prompt.Data.Prompt (Prompt)
 import Ribosome.Menu.Prompt.Data.PromptConfig (
   PromptConfig (PromptConfig),
   PromptFlag (StartInsert),
@@ -44,7 +45,6 @@ import Ribosome.Menu.Prompt.Data.PromptConfig (
   )
 import qualified Ribosome.Menu.Prompt.Data.PromptInputEvent as PromptInputEvent
 import Ribosome.Menu.Prompt.Data.PromptInputEvent (PromptInputEvent)
-import qualified Ribosome.Menu.Prompt.Data.PromptState as PromptState
 import Ribosome.Menu.Prompt.Run (noPromptRenderer)
 import Ribosome.Menu.Prompt.Transition (basicTransition)
 import Ribosome.Menu.Run (runMenu)
@@ -56,12 +56,10 @@ sleep t =
   threadDelay (round (t * 1000000))
 
 promptInput ::
-  MonadIO m =>
-  MonadAsync m =>
   [Text] ->
-  SerialT m PromptInputEvent
+  SerialT IO PromptInputEvent
 promptInput chars =
-  Streamly.fromListM [PromptInputEvent.Character c <$ liftIO (sleep 0.01) | c <- chars]
+  Streamly.fromListM [PromptInputEvent.Character c <$ sleep 0.01 | c <- chars]
 
 menuItems ::
   Monad m =>
@@ -91,31 +89,31 @@ storePrompt = \case
         raise menuIgnore
 
 render ::
-  MVar [[Entry Text]] ->
+  Members [Sync [[Entry Text]], Mask Restoration, Resource] r =>
   Menu Text ->
   MenuRenderEvent ->
-  IO ()
-render varItems menu = \case
+  Sem r ()
+render menu = \case
   MenuRenderEvent.Render -> do
     let cur = view sortedEntries menu
-    modifyMVar_ varItems (pure . (cur :))
+    Sync.modify_ (pure . (cur :))
   MenuRenderEvent.Quit ->
     unit
 
 menuTest ::
   Members [Resource, Race, Embed IO, Final IO] r =>
-  MenuConsumer Text r a ->
+  MenuConsumer Text (Log : Sync [[Entry Text]] : Mask Restoration : r) a ->
   [Text] ->
   [Text] ->
   Sem r [[Entry Text]]
 menuTest consumer items chars = do
-  itemsVar <- embed (newMVar [])
-  _ <- interpretLogNull $ interpretMaskFinal $ runMenu (conf itemsVar)
-  embed (readMVar itemsVar)
+  interpretMaskFinal $ interpretSyncAs mempty do
+    let
+      conf =
+        MenuConfig (menuItems items) fuzzyItemFilter consumer (MenuRenderer render) promptConfig
+    _ <- interpretLogNull $ runMenu conf
+    Sync.block
   where
-    conf itemsVar =
-      hoistMenuConfig (raise . raise) (insertAt @5) $
-      MenuConfig (menuItems items) fuzzyItemFilter consumer (MenuRenderer (embed .: render itemsVar)) promptConfig
     promptConfig =
       PromptConfig (PromptInput (const (promptInput chars))) basicTransition noPromptRenderer [StartInsert]
 
@@ -123,18 +121,9 @@ promptTest ::
   Members [AtomicState [Prompt], Resource, Race, Embed IO, Final IO] r =>
   [Text] ->
   [Text] ->
-  Sem r ([[Entry Text]], [Prompt])
+  Sem r [[Entry Text]]
 promptTest items chars = do
-  itemsResult <- menuTest (Consumer.forApp (MenuApp storePrompt)) items chars
-  (itemsResult,) <$> atomicGet
-
-promptsTarget1 :: [Prompt]
-promptsTarget1 =
-  [
-    Prompt 1 PromptState.Insert "i",
-    Prompt 0 PromptState.Normal "i",
-    Prompt 2 PromptState.Insert "i2"
-  ]
+  menuTest (Consumer.forApp (MenuApp storePrompt)) items chars
 
 items1 :: [Text]
 items1 =
@@ -171,9 +160,8 @@ itemsTarget1 =
 test_pureMenuModeChange :: UnitTest
 test_pureMenuModeChange =
   runTestAuto $ interpretRace $ interpretAtomic [] do
-    (items, prompts) <- promptTest items1 chars1
+    items <- promptTest items1 chars1
     itemsTarget1 === (fmap Entry._item <$> take 3 items)
-    promptsTarget1 === reverse prompts
 
 chars2 :: [Text]
 chars2 =
@@ -195,7 +183,7 @@ itemsTarget =
 test_pureMenuFilter :: UnitTest
 test_pureMenuFilter = do
   runTestAuto $ interpretRace $ interpretAtomic [] do
-    items <- fst <$> promptTest items2 chars2
+    items <- promptTest items2 chars2
     [itemsTarget] === (fmap (view Entry.item) <$> take 1 items)
 
 chars3 :: [Text]

@@ -21,6 +21,7 @@ type VarEffects =
   ]
 
 interpretBuiltinHandlers ::
+  ∀ r .
   Members [Rpc !! RpcError, Race, Resource, Embed IO] r =>
   Map MappingIdent (Handler r ()) ->
   Map WatchedVariable (Object -> Handler r ()) ->

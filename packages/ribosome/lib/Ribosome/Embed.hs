@@ -35,14 +35,11 @@ type PluginEffects =
     Settings !! SettingError
   ]
 
-type HandlerStack =
+type PluginStack =
   PluginEffects ++ EmbedStack ++ PluginDeps
 
-type PluginStack =
-  HandlerStack
-
 type PluginHandler r =
-  Handler (HandlerStack ++ r) ()
+  Handler (PluginStack ++ r) ()
 
 interpretPluginStack ::
   Members [Error BootError, ChronosTime, Resource, Race, Async, Embed IO] r =>

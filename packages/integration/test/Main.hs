@@ -1,7 +1,7 @@
 module Main where
 
+import Integration.Test.PluginTest (test_plugin)
 import Polysemy.Test (unitTest)
-import Ribosome.Host.Test.PluginTest (test_plugin)
 import Test.Tasty (TestTree, defaultMain, testGroup)
 
 tests :: TestTree

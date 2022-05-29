@@ -46,8 +46,7 @@ killScratchHandler =
 
 builtinHandlers ::
   ∀ r .
-  Members [Scratch !! RpcError, BuiltinHandlers !! HandlerError, Rpc !! RpcError] r =>
-  Members [Log, Resource, Race] r =>
+  Members [Scratch !! RpcError, BuiltinHandlers !! HandlerError, Rpc !! RpcError, Log, Resource, Race] r =>
   PluginName ->
   [RpcHandler r]
 builtinHandlers pn@(PluginName name) =
