@@ -45,6 +45,7 @@ library
       Ribosome.Data.PluginName
       Ribosome.Data.Register
       Ribosome.Data.RegisterType
+      Ribosome.Data.ScratchId
       Ribosome.Data.ScratchOptions
       Ribosome.Data.ScratchState
       Ribosome.Data.Setting
@@ -138,11 +139,13 @@ library
       UnicodeSyntax
       ViewPatterns
       StandaloneKindSignatures
+      OverloadedLabels
   ghc-options: -Wall -Wredundant-constraints -Wincomplete-uni-patterns -Wmissing-deriving-strategies -Widentities -Wunused-packages -fplugin=Polysemy.Plugin
   build-depends:
       aeson
     , base >=4.12 && <5
     , exon
+    , generic-lens
     , incipit
     , lens
     , messagepack
@@ -235,6 +238,7 @@ test-suite ribosome-unit
       UnicodeSyntax
       ViewPatterns
       StandaloneKindSignatures
+      OverloadedLabels
   ghc-options: -Wall -Wredundant-constraints -Wincomplete-uni-patterns -Wmissing-deriving-strategies -Widentities -Wunused-packages -fplugin=Polysemy.Plugin -threaded -rtsopts -with-rtsopts=-N
   build-depends:
       aeson

@@ -57,7 +57,7 @@
     ghci = {
       preludePackage = "incipit";
       args = ["-fplugin=Polysemy.Plugin"];
-      extensions = ["StandaloneKindSignatures"];
+      extensions = ["StandaloneKindSignatures" "OverloadedLabels"];
     };
     compat.enable = false;
   });

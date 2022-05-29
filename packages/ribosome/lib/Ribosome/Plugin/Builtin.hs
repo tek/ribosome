@@ -3,7 +3,7 @@ module Ribosome.Plugin.Builtin where
 import Exon (exon)
 
 import Ribosome.Data.PluginName (PluginName (PluginName))
-import Ribosome.Data.ScratchState (ScratchId)
+import Ribosome.Data.ScratchId (ScratchId)
 import qualified Ribosome.Effect.BuiltinHandlers as BuiltinHandlers
 import Ribosome.Effect.BuiltinHandlers (BuiltinHandlers)
 import qualified Ribosome.Effect.Scratch as Scratch

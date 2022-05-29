@@ -132,6 +132,7 @@ in {
     library.dependencies = [
       "aeson"
       "exon"
+      "generic-lens"
       "lens"
       "messagepack"
       "path"
@@ -177,6 +178,7 @@ in {
       "exceptions"
       "exon"
       "fuzzyfind"
+      "generic-lens"
       "lens"
       "lifted-base"
       "monad-control"

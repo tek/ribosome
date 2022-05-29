@@ -79,7 +79,7 @@ testPlugin name maps vars handlers =
   testHost .
   insertAt @1
 
-embedNvimPluginLog ::
+embedNvimPluginConf ::
   Members [Error BootError, ChronosTime, Resource, Race, Async, Embed IO, Final IO] r =>
   HostConfig ->
   PluginName ->
@@ -87,7 +87,7 @@ embedNvimPluginLog ::
   Map WatchedVariable (Object -> PluginHandler r) ->
   [RpcHandler (PluginStack ++ r)] ->
   InterpretersFor (Rpc : PluginStack) r
-embedNvimPluginLog conf name maps vars handlers =
+embedNvimPluginConf conf name maps vars handlers =
   interpretPluginStack conf name .
   testPlugin name maps vars handlers
 
@@ -99,7 +99,7 @@ embedNvimPlugin ::
   [RpcHandler (PluginStack ++ r)] ->
   InterpretersFor (Rpc : PluginStack) r
 embedNvimPlugin =
-  embedNvimPluginLog def
+  embedNvimPluginConf def
 
 embedNvimPlugin_ ::
   Members [Error BootError, ChronosTime, Resource, Race, Async, Embed IO, Final IO] r =>

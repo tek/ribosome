@@ -9,12 +9,11 @@ import Streamly.Prelude (SerialT)
 
 import Ribosome.Api.Window (closeWindow)
 import qualified Ribosome.Config.Settings as Settings
-import Ribosome.Data.PluginName (PluginName)
-import qualified Ribosome.Data.ScratchOptions as ScratchOptions
 import Ribosome.Data.ScratchOptions (ScratchOptions)
-import Ribosome.Data.ScratchState (ScratchState, scratchWindow)
 import Ribosome.Data.SettingError (SettingError)
 import Ribosome.Data.WindowConfig (WindowConfig (WindowConfig))
+import qualified Ribosome.Effect.Scratch as Scratch
+import Ribosome.Effect.Scratch (Scratch)
 import qualified Ribosome.Effect.Settings as Settings
 import Ribosome.Effect.Settings (Settings)
 import Ribosome.Host.Api.Data (Window)
@@ -35,7 +34,6 @@ import Ribosome.Menu.Nvim (menuSyntax, nvimMenuRenderer)
 import qualified Ribosome.Menu.Prompt.Data.PromptConfig as PromptConfig
 import Ribosome.Menu.Prompt.Data.PromptConfig (PromptConfig, hoistPromptConfig)
 import Ribosome.Menu.Prompt.Data.PromptRenderer (PromptRenderer (PromptRenderer))
-import Ribosome.Scratch (showInScratch)
 
 isFloat ::
   Member Rpc r =>
@@ -67,8 +65,8 @@ runMenu config =
 
 nvimMenu ::
   ∀ i a res r .
-  Members [Rpc, Rpc !! RpcError, Settings !! SettingError] r =>
-  Members [AtomicState (Map Text ScratchState), Reader PluginName, Log, Mask res, Resource, Race, Embed IO, Final IO] r =>
+  Members [Scratch, Rpc, Rpc !! RpcError, Settings !! SettingError] r =>
+  Members [Log, Mask res, Resource, Race, Embed IO, Final IO] r =>
   ScratchOptions ->
   SerialT IO (MenuItem i) ->
   MenuConsumer i r a ->
@@ -77,20 +75,20 @@ nvimMenu ::
 nvimMenu options items consumer promptConfig = do
   _ :: Int <- vimCallFunction "inputsave" []
   whenM (Settings.or True Settings.menuCloseFloats) closeFloats
-  run =<< showInScratch @[] [] (withSyntax (ensureSize options))
+  run =<< Scratch.open (withSyntax (ensureSize options))
   where
     run scratch = do
-      windowSetOption (scratchWindow scratch) "cursorline" (toMsgpack True) !>> Log.debug "Failed to set cursorline"
+      windowSetOption (scratch ^. #window) "cursorline" (toMsgpack True) !>> Log.debug "Failed to set cursorline"
       interpretAtomic (def :: NvimMenuState) do
-        runMenu (MenuConfig items fuzzyItemFilter (hoistMenuConsumer raise (insertAt @5) consumer) (nvimMenuRenderer options scratch) (hoistPromptConfig raise promptConfig))
+        runMenu (MenuConfig items fuzzyItemFilter (hoistMenuConsumer raise (insertAt @5) consumer) (nvimMenuRenderer scratch) (hoistPromptConfig raise promptConfig))
     ensureSize =
-      ScratchOptions.size %~ (<|> Just 1)
+      #size %~ (<|> Just 1)
     withSyntax =
-      ScratchOptions.syntax <>~ [menuSyntax]
+      #syntax <>~ [menuSyntax]
 
 staticNvimMenu ::
-  Members [Rpc !! RpcError, Rpc, Settings !! SettingError] r =>
-  Members [AtomicState (Map Text ScratchState), Reader PluginName, Log, Mask res, Resource, Race, Embed IO, Final IO] r =>
+  Members [Scratch, Rpc !! RpcError, Rpc, Settings !! SettingError] r =>
+  Members [Log, Mask res, Resource, Race, Embed IO, Final IO] r =>
   ScratchOptions ->
   [MenuItem i] ->
   MenuConsumer i r a ->
@@ -100,4 +98,4 @@ staticNvimMenu options items =
   nvimMenu (ensureSize options) (Stream.fromList items)
   where
     ensureSize =
-      ScratchOptions.size %~ (<|> Just (length items))
+      #size %~ (<|> Just (length items))

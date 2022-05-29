@@ -3,6 +3,7 @@ module Ribosome.Menu.Nvim where
 import Control.Lens (use, view, views, (%=), (.=), (<.=), (^.))
 import Control.Monad.Trans.Reader (ReaderT, runReaderT)
 import Control.Monad.Trans.State.Strict (StateT (runStateT))
+import Data.Generics.Labels ()
 import qualified Data.IntMap.Strict as IntMap
 import qualified Data.Map.Strict as Map
 import Data.Monoid (Sum (Sum, getSum))
@@ -11,10 +12,11 @@ import qualified Data.Text as Text (cons, snoc)
 import qualified Polysemy.Log as Log
 
 import Ribosome.Api.Window (redraw, restoreView, setLine)
-import Ribosome.Data.ScratchState (ScratchState (scratchWindow), scratchBuffer)
-import Ribosome.Data.ScratchOptions (ScratchOptions, maxSize)
+import Ribosome.Data.ScratchState (ScratchState (buffer, window))
 import Ribosome.Data.Syntax (HiLink (..), Syntax (Syntax), SyntaxItem (..), syntaxMatch)
 import Ribosome.Data.WindowView (PartialWindowView (PartialWindowView))
+import qualified Ribosome.Effect.Scratch as Scratch
+import Ribosome.Effect.Scratch (Scratch)
 import Ribosome.Host.Api.Effect (nvimBufIsLoaded, nvimSetCurrentWin)
 import Ribosome.Host.Data.RpcError (RpcError)
 import Ribosome.Host.Effect.Rpc (Rpc)
@@ -28,7 +30,6 @@ import qualified Ribosome.Menu.Data.MenuRenderEvent as MenuRenderEvent (MenuRend
 import Ribosome.Menu.Data.MenuRenderer (MenuRenderer (MenuRenderer))
 import Ribosome.Menu.Data.MenuView (MenuView (MenuView), botIndex, cursorLine, menuView, topIndex)
 import Ribosome.Menu.Data.NvimMenuState (NvimMenuState, cursorIndex, indexes)
-import Ribosome.Scratch (killScratch, setScratchContent)
 
 marker :: Char
 marker =
@@ -84,7 +85,7 @@ entrySlice ents bot top =
           i  + length a
 
 newEntrySlice ::
-  StateT NvimMenuState (ReaderT (Menu i) IO) [Entry i]
+  StateT NvimMenuState (ReaderT (Menu i) Identity) [Entry i]
 newEntrySlice = do
   bot <- use botIndex
   top <- use topIndex
@@ -150,7 +151,7 @@ entryId (Entry _ i s) =
 
 updateMenuState ::
   Int ->
-  StateT NvimMenuState (ReaderT (Menu i) IO) ([Entry i], Bool)
+  StateT NvimMenuState (ReaderT (Menu i) Identity) ([Entry i], Bool)
 updateMenuState scratchMax = do
   oldIndexes <- use indexes
   newCursor <- view Menu.cursor
@@ -162,7 +163,7 @@ updateMenuState scratchMax = do
   pure (visible, newIndexes /= oldIndexes)
 
 windowLine ::
-  StateT NvimMenuState (ReaderT (Menu i) IO) Int
+  StateT NvimMenuState (ReaderT (Menu i) Identity) Int
 windowLine = do
   top <- use topIndex
   bot <- use botIndex
@@ -170,13 +171,13 @@ windowLine = do
   pure (top - bot - fromIntegral curLine)
 
 runSR ::
-  Members [AtomicState s, Reader e, Embed IO] r =>
-  StateT s (ReaderT e IO) a ->
+  Members [AtomicState s, Reader e] r =>
+  StateT s (ReaderT e Identity) a ->
   Sem r a
 runSR ma = do
   e <- ask
   s <- atomicGet
-  (a, s') <- embed (runReaderT (runStateT ma s) e)
+  let (a, s') = runIdentity (runReaderT (runStateT ma s) e)
   atomicPut s'
   pure a
 
@@ -185,41 +186,38 @@ runSR ma = do
 -- check whether `dirty` was just not implemented yet and might be useful. probably its function is now fulfilled by the
 -- stream not producing menu events if nothing was changed
 updateMenu ::
-  Members [AtomicState NvimMenuState, Reader (Menu i), Rpc, Rpc !! RpcError, Log, Embed IO] r =>
-  ScratchOptions ->
+  Members [Scratch, AtomicState NvimMenuState, Reader (Menu i), Rpc, Rpc !! RpcError, Log] r =>
   ScratchState ->
   Sem r ()
-updateMenu options scratch = do
+updateMenu scratch = do
   nvimSetCurrentWin win
-  (visible, changed) <- runSR (updateMenuState (fromMaybe 30 (options ^. maxSize)))
+  (visible, changed) <- runSR (updateMenuState (fromMaybe 30 (scratch ^. #options . #maxSize)))
   when changed do
-    setScratchContent options scratch (reverse (toList (withMark <$> visible)))
+    void (Scratch.update (scratch ^. #id) (reverse (toList (withMark <$> visible))))
   restoreView (PartialWindowView Nothing (Just 1))
   targetLine <- runSR windowLine
   setLine win targetLine !>> Log.debug "menu cursor line invalid"
   where
     win =
-      scratchWindow scratch
+      window scratch
 
 renderNvimMenu ::
   ∀ i r .
-  Members [AtomicState NvimMenuState, Reader (Menu i), Rpc, Rpc !! RpcError, Log, Embed IO] r =>
-  ScratchOptions ->
+  Members [Scratch, AtomicState NvimMenuState, Reader (Menu i), Rpc, Rpc !! RpcError, Log, Embed IO] r =>
   ScratchState ->
   Sem r ()
-renderNvimMenu options scratch =
-  whenM (nvimBufIsLoaded (scratchBuffer scratch)) do
-    updateMenu options scratch
+renderNvimMenu scratch =
+  whenM (nvimBufIsLoaded (buffer scratch)) do
+    updateMenu scratch
     redraw
 
 nvimMenuRenderer ::
-  Members [AtomicState NvimMenuState, Rpc, Rpc !! RpcError, AtomicState (Map Text ScratchState), Log, Embed IO, Final IO] r =>
-  ScratchOptions ->
+  Members [Scratch, AtomicState NvimMenuState, Rpc, Rpc !! RpcError, Log, Embed IO, Final IO] r =>
   ScratchState ->
   MenuRenderer r i
-nvimMenuRenderer options scratch =
+nvimMenuRenderer scratch =
   MenuRenderer \ menu -> \case
   MenuRenderEvent.Render ->
-    runReader menu (renderNvimMenu options scratch)
+    runReader menu (renderNvimMenu scratch)
   MenuRenderEvent.Quit ->
-    killScratch scratch
+    Scratch.kill (scratch ^. #id)

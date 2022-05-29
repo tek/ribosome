@@ -5,8 +5,8 @@ import Test.Tasty (TestTree, testGroup)
 
 import Ribosome.Api.Buffer (currentBufferContent)
 import Ribosome.Data.FloatOptions (FloatOptions (FloatOptions), FloatRelative (Cursor))
+import Ribosome.Data.ScratchId (ScratchId)
 import Ribosome.Data.ScratchOptions (ScratchOptions (ScratchOptions))
-import Ribosome.Data.ScratchState (ScratchId)
 import qualified Ribosome.Effect.Scratch as Scratch
 import Ribosome.Effect.Scratch (Scratch)
 import Ribosome.Embed (embedNvimPlugin)

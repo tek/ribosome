@@ -130,6 +130,7 @@ library
       UnicodeSyntax
       ViewPatterns
       StandaloneKindSignatures
+      OverloadedLabels
   ghc-options: -Wall -Wredundant-constraints -Wincomplete-uni-patterns -Wmissing-deriving-strategies -Widentities -Wunused-packages -fplugin=Polysemy.Plugin
   build-depends:
       base >=4.12 && <5
@@ -138,6 +139,7 @@ library
     , exceptions
     , exon
     , fuzzyfind
+    , generic-lens
     , incipit
     , lens
     , lifted-base
@@ -225,6 +227,7 @@ test-suite ribosome-menu-unit
       UnicodeSyntax
       ViewPatterns
       StandaloneKindSignatures
+      OverloadedLabels
   ghc-options: -Wall -Wredundant-constraints -Wincomplete-uni-patterns -Wmissing-deriving-strategies -Widentities -Wunused-packages -fplugin=Polysemy.Plugin -threaded -rtsopts -with-rtsopts=-N
   build-depends:
       base >=4.12 && <5
@@ -317,6 +320,7 @@ benchmark ribosome-menu-bench
       UnicodeSyntax
       ViewPatterns
       StandaloneKindSignatures
+      OverloadedLabels
   ghc-options: -Wall -Wredundant-constraints -Wincomplete-uni-patterns -Wmissing-deriving-strategies -Widentities -Wunused-packages -fplugin=Polysemy.Plugin -threaded -rtsopts -with-rtsopts=-N
   build-depends:
       base >=4.12 && <5

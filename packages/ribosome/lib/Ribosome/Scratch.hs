@@ -1,5 +1,7 @@
 module Ribosome.Scratch where
 
+import Control.Lens ((^.))
+import Data.Generics.Labels ()
 import qualified Data.Map.Strict as Map
 import Data.MessagePack (Object)
 import Exon (exon)
@@ -12,10 +14,10 @@ import Ribosome.Api.Tabpage (closeTabpage)
 import Ribosome.Api.Window (closeWindow)
 import Ribosome.Data.FloatOptions (FloatOptions, enter)
 import Ribosome.Data.PluginName (PluginName (PluginName))
-import qualified Ribosome.Data.ScratchOptions as ScratchOptions
+import Ribosome.Data.ScratchId (ScratchId (ScratchId, unScratchId))
 import Ribosome.Data.ScratchOptions (ScratchOptions (ScratchOptions))
 import qualified Ribosome.Data.ScratchState as ScratchState
-import Ribosome.Data.ScratchState (ScratchId (ScratchId, unScratchId), ScratchState (ScratchState))
+import Ribosome.Data.ScratchState (ScratchState (ScratchState))
 import Ribosome.Host.Api.Data (Buffer, Tabpage, Window)
 import Ribosome.Host.Api.Effect (
   bufferGetName,
@@ -160,7 +162,7 @@ setupDeleteAutocmd ::
   Members [Rpc, Reader PluginName] r =>
   ScratchState ->
   Sem r ()
-setupDeleteAutocmd (ScratchState name buffer _ _ _) = do
+setupDeleteAutocmd (ScratchState name _ buffer _ _ _) = do
   PluginName pname <- pluginNameCapitalized
   bufferAutocmd buffer "RibosomeScratch" "BufDelete" (deleteCall pname)
   where
@@ -175,12 +177,12 @@ setupScratchIn ::
   Maybe Tabpage ->
   ScratchOptions ->
   Sem r ScratchState
-setupScratchIn buffer previous window tab (ScratchOptions _ _ _ focus _ _ _ _ _ _ syntax mappings ft name) = do
+setupScratchIn buffer previous window tab options@(ScratchOptions _ _ _ focus _ _ _ _ _ _ syntax mappings ft name) = do
   validBuffer <- setupScratchBuffer window buffer ft name
   traverse_ (executeWindowSyntax window) syntax
   traverse_ (activateBufferMapping validBuffer) mappings
   unless focus $ vimSetCurrentWindow previous
-  let scratch = ScratchState name validBuffer window previous tab
+  let scratch = ScratchState name options validBuffer window previous tab
   atomicModify' (Map.insert name scratch)
   setupDeleteAutocmd scratch
   pure scratch
@@ -213,7 +215,7 @@ updateScratch ::
   ScratchState ->
   ScratchOptions ->
   Sem r ScratchState
-updateScratch oldScratch@(ScratchState name oldBuffer oldWindow _ _) options = do
+updateScratch oldScratch@(ScratchState name _ oldBuffer oldWindow _ _) options = do
   Log.debug [exon|updating existing scratch '#{coerce name}'|]
   ifM (windowIsValid oldWindow) attemptReuseWindow reset
   where
@@ -236,7 +238,7 @@ ensureScratch ::
   ScratchOptions ->
   Sem r ScratchState
 ensureScratch options = do
-  f <- maybe createScratch updateScratch <$> lookupScratch (ScratchOptions._name options)
+  f <- maybe createScratch updateScratch <$> lookupScratch (options ^. #name)
   f options
 
 withModifiable ::
@@ -249,7 +251,7 @@ withModifiable buffer options thunk =
   if isWrite then thunk else wrap
   where
     isWrite =
-      ScratchOptions._modify options
+      options ^. #modify
     wrap =
       update True *> thunk <* update False
     update =
@@ -258,22 +260,21 @@ withModifiable buffer options thunk =
 setScratchContent ::
   Foldable t =>
   Members [Rpc !! RpcError, Rpc] r =>
-  ScratchOptions ->
   ScratchState ->
   t Text ->
   Sem r ()
-setScratchContent options (ScratchState _ buffer win _ _) lines' = do
+setScratchContent (ScratchState _ options buffer win _ _) lines' = do
   withModifiable buffer options $ setBufferContent buffer (toList lines')
-  when (ScratchOptions._resize options) (resume_ @RpcError @Rpc (setSize win size))
+  when (options ^. #resize) (resume_ @RpcError @Rpc (setSize win size))
   where
     size =
       max 1 calculateSize
     calculateSize =
       if vertical then fromMaybe 50 maxSize else min (length lines') (fromMaybe 30 maxSize)
     maxSize =
-      ScratchOptions._maxSize options
+      options ^. #maxSize
     vertical =
-      ScratchOptions._vertical options
+      options ^. #vertical
     setSize =
       if vertical then windowSetWidth else windowSetHeight
 
@@ -285,7 +286,7 @@ showInScratch ::
   Sem r ScratchState
 showInScratch lines' options = do
   scratch <- ensureScratch options
-  scratch <$ setScratchContent options scratch lines'
+  scratch <$ setScratchContent scratch lines'
 
 showInScratchDef ::
   Foldable t =>
@@ -299,7 +300,7 @@ killScratch ::
   Members [Rpc !! RpcError, AtomicState (Map ScratchId ScratchState), Log] r =>
   ScratchState ->
   Sem r ()
-killScratch (ScratchState name buffer window _ tab) = do
+killScratch (ScratchState name _ buffer window _ tab) = do
   Log.debug [exon|Killing scratch buffer '#{unScratchId name}'|]
   atomicModify' (Map.delete @_ @ScratchState name)
   resume_ @RpcError @Rpc do

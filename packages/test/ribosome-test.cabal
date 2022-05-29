@@ -18,6 +18,7 @@ build-type:     Simple
 
 library
   exposed-modules:
+      Ribosome.Test.Error
       Ribosome.Test.Run
       Ribosome.Test.Screenshot
       Ribosome.Test.Tmux
@@ -85,6 +86,7 @@ library
       UnicodeSyntax
       ViewPatterns
       StandaloneKindSignatures
+      OverloadedLabels
   ghc-options: -Wall -Wredundant-constraints -Wincomplete-uni-patterns -Wmissing-deriving-strategies -Widentities -Wunused-packages -fplugin=Polysemy.Plugin
   build-depends:
       base >=4.12 && <5
