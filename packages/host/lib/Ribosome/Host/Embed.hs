@@ -35,7 +35,7 @@ import Ribosome.Host.Interpreter.UserError (interpretUserErrorInfo)
 
 basicCliArgs :: [String]
 basicCliArgs =
-  ["--embed", "-n", "-u", "NONE", "-i", "NONE", "--clean"]
+  ["--embed", "-n", "-u", "NONE", "-i", "NONE", "--clean", "--headless"]
 
 embeddedProcessConfig :: ProcessConfig () () ()
 embeddedProcessConfig =

@@ -175,6 +175,7 @@ test-suite ribosome-unit
       Ribosome.Test.ScratchTest
       Ribosome.Test.SettingTest
       Ribosome.Test.SyntaxTest
+      Ribosome.Test.UndoTest
       Ribosome.Test.Wait
       Ribosome.Test.WatcherTest
       Ribosome.Test.WindowTest
