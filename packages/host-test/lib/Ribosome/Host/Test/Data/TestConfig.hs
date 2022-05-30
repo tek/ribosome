@@ -11,4 +11,4 @@ data TestConfig =
 
 instance Default TestConfig where
   def =
-    TestConfig True def
+    TestConfig False def

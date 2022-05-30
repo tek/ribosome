@@ -58,7 +58,7 @@ runTest ::
   Sem TestStack () ->
   UnitTest
 runTest =
-  runTestConf True
+  runTestConf False
 
 embedTestConf ::
   TestConfig ->
@@ -80,7 +80,7 @@ embedTest_ ::
   Sem (Rpc : EmbedTestStack) () ->
   UnitTest
 embedTest_ =
-  runTestConf True .
+  runTestConf False .
   embedNvim_
 
 rpcError ::
