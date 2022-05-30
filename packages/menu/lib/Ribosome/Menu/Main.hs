@@ -28,6 +28,7 @@ import Ribosome.Menu.Data.MenuState (
   CursorLock (CursorLock),
   ItemsLock (ItemsLock),
   MenuStateSem,
+  MenuStateStack,
   readMenuForRender,
   )
 import qualified Ribosome.Menu.Data.QuitReason as QuitReason
@@ -167,16 +168,22 @@ menuResult = \case
       MenuResult.Error msg -> msg
       MenuResult.Aborted -> "user interrupt"
 
+interpretMenu ::
+  Members [Race, Embed IO] r =>
+  InterpretersFor (MenuStateStack i) r
+interpretMenu =
+  interpretSyncAs CursorLock .
+  interpretSyncAs ItemsLock .
+  interpretAtomic def .
+  interpretAtomic def .
+  interpretAtomic def
+
 menuMain ::
   Members [Log, Mask res, Race, Resource, Embed IO, Final IO] r =>
   MenuConfig r i a ->
   Sem r (MenuResult a)
 menuMain conf =
-  interpretSyncAs CursorLock $
-  interpretSyncAs ItemsLock $
-  interpretAtomic def $
-  interpretAtomic def $
-  interpretAtomic def $
+  interpretMenu $
   withPromptStream (hoistPromptConfig (insertAt @0) (conf ^. MenuConfig.prompt)) \ (promptControl, promptEvents) -> do
     stream <- menuStream conf promptControl (Stream.fromSerial promptEvents)
     insertAt @0 . menuResult =<< embed (Stream.last stream)

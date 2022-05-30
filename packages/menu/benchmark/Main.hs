@@ -5,7 +5,7 @@ import Control.Lens (view)
 import Criterion.Main (bench, bgroup, defaultConfig, defaultMainWith, env, whnfIO)
 import Exon (exon)
 import Path (relfile)
-import Polysemy.Conc (interpretAtomic, interpretRace, interpretSyncAs)
+import Polysemy.Conc (interpretRace)
 import Polysemy.Log (Severity (Warn), interpretLogStderrLevelConc)
 import qualified Polysemy.Test as Test
 import Polysemy.Test (Test, TestError, interpretTestInSubdir)
@@ -13,8 +13,9 @@ import Ribosome.Final (inFinal)
 import Ribosome.Menu.Combinators (sortedEntries)
 import Ribosome.Menu.Data.MenuEvent (MenuEvent)
 import Ribosome.Menu.Data.MenuItem (simpleMenuItem)
-import Ribosome.Menu.Data.MenuState (CursorLock (CursorLock), ItemsLock (ItemsLock), MenuStateSem, readMenu)
-import Ribosome.Menu.Filters (fuzzyItemFilterPar)
+import Ribosome.Menu.Data.MenuState (MenuStateSem, readMenu)
+import Ribosome.Menu.Filters (fuzzyItemFilter)
+import Ribosome.Menu.Main (interpretMenu)
 import Ribosome.Menu.Prompt.Data.Prompt (Prompt (Prompt))
 import qualified Ribosome.Menu.Prompt.Data.PromptEvent as PromptEvent
 import Ribosome.Menu.Prompt.Data.PromptEvent (PromptEvent)
@@ -68,29 +69,22 @@ appendBench ::
   Members [Log, Resource, Race, Embed IO, Final IO] r =>
   [Text] ->
   Sem r [MenuEvent]
-appendBench files = do
-  interpretSyncAs CursorLock $
-    interpretSyncAs ItemsLock $
-    interpretAtomic def $
-    interpretAtomic def $
-    interpretAtomic def do
-      inFinal \ _ lower pur ex -> do
-        let
-          filt =
-            fuzzyItemFilterPar False
-          lowerMaybe :: ∀ x . MenuStateSem () r x -> IO (Maybe x)
-          lowerMaybe =
-            fmap ex . lower
-          promptStream =
-            promptEvent lowerMaybe filt events
-          itemStream =
-            Stream.fromSerial (updateItems lowerMaybe filt (menuItem <$> Stream.fromList files))
-          menuItem =
-            simpleMenuItem ()
-        res <- Stream.toList (Stream.async promptStream itemStream)
-        len <- lowerMaybe (length . view sortedEntries <$> readMenu)
-        when (fromMaybe 0 len /= 1401) (Base.throw (userError [exon|length is #{show len}|]))
-        pur res
+appendBench files =
+  interpretMenu $ inFinal \ _ lower pur ex -> do
+    let
+      filt =
+        fuzzyItemFilter False
+      lowerMaybe :: ∀ x . MenuStateSem () r x -> IO (Maybe x)
+      lowerMaybe =
+        fmap ex . lower
+      promptStream =
+        promptEvent lowerMaybe filt events
+      itemStream =
+        Stream.fromSerial (updateItems lowerMaybe filt (simpleMenuItem () <$> Stream.fromList files))
+    res <- Stream.toList (Stream.async promptStream itemStream)
+    len <- lowerMaybe (length . view sortedEntries <$> readMenu)
+    when (fromMaybe 0 len /= 1401) (Base.throw (userError [exon|length is #{show len}|]))
+    pur res
 
 runBench :: Sem [Log, Race, Async, Resource, Embed IO, Final IO] a -> IO a
 runBench =

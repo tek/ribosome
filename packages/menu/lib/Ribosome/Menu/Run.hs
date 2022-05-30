@@ -29,7 +29,7 @@ import Ribosome.Menu.Data.MenuItem (MenuItem)
 import Ribosome.Menu.Data.MenuItemFilter (MenuItemFilter)
 import Ribosome.Menu.Data.MenuResult (MenuResult)
 import Ribosome.Menu.Data.NvimMenuState (NvimMenuState)
-import Ribosome.Menu.Filters (fuzzyItemFilterPar)
+import Ribosome.Menu.Filters (fuzzyItemFilter)
 import Ribosome.Menu.Main (menuMain)
 import Ribosome.Menu.Nvim (menuSyntax, nvimMenuRenderer)
 import qualified Ribosome.Menu.Prompt.Data.PromptConfig as PromptConfig
@@ -98,7 +98,7 @@ nvimMenu ::
   PromptConfig r ->
   Sem r (MenuResult a)
 nvimMenu =
-  nvimMenuWith (fuzzyItemFilterPar True)
+  nvimMenuWith (fuzzyItemFilter True)
 
 staticNvimMenuWith ::
   Members [Scratch, Rpc !! RpcError, Rpc, Settings !! SettingError] r =>
@@ -124,4 +124,4 @@ staticNvimMenu ::
   PromptConfig r ->
   Sem r (MenuResult a)
 staticNvimMenu =
-  staticNvimMenuWith (fuzzyItemFilterPar True)
+  staticNvimMenuWith (fuzzyItemFilter True)

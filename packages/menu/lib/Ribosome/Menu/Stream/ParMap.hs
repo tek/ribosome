@@ -20,6 +20,15 @@ parConcatMap chunks f s =
     Stream.adapt $
     Stream.chunksOf chunks Fold.toList s
 
+parMapChunks ::
+  IsStream t =>
+  Int ->
+  ([a] -> [b]) ->
+  t IO a ->
+  t IO b
+parMapChunks chunks f =
+  parConcatMap chunks (Stream.fromList . f)
+
 parMap ::
   IsStream t =>
   Int ->
@@ -29,6 +38,25 @@ parMap ::
 parMap chunks f =
   parConcatMap chunks (Stream.fromList . fmap f)
 
+parMapMaybe ::
+  IsStream t =>
+  Int ->
+  (a -> Maybe b) ->
+  t IO a ->
+  t IO b
+parMapMaybe chunks f =
+  parConcatMap chunks (Stream.fromList . mapMaybe f)
+
+parMapChunksIO ::
+  Int ->
+  ([a] -> [b]) ->
+  [a] ->
+  IO [b]
+parMapChunksIO chunks f =
+  Stream.toList .
+  parMapChunks chunks f .
+  Stream.fromList
+
 parMapIO ::
   Int ->
   (a -> b) ->
@@ -37,4 +65,14 @@ parMapIO ::
 parMapIO chunks f =
   Stream.toList .
   parMap chunks f .
+  Stream.fromList
+
+parMapMaybeIO ::
+  Int ->
+  (a -> Maybe b) ->
+  [a] ->
+  IO [b]
+parMapMaybeIO chunks f =
+  Stream.toList .
+  parMapMaybe chunks f .
   Stream.fromList
