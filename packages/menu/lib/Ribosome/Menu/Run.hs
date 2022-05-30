@@ -26,9 +26,10 @@ import qualified Ribosome.Menu.Data.MenuConfig as MenuConfig
 import Ribosome.Menu.Data.MenuConfig (MenuConfig (MenuConfig))
 import Ribosome.Menu.Data.MenuConsumer (MenuConsumer, hoistMenuConsumer)
 import Ribosome.Menu.Data.MenuItem (MenuItem)
+import Ribosome.Menu.Data.MenuItemFilter (MenuItemFilter)
 import Ribosome.Menu.Data.MenuResult (MenuResult)
 import Ribosome.Menu.Data.NvimMenuState (NvimMenuState)
-import Ribosome.Menu.Filters (fuzzyItemFilter)
+import Ribosome.Menu.Filters (fuzzyItemFilterPar)
 import Ribosome.Menu.Main (menuMain)
 import Ribosome.Menu.Nvim (menuSyntax, nvimMenuRenderer)
 import qualified Ribosome.Menu.Prompt.Data.PromptConfig as PromptConfig
@@ -63,6 +64,30 @@ runMenu config =
     bracketPrompt (PromptRenderer acquire release _) =
       bracket acquire release \ _ -> menuMain config
 
+nvimMenuWith ::
+  ∀ i a res r .
+  Members [Scratch, Rpc, Rpc !! RpcError, Settings !! SettingError] r =>
+  Members [Log, Mask res, Resource, Race, Embed IO, Final IO] r =>
+  MenuItemFilter i ->
+  ScratchOptions ->
+  SerialT IO (MenuItem i) ->
+  MenuConsumer i r a ->
+  PromptConfig r ->
+  Sem r (MenuResult a)
+nvimMenuWith itemFilter options items consumer promptConfig = do
+  _ :: Int <- vimCallFunction "inputsave" []
+  whenM (Settings.or True Settings.menuCloseFloats) closeFloats
+  run =<< Scratch.open (withSyntax (ensureSize options))
+  where
+    run scratch = do
+      windowSetOption (scratch ^. #window) "cursorline" (toMsgpack True) !>> Log.debug "Failed to set cursorline"
+      interpretAtomic (def :: NvimMenuState) do
+        runMenu (MenuConfig items itemFilter (hoistMenuConsumer raise (insertAt @5) consumer) (nvimMenuRenderer scratch) (hoistPromptConfig raise promptConfig))
+    ensureSize =
+      #size %~ (<|> Just 1)
+    withSyntax =
+      #syntax <>~ [menuSyntax]
+
 nvimMenu ::
   ∀ i a res r .
   Members [Scratch, Rpc, Rpc !! RpcError, Settings !! SettingError] r =>
@@ -72,19 +97,23 @@ nvimMenu ::
   MenuConsumer i r a ->
   PromptConfig r ->
   Sem r (MenuResult a)
-nvimMenu options items consumer promptConfig = do
-  _ :: Int <- vimCallFunction "inputsave" []
-  whenM (Settings.or True Settings.menuCloseFloats) closeFloats
-  run =<< Scratch.open (withSyntax (ensureSize options))
+nvimMenu =
+  nvimMenuWith (fuzzyItemFilterPar True)
+
+staticNvimMenuWith ::
+  Members [Scratch, Rpc !! RpcError, Rpc, Settings !! SettingError] r =>
+  Members [Log, Mask res, Resource, Race, Embed IO, Final IO] r =>
+  MenuItemFilter i ->
+  ScratchOptions ->
+  [MenuItem i] ->
+  MenuConsumer i r a ->
+  PromptConfig r ->
+  Sem r (MenuResult a)
+staticNvimMenuWith itemFilter options items =
+  nvimMenuWith itemFilter (ensureSize options) (Stream.fromList items)
   where
-    run scratch = do
-      windowSetOption (scratch ^. #window) "cursorline" (toMsgpack True) !>> Log.debug "Failed to set cursorline"
-      interpretAtomic (def :: NvimMenuState) do
-        runMenu (MenuConfig items fuzzyItemFilter (hoistMenuConsumer raise (insertAt @5) consumer) (nvimMenuRenderer scratch) (hoistPromptConfig raise promptConfig))
     ensureSize =
-      #size %~ (<|> Just 1)
-    withSyntax =
-      #syntax <>~ [menuSyntax]
+      #size %~ (<|> Just (length items))
 
 staticNvimMenu ::
   Members [Scratch, Rpc !! RpcError, Rpc, Settings !! SettingError] r =>
@@ -94,8 +123,5 @@ staticNvimMenu ::
   MenuConsumer i r a ->
   PromptConfig r ->
   Sem r (MenuResult a)
-staticNvimMenu options items =
-  nvimMenu (ensureSize options) (Stream.fromList items)
-  where
-    ensureSize =
-      #size %~ (<|> Just (length items))
+staticNvimMenu =
+  staticNvimMenuWith (fuzzyItemFilterPar True)
