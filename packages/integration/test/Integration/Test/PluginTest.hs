@@ -4,7 +4,7 @@ import qualified Data.Text as Text
 import qualified Data.Text.IO as Text
 import Exon (exon)
 import Hedgehog.Internal.Property (failWith)
-import Log (Severity (Debug))
+import Log (Severity (Error))
 import Path (Abs, Dir, Path, reldir, relfile, toFilePath, (</>))
 import Path.IO (copyDirRecur)
 import Polysemy.Chronos (interpretTimeChronos)
@@ -50,7 +50,7 @@ testPlugin riboRoot =
     let flake = toFilePath (target </> [relfile|flake.nix|])
     old <- embed (Text.readFile flake)
     embed (Text.writeFile flake (Text.replace "RIBOSOME" (toText riboRoot) old))
-    interpretCoreDeps def { log = def { logLevelStderr = Debug } } $
+    interpretCoreDeps def { log = def { logLevelStderr = Error } } $
       interpretHostEmbedCore Nothing (Just (conf target)) $
       interpretHandlersNull $
       withHost do
