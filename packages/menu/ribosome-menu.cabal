@@ -65,6 +65,7 @@ library
       Ribosome.Menu.Run
       Ribosome.Menu.Stream.Accumulate
       Ribosome.Menu.Stream.ChunkAfter
+      Ribosome.Menu.Stream.ParMap
       Ribosome.Menu.Stream.Util
       Ribosome.Menu.UpdateState
   hs-source-dirs:
