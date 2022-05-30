@@ -9,14 +9,18 @@
         "polysemy-time": "polysemy-time_3"
       },
       "locked": {
-        "lastModified": 1653749719,
-        "narHash": "sha256-jqiuXnhwmA8qQ64RUQROHrbn57ykiF33fvcQh+GTlO8=",
-        "path": "/home/tek/code/tek/haskell/chiasma",
-        "type": "path"
+        "lastModified": 1653749715,
+        "narHash": "sha256-nH5EMMfX8oebf/fKwHcVNi0uv2gnu0sLMoS0pkQxeHU=",
+        "owner": "tek",
+        "repo": "chiasma",
+        "rev": "cae9c7aa53b02f4ec0f4972928c4727c9b5c7bb5",
+        "type": "github"
       },
       "original": {
-        "path": "/home/tek/code/tek/haskell/chiasma",
-        "type": "path"
+        "owner": "tek",
+        "ref": "main",
+        "repo": "chiasma",
+        "type": "github"
       }
     },
     "easy-hls": {
