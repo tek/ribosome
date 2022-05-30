@@ -11,19 +11,17 @@ import qualified Polysemy.Test as Test
 import Polysemy.Test (Test, TestError, interpretTestInSubdir)
 import Ribosome.Final (inFinal)
 import Ribosome.Menu.Combinators (sortedEntries)
-import Ribosome.Menu.Data.Entry (Entries, Entry)
 import Ribosome.Menu.Data.MenuEvent (MenuEvent)
-import Ribosome.Menu.Data.MenuItem (MenuItem, simpleMenuItem)
+import Ribosome.Menu.Data.MenuItem (simpleMenuItem)
 import Ribosome.Menu.Data.MenuState (CursorLock (CursorLock), ItemsLock (ItemsLock), MenuStateSem, readMenu)
-import Ribosome.Menu.Filters (filterFuzzy, fuzzyItemFilterPar, matchFuzzy)
+import Ribosome.Menu.Filters (fuzzyItemFilterPar)
 import Ribosome.Menu.Prompt.Data.Prompt (Prompt (Prompt))
 import qualified Ribosome.Menu.Prompt.Data.PromptEvent as PromptEvent
 import Ribosome.Menu.Prompt.Data.PromptEvent (PromptEvent)
 import qualified Ribosome.Menu.Prompt.Data.PromptState as PromptState
 import Ribosome.Menu.UpdateState (promptEvent, updateItems)
-import qualified Streamly.Data.Fold as Fold
 import qualified Streamly.Prelude as Stream
-import Streamly.Prelude (IsStream, parallel)
+import Streamly.Prelude (IsStream)
 import System.IO.Error (userError)
 
 events ::
@@ -35,13 +33,9 @@ events =
   Stream.fromList [
     (p 0 "", PromptEvent.Init),
     (p 1 "a", PromptEvent.Edit),
-    -- (p 1 "a", PromptEvent.Navigation),
     (p 2 "as", PromptEvent.Edit),
-    -- (p 1 "a", PromptEvent.Navigation),
     (p 3 "ase", PromptEvent.Edit),
-    -- (p 1 "a", PromptEvent.Navigation),
     (p 4 "ased", PromptEvent.Edit),
-    -- (p 1 "a", PromptEvent.Navigation),
     (p 5 "asedo", PromptEvent.Edit)
   ]
   where
@@ -83,7 +77,7 @@ appendBench files = do
       inFinal \ _ lower pur ex -> do
         let
           filt =
-            fuzzyItemFilterPar
+            fuzzyItemFilterPar False
           lowerMaybe :: ∀ x . MenuStateSem () r x -> IO (Maybe x)
           lowerMaybe =
             fmap ex . lower
@@ -97,33 +91,6 @@ appendBench files = do
         len <- lowerMaybe (length . view sortedEntries <$> readMenu)
         when (fromMaybe 0 len /= 1401) (Base.throw (userError [exon|length is #{show len}|]))
         pur res
-
-filtBenchSer ::
-  [Text] ->
-  IO (Entries ())
-filtBenchSer files = do
-  pure (filterFuzzy "pkgspe" (zip [1..] menuItems))
-  where
-    menuItems =
-      simpleMenuItem () <$> files
-
-filtP ::
-  String ->
-  [(Int, MenuItem a)] ->
-  IO [(Int, Entry a)]
-filtP (toText -> query) is =
-  Stream.toList $
-    -- Stream.maxThreads 12 $
-    Stream.fromParallel $
-    Stream.concatMapWith parallel (Stream.fromList . mapMaybe (uncurry (matchFuzzy False query))) $
-    Stream.chunksOf 100 Fold.toList $
-    Stream.fromList is
-
-filtBenchPar ::
-  [Text] ->
-  IO [(Int, Entry ())]
-filtBenchPar files =
-  filtP "pkgspe" (zip [1..] (simpleMenuItem () <$> files))
 
 runBench :: Sem [Log, Race, Async, Resource, Embed IO, Final IO] a -> IO a
 runBench =
@@ -139,8 +106,6 @@ main =
   defaultMainWith conf [
     env fileList \ fs ->
       bgroup "menu" [
-        -- bench "filter initial items serially" (whnfIO (filtBenchSer fs)),
-        -- bench "filter initial items parallelly" (whnfIO (filtBenchPar fs))
         bench "prompt updates with 29k items" (whnfIO (runBench (appendBench fs)))
       ]
   ]
