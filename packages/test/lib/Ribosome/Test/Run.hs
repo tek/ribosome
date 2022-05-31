@@ -34,6 +34,14 @@ embedPluginTest ::
 embedPluginTest =
   embedPluginTestConf def
 
+embedPluginTestConf_ ::
+  TestConfig ->
+  Sem (Rpc : PluginTestStack) () ->
+  UnitTest
+embedPluginTestConf_ (TestConfig freeze conf) =
+  runTestConf freeze .
+  embedNvimPluginConf conf "test" mempty mempty mempty
+
 embedPluginTest_ ::
   Sem (Rpc : PluginTestStack) () ->
   UnitTest

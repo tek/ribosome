@@ -89,3 +89,7 @@ fuzzyItemFilter sortEmpty =
       filterFuzzy sortEmpty query (IntMap.toList items)
     refine (MenuQuery (toString -> query)) items =
       refineFuzzy query (concatMap toList (IntMap.elems items))
+
+fuzzy :: MenuItemFilter a
+fuzzy =
+  fuzzyItemFilter True

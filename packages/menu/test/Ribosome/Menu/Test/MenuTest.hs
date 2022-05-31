@@ -1,6 +1,6 @@
 module Ribosome.Menu.Test.MenuTest where
 
-import Conc (Restoration, interpretSyncAs)
+import Conc (Restoration, interpretSync, interpretSyncAs)
 import Control.Concurrent.Lifted (threadDelay)
 import Control.Lens (use, view, (^.))
 import qualified Control.Monad.Trans.State.Strict as MTL
@@ -42,6 +42,7 @@ import Ribosome.Menu.Prompt.Data.PromptConfig (
   PromptConfig (PromptConfig),
   PromptFlag (StartInsert),
   PromptInput (PromptInput),
+  PromptListening,
   )
 import qualified Ribosome.Menu.Prompt.Data.PromptInputEvent as PromptInputEvent
 import Ribosome.Menu.Prompt.Data.PromptInputEvent (PromptInputEvent)
@@ -102,15 +103,15 @@ render menu = \case
 
 menuTest ::
   Members [Resource, Race, Embed IO, Final IO] r =>
-  MenuConsumer Text (Log : Sync [[Entry Text]] : Mask Restoration : r) a ->
+  MenuConsumer Text (Log : Sync PromptListening : Sync [[Entry Text]] : Mask Restoration : r) a ->
   [Text] ->
   [Text] ->
   Sem r [[Entry Text]]
 menuTest consumer items chars = do
-  interpretMaskFinal $ interpretSyncAs mempty do
+  interpretMaskFinal $ interpretSyncAs mempty $ interpretSync @PromptListening do
     let
       conf =
-        MenuConfig (menuItems items) fuzzyItemFilter consumer (MenuRenderer render) promptConfig
+        MenuConfig (menuItems items) (fuzzyItemFilter False) consumer (MenuRenderer render) promptConfig
     _ <- interpretLogNull $ runMenu conf
     Sync.block
   where

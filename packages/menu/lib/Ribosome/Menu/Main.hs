@@ -33,7 +33,7 @@ import Ribosome.Menu.Data.MenuState (
   )
 import qualified Ribosome.Menu.Data.QuitReason as QuitReason
 import Ribosome.Menu.Prompt.Data.Prompt (Prompt)
-import Ribosome.Menu.Prompt.Data.PromptConfig (hoistPromptConfig)
+import Ribosome.Menu.Prompt.Data.PromptConfig (PromptListening, hoistPromptConfig)
 import qualified Ribosome.Menu.Prompt.Data.PromptControlEvent as PromptControlEvent
 import Ribosome.Menu.Prompt.Data.PromptControlEvent (PromptControlEvent)
 import Ribosome.Menu.Prompt.Data.PromptEvent (PromptEvent)
@@ -179,7 +179,7 @@ interpretMenu =
   interpretAtomic def
 
 menuMain ::
-  Members [Log, Mask res, Race, Resource, Embed IO, Final IO] r =>
+  Members [Sync PromptListening, Log, Mask res, Race, Resource, Embed IO, Final IO] r =>
   MenuConfig r i a ->
   Sem r (MenuResult a)
 menuMain conf =

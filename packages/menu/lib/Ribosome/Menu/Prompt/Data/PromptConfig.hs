@@ -8,6 +8,10 @@ import Ribosome.Menu.Prompt.Data.PromptRenderer (PromptRenderer, hoistPromptRend
 import Ribosome.Menu.Prompt.Data.PromptState (PromptState)
 import Ribosome.Menu.Prompt.Data.PromptUpdate (PromptUpdate)
 
+data PromptListening =
+  PromptListening
+  deriving stock (Eq, Show)
+
 data PromptFlag =
   StartInsert
   |

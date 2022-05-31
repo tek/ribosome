@@ -2,7 +2,7 @@ module Ribosome.Menu.Run where
 
 import Control.Lens ((%~), (<>~), (^.))
 import qualified Data.Text as Text
-import Polysemy.Conc (interpretAtomic)
+import Polysemy.Conc (interpretAtomic, interpretSync)
 import qualified Polysemy.Log as Log
 import qualified Streamly.Internal.Data.Stream.IsStream as Stream
 import Streamly.Prelude (SerialT)
@@ -33,7 +33,7 @@ import Ribosome.Menu.Filters (fuzzyItemFilter)
 import Ribosome.Menu.Main (menuMain)
 import Ribosome.Menu.Nvim (menuSyntax, nvimMenuRenderer)
 import qualified Ribosome.Menu.Prompt.Data.PromptConfig as PromptConfig
-import Ribosome.Menu.Prompt.Data.PromptConfig (PromptConfig, hoistPromptConfig)
+import Ribosome.Menu.Prompt.Data.PromptConfig (PromptConfig, PromptListening, hoistPromptConfig)
 import Ribosome.Menu.Prompt.Data.PromptRenderer (PromptRenderer (PromptRenderer))
 
 isFloat ::
@@ -55,7 +55,7 @@ closeFloats = do
   traverse_ closeWindow =<< filterM isFloat =<< vimGetWindows
 
 runMenu ::
-  Members [Log, Mask res, Resource, Race, Embed IO, Final IO] r =>
+  Members [Sync PromptListening, Log, Mask res, Resource, Race, Embed IO, Final IO] r =>
   MenuConfig r i a ->
   Sem r (MenuResult a)
 runMenu config =
@@ -67,7 +67,7 @@ runMenu config =
 nvimMenuWith ::
   ∀ i a res r .
   Members [Scratch, Rpc, Rpc !! RpcError, Settings !! SettingError] r =>
-  Members [Log, Mask res, Resource, Race, Embed IO, Final IO] r =>
+  Members [Sync PromptListening, Log, Mask res, Resource, Race, Embed IO, Final IO] r =>
   MenuItemFilter i ->
   ScratchOptions ->
   SerialT IO (MenuItem i) ->
@@ -94,15 +94,16 @@ nvimMenu ::
   Members [Log, Mask res, Resource, Race, Embed IO, Final IO] r =>
   ScratchOptions ->
   SerialT IO (MenuItem i) ->
-  MenuConsumer i r a ->
-  PromptConfig r ->
+  MenuConsumer i (Sync PromptListening : r) a ->
+  PromptConfig (Sync PromptListening : r) ->
   Sem r (MenuResult a)
-nvimMenu =
-  nvimMenuWith (fuzzyItemFilter True)
+nvimMenu scro items consumer conf =
+  interpretSync do
+    nvimMenuWith (fuzzyItemFilter True) scro items consumer conf
 
 staticNvimMenuWith ::
   Members [Scratch, Rpc !! RpcError, Rpc, Settings !! SettingError] r =>
-  Members [Log, Mask res, Resource, Race, Embed IO, Final IO] r =>
+  Members [Sync PromptListening, Log, Mask res, Resource, Race, Embed IO, Final IO] r =>
   MenuItemFilter i ->
   ScratchOptions ->
   [MenuItem i] ->
@@ -120,8 +121,9 @@ staticNvimMenu ::
   Members [Log, Mask res, Resource, Race, Embed IO, Final IO] r =>
   ScratchOptions ->
   [MenuItem i] ->
-  MenuConsumer i r a ->
-  PromptConfig r ->
+  MenuConsumer i (Sync PromptListening : r) a ->
+  PromptConfig (Sync PromptListening : r) ->
   Sem r (MenuResult a)
-staticNvimMenu =
-  staticNvimMenuWith (fuzzyItemFilter True)
+staticNvimMenu scro items consumer conf =
+  interpretSync do
+    staticNvimMenuWith (fuzzyItemFilter True) scro items consumer conf

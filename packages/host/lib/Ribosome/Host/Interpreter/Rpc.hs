@@ -29,7 +29,7 @@ request ::
 request exec req decode = do
   reqId <- restop Responses.add
   let treq = TrackedRequest reqId (coerce req)
-  Log.debug [exon|#{exec} rpc: #{formatTrackedReq treq}|]
+  Log.trace [exon|#{exec} rpc: #{formatTrackedReq treq}|]
   Process.send (RpcMessage.Request treq)
   restop (Responses.wait reqId) >>= \case
     Response.Success a ->
@@ -63,6 +63,6 @@ interpretRpc =
       unitT
     Rpc.Notify call -> do
       handleCall (void call) \ req _ -> do
-        Log.debug [exon|notify rpc: #{formatReq req}|]
+        Log.trace [exon|notify rpc: #{formatReq req}|]
         Process.send (RpcMessage.Notification req)
       unitT

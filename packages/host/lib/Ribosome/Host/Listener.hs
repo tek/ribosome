@@ -41,7 +41,7 @@ sendResponse ::
   Response ->
   Sem r ()
 sendResponse i response = do
-  Log.debug [exon|send response: <#{show (unRequestId i)}> #{formatResponse response}|]
+  Log.trace [exon|send response: <#{show (unRequestId i)}> #{formatResponse response}|]
   Process.send (RpcMessage.Response (TrackedResponse i response))
   atomicModify' (max i)
   publish ResponseSent
@@ -107,7 +107,7 @@ listener =
   interpretSyncAs ResponseLock $ interpretEventsChan $ interpretAtomic 0 $ forever do
     Process.recv >>= \case
       Right msg -> do
-        Log.debug [exon|listen: #{ellipsize 500 (formatRpcMsg msg)}|]
+        Log.trace [exon|listen: #{ellipsize 500 (formatRpcMsg msg)}|]
         dispatch msg
       Left err ->
         Log.error [exon|listen error: #{err}|]
