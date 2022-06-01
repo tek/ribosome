@@ -76,6 +76,7 @@ library
       Ribosome.Host.Interpreter.Responses
       Ribosome.Host.Interpreter.Rpc
       Ribosome.Host.Interpreter.UserError
+      Ribosome.Host.IOStack
       Ribosome.Host.Listener
       Ribosome.Host.Modify
       Ribosome.Host.RegisterHandlers

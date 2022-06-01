@@ -18,6 +18,8 @@ build-type:     Simple
 
 library
   exposed-modules:
+      Ribosome
+      Ribosome.Api
       Ribosome.Api.Autocmd
       Ribosome.Api.Buffer
       Ribosome.Api.Echo
@@ -64,6 +66,7 @@ library
       Ribosome.Effect.Settings
       Ribosome.Embed
       Ribosome.Final
+      Ribosome.Internal.Scratch
       Ribosome.Interpreter.BuiltinHandlers
       Ribosome.Interpreter.Persist
       Ribosome.Interpreter.PersistPath
@@ -75,6 +78,7 @@ library
       Ribosome.Path
       Ribosome.Plugin.Builtin
       Ribosome.PluginName
+      Ribosome.Register
       Ribosome.Remote
       Ribosome.Scratch
       Ribosome.Text

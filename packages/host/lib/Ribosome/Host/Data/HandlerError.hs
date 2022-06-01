@@ -30,6 +30,10 @@ data ErrorMessage =
   }
   deriving stock (Eq, Show)
 
+instance IsString ErrorMessage where
+  fromString (toText -> s) =
+    ErrorMessage s [s] Error
+
 data HandlerError :: Type where
   HandlerError :: HasCallStack => {
     msg :: ErrorMessage,

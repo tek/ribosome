@@ -4,13 +4,12 @@ import qualified Data.Text as Text
 import qualified Data.Text.IO as Text
 import Exon (exon)
 import Hedgehog.Internal.Property (failWith)
-import Log (Severity (Error))
 import Path (Abs, Dir, Path, reldir, relfile, toFilePath, (</>))
 import Path.IO (copyDirRecur)
 import Polysemy.Chronos (interpretTimeChronos)
 import qualified Polysemy.Conc as Conc
 import Polysemy.Conc (interpretRace)
-import Polysemy.Log (Severity (Warn), interpretLogStdoutLevelConc)
+import Polysemy.Log (Severity (Trace), interpretLogStdoutLevelConc)
 import qualified Polysemy.Test as Test
 import Polysemy.Test (Hedgehog, Test, TestError (TestError), UnitTest, assertEq, liftH, runTestAuto)
 import qualified Polysemy.Time as Time
@@ -42,7 +41,7 @@ testPlugin riboRoot =
   interpretRace $
   interpretTimeChronos $
   interpretUserErrorInfo $
-  interpretLogStdoutLevelConc (Just Warn) $
+  interpretLogStdoutLevelConc (Just Trace) $
   mapError (TestError . unBootError) do
     source <- Test.fixturePath [reldir|plugin|]
     target <- Test.tempDir [reldir|plugin|]
@@ -50,7 +49,7 @@ testPlugin riboRoot =
     let flake = toFilePath (target </> [relfile|flake.nix|])
     old <- embed (Text.readFile flake)
     embed (Text.writeFile flake (Text.replace "RIBOSOME" (toText riboRoot) old))
-    interpretCoreDeps def { log = def { logLevelStderr = Error } } $
+    interpretCoreDeps def { log = def { logLevelStderr = Trace } } $
       interpretHostEmbedCore Nothing (Just (conf target)) $
       interpretHandlersNull $
       withHost do

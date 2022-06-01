@@ -6,14 +6,17 @@ import Ribosome.Data.Mapping (MappingIdent)
 import Ribosome.Data.PluginConfig (PluginConfig (PluginConfig))
 import Ribosome.Data.PluginName (PluginName)
 import Ribosome.Data.WatchedVariable (WatchedVariable)
-import Ribosome.Embed (PluginEffects, interpretPluginEffects)
+import Ribosome.Embed (PluginEffects)
 import Ribosome.Host.Data.HostConfig (HostConfig)
 import Ribosome.Host.Data.RpcHandler (Handler, RpcHandler, hoistRpcHandlers)
 import Ribosome.Host.Embed (interpretCoreDeps)
+import Ribosome.Host.IOStack (IOStack, runIOStack)
 import Ribosome.Host.Interpreter.Handlers (interpretHandlers)
 import Ribosome.Host.Interpreter.Host (runHost)
-import Ribosome.Host.Remote (IOStack, RemoteStack, interpretHostRemoteCore, runIOStack)
+import Ribosome.Host.Remote (RemoteStack, interpretHostRemoteCore)
 import Ribosome.Interpreter.BuiltinHandlers (interpretBuiltinHandlers)
+import Ribosome.Interpreter.Scratch (interpretScratch)
+import Ribosome.Interpreter.Settings (interpretSettingsRpc)
 import Ribosome.Interpreter.UserError (interpretUserErrorPrefixed)
 import Ribosome.Plugin.Builtin (builtinHandlers)
 
@@ -37,7 +40,8 @@ interpretPluginRemote name conf =
   interpretCoreDeps conf .
   interpretUserErrorPrefixed .
   interpretHostRemoteCore .
-  interpretPluginEffects
+  interpretSettingsRpc .
+  interpretScratch
 
 interpretNvimPlugin ::
   ∀ r .

@@ -1,8 +1,7 @@
 module Ribosome.Host.Remote where
 
-import Conc (ChanConsumer, ChanEvents, interpretEventsChan, ConcStack)
+import Conc (ChanConsumer, ChanEvents, interpretEventsChan)
 import Polysemy.Process (Process, interpretProcessCurrent)
-import Polysemy.Chronos (ChronosTime, interpretTimeChronos)
 
 import Ribosome.Host.Data.BootError (BootError (BootError))
 import Ribosome.Host.Data.Event (Event)
@@ -12,6 +11,7 @@ import Ribosome.Host.Data.HostError (HostError)
 import Ribosome.Host.Data.Request (RequestId)
 import Ribosome.Host.Data.Response (Response)
 import Ribosome.Host.Data.RpcError (RpcError)
+import Ribosome.Host.Data.RpcHandler (RpcHandler)
 import Ribosome.Host.Data.RpcMessage (RpcMessage)
 import Ribosome.Host.Effect.Errors (Errors)
 import Ribosome.Host.Effect.Handlers (Handlers)
@@ -19,17 +19,15 @@ import Ribosome.Host.Effect.Responses (Responses)
 import Ribosome.Host.Effect.Rpc (Rpc)
 import Ribosome.Host.Effect.UserError (UserError)
 import Ribosome.Host.Embed (CoreDeps, interpretCoreDeps)
+import Ribosome.Host.IOStack (IOStack, runIOStack)
 import Ribosome.Host.Interpreter.Errors (interpretErrors)
+import Ribosome.Host.Interpreter.Handlers (interpretHandlers)
 import Ribosome.Host.Interpreter.Host (runHost)
 import Ribosome.Host.Interpreter.Log (interpretDataLogRpc)
 import Ribosome.Host.Interpreter.Process (interpretProcessInputCereal, interpretProcessOutputCereal)
 import Ribosome.Host.Interpreter.Responses (interpretResponses)
 import Ribosome.Host.Interpreter.Rpc (interpretRpc)
 import Ribosome.Host.Interpreter.UserError (interpretUserErrorInfo)
-import qualified Data.Text.IO as Text
-import System.IO (stderr)
-import Ribosome.Host.Data.RpcHandler (RpcHandler)
-import Ribosome.Host.Interpreter.Handlers (interpretHandlers)
 
 type CoreRemoteStack =
   [
@@ -46,12 +44,6 @@ type CoreRemoteStack =
 
 type RemoteStack =
   CoreRemoteStack ++ UserError : CoreDeps
-
-type IOStack =
-  [
-    ChronosTime,
-    Error BootError
-  ] ++ ConcStack
 
 type HostIOStack =
   RemoteStack ++
@@ -98,21 +90,6 @@ runNvimHost ::
   Sem r ()
 runNvimHost conf handlers =
   interpretHostRemote conf (handlers runHost)
-
-errorStderr :: IO (Either BootError ()) -> IO ()
-errorStderr ma =
-  ma >>= \case
-    Left (BootError err) -> Text.hPutStrLn stderr err
-    Right () -> unit
-
-runIOStack ::
-  Sem IOStack () ->
-  IO ()
-runIOStack =
-  errorStderr .
-  runConc .
-  errorToIOFinal .
-  interpretTimeChronos
 
 runNvimHostIO ::
   HostConfig ->

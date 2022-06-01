@@ -10,7 +10,7 @@ import Ribosome.Data.ScratchState (ScratchState)
 import Ribosome.Effect.Scratch (Scratch (Find, Get, Kill, Show, Update))
 import Ribosome.Host.Data.RpcError (RpcError (RpcError))
 import Ribosome.Host.Effect.Rpc (Rpc)
-import Ribosome.Scratch (killScratch, lookupScratch, setScratchContent, showInScratch)
+import Ribosome.Internal.Scratch (killScratch, lookupScratch, setScratchContent, showInScratch)
 
 interpretScratchAtomic ::
   Members [Rpc !! RpcError, AtomicState (Map ScratchId ScratchState), Reader PluginName, Log, Resource] r =>
