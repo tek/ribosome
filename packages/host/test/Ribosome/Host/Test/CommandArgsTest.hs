@@ -6,14 +6,14 @@ import Polysemy.Test (UnitTest, assertJust)
 import Ribosome.Host.Api.Effect (nvimCommand, nvimGetVar, nvimSetVar)
 import Ribosome.Host.Data.Args (Args (Args))
 import Ribosome.Host.Data.Execution (Execution (Sync))
-import Ribosome.Host.Data.HandlerError (HandlerError)
+import Ribosome.Host.Data.HandlerError (HandlerError, resumeHandlerError)
 import Ribosome.Host.Data.RpcError (RpcError)
 import Ribosome.Host.Data.RpcHandler (RpcHandler)
 import Ribosome.Host.Effect.Rpc (Rpc)
 import Ribosome.Host.Embed (embedNvim)
 import Ribosome.Host.Handler (rpcCommand)
 import Ribosome.Host.Interpreter.Handlers (interpretHandlers)
-import Ribosome.Host.Test.Run (rpcError, runTest)
+import Ribosome.Host.Test.Run (runTest)
 
 var :: Text
 var =
@@ -24,7 +24,7 @@ args ::
   Args ->
   Sem r ()
 args (Args a) =
-  rpcError (nvimSetVar var a)
+  resumeHandlerError (nvimSetVar var a)
 
 argsHandlers ::
   ∀ r .

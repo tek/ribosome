@@ -18,6 +18,7 @@ build-type:     Simple
 
 library
   exposed-modules:
+      Ribosome.Test
       Ribosome.Test.Error
       Ribosome.Test.Run
       Ribosome.Test.Screenshot

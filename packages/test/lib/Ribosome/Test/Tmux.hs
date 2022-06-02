@@ -19,7 +19,7 @@ module Ribosome.Test.Tmux where
 -- import System.FilePath ((</>))
 
 -- import Ribosome.Config.Setting (updateSetting)
--- import Ribosome.Config.Settings (tmuxSocket)
+-- import Ribosome.Settings (tmuxSocket)
 -- import Ribosome.Control.Concurrent.Wait (waitIOPredDef)
 -- import Ribosome.Control.Exception (catchAny, tryAny)
 -- import Ribosome.Control.Ribosome (Ribosome (Ribosome), newRibosomeTMVar)

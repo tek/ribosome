@@ -18,6 +18,7 @@ build-type:     Simple
 
 library
   exposed-modules:
+      Ribosome.Menu
       Ribosome.Menu.Action
       Ribosome.Menu.Combinators
       Ribosome.Menu.Consumer
@@ -51,7 +52,6 @@ library
       Ribosome.Menu.Prompt.Data.InputEvent
       Ribosome.Menu.Prompt.Data.Prompt
       Ribosome.Menu.Prompt.Data.PromptConfig
-      Ribosome.Menu.Prompt.Data.PromptConsumed
       Ribosome.Menu.Prompt.Data.PromptControlEvent
       Ribosome.Menu.Prompt.Data.PromptEvent
       Ribosome.Menu.Prompt.Data.PromptInputEvent

@@ -13,7 +13,6 @@ import qualified Polysemy.Log as Log
 
 import Ribosome.Api.Window (redraw, restoreView, setLine)
 import Ribosome.Data.ScratchState (ScratchState (buffer, window))
-import Ribosome.Data.Syntax (HiLink (..), Syntax (Syntax), SyntaxItem (..), syntaxMatch)
 import Ribosome.Data.WindowView (PartialWindowView (PartialWindowView))
 import qualified Ribosome.Effect.Scratch as Scratch
 import Ribosome.Effect.Scratch (Scratch)
@@ -30,6 +29,7 @@ import qualified Ribosome.Menu.Data.MenuRenderEvent as MenuRenderEvent (MenuRend
 import Ribosome.Menu.Data.MenuRenderer (MenuRenderer (MenuRenderer))
 import Ribosome.Menu.Data.MenuView (MenuView (MenuView), botIndex, cursorLine, menuView, topIndex)
 import Ribosome.Menu.Data.NvimMenuState (NvimMenuState, cursorIndex, indexes)
+import Ribosome.Syntax (HiLink (..), Syntax (Syntax), SyntaxItem (..), syntaxMatch)
 
 marker :: Char
 marker =

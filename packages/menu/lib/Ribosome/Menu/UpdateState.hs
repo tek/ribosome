@@ -25,7 +25,7 @@ import Ribosome.Menu.Data.MenuState (
   MenuStateSem,
   MenuStateStack,
   SemS (SemS),
-  menuItemsStateSem,
+  menuItemsState,
   semState,
   setPrompt,
   subsumeMenuStateSem,
@@ -153,7 +153,7 @@ queryUpdate ::
   MenuItemFilter i ->
   MenuStateSem i r MenuEvent
 queryUpdate itemFilter =
-  menuItemsStateSem \ prompt _ ->
+  menuItemsState \ prompt _ ->
     semState do
       change <- uses currentQuery (diffPrompt prompt)
       promptItemUpdate itemFilter change prompt
@@ -209,7 +209,7 @@ updateItems lower itemFilter =
   Stream.foldIterateM chunker (pure [])
   where
     insert new =
-      MenuEvent.NewItem <$ lower (subsumeMenuStateSem (menuItemsStateSem (insertItems itemFilter new)))
+      MenuEvent.NewItem <$ lower (subsumeMenuStateSem (menuItemsState (insertItems itemFilter new)))
     chunker = pure . \case
       [] ->
         Fold.take 100 Fold.toList

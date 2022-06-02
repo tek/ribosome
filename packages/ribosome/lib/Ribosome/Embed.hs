@@ -97,7 +97,7 @@ testPlugin ::
   Members PluginStack r =>
   PluginName ->
   [RpcHandler r] ->
-  InterpretersFor [Scratch, Settings, Rpc] r
+  InterpretersFor TestEffects r
 testPlugin name handlers =
   interpretHandlers (builtinHandlers name <> handlers) .
   testHost .

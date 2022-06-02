@@ -21,8 +21,7 @@ data MenuItems a =
     _entries :: Entries a,
     _history :: Trie (Entries a),
     _itemCount :: Int,
-    _currentQuery :: MenuQuery,
-    _dirty :: Bool
+    _currentQuery :: MenuQuery
   }
   deriving stock (Eq, Show)
 
@@ -30,7 +29,7 @@ makeClassy ''MenuItems
 
 instance Default (MenuItems a) where
   def =
-    MenuItems mempty mempty mempty 0 mempty False
+    MenuItems mempty mempty mempty 0 mempty
 
 newtype MenuCursor =
   MenuCursor { _cursor :: CursorIndex }

@@ -1,12 +1,12 @@
 module Ribosome.Menu.Data.MenuState where
 
-import Control.Lens ((.~), (^.))
+import Control.Lens ((^.))
 import qualified Control.Monad.State as State
 import Control.Monad.State (MonadState)
 import qualified Polysemy.Conc as Sync
 
 import Ribosome.Menu.Data.Menu (Menu (Menu), cursor, prompt)
-import Ribosome.Menu.Data.MenuData (MenuCursor, MenuItems (_dirty), dirty)
+import Ribosome.Menu.Data.MenuData (MenuCursor, MenuItems)
 import Ribosome.Menu.Prompt.Data.Prompt (Prompt)
 
 data ItemsLock =
@@ -91,15 +91,6 @@ readMenu ::
 readMenu =
   Menu <$> atomicGet <*> atomicGet <*> atomicGet
 
--- TODO probably unnecessary
-readMenuForRender ::
-  ∀ i r .
-  Members (MenuStateEffects i) r =>
-  Sem r (Menu i)
-readMenuForRender = do
-  atomicModify' @(MenuItems i) (dirty .~ False)
-  readMenu
-
 modifyMenuCursor ::
   Members [Resource, Embed IO] r =>
   Sem (Reader (Menu i) : MenuStateStack i ++ r) (a, MenuCursor) ->
@@ -119,36 +110,36 @@ modifyMenuItems f =
   itemsLock do
     menu <- readMenu
     (newItems, result) <- runReader menu f
-    atomicPut (newItems & dirty .~ True)
+    atomicPut newItems
     pure result
 
-menuItemsStateSem ::
+menuItemsState ::
   Members [Resource, Embed IO] r =>
   (Prompt -> MenuCursor -> MenuItemsSem r i a) ->
   MenuStateSem i r a
-menuItemsStateSem f =
+menuItemsState f =
   modifyMenuItems do
     Menu i s p <- ask
     raise (runState i (f p s))
 
-runMenuM ::
+runMenu ::
   Members [Resource, Embed IO] r =>
   (Prompt -> Sem (State (Menu i) : r) a) ->
   MenuStateSem i r a
-runMenuM f =
+runMenu f =
   itemsLock do
     cursorLock do
       menu <- readMenu
       (Menu newItems newState _, result) <- insertAt @0 (runState menu (f (menu ^. prompt)))
-      atomicPut newItems { _dirty = True }
+      atomicPut newItems
       atomicPut newState
       pure result
 
-runMenuMRead ::
+runMenuRead ::
   Members [Resource, Embed IO] r =>
   (Prompt -> MenuSem i r a) ->
   MenuStateSem i r a
-runMenuMRead action =
+runMenuRead action =
   cursorLock do
     menu <- readMenu
     (newMenu, a) <- insertAt @0 (runState menu (action (menu ^. prompt)))
@@ -166,11 +157,11 @@ menuWrite ::
   MenuSem i r a ->
   MenuStateSem i r a
 menuWrite action =
-  insertAt @0 (runMenuM (const action))
+  insertAt @0 (runMenu (const action))
 
 menuRead ::
   Members [Resource, Embed IO] r =>
   MenuSem i r a ->
   MenuStateSem i r a
 menuRead action =
-  insertAt @0 (runMenuMRead (const action))
+  insertAt @0 (runMenuRead (const action))

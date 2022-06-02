@@ -14,7 +14,7 @@ instance MsgpackEncode Execution where
     toMsgpack (exec == Sync)
 
 instance MsgpackDecode Execution where
-  fromMsgpack =
-    fromMsgpack @Bool >=> \case
-      True -> Right Sync
-      False -> Right Async
+  fromMsgpack o =
+    fromMsgpack o <&> \case
+      True -> Sync
+      False -> Async

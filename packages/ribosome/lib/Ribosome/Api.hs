@@ -17,6 +17,7 @@ module Ribosome.Api (
   module Ribosome.Api.Undo,
   module Ribosome.Api.Variable,
   module Ribosome.Api.Window,
+  module Ribosome.Host.Api.Effect,
 ) where
 
 import Ribosome.Api.Autocmd
@@ -37,3 +38,4 @@ import Ribosome.Api.Tabpage
 import Ribosome.Api.Undo
 import Ribosome.Api.Variable
 import Ribosome.Api.Window
+import Ribosome.Host.Api.Effect

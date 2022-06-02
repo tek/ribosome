@@ -12,7 +12,7 @@ import Ribosome.Host.Api.Effect (
   nvimWinSetCursor,
   )
 import Ribosome.Host.Data.Execution (Execution (Sync))
-import Ribosome.Host.Data.HandlerError (HandlerError)
+import Ribosome.Host.Data.HandlerError (HandlerError, resumeHandlerError)
 import Ribosome.Host.Data.Range (Range (Range), RangeStyle (RangeCount, RangeFile, RangeLine))
 import Ribosome.Host.Data.RpcError (RpcError)
 import Ribosome.Host.Data.RpcHandler (RpcHandler)
@@ -20,7 +20,7 @@ import Ribosome.Host.Effect.Rpc (Rpc)
 import Ribosome.Host.Embed (embedNvim)
 import Ribosome.Host.Handler (rpcCommand)
 import Ribosome.Host.Interpreter.Handlers (interpretHandlers)
-import Ribosome.Host.Test.Run (rpcError, runTest)
+import Ribosome.Host.Test.Run (runTest)
 
 var :: Text
 var =
@@ -33,7 +33,7 @@ rangeFile ::
   Sem r ()
 rangeFile = \case
   Range l (Just h) ->
-    \ i -> rpcError (nvimSetVar var (l, h, i))
+    \ i -> resumeHandlerError (nvimSetVar var (l, h, i))
   Range _ Nothing ->
     const (stop "no upper range bound given")
 
@@ -43,7 +43,7 @@ rangeLine ::
   Sem r ()
 rangeLine = \case
   Range l (Just h) ->
-    rpcError (nvimSetVar var (l, h))
+    resumeHandlerError (nvimSetVar var (l, h))
   Range _ Nothing ->
     stop "no upper range bound given"
 
@@ -53,7 +53,7 @@ rangeLineDefault ::
   Sem r ()
 rangeLineDefault = \case
   Range l Nothing ->
-    rpcError (nvimSetVar var l)
+    resumeHandlerError (nvimSetVar var l)
   Range _ (Just _) ->
     stop "range line count function got upper bound"
 
@@ -65,7 +65,7 @@ rangeCountImplicit = \case
   Range _ (Just _) ->
     stop "range count function got upper bound"
   Range l Nothing ->
-    rpcError (nvimSetVar var l)
+    resumeHandlerError (nvimSetVar var l)
 
 rangeCountDefault ::
   Members [Rpc !! RpcError, Stop HandlerError] r =>
@@ -75,7 +75,7 @@ rangeCountDefault = \case
   Range _ (Just _) ->
     stop "range count function got upper bound"
   Range l Nothing ->
-    rpcError (nvimSetVar var l)
+    resumeHandlerError (nvimSetVar var l)
 
 rangeHandlers ::
   ∀ r .

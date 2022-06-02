@@ -38,7 +38,6 @@ library
       Ribosome.Api.Undo
       Ribosome.Api.Variable
       Ribosome.Api.Window
-      Ribosome.Config.Settings
       Ribosome.Data.FileBuffer
       Ribosome.Data.FloatOptions
       Ribosome.Data.Locks
@@ -65,7 +64,9 @@ library
       Ribosome.Effect.Scratch
       Ribosome.Effect.Settings
       Ribosome.Embed
+      Ribosome.Errors
       Ribosome.Final
+      Ribosome.Float
       Ribosome.Internal.Scratch
       Ribosome.Interpreter.BuiltinHandlers
       Ribosome.Interpreter.Persist
@@ -81,6 +82,8 @@ library
       Ribosome.Register
       Ribosome.Remote
       Ribosome.Scratch
+      Ribosome.Settings
+      Ribosome.Syntax
       Ribosome.Text
       Ribosome.VariableWatcher
   hs-source-dirs:

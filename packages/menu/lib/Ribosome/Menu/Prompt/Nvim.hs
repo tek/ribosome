@@ -2,12 +2,12 @@ module Ribosome.Menu.Prompt.Nvim where
 
 import qualified Data.Text as Text (singleton, splitAt, uncons)
 import qualified Polysemy.Conc as Conc
-import Polysemy.Final (withWeavingToFinal)
 import qualified Polysemy.Time as Time
 import Prelude hiding (consume)
 import qualified Streamly.Prelude as Stream
 
 import Ribosome.Api.Window (redraw)
+import Ribosome.Final (inFinal_)
 import qualified Ribosome.Host.Api.Data as ApiData (vimCommand)
 import Ribosome.Host.Api.Effect (nvimInput, vimCallFunction, vimCommand, vimCommandOutput, vimGetOption, vimSetOption)
 import Ribosome.Host.Class.Msgpack.Encode (toMsgpack)
@@ -42,9 +42,9 @@ getChar quit =
     consume =
       either pure event =<< Conc.race waitQuit (getchar [])
     waitQuit =
-      embed (readMVar quit) *> getchar [True] $> InputEvent.Interrupt
+      embed (readMVar quit) *> getchar [toMsgpack True] $> InputEvent.Interrupt
     getchar =
-      vimCallFunction "getchar" . fmap toMsgpack
+      vimCallFunction "getchar"
     event (Right c) =
       pure (InputEvent.Character (fromMaybe c (decodeInputChar c)))
     event (Left 0) =
@@ -60,11 +60,11 @@ getCharStream ::
   u ->
   Sem r PromptInput
 getCharStream interval =
-  withWeavingToFinal \ s wv ex ->
-    pure $ (<$ s) $ PromptInput \ quit -> do
+  inFinal_ \ lowerMaybe lower_ pur ->
+    pur $ PromptInput \ quit -> do
       let
         run =
-          maybe run check . ex =<< Stream.fromEffect (wv (getChar quit <$ s))
+          maybe run check =<< Stream.fromEffect (lowerMaybe (getChar quit))
         check = \case
           InputEvent.Character a ->
             Stream.cons (PromptInputEvent.Character a) run
@@ -73,7 +73,7 @@ getCharStream interval =
           InputEvent.Error e ->
             Stream.fromPure (PromptInputEvent.Error e)
           InputEvent.NoInput ->
-            Stream.before (wv (Time.sleep interval <$ s)) run
+            Stream.before (lower_ (Time.sleep interval)) run
           InputEvent.Unexpected _ ->
             run
       run
@@ -104,14 +104,6 @@ nvimRenderPrompt (Prompt cursor _ (PromptText text)) =
       fromMaybe (' ', "") (Text.uncons rest)
     sign =
       "% "
-
-loopFunctionName :: Text
-loopFunctionName =
-  "RibosomeMenuLoop"
-
-loopVarName :: Text
-loopVarName =
-  "ribosome_menu_looping"
 
 newtype NvimPromptResources =
   NvimPromptResources {

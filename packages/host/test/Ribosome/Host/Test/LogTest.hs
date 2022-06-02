@@ -10,7 +10,7 @@ import Polysemy.Test (UnitTest, assertEq, assertLeft)
 import Ribosome.Host.Api.Effect (nvimCallFunction)
 import Ribosome.Host.Data.Execution (Execution (Sync))
 import Ribosome.Host.Data.HandlerError (ErrorMessage (ErrorMessage), handlerError)
-import Ribosome.Host.Data.HostConfig (HostConfig (log), LogConfig (logFile))
+import Ribosome.Host.Data.HostConfig (HostConfig (hostLog), LogConfig (logFile))
 import Ribosome.Host.Data.RpcError (RpcError)
 import Ribosome.Host.Data.RpcHandler (Handler, RpcHandler)
 import Ribosome.Host.Embed (embedNvimConf)
@@ -38,6 +38,6 @@ test_logFile :: UnitTest
 test_logFile =
   runTest do
     file <- Test.tempFile [] [relfile|log/log|] 
-    embedNvimConf def { log = def { logFile = Just file } } (interpretHandlers handlers) do
+    embedNvimConf def { hostLog = def { logFile = Just file } } (interpretHandlers handlers) do
       assertLeft () . first unit =<< resumeEither @RpcError @_ @_ @() (nvimCallFunction "Stopper" [])
     assertEq fileTarget . Text.lines =<< embed (Text.readFile (toFilePath file))

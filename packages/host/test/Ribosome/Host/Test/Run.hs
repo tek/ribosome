@@ -8,10 +8,7 @@ import Polysemy.Test (Hedgehog, Test, TestError (TestError), UnitTest, runTestAu
 import Time (mkDatetime)
 
 import Ribosome.Host.Data.BootError (BootError (unBootError))
-import qualified Ribosome.Host.Data.HandlerError as HandlerError
-import Ribosome.Host.Data.HandlerError (HandlerError)
 import Ribosome.Host.Data.HostConfig (HostConfig)
-import Ribosome.Host.Data.RpcError (RpcError (unRpcError))
 import Ribosome.Host.Data.RpcHandler (RpcHandler)
 import Ribosome.Host.Effect.Rpc (Rpc)
 import Ribosome.Host.Embed (EmbedStack, embedNvimConf, embedNvim_)
@@ -72,9 +69,3 @@ embedTest_ ::
 embedTest_ =
   runTest .
   embedNvim_
-
-rpcError ::
-  Members [Rpc !! RpcError, Stop HandlerError] r =>
-  InterpreterFor Rpc r
-rpcError =
-  resumeHoist (HandlerError.simple . unRpcError)

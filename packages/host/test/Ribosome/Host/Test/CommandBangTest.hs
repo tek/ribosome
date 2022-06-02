@@ -7,14 +7,14 @@ import Ribosome.Host.Api.Effect (nvimCommand, nvimGetVar, nvimSetVar)
 import Ribosome.Host.Class.Msgpack.Encode (toMsgpack)
 import Ribosome.Host.Data.Bang (Bang (Bang, NoBang))
 import Ribosome.Host.Data.Execution (Execution (Sync))
-import Ribosome.Host.Data.HandlerError (HandlerError)
+import Ribosome.Host.Data.HandlerError (HandlerError, resumeHandlerError)
 import Ribosome.Host.Data.RpcError (RpcError)
 import Ribosome.Host.Data.RpcHandler (RpcHandler)
 import Ribosome.Host.Effect.Rpc (Rpc)
 import Ribosome.Host.Embed (embedNvim)
 import Ribosome.Host.Handler (rpcCommand)
 import Ribosome.Host.Interpreter.Handlers (interpretHandlers)
-import Ribosome.Host.Test.Run (rpcError, runTest)
+import Ribosome.Host.Test.Run (runTest)
 
 var :: Text
 var =
@@ -27,9 +27,9 @@ bang ::
   Sem r ()
 bang = \case
   Bang ->
-    \ i -> rpcError (nvimSetVar @[_] var [toMsgpack True, toMsgpack i])
+    \ i -> resumeHandlerError (nvimSetVar @[_] var [toMsgpack True, toMsgpack i])
   NoBang ->
-    \ i -> rpcError (nvimSetVar @[_] var [toMsgpack False, toMsgpack i])
+    \ i -> resumeHandlerError (nvimSetVar @[_] var [toMsgpack False, toMsgpack i])
 
 bangHandlers ::
   ∀ r .

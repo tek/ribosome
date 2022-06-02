@@ -18,10 +18,14 @@ instance Default LogConfig where
 
 newtype HostConfig =
   HostConfig {
-    log :: LogConfig
+    hostLog :: LogConfig
   }
   deriving stock (Eq, Show)
 
 instance Default HostConfig where
   def =
     HostConfig def
+
+setStderr :: Severity -> HostConfig -> HostConfig
+setStderr l c =
+  c { hostLog = (hostLog c) { logLevelStderr = l } }

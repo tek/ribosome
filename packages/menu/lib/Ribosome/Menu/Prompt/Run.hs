@@ -203,6 +203,10 @@ controlChannel = do
   chan <- embed (atomically newTMChan)
   pure (chan, listenQuit, putMVar listenQuit () *> atomically (closeTMChan chan), chanStream chan)
 
+pristinePrompt :: Bool -> Prompt
+pristinePrompt insert =
+  Prompt 0 (if insert then PromptState.Insert else PromptState.Normal) ""
+
 withPromptStream ::
   Members [Mask res, Sync PromptListening, Log, Resource, Race, Embed IO, Final IO] r =>
   PromptConfig (Sync Prompt : r) ->
@@ -214,10 +218,6 @@ withPromptStream config use = do
     res <- inFinal \ _ lower pur ex ->
       pur (chan, Stream.finally close (promptWithControl (fmap ex . lower) config control listenQuit))
     raise (use res)
-
-pristinePrompt :: Bool -> Prompt
-pristinePrompt insert =
-  Prompt 0 (if insert then PromptState.Insert else PromptState.Normal) ""
 
 noPromptRenderer ::
   PromptRenderer r

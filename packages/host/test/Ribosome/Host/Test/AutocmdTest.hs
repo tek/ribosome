@@ -6,7 +6,7 @@ import Polysemy.Test (UnitTest, assertJust)
 import Polysemy.Time (Seconds (Seconds))
 
 import Ribosome.Host.Api.Effect (nvimCommand, nvimGetVar, nvimSetVar)
-import Ribosome.Host.Data.HandlerError (HandlerError)
+import Ribosome.Host.Data.HandlerError (HandlerError, resumeHandlerError)
 import Ribosome.Host.Data.RpcError (RpcError)
 import Ribosome.Host.Data.RpcHandler (RpcHandler)
 import Ribosome.Host.Data.RpcType (fPattern)
@@ -14,7 +14,7 @@ import Ribosome.Host.Effect.Rpc (Rpc)
 import Ribosome.Host.Embed (embedNvim)
 import Ribosome.Host.Handler (rpcAutocmd)
 import Ribosome.Host.Interpreter.Handlers (interpretHandlers)
-import Ribosome.Host.Test.Run (rpcError, runTest)
+import Ribosome.Host.Test.Run (runTest)
 
 var :: Text
 var =
@@ -24,14 +24,14 @@ au ::
   Members [Rpc !! RpcError, Sync (), Stop HandlerError] r =>
   Sem r ()
 au = do
-  rpcError (nvimSetVar var (12 :: Int))
+  resumeHandlerError (nvimSetVar var (12 :: Int))
   void $ Sync.putWait (Seconds 5) ()
 
 bn ::
   Members [Rpc !! RpcError, Sync (), Stop HandlerError] r =>
   Sem r ()
 bn = do
-  rpcError (nvimSetVar var (21 :: Int))
+  resumeHandlerError (nvimSetVar var (21 :: Int))
   void $ Sync.putWait (Seconds 5) ()
 
 regHandlers ::

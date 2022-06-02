@@ -16,7 +16,7 @@ import qualified Polysemy.Time as Time
 import Polysemy.Time (MilliSeconds (MilliSeconds), Minutes (Minutes))
 import Ribosome.Host.Api.Effect (nvimCallFunction)
 import Ribosome.Host.Data.BootError (unBootError)
-import Ribosome.Host.Data.HostConfig (log, logLevelStderr)
+import Ribosome.Host.Data.HostConfig (hostLog, logLevelStderr)
 import Ribosome.Host.Data.RpcError (RpcError)
 import Ribosome.Host.Effect.Rpc (Rpc)
 import Ribosome.Host.Embed (basicCliArgs, interpretCoreDeps, interpretHostEmbedCore)
@@ -49,7 +49,7 @@ testPlugin riboRoot =
     let flake = toFilePath (target </> [relfile|flake.nix|])
     old <- embed (Text.readFile flake)
     embed (Text.writeFile flake (Text.replace "RIBOSOME" (toText riboRoot) old))
-    interpretCoreDeps def { log = def { logLevelStderr = Trace } } $
+    interpretCoreDeps def { hostLog = def { logLevelStderr = Trace } } $
       interpretHostEmbedCore Nothing (Just (conf target)) $
       interpretHandlersNull $
       withHost do

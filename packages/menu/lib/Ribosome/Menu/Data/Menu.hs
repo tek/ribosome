@@ -39,6 +39,6 @@ instance HasPrompt (Menu i) where
   prompt =
     prompt
 
-consMenu :: Items i -> Entries i -> Trie (Entries i) -> Int -> MenuQuery -> Bool -> CursorIndex -> Prompt -> Menu i
-consMenu it en hist cnt curr dir curs =
-  Menu (MenuItems it en hist cnt curr dir) (MenuCursor curs)
+consMenu :: Items i -> Entries i -> Trie (Entries i) -> Int -> MenuQuery -> CursorIndex -> Prompt -> Menu i
+consMenu it en hist cnt curr curs =
+  Menu (MenuItems it en hist cnt curr) (MenuCursor curs)

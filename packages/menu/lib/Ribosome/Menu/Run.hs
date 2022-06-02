@@ -8,7 +8,6 @@ import qualified Streamly.Internal.Data.Stream.IsStream as Stream
 import Streamly.Prelude (SerialT)
 
 import Ribosome.Api.Window (closeWindow)
-import qualified Ribosome.Config.Settings as Settings
 import Ribosome.Data.ScratchOptions (ScratchOptions)
 import Ribosome.Data.SettingError (SettingError)
 import Ribosome.Data.WindowConfig (WindowConfig (WindowConfig))
@@ -35,6 +34,7 @@ import Ribosome.Menu.Nvim (menuSyntax, nvimMenuRenderer)
 import qualified Ribosome.Menu.Prompt.Data.PromptConfig as PromptConfig
 import Ribosome.Menu.Prompt.Data.PromptConfig (PromptConfig, PromptListening, hoistPromptConfig)
 import Ribosome.Menu.Prompt.Data.PromptRenderer (PromptRenderer (PromptRenderer))
+import qualified Ribosome.Settings as Settings
 
 isFloat ::
   Member Rpc r =>

@@ -11,7 +11,7 @@ import qualified Streamly.Internal.Data.Fold as Fold
 import qualified Streamly.Internal.Data.Stream.IsStream as Stream
 import Streamly.Prelude (AsyncT, SerialT)
 
-import Ribosome.Final (inFinal)
+import Ribosome.Final (inFinal_)
 import Ribosome.Menu.Data.MenuAction (MenuAction)
 import qualified Ribosome.Menu.Data.MenuAction as MenuAction (MenuAction (..))
 import qualified Ribosome.Menu.Data.MenuConfig as MenuConfig
@@ -29,7 +29,7 @@ import Ribosome.Menu.Data.MenuState (
   ItemsLock (ItemsLock),
   MenuStateSem,
   MenuStateStack,
-  readMenuForRender,
+  readMenu,
   )
 import qualified Ribosome.Menu.Data.QuitReason as QuitReason
 import Ribosome.Menu.Prompt.Data.Prompt (Prompt)
@@ -92,16 +92,17 @@ outputAction promptControl = \case
     sendPromptEvent =
       toPrompt promptControl
 
--- TODO Log
 runRenderer ::
+  Member Log r =>
   MenuRenderer r i ->
   MenuRenderEvent ->
   MenuStateSem i r ()
 runRenderer (MenuRenderer render) event = do
-  -- Log.debug [exon|render: #{show event}|]
-  insertAt @0 . flip render event =<< readMenuForRender
+  Log.debug [exon|render: #{show event}|]
+  insertAt @0 . flip render event =<< readMenu
 
 renderAction ::
+  Member Log r =>
   MenuRenderer r i ->
   MenuAction r a ->
   MenuStateSem i r ()
@@ -121,16 +122,10 @@ menuStream ::
   AsyncT IO (Prompt, PromptEvent) ->
   MenuStateSem i r (SerialT IO (Sem r (MenuResult a)))
 menuStream (MenuConfig items itemFilter (MenuConsumer consumer) renderer _) promptControl promptEvents =
-  inFinal \ _ lower pur ex ->
+  inFinal_ \ lowerMaybe lower_ pur ->
   let
-    lowerMaybe :: ∀ x . MenuStateSem i r x -> IO (Maybe x)
-    lowerMaybe =
-      fmap ex . lower
-    lowerUnit :: ∀ x . MenuStateSem i r x -> IO ()
-    lowerUnit =
-      fmap (fromMaybe ()) . lowerMaybe . void
     handleAction action = do
-      lowerUnit do
+      lower_ do
         Log.debug [exon|menu consumer: #{show action}|]
         insertAt @0 (renderAction renderer action)
     prompt =
@@ -138,11 +133,11 @@ menuStream (MenuConfig items itemFilter (MenuConsumer consumer) renderer _) prom
     menuItems =
       updateItems lowerMaybe itemFilter (Stream.fromSerial items)
     consume event = do
-      menuAction <- lower (consumer event)
-      pure (fromMaybe (eventAction event) (join (ex menuAction)))
+      menuAction <- lowerMaybe (consumer event)
+      pure (fromMaybe (eventAction event) (join menuAction))
     quit = do
-      liftIO (atomically (writeTMChan promptControl PromptControlEvent.Quit))
-      lowerUnit (insertAt @0 (runRenderer renderer MenuRenderEvent.Quit))
+      atomically (writeTMChan promptControl PromptControlEvent.Quit)
+      lower_ (insertAt @0 (runRenderer renderer MenuRenderEvent.Quit))
     in
       pur $
       Stream.finally quit $

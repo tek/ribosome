@@ -7,5 +7,5 @@ interpretLogConfig ::
   Member (Reader HostConfig) r =>
   InterpreterFor (Reader LogConfig) r
 interpretLogConfig sem =
-  ask >>= \ HostConfig {log} ->
-    runReader log sem
+  ask >>= \ HostConfig {hostLog} ->
+    runReader hostLog sem

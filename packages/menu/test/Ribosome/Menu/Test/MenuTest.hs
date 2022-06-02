@@ -334,7 +334,7 @@ test_menuDeleteSelected = do
       targetFoc =
         ["0", "1", "2", "3", "5", "6", "7"]
       menu ent =
-        consMenu items ent mempty 7 mempty True 3 def
+        consMenu items ent mempty 7 mempty 3 def
       items =
         IntMap.fromList [(n, simpleMenuItem () (show n)) | n <- [0..7]]
       entriesSel =
@@ -361,7 +361,7 @@ test_menuUnselectedCursor =
     [2, 4] === (MenuItem._meta <$> MTL.evalState (use unselected) menu)
   where
     menu =
-      consMenu mempty entries mempty 0 mempty True 1 def
+      consMenu mempty entries mempty 0 mempty 1 def
     entries =
       simpleIntEntries [2, 3, 4]
 

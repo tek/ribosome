@@ -4,7 +4,7 @@ import Data.MessagePack (Object (ObjectInt))
 import Log (Severity (Debug))
 import Ribosome.Data.PluginConfig (PluginConfig (PluginConfig))
 import Ribosome.Host.Data.Execution (Execution (Sync))
-import Ribosome.Host.Data.HostConfig (log, logLevelStderr)
+import Ribosome.Host.Data.HostConfig (setStderr)
 import Ribosome.Host.Data.RpcHandler (RpcHandler (RpcHandler))
 import qualified Ribosome.Host.Data.RpcType as RpcType
 import Ribosome.Remote (runNvimPluginIO_)
@@ -22,4 +22,4 @@ handlers =
 
 integrationTest :: IO ()
 integrationTest =
-  runNvimPluginIO_ (PluginConfig "int" def { log = def { logLevelStderr = Debug } }) mempty mempty handlers
+  runNvimPluginIO_ (PluginConfig "int" (setStderr Debug def)) mempty mempty handlers
