@@ -3860,14 +3860,18 @@
         "polysemy-test": "polysemy-test"
       },
       "locked": {
-        "lastModified": 0,
-        "narHash": "sha256-/M0pl/HBJym/EUZD0M/PV6LnA7Pcsb0u91CcLBC2NPE=",
-        "path": "../..",
-        "type": "path"
+        "lastModified": 1654213511,
+        "narHash": "sha256-8Aq9WCoPineey6woKvTwjZbFEGSEA0BeNz4ICx2FpIc=",
+        "ref": "polysemy",
+        "rev": "46116b572bcf6358e40459669f1758685ca29724",
+        "revCount": 484,
+        "type": "git",
+        "url": "https://gitlab.tryp.io/haskell/ribosome"
       },
       "original": {
-        "path": "../..",
-        "type": "path"
+        "ref": "polysemy",
+        "type": "git",
+        "url": "https://gitlab.tryp.io/haskell/ribosome"
       }
     },
     "root": {
