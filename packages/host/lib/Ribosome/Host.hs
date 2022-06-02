@@ -14,9 +14,8 @@ module Ribosome.Host (
   module Ribosome.Host.Embed,
   module Ribosome.Host.Handler,
   module Ribosome.Host.Remote,
+  module Ribosome.Host.RpcError,
 ) where
-
-import Prelude hiding (async)
 
 import Ribosome.Host.Class.Msgpack.Array (msgpackArray)
 import Ribosome.Host.Class.Msgpack.Decode (MsgpackDecode (fromMsgpack))
@@ -35,10 +34,11 @@ import Ribosome.Host.Data.HandlerError (
   )
 import Ribosome.Host.Data.HostConfig (HostConfig (..), LogConfig (..), setStderr)
 import Ribosome.Host.Data.RpcError (RpcError (RpcError))
-import Ribosome.Host.Data.RpcHandler (Handler, RpcHandler (RpcHandler))
+import Ribosome.Host.Data.RpcHandler (Handler, RpcHandler (RpcHandler), simpleHandler)
 import Ribosome.Host.Data.StoredError (StoredError (StoredError))
 import Ribosome.Host.Effect.Errors (Errors)
 import Ribosome.Host.Effect.Rpc (Rpc, async, notify, sync)
 import Ribosome.Host.Embed (embedNvim, embedNvimConf, embedNvim_, interpretHostEmbed, withHostEmbed)
 import Ribosome.Host.Handler (rpcAutocmd, rpcCommand, rpcFunction)
 import Ribosome.Host.Remote (interpretHostRemote, runNvimHost, runNvimHostHandlersIO, runNvimHostIO)
+import Ribosome.Host.RpcError (ignoreRpcError)

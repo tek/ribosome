@@ -60,5 +60,11 @@
       extensions = ["StandaloneKindSignatures" "OverloadedLabels"];
     };
     compat.enable = false;
+    output.amend = _: _: {
+      templates = rec {
+        default = plugin;
+        plugin = ops/template;
+      };
+    };
   });
 }

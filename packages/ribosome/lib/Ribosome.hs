@@ -1,4 +1,7 @@
 module Ribosome (
+  -- * Introduction
+
+  -- $intro
   module Ribosome.Data.FloatOptions,
   module Ribosome.Data.PluginConfig,
   module Ribosome.Data.Register,
@@ -38,3 +41,47 @@ import Ribosome.Remote (
   runNvimPluginIO_,
   runNvimPlugin_,
   )
+
+-- $intro
+-- This library provides a framework for building [Neovim](https://neovim.io) plugins with
+-- [Polysemy](https://hackage.haskell.org/package/polysemy).
+--
+-- A plugin consists of a set of request handlers that can be executed by Neovim functions, commands, autocmds, or
+-- events, and may communicate with Neovim by calling its RPC API.
+--
+-- Here is an example for a simple plugin with a single request handler.
+--
+-- Note that Ribosome uses the Polysemy prelude "Incipit", which needs to be imported if the plugin project doesn't
+-- depend on it.
+--
+-- > -- import Incipit
+-- > import Ribosome
+-- > import Ribosome.Api
+-- >
+-- > count ::
+-- >   Member (Rpc !! RpcError) r =>
+-- >   Int ->
+-- >   Handler r Int
+-- > count n = do
+-- >   s <- 0 <! nvimGetVar "sum"
+-- >   let s' = s + n
+-- >   ignoreRpcError (nvimSetVar "sum" s')
+-- >   pure s'
+-- >
+-- > main :: IO ()
+-- > main =
+-- >   runNvimPluginIO_ (PluginConfig "count-plugin" def) mempty mempty [rpcFunction "Count" Sync count]
+--
+-- This app can be used as a plugin by running it with @jobstart@ from Neovim:
+--
+-- > :call jobstart(['/path/to/plugin.exe'], { 'rpc': 1 })
+--
+-- The handler will add up all numbers that are passed to the Neovim function @Count@ and store the sum in the variable
+-- @g:sum@:
+--
+-- > :echo Count(5)
+-- > 5
+-- > :echo Count(13)
+-- > 18
+-- > :echo g:sum
+-- > 18

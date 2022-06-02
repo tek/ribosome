@@ -4,89 +4,27 @@ cabal-version: 2.2
 --
 -- see: https://github.com/sol/hpack
 
-name:           ribosome
+name:           plugin
 version:        0.1.0.0
-synopsis:       Neovim plugin framework for Polysemy
-description:    See https://hackage.haskell.org/package/ribosome/docs/Ribosome.html
+synopsis:       A Neovim Plugin
+description:    See https://hackage.haskell.org/package/PLUGIN/docs/PLUGIN.html
 category:       Neovim
-author:         Torsten Schmits
-maintainer:     hackage@tryp.io
-copyright:      2022 Torsten Schmits
+homepage:       https://github.com/OWNER/REPO#readme
+bug-reports:    https://github.com/OWNER/REPO/issues
+author:         NAME
+maintainer:     EMAIL
+copyright:      2022 NAME
 license:        BSD-2-Clause-Patent
 license-file:   LICENSE
 build-type:     Simple
 
+source-repository head
+  type: git
+  location: https://github.com/OWNER/REPO
+
 library
   exposed-modules:
-      Ribosome
-      Ribosome.Api
-      Ribosome.Api.Autocmd
-      Ribosome.Api.Buffer
-      Ribosome.Api.Echo
-      Ribosome.Api.Function
-      Ribosome.Api.Input
-      Ribosome.Api.Mode
-      Ribosome.Api.Normal
-      Ribosome.Api.Option
-      Ribosome.Api.Path
-      Ribosome.Api.Position
-      Ribosome.Api.Process
-      Ribosome.Api.Register
-      Ribosome.Api.Sleep
-      Ribosome.Api.Syntax
-      Ribosome.Api.Tabpage
-      Ribosome.Api.Undo
-      Ribosome.Api.Variable
-      Ribosome.Api.Window
-      Ribosome.Data.FileBuffer
-      Ribosome.Data.FloatOptions
-      Ribosome.Data.Locks
-      Ribosome.Data.Mapping
-      Ribosome.Data.PersistError
-      Ribosome.Data.PersistPathError
-      Ribosome.Data.PluginConfig
-      Ribosome.Data.PluginName
-      Ribosome.Data.Register
-      Ribosome.Data.RegisterType
-      Ribosome.Data.ScratchId
-      Ribosome.Data.ScratchOptions
-      Ribosome.Data.ScratchState
-      Ribosome.Data.Setting
-      Ribosome.Data.SettingError
-      Ribosome.Data.Syntax
-      Ribosome.Data.WatchedVariable
-      Ribosome.Data.WatchedVariableHandler
-      Ribosome.Data.WindowConfig
-      Ribosome.Data.WindowView
-      Ribosome.Effect.BuiltinHandlers
-      Ribosome.Effect.Persist
-      Ribosome.Effect.PersistPath
-      Ribosome.Effect.Scratch
-      Ribosome.Effect.Settings
-      Ribosome.Embed
-      Ribosome.Errors
-      Ribosome.Examples.Example1
-      Ribosome.Final
-      Ribosome.Float
-      Ribosome.Internal.Scratch
-      Ribosome.Interpreter.BuiltinHandlers
-      Ribosome.Interpreter.Persist
-      Ribosome.Interpreter.PersistPath
-      Ribosome.Interpreter.Scratch
-      Ribosome.Interpreter.Settings
-      Ribosome.Interpreter.UserError
-      Ribosome.Locks
-      Ribosome.Mapping
-      Ribosome.Path
-      Ribosome.Plugin.Builtin
-      Ribosome.PluginName
-      Ribosome.Register
-      Ribosome.Remote
-      Ribosome.Scratch
-      Ribosome.Settings
-      Ribosome.Syntax
-      Ribosome.Text
-      Ribosome.VariableWatcher
+      Plugin
   hs-source-dirs:
       lib
   default-extensions:
@@ -149,44 +87,99 @@ library
       UndecidableInstances
       UnicodeSyntax
       ViewPatterns
-      StandaloneKindSignatures
-      OverloadedLabels
   ghc-options: -Wall -Wredundant-constraints -Wincomplete-uni-patterns -Wmissing-deriving-strategies -Widentities -Wunused-packages -fplugin=Polysemy.Plugin
   build-depends:
-      aeson
-    , base >=4.12 && <5
-    , exon
-    , generic-lens
+      base ==4.*
     , incipit
-    , lens
-    , messagepack
-    , path
-    , path-io
     , polysemy
-    , polysemy-chronos
     , polysemy-plugin
-    , prettyprinter
+    , ribosome
     , ribosome-host
+    , ribosome-menu
   mixins:
       base hiding (Prelude)
   default-language: Haskell2010
 
-test-suite ribosome-unit
+executable plugin
+  main-is: Main.hs
+  hs-source-dirs:
+      app
+  default-extensions:
+      AllowAmbiguousTypes
+      ApplicativeDo
+      BangPatterns
+      BinaryLiterals
+      BlockArguments
+      ConstraintKinds
+      DataKinds
+      DefaultSignatures
+      DeriveAnyClass
+      DeriveDataTypeable
+      DeriveFoldable
+      DeriveFunctor
+      DeriveGeneric
+      DeriveLift
+      DeriveTraversable
+      DerivingStrategies
+      DerivingVia
+      DisambiguateRecordFields
+      DoAndIfThenElse
+      DuplicateRecordFields
+      EmptyDataDecls
+      ExistentialQuantification
+      FlexibleContexts
+      FlexibleInstances
+      FunctionalDependencies
+      GADTs
+      GeneralizedNewtypeDeriving
+      InstanceSigs
+      KindSignatures
+      LambdaCase
+      LiberalTypeSynonyms
+      MultiParamTypeClasses
+      MultiWayIf
+      NamedFieldPuns
+      OverloadedStrings
+      OverloadedLists
+      PackageImports
+      PartialTypeSignatures
+      PatternGuards
+      PatternSynonyms
+      PolyKinds
+      QuantifiedConstraints
+      QuasiQuotes
+      RankNTypes
+      RecordWildCards
+      RecursiveDo
+      RoleAnnotations
+      ScopedTypeVariables
+      StandaloneDeriving
+      TemplateHaskell
+      TupleSections
+      TypeApplications
+      TypeFamilies
+      TypeFamilyDependencies
+      TypeOperators
+      TypeSynonymInstances
+      UndecidableInstances
+      UnicodeSyntax
+      ViewPatterns
+  ghc-options: -Wall -Wredundant-constraints -Wincomplete-uni-patterns -Wmissing-deriving-strategies -Widentities -Wunused-packages -fplugin=Polysemy.Plugin -threaded -rtsopts -with-rtsopts=-N
+  build-depends:
+      base ==4.*
+    , incipit
+    , plugin
+    , polysemy
+    , polysemy-plugin
+  mixins:
+      base hiding (Prelude)
+  default-language: Haskell2010
+
+test-suite plugin-unit
   type: exitcode-stdio-1.0
   main-is: Main.hs
   other-modules:
-      Ribosome.Test.BufferTest
-      Ribosome.Test.Error
-      Ribosome.Test.MappingTest
-      Ribosome.Test.PersistTest
-      Ribosome.Test.Run
-      Ribosome.Test.ScratchTest
-      Ribosome.Test.SettingTest
-      Ribosome.Test.SyntaxTest
-      Ribosome.Test.UndoTest
-      Ribosome.Test.Wait
-      Ribosome.Test.WatcherTest
-      Ribosome.Test.WindowTest
+      Plugin.Test.PingTest
   hs-source-dirs:
       test
   default-extensions:
@@ -249,23 +242,18 @@ test-suite ribosome-unit
       UndecidableInstances
       UnicodeSyntax
       ViewPatterns
-      StandaloneKindSignatures
-      OverloadedLabels
   ghc-options: -Wall -Wredundant-constraints -Wincomplete-uni-patterns -Wmissing-deriving-strategies -Widentities -Wunused-packages -fplugin=Polysemy.Plugin -threaded -rtsopts -with-rtsopts=-N
   build-depends:
-      aeson
-    , base >=4.12 && <5
-    , hedgehog
+      base ==4.*
     , incipit
-    , messagepack
-    , path
+    , plugin
     , polysemy
-    , polysemy-conc
     , polysemy-plugin
     , polysemy-test
     , ribosome
     , ribosome-host
     , ribosome-host-test
+    , ribosome-test
     , tasty
   mixins:
       base hiding (Prelude)

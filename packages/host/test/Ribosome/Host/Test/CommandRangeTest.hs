@@ -12,10 +12,10 @@ import Ribosome.Host.Api.Effect (
   nvimWinSetCursor,
   )
 import Ribosome.Host.Data.Execution (Execution (Sync))
-import Ribosome.Host.Data.HandlerError (HandlerError, resumeHandlerError)
+import Ribosome.Host.Data.HandlerError (resumeHandlerError)
 import Ribosome.Host.Data.Range (Range (Range), RangeStyle (RangeCount, RangeFile, RangeLine))
 import Ribosome.Host.Data.RpcError (RpcError)
-import Ribosome.Host.Data.RpcHandler (RpcHandler)
+import Ribosome.Host.Data.RpcHandler (Handler, RpcHandler)
 import Ribosome.Host.Effect.Rpc (Rpc)
 import Ribosome.Host.Embed (embedNvim)
 import Ribosome.Host.Handler (rpcCommand)
@@ -27,10 +27,10 @@ var =
   "test_var"
 
 rangeFile ::
-  Members [Rpc !! RpcError, Stop HandlerError] r =>
+  Member (Rpc !! RpcError) r =>
   Range 'RangeFile ->
   Int64 ->
-  Sem r ()
+  Handler r ()
 rangeFile = \case
   Range l (Just h) ->
     \ i -> resumeHandlerError (nvimSetVar var (l, h, i))
@@ -38,9 +38,9 @@ rangeFile = \case
     const (stop "no upper range bound given")
 
 rangeLine ::
-  Members [Rpc !! RpcError, Stop HandlerError] r =>
+  Member (Rpc !! RpcError) r =>
   Range ('RangeLine 'Nothing) ->
-  Sem r ()
+  Handler r ()
 rangeLine = \case
   Range l (Just h) ->
     resumeHandlerError (nvimSetVar var (l, h))
@@ -48,9 +48,9 @@ rangeLine = \case
     stop "no upper range bound given"
 
 rangeLineDefault ::
-  Members [Rpc !! RpcError, Stop HandlerError] r =>
+  Member (Rpc !! RpcError) r =>
   Range ('RangeLine ('Just 13)) ->
-  Sem r ()
+  Handler r ()
 rangeLineDefault = \case
   Range l Nothing ->
     resumeHandlerError (nvimSetVar var l)
@@ -58,9 +58,9 @@ rangeLineDefault = \case
     stop "range line count function got upper bound"
 
 rangeCountImplicit ::
-  Members [Rpc !! RpcError, Stop HandlerError] r =>
+  Member (Rpc !! RpcError) r =>
   Range ('RangeCount 'Nothing) ->
-  Sem r ()
+  Handler r ()
 rangeCountImplicit = \case
   Range _ (Just _) ->
     stop "range count function got upper bound"
@@ -68,9 +68,9 @@ rangeCountImplicit = \case
     resumeHandlerError (nvimSetVar var l)
 
 rangeCountDefault ::
-  Members [Rpc !! RpcError, Stop HandlerError] r =>
+  Member (Rpc !! RpcError) r =>
   Range ('RangeCount ('Just 23)) ->
-  Sem r ()
+  Handler r ()
 rangeCountDefault = \case
   Range _ (Just _) ->
     stop "range count function got upper bound"
@@ -83,11 +83,11 @@ rangeHandlers ::
   [RpcHandler r]
 rangeHandlers =
   [
-    rpcCommand "RangeFile" Sync (rangeFile @(Stop HandlerError : r)),
-    rpcCommand "RangeLine" Sync (rangeLine @(Stop HandlerError : r)),
-    rpcCommand "RangeLineDefault" Sync (rangeLineDefault @(Stop HandlerError : r)),
-    rpcCommand "RangeCountImplicit" Sync (rangeCountImplicit @(Stop HandlerError : r)),
-    rpcCommand "RangeCountDefault" Sync (rangeCountDefault @(Stop HandlerError : r))
+    rpcCommand "RangeFile" Sync rangeFile,
+    rpcCommand "RangeLine" Sync rangeLine,
+    rpcCommand "RangeLineDefault" Sync rangeLineDefault,
+    rpcCommand "RangeCountImplicit" Sync rangeCountImplicit,
+    rpcCommand "RangeCountDefault" Sync rangeCountDefault
   ]
 
 test_range :: UnitTest

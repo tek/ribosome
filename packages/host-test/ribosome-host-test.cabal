@@ -7,7 +7,7 @@ cabal-version: 2.2
 name:           ribosome-host-test
 version:        0.1.0.0
 synopsis:       Test tools for Ribosome
-description:    See https://hackage.haskell.org/package/ribosome-host-test/docs/Ribosome.Host.Test.html
+description:    See https://hackage.haskell.org/package/ribosome-host-test/docs/Ribosome-Host-Test.html
 category:       Neovim
 author:         Torsten Schmits
 maintainer:     hackage@tryp.io

@@ -82,6 +82,7 @@ library
       Ribosome.Host.RegisterHandlers
       Ribosome.Host.Remote
       Ribosome.Host.RpcCall
+      Ribosome.Host.RpcError
       Ribosome.Host.Text
       Ribosome.Host.TH.Api.Generate
       Ribosome.Host.TH.Api.GenerateData

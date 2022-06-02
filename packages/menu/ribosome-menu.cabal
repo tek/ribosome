@@ -6,7 +6,7 @@ cabal-version: 2.2
 
 name:           ribosome-menu
 version:        0.1.0.0
-synopsis:       Menu widget for ribosome
+synopsis:       Menu widget for Ribosome
 description:    See https://hackage.haskell.org/package/ribosome-menu/docs/Ribosome-Menu.html
 category:       Neovim
 author:         Torsten Schmits

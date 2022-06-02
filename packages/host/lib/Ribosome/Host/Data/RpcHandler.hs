@@ -5,10 +5,12 @@ import Exon (exon)
 import Text.Show (showParen, showsPrec)
 
 import Ribosome.Host.Data.Execution (Execution)
-import Ribosome.Host.Data.HandlerError (HandlerError)
+import Ribosome.Host.Data.HandlerError (HandlerError, resumeHandlerError)
 import Ribosome.Host.Data.Request (RpcMethod (RpcMethod))
+import Ribosome.Host.Data.RpcError (RpcError)
 import qualified Ribosome.Host.Data.RpcType as RpcType
 import Ribosome.Host.Data.RpcType (RpcType)
+import Ribosome.Host.Effect.Rpc (Rpc)
 
 type Handler r a =
   Sem (Stop HandlerError : r) a
@@ -53,3 +55,10 @@ rpcMethod rpcType name =
 rpcHandlerMethod :: RpcHandler r -> RpcMethod
 rpcHandlerMethod RpcHandler {rpcType, name} =
   rpcMethod rpcType name
+
+simpleHandler ::
+  Member (Rpc !! RpcError) r =>
+  Sem (Rpc : Stop HandlerError : r) a ->
+  Handler r a
+simpleHandler =
+  resumeHandlerError

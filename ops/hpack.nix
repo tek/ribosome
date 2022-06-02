@@ -54,8 +54,9 @@ let
 
   dependencies = [base "incipit" "polysemy" "polysemy-plugin"];
 
-  project = name: merge (meta // { library = paths name; } // options) {
+  project = name: doc: merge (meta // { library = paths name; } // options) {
     inherit name;
+    description = "See https://hackage.haskell.org/package/${name}/docs/${doc}.html";
     library = {
       source-dirs = "lib";
       inherit dependencies;
@@ -76,9 +77,8 @@ let
 
 in {
 
-  ribosome-host = merge (project "ribosome-host") {
+  ribosome-host = merge (project "ribosome-host" "Ribosome-Host") {
     synopsis = "Neovim plugin host for Polysemy";
-    description = "See https://hackage.haskell.org/package/ribosome-host/docs/Ribosome-Host.html";
     library.dependencies = [
       "cereal"
       "chronos"
@@ -114,9 +114,8 @@ in {
     };
   };
 
-  ribosome-host-test = merge (project "ribosome-host-test") {
+  ribosome-host-test = merge (project "ribosome-host-test" "Ribosome-Host-Test") {
     synopsis = "Test tools for Ribosome";
-    description = "See https://hackage.haskell.org/package/ribosome-host-test/docs/Ribosome.Host.Test.html";
     library.dependencies = [
       "chronos"
       "hedgehog"
@@ -126,9 +125,8 @@ in {
     ];
   };
 
-  ribosome = merge (project "ribosome") {
+  ribosome = merge (project "ribosome" "Ribosome") {
     synopsis = "Neovim plugin framework for Polysemy";
-    description = "See https://hackage.haskell.org/package/ribosome/docs/Ribosome.html";
     library.dependencies = [
       "aeson"
       "exon"
@@ -157,9 +155,8 @@ in {
     };
   };
 
-  ribosome-test = merge (project "ribosome-test") {
+  ribosome-test = merge (project "ribosome-test" "Ribosome-Test") {
     synopsis = "Test tools for Ribosome";
-    description = "See https://hackage.haskell.org/package/ribosome-test/docs/Ribosome.Test.html";
     library.dependencies = [
       "hedgehog"
       "messagepack"
@@ -170,9 +167,8 @@ in {
     ];
   };
 
-  ribosome-menu = merge (project "ribosome-menu") {
-    synopsis = "Menu widget for ribosome";
-    description = "See https://hackage.haskell.org/package/ribosome-menu/docs/Ribosome-Menu.html";
+  ribosome-menu = merge (project "ribosome-menu" "Ribosome-Menu") {
+    synopsis = "Menu widget for Ribosome";
     library.dependencies = [
       "bytestring-trie"
       "composition"
@@ -222,9 +218,9 @@ in {
     };
   };
 
-  integration = merge (project "integration") {
+  integration = merge (project "integration" "") {
     synopsis = "Neovim plugin host for Polysemy";
-    description = "Internal project for testing ribosome-host";
+    description = "Internal project for testing Ribosome";
     library.dependencies = [
         "exon"
         "hedgehog"
