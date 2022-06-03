@@ -60,11 +60,13 @@
       extensions = ["StandaloneKindSignatures" "OverloadedLabels"];
     };
     compat.enable = false;
-    output.amend = _: _: {
-      templates = rec {
-        default = plugin;
-        plugin = ops/template;
+  }) // {
+    templates = rec {
+      default = plugin;
+      plugin = {
+        path = ./ops/template;
+        description = "A Neovim plugin built with Ribosome";
       };
     };
-  });
+  };
 }
