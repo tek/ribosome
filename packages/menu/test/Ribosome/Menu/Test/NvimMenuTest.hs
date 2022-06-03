@@ -3,17 +3,15 @@ module Ribosome.Menu.Test.NvimMenuTest where
 import Control.Concurrent.Lifted (threadDelay)
 import Control.Lens (element, use, (^?))
 import qualified Data.Map.Strict as Map
-import Polysemy.Conc (interpretMaskFinal, interpretSync, withAsync_)
-import qualified Polysemy.Conc.Effect.Sync as Sync
+import Polysemy.Conc (interpretMaskFinal, interpretSync)
 import Polysemy.Conc.Interpreter.Mask (Restoration)
 import Polysemy.Test (Hedgehog, TestError, UnitTest, assertEq, runTestAuto, unitTest, (===))
 import qualified Streamly.Internal.Data.Stream.IsStream as Stream
 import Streamly.Prelude (SerialT)
 import Test.Tasty (TestTree, testGroup)
-import Time (MilliSeconds (MilliSeconds), convert)
+import Time (MilliSeconds (MilliSeconds))
 
 import Ribosome.Api.Buffer (bufferContent, buflisted)
-import Ribosome.Api.Input (syntheticInput)
 import Ribosome.Data.PluginName (PluginName)
 import Ribosome.Data.ScratchOptions (ScratchOptions (maxSize))
 import Ribosome.Data.SettingError (SettingError)
@@ -51,6 +49,7 @@ import Ribosome.Menu.Prompt.Data.PromptConfig (
   )
 import qualified Ribosome.Menu.Prompt.Data.PromptInputEvent as PromptInputEvent (PromptInputEvent (..))
 import Ribosome.Menu.Prompt.Nvim (getCharStream, nvimPromptRenderer)
+import Ribosome.Menu.Prompt.Run (withPromptInput)
 import Ribosome.Menu.Prompt.Transition (basicTransition)
 import Ribosome.Menu.Run (nvimMenu, nvimMenuWith, staticNvimMenu)
 import Ribosome.Test.Error (resumeTestError)
@@ -146,27 +145,18 @@ nativeChars :: [Text]
 nativeChars =
   ["i", "t", "e", "<esc>", "k", "<c-k>", "k", "<cr>"]
 
-withInputWait ::
-  Members [Sync PromptListening, Rpc, Resource, Race, Async, Time t d] r =>
-  Maybe MilliSeconds ->
-  [Text] ->
-  Sem r a ->
-  Sem r a
-withInputWait interval chrs =
-  withAsync_ (Sync.takeBlock *> syntheticInput (convert <$> interval) chrs)
-
 test_nvimMenuNative :: UnitTest
 test_nvimMenuNative =
   embedPluginTest_ $ interpretSync do
     inp <- getCharStream (MilliSeconds 10)
-    withInputWait (Just (MilliSeconds 10)) nativeChars do
+    withPromptInput (Just (MilliSeconds 10)) nativeChars do
       nvimMenuTest inp
 
 test_nvimMenuInterrupt :: UnitTest
 test_nvimMenuInterrupt =
   embedPluginTest_ $ interpretMaskFinal $ interpretSync do
     conf <- promptConfig <$> getCharStream (MilliSeconds 10)
-    (MenuResult.Aborted ===) =<< withInputWait (Just (MilliSeconds 50)) ["<c-c>", "<cr>"] do
+    (MenuResult.Aborted ===) =<< withPromptInput (Just (MilliSeconds 50)) ["<c-c>", "<cr>"] do
       resumeTestError (nvimMenuWith @_ @() fuzzy def (menuItems items) Consumer.basic conf)
     assertEq 1 . length =<< vimGetWindows
 
@@ -190,7 +180,7 @@ test_nvimMenuNav :: UnitTest
 test_nvimMenuNav =
   embedPluginTest_ $ interpretSync do
     assertEq (MenuResult.Success "toem") =<< do
-      withInputWait (Just (MilliSeconds 10)) navChars do
+      withPromptInput (Just (MilliSeconds 10)) navChars do
         runNvimMenu navMappings =<< getCharStream (MilliSeconds 10)
 
 test_nvimMenuQuit :: UnitTest

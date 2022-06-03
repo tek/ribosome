@@ -93,5 +93,5 @@ import Ribosome.Menu.Prompt.Data.PromptConfig (
 import Ribosome.Menu.Prompt.Data.PromptRenderer (PromptRenderer (PromptRenderer), hoistPromptRenderer)
 import Ribosome.Menu.Prompt.Data.PromptState (PromptState (..))
 import Ribosome.Menu.Prompt.Nvim (getCharStream, nvimPromptRenderer)
-import Ribosome.Menu.Prompt.Run (noPromptRenderer, pristinePrompt, withPromptStream)
+import Ribosome.Menu.Prompt.Run (noPromptRenderer, pristinePrompt, withPromptInput, withPromptStream)
 import Ribosome.Menu.Run (staticNvimMenuWith)

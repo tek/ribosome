@@ -1,20 +1,23 @@
 module Ribosome.Menu.Prompt.Run where
 
+import Conc (interpretSyncAs, withAsync_)
 import Control.Concurrent.STM (atomically)
 import Control.Concurrent.STM.TMChan (TMChan, closeTMChan, newTMChan)
 import Control.Lens ((^.))
 import qualified Data.Text as Text (drop, dropEnd, isPrefixOf, length, splitAt)
 import Exon (exon)
-import Polysemy.Conc (interpretSyncAs)
-import qualified Polysemy.Conc.Sync as Sync
-import qualified Polysemy.Log as Log
+import qualified Log
 import Prelude hiding (input, modifyMVar, output)
 import qualified Streamly.Data.Fold as Fold
 import qualified Streamly.Internal.Data.Stream.IsStream as Stream
 import Streamly.Prelude (SerialT)
+import qualified Sync
+import Time (MilliSeconds, convert)
 
+import Ribosome.Api.Input (syntheticInput)
 import Ribosome.Final (inFinal)
 import Ribosome.Host.Data.Tuple (dup)
+import Ribosome.Host.Effect.Rpc (Rpc)
 import Ribosome.Menu.Prompt.Data.CursorUpdate (CursorUpdate)
 import qualified Ribosome.Menu.Prompt.Data.CursorUpdate as CursorUpdate (CursorUpdate (..))
 import qualified Ribosome.Menu.Prompt.Data.Prompt as Prompt
@@ -223,3 +226,12 @@ noPromptRenderer ::
   PromptRenderer r
 noPromptRenderer =
   PromptRenderer unit (const unit) (const unit)
+
+withPromptInput ::
+  Members [Sync PromptListening, Rpc, Resource, Race, Async, Time t d] r =>
+  Maybe MilliSeconds ->
+  [Text] ->
+  Sem r a ->
+  Sem r a
+withPromptInput interval chrs =
+  withAsync_ (Sync.takeBlock *> syntheticInput (convert <$> interval) chrs)
