@@ -2,6 +2,11 @@ module Ribosome (
   -- * Introduction
 
   -- $intro
+
+  -- * Creating a project
+
+  -- $project
+
   module Ribosome.Data.FloatOptions,
   module Ribosome.Data.PluginConfig,
   module Ribosome.Data.Register,
@@ -85,3 +90,28 @@ import Ribosome.Remote (
 -- > 18
 -- > :echo g:sum
 -- > 18
+
+-- $project
+-- The most reliable way to set up a repository for a plugin is to use the Nix build tool, for which Ribosome provides a
+-- flake template that creates a skeleton project when executed:
+--
+-- > $ nix flake new my-plugin -t github:tek/ribosome
+--
+-- The created directory will contain a ready-to-use Neovim plugin that can be started like any other.
+-- For example, moving it to @~/.local/share/nvim/site/pack/foo/opt/my-plugin@ will allow you to run:
+--
+-- > :packadd my-plugin
+--
+-- This will cause the plugin to be built, which may take a pretty long time if its dependencies are not in a Nix cache.
+-- Once that is done, the template's dummy handler can be executed:
+--
+-- > :echo PluginPing()
+-- > 0
+-- > :echo PluginPing()
+-- > 1
+--
+-- After the first build, the executable will be run directly, without checking for updates, unless the result has been
+-- garbage collected by Nix (i.e. the @result@ link in the repo is broken).
+-- In order to force a rebuild after pulling, run the command:
+--
+-- > $ nix build
