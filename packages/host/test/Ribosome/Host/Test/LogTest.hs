@@ -16,7 +16,7 @@ import Ribosome.Host.Data.RpcError (RpcError)
 import Ribosome.Host.Data.RpcHandler (Handler, RpcHandler)
 import Ribosome.Host.Embed (embedNvim)
 import Ribosome.Host.Handler (rpcFunction)
-import Ribosome.Host.Test.Run (runTestConf, runUnitTest)
+import Ribosome.Host.Unit.Run (runTestConf, runUnitTest)
 
 stopper :: Handler r ()
 stopper =

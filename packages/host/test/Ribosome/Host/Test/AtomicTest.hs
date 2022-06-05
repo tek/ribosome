@@ -14,7 +14,7 @@ import Ribosome.Host.Data.RpcCall (RpcCall (RpcPure))
 import qualified Ribosome.Host.Data.RpcMessage as RpcMessage
 import Ribosome.Host.Data.RpcMessage (RpcMessage)
 import qualified Ribosome.Host.Effect.Rpc as Rpc
-import Ribosome.Host.Test.Run (embedTest_)
+import Ribosome.Host.Unit.Run (embedTest_)
 
 atomicPayload :: [Object]
 atomicPayload =

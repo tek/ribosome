@@ -17,8 +17,8 @@ import Ribosome.Host.Data.RpcError (RpcError)
 import Ribosome.Host.Data.RpcHandler (Handler, RpcHandler)
 import qualified Ribosome.Host.Effect.Rpc as Rpc
 import Ribosome.Host.Handler (rpcFunction)
-import Ribosome.Test.Run (embedPluginTest)
 import Ribosome.Test.Wait (assertWait)
+import Ribosome.Unit.Run (runTestHandlers)
 
 target :: [Text]
 target = ["line 1", "line 2"]
@@ -67,7 +67,7 @@ handlers =
 
 scratchTest :: Text -> UnitTest
 scratchTest fun = do
-  embedPluginTest mempty mempty handlers do
+  runTestHandlers handlers mempty mempty do
     () <- vimCallFunction fun []
     assertWait scratchCount (assertEq (1 :: Int))
     assertWait currentBufferContent (assertEq target)

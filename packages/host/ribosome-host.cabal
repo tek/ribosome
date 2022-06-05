@@ -206,7 +206,7 @@ test-suite ribosome-host-unit
       Ribosome.Host.Test.LogTest
       Ribosome.Host.Test.MsgpackTest
       Ribosome.Host.Test.NotifyTest
-      Ribosome.Host.Test.Run
+      Ribosome.Host.Unit.Run
   hs-source-dirs:
       test
   default-extensions:

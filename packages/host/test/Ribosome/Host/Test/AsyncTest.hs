@@ -12,7 +12,7 @@ import Ribosome.Host.Data.RpcHandler (Handler, RpcHandler)
 import qualified Ribosome.Host.Effect.Rpc as Rpc
 import Ribosome.Host.Embed (embedNvim)
 import Ribosome.Host.Handler (rpcFunction)
-import Ribosome.Host.Test.Run (runTest)
+import Ribosome.Host.Unit.Run (runTest)
 
 hand ::
   Member (Sync Int) r =>

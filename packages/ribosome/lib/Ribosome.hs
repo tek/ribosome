@@ -40,10 +40,11 @@ import Ribosome.Host
 import Ribosome.Locks (lockOrSkip)
 import Ribosome.Remote (
   interpretPluginRemote,
+  runNvimHandlers,
+  runNvimHandlersIO,
   runNvimPlugin,
   runNvimPluginIO,
-  runNvimPluginIO_,
-  runNvimPlugin_,
+  runPluginHostRemote,
   runPluginRemote,
   )
 
@@ -75,7 +76,7 @@ import Ribosome.Remote (
 -- >
 -- > main :: IO ()
 -- > main =
--- >   runNvimPluginIO_ (PluginConfig "counter" def) [rpcFunction "Count" Sync count] mempty mempty
+-- >   runNvimHandlersIO (PluginConfig "counter" def) [rpcFunction "Count" Sync count]
 --
 -- This app can be used as a plugin by running it with @jobstart@ from Neovim:
 --

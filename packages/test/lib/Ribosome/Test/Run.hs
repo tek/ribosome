@@ -8,25 +8,25 @@ import Polysemy.Test (UnitTest)
 import Ribosome.Data.Mapping (MappingIdent)
 import Ribosome.Data.PluginConfig (PluginConfig (PluginConfig))
 import Ribosome.Data.WatchedVariable (WatchedVariable)
+import Ribosome.Effect.NvimPlugin (NvimPlugin')
 import Ribosome.Embed (HandlerDeps, TestEffects, interpretPluginEmbed, testPluginEmbed)
 import Ribosome.Host.Data.BootError (BootError)
-import Ribosome.Host.Data.HandlerError (HandlerError)
 import Ribosome.Host.Data.RpcHandler (Handler, RpcHandler)
-import Ribosome.Host.Effect.Handlers (Handlers)
-import Ribosome.Host.Interpreter.Handlers (interpretHandlers, interpretHandlersNull)
+import Ribosome.Host.IOStack (BasicStack)
 import qualified Ribosome.Host.Test.Data.TestConfig as Host
 import qualified Ribosome.Host.Test.Run as Host
 import Ribosome.Host.Test.Run (TestConfStack, TestStack, runUnitTest)
+import Ribosome.Interpreter.NvimPlugin (pluginHandlers, rpcHandlers)
 import Ribosome.Test.Data.TestConfig (TestConfig (TestConfig))
 
 type PluginTestStack =
   HandlerDeps ++ TestStack
 
-type PluginHandler r =
-  Handler (Handlers !! HandlerError : HandlerDeps ++ r) ()
+type StackWith r =
+  TestEffects ++ NvimPlugin' ++ r ++ PluginTestStack
 
-type Stack r =
-  TestEffects ++ Handlers !! HandlerError : r ++ PluginTestStack
+type Stack =
+  StackWith '[]
 
 runTestLogConf ::
   Members [Error BootError, Resource, Race, Async, Embed IO] r =>
@@ -42,65 +42,62 @@ runPluginEmbedTest ::
 runPluginEmbedTest conf =
   runUnitTest .
   runTestLogConf conf .
-  interpretPluginEmbed name
-  where
-    name =
-      conf ^. #plugin . #name
+  interpretPluginEmbed (conf ^. #plugin . #name)
 
-embedPluginTestConf ::
+runTest ::
+  Sem PluginTestStack () ->
+  UnitTest
+runTest =
+  runPluginEmbedTest def
+
+testPluginHandlers ::
+  Members BasicStack r =>
+  Members HandlerDeps r =>
+  [RpcHandler r] ->
+  Map MappingIdent (Handler r ()) ->
+  Map WatchedVariable (Object -> Handler r ()) ->
+  InterpretersFor (TestEffects ++ NvimPlugin') r
+testPluginHandlers handlers maps vars =
+  pluginHandlers handlers maps vars .
+  testPluginEmbed "test"
+
+testPluginConf ::
+  ∀ r .
   TestConfig ->
-  Map MappingIdent (PluginHandler TestStack) ->
-  Map WatchedVariable (Object -> PluginHandler TestStack) ->
-  [RpcHandler PluginTestStack] ->
-  Sem (Stack '[]) () ->
+  Members PluginTestStack (r ++ PluginTestStack) =>
+  InterpretersFor (NvimPlugin' ++ r) PluginTestStack ->
+  Sem (StackWith r) () ->
   UnitTest
-embedPluginTestConf conf maps vars handlers =
+testPluginConf conf handlers =
   runPluginEmbedTest conf .
-  interpretHandlers handlers .
-  testPluginEmbed "test" maps vars
+  handlers .
+  testPluginEmbed (conf ^. #plugin . #name)
 
-embedPluginTest ::
-  Map MappingIdent (PluginHandler TestStack) ->
-  Map WatchedVariable (Object -> PluginHandler TestStack) ->
-  [RpcHandler PluginTestStack] ->
-  Sem (Stack '[]) () ->
-  UnitTest
-embedPluginTest =
-  embedPluginTestConf def
-
-embedPluginTestWith ::
+testPlugin ::
   ∀ r .
   Members PluginTestStack (r ++ PluginTestStack) =>
-  [RpcHandler (r ++ PluginTestStack)] ->
-  InterpretersFor r PluginTestStack ->
-  Sem (Stack r) () ->
+  InterpretersFor (NvimPlugin' ++ r) PluginTestStack ->
+  Sem (StackWith r) () ->
   UnitTest
-embedPluginTestWith handlers effs =
-  runPluginEmbedTest def .
-  effs .
-  interpretHandlers handlers .
-  testPluginEmbed "test" mempty mempty
+testPlugin =
+  testPluginConf @r def
 
-embedPluginTestWith_ ::
-  ∀ r .
-  Members PluginTestStack (r ++ PluginTestStack) =>
-  InterpretersFor r PluginTestStack ->
-  Sem (Stack r) () ->
+testPlugin_ ::
+  InterpretersFor NvimPlugin' PluginTestStack ->
+  Sem Stack () ->
   UnitTest
-embedPluginTestWith_ =
-  embedPluginTestWith @r mempty
+testPlugin_ =
+  testPlugin @'[]
 
-embedPluginTestConf_ ::
-  TestConfig ->
-  Sem (Stack '[]) () ->
+testHandlers ::
+  [RpcHandler PluginTestStack] ->
+  Sem Stack () ->
   UnitTest
-embedPluginTestConf_ conf =
-  runPluginEmbedTest conf .
-  interpretHandlersNull .
-  testPluginEmbed "test" mempty mempty
+testHandlers handlers =
+  testPlugin @'[] (rpcHandlers handlers)
 
-embedPluginTest_ ::
-  Sem (Stack '[]) () ->
+testRibosome ::
+  Sem Stack () ->
   UnitTest
-embedPluginTest_ =
-  embedPluginTestConf_ def
+testRibosome =
+  testHandlers mempty

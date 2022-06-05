@@ -1,32 +1,40 @@
 module Ribosome.Remote where
 
-import Data.MessagePack (Object)
-
-import Ribosome.Data.Mapping (MappingIdent)
 import Ribosome.Data.PluginConfig (PluginConfig (PluginConfig))
 import Ribosome.Data.PluginName (PluginName)
-import Ribosome.Data.WatchedVariable (WatchedVariable)
 import Ribosome.Effect.BuiltinHandlers (BuiltinHandlers)
+import Ribosome.Effect.MappingHandler (MappingHandler)
+import Ribosome.Effect.NvimPlugin (NvimPlugin')
+import Ribosome.Effect.VariableWatcher (VariableWatcher)
 import Ribosome.Host.Data.HandlerError (HandlerError)
 import Ribosome.Host.Data.RpcHandler (Handler, RpcHandler)
-import Ribosome.Host.Effect.Handlers (Handlers)
 import Ribosome.Host.IOStack (BasicStack, IOStack, runBasicStack)
-import Ribosome.Host.Interpreter.Handlers (interceptHandlers, interpretHandlers)
+import Ribosome.Host.Interpreter.Handlers (interceptHandlers)
 import Ribosome.Host.Interpreter.Host (runHost)
 import Ribosome.Host.Interpreter.Process.Stdio (interpretProcessCerealStdio)
 import Ribosome.Host.Run (RpcDeps, RpcStack, interpretRpcStack)
+import Ribosome.Interpreter.BuiltinHandlers (interpretBuiltinHandlers)
+import Ribosome.Interpreter.NvimPlugin (rpcHandlers)
+import Ribosome.Interpreter.Scratch (interpretScratch)
+import Ribosome.Interpreter.Settings (interpretSettingsRpc)
 import Ribosome.Interpreter.UserError (interpretUserErrorPrefixed)
 import Ribosome.Plugin.Builtin (builtinHandlers)
-import Ribosome.Run (PluginEffects, interpretPluginEffects)
+import Ribosome.Run (PluginEffects)
 
 type BasicPluginRemoteStack =
   RpcStack ++ RpcDeps ++ '[Reader PluginName]
 
+type HandlerDeps =
+  PluginEffects ++ BasicPluginRemoteStack
+
 type PluginRemoteStack =
-  BuiltinHandlers !! HandlerError : PluginEffects ++ BasicPluginRemoteStack
+  BuiltinHandlers !! HandlerError : HandlerDeps
+
+type PluginRemoteIODeps =
+  HandlerDeps ++ BasicStack
 
 type PluginRemoteIOStack =
-  PluginRemoteStack ++ BasicStack
+  VariableWatcher : MappingHandler : PluginRemoteIODeps
 
 type PluginHandler r =
   Handler (PluginEffects ++ BasicPluginRemoteStack ++ r) ()
@@ -42,76 +50,58 @@ interpretRpcDeps =
 interpretPluginRemote ::
   Members BasicStack r =>
   PluginName ->
-  Map MappingIdent (PluginHandler r) ->
-  Map WatchedVariable (Object -> PluginHandler r) ->
-  InterpretersFor PluginRemoteStack r
-interpretPluginRemote name maps vars =
+  InterpretersFor HandlerDeps r
+interpretPluginRemote name =
   runReader name .
   interpretRpcDeps .
   interpretRpcStack .
-  interpretPluginEffects maps vars
+  interpretSettingsRpc .
+  interpretScratch
 
--- TODO
--- create effects for mapping and variable handlers
--- run BuiltinHandlers directly after interceptHandlers here
--- remove interpretPluginRemote, effs and handlers here
--- offer two workflows:
--- * run interpretPluginRemote . interpretersForMapsVarsAndRpc . runPluginRemote
--- * runNvimPlugin handlers
--- no others that involve passing in handlers for vars and maps as Maps
-runPluginRemote ::
+runPluginHostRemote ::
   ∀ r .
-  Members PluginRemoteIOStack (r ++ PluginRemoteIOStack) =>
-  InterpreterFor (Handlers !! HandlerError) (r ++ PluginRemoteIOStack) ->
-  InterpretersFor r PluginRemoteIOStack ->
+  Members NvimPlugin' r =>
+  Members HandlerDeps r =>
+  Members BasicStack r =>
   PluginName ->
-  Map MappingIdent (PluginHandler BasicStack) ->
-  Map WatchedVariable (Object -> PluginHandler BasicStack) ->
-  Sem BasicStack ()
-runPluginRemote handlers effs name maps vars =
-  interpretPluginRemote name maps vars $
-  effs $
-  handlers $
+  Sem r ()
+runPluginHostRemote name =
+  interpretBuiltinHandlers $
   interceptHandlers (builtinHandlers name) runHost
 
-runNvimPlugin ::
-  ∀ r .
-  Members PluginRemoteIOStack (r ++ PluginRemoteIOStack) =>
-  [RpcHandler (r ++ PluginRemoteIOStack)] ->
-  InterpretersFor r PluginRemoteIOStack ->
+runPluginRemote ::
+  InterpretersFor NvimPlugin' PluginRemoteIODeps ->
   PluginName ->
-  Map MappingIdent (PluginHandler BasicStack) ->
-  Map WatchedVariable (Object -> PluginHandler BasicStack) ->
   Sem BasicStack ()
-runNvimPlugin handlers =
-  runPluginRemote @r (interpretHandlers handlers)
+runPluginRemote handlers name =
+  interpretPluginRemote name $
+  handlers $
+  runPluginHostRemote name
 
-runNvimPlugin_ ::
-  [RpcHandler PluginRemoteIOStack] ->
+runNvimPlugin ::
+  InterpretersFor NvimPlugin' PluginRemoteIODeps ->
   PluginName ->
-  Map MappingIdent (PluginHandler BasicStack) ->
-  Map WatchedVariable (Object -> PluginHandler BasicStack) ->
   Sem BasicStack ()
-runNvimPlugin_ handlers =
-  runPluginRemote @'[] (interpretHandlers handlers) id
+runNvimPlugin =
+  runPluginRemote
+
+runNvimHandlers ::
+  [RpcHandler PluginRemoteIODeps] ->
+  PluginName ->
+  Sem BasicStack ()
+runNvimHandlers handlers =
+  runPluginRemote (rpcHandlers handlers)
 
 runNvimPluginIO ::
-  ∀ r .
-  Members PluginRemoteIOStack (r ++ PluginRemoteIOStack) =>
   PluginConfig ->
-  [RpcHandler (r ++ PluginRemoteIOStack)] ->
-  InterpretersFor r PluginRemoteIOStack ->
-  Map MappingIdent (PluginHandler BasicStack) ->
-  Map WatchedVariable (Object -> PluginHandler BasicStack) ->
+  InterpretersFor NvimPlugin' PluginRemoteIODeps ->
   IO ()
-runNvimPluginIO (PluginConfig name conf) handlers effs maps vars =
-  runBasicStack conf (runNvimPlugin @r handlers effs name maps vars)
+runNvimPluginIO (PluginConfig name conf) handlers =
+  runBasicStack conf (runNvimPlugin handlers name)
 
-runNvimPluginIO_ ::
+runNvimHandlersIO ::
   PluginConfig ->
-  [RpcHandler PluginRemoteIOStack] ->
-  Map MappingIdent (PluginHandler BasicStack) ->
-  Map WatchedVariable (Object -> PluginHandler BasicStack) ->
+  [RpcHandler PluginRemoteIODeps] ->
   IO ()
-runNvimPluginIO_ (PluginConfig name conf) handlers maps vars =
-  runBasicStack conf (runNvimPlugin_ handlers name maps vars)
+runNvimHandlersIO (PluginConfig name conf) handlers =
+  runBasicStack conf (runNvimHandlers handlers name)

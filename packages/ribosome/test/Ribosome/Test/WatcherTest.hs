@@ -5,16 +5,15 @@ import Polysemy.Conc (interpretAtomic)
 import Polysemy.Test (UnitTest, (===))
 
 import Ribosome.Api.Autocmd (doautocmd)
-import Ribosome.Embed (embedNvimPlugin)
 import Ribosome.Host.Api.Effect (nvimSetVar)
 import Ribosome.Host.Data.HandlerError (HandlerError)
 import Ribosome.Host.Data.RpcError (RpcError)
 import Ribosome.Host.Effect.Rpc (Rpc)
-import Ribosome.Host.Test.Run (runTest)
 import Ribosome.Test.Wait (assertWait)
+import Ribosome.Unit.Run (runTest, testHandlers)
 
 changed ::
-  Members [AtomicState Int, Rpc !! RpcError ,Stop HandlerError] r =>
+  Members [AtomicState Int, Rpc !! RpcError, Stop HandlerError] r =>
   Object ->
   Sem r ()
 changed _ =
@@ -22,7 +21,7 @@ changed _ =
 
 test_varWatcher :: UnitTest
 test_varWatcher =
-  runTest $ interpretAtomic 0 $ embedNvimPlugin "test" mempty [("trigger", changed)] mempty do
+  runTest $ interpretAtomic 0 $ testHandlers mempty mempty [("trigger", changed)] do
     nvimSetVar "trigger" (4 :: Int)
     doautocmd "CmdlineLeave"
     assertWait atomicGet ((1 :: Int) ===)

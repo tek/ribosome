@@ -59,6 +59,8 @@ library
       Ribosome.Data.WindowConfig
       Ribosome.Data.WindowView
       Ribosome.Effect.BuiltinHandlers
+      Ribosome.Effect.MappingHandler
+      Ribosome.Effect.NvimPlugin
       Ribosome.Effect.Persist
       Ribosome.Effect.PersistPath
       Ribosome.Effect.Scratch
@@ -71,12 +73,15 @@ library
       Ribosome.Float
       Ribosome.Internal.Scratch
       Ribosome.Interpreter.BuiltinHandlers
+      Ribosome.Interpreter.MappingHandler
+      Ribosome.Interpreter.NvimPlugin
       Ribosome.Interpreter.Persist
       Ribosome.Interpreter.PersistPath
       Ribosome.Interpreter.PluginName
       Ribosome.Interpreter.Scratch
       Ribosome.Interpreter.Settings
       Ribosome.Interpreter.UserError
+      Ribosome.Interpreter.VariableWatcher
       Ribosome.Locks
       Ribosome.Mapping
       Ribosome.Path
@@ -183,7 +188,6 @@ test-suite ribosome-unit
       Ribosome.Test.Error
       Ribosome.Test.MappingTest
       Ribosome.Test.PersistTest
-      Ribosome.Test.Run
       Ribosome.Test.ScratchTest
       Ribosome.Test.SettingTest
       Ribosome.Test.SyntaxTest
@@ -191,6 +195,7 @@ test-suite ribosome-unit
       Ribosome.Test.Wait
       Ribosome.Test.WatcherTest
       Ribosome.Test.WindowTest
+      Ribosome.Unit.Run
   hs-source-dirs:
       test
   default-extensions:

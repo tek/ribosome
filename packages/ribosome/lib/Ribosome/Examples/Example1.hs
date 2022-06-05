@@ -15,4 +15,4 @@ count n = do
 
 main :: IO ()
 main =
-  runNvimPluginIO_ (PluginConfig "counter" def) [rpcFunction "Count" Sync count] mempty mempty
+  runNvimHandlersIO (PluginConfig "counter" def) [rpcFunction "Count" Sync count]

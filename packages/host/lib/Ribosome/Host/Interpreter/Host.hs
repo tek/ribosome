@@ -77,7 +77,7 @@ register ::
 register =
   Handlers.register !! \ e -> throw (BootError [exon|Registering handlers: #{show e}|])
 
-type Deps er =
+type HostDeps er =
   [
     Handlers !! HandlerError,
     Process RpcMessage (Either Text RpcMessage),
@@ -95,7 +95,7 @@ type Deps er =
   ]
 
 withHost ::
-  Members (Deps er) r =>
+  Members (HostDeps er) r =>
   InterpreterFor Host r
 withHost sem =
   interpretHost do
@@ -104,14 +104,14 @@ withHost sem =
       sem
 
 testHost ::
-  Members (Deps er) r =>
+  Members (HostDeps er) r =>
   InterpretersFor [Rpc, Host] r
 testHost =
   withHost .
   resumeBootError @Rpc
 
 runHost ::
-  Members (Deps er) r =>
+  Members (HostDeps er) r =>
   Sem r ()
 runHost =
   interpretHost do

@@ -13,7 +13,7 @@ import Ribosome.Host.Data.RpcType (fPattern)
 import Ribosome.Host.Effect.Rpc (Rpc)
 import Ribosome.Host.Embed (embedNvim)
 import Ribosome.Host.Handler (rpcAutocmd)
-import Ribosome.Host.Test.Run (runTest)
+import Ribosome.Host.Unit.Run (runTest)
 
 var :: Text
 var =

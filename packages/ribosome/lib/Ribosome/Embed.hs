@@ -1,16 +1,13 @@
 module Ribosome.Embed where
 
-import Data.MessagePack (Object)
-
-import Ribosome.Data.Mapping (MappingIdent)
 import Ribosome.Data.PluginName (PluginName)
-import Ribosome.Data.WatchedVariable (WatchedVariable)
 import Ribosome.Effect.BuiltinHandlers (BuiltinHandlers)
+import Ribosome.Effect.NvimPlugin (NvimPlugin')
 import Ribosome.Effect.Scratch (Scratch)
 import Ribosome.Effect.Settings (Settings)
 import Ribosome.Host.Data.BootError (BootError)
 import Ribosome.Host.Data.HandlerError (HandlerError)
-import Ribosome.Host.Data.RpcHandler (Handler, RpcHandler)
+import Ribosome.Host.Data.RpcHandler (RpcHandler, hoistRpcHandlers)
 import Ribosome.Host.Effect.Handlers (Handlers)
 import Ribosome.Host.Effect.Rpc (Rpc)
 import Ribosome.Host.Embed (EmbedExtra, interpretEmbedExtra)
@@ -21,9 +18,11 @@ import Ribosome.Host.Interpreter.Host (withHost)
 import Ribosome.Host.Interpreter.Process.Embed (interpretProcessCerealNvimEmbed)
 import Ribosome.Host.Run (RpcDeps, RpcStack, interpretRpcStack)
 import Ribosome.Interpreter.BuiltinHandlers (interpretBuiltinHandlers)
+import Ribosome.Interpreter.MappingHandler (interpretMappingHandlerNull)
 import Ribosome.Interpreter.Scratch (interpretScratch)
 import Ribosome.Interpreter.Settings (interpretSettingsRpc)
 import Ribosome.Interpreter.UserError (interpretUserErrorPrefixed)
+import Ribosome.Interpreter.VariableWatcher (interpretVariableWatcherNull)
 import Ribosome.Plugin.Builtin (builtinHandlers)
 import Ribosome.Run (PluginEffects)
 
@@ -36,9 +35,6 @@ type HandlerDeps =
 type PluginEmbedStack =
   BuiltinHandlers !! HandlerError : HandlerDeps
 
-type PluginHandler r =
-  Handler (Handlers !! HandlerError : HandlerDeps ++ r) ()
-
 type TestEffects =
   [
     Scratch,
@@ -47,7 +43,7 @@ type TestEffects =
   ]
 
 type TestPluginEmbedStack =
-  TestEffects ++ Handlers !! HandlerError : HandlerDeps
+  TestEffects ++ NvimPlugin' ++ HandlerDeps
 
 interpretRpcDeps ::
   Members [Reader PluginName, Error BootError, Log, Resource, Race, Async, Embed IO] r =>
@@ -69,17 +65,26 @@ interpretPluginEmbed name =
   interpretSettingsRpc .
   interpretScratch
 
+-- TODO pointless?
+interpretPluginHandlersEmbed ::
+  Member Log r =>
+  Members IOStack r =>
+  PluginName ->
+  [RpcHandler (HandlerDeps ++ r)] ->
+  InterpretersFor (Handlers !! HandlerError : HandlerDeps) r
+interpretPluginHandlersEmbed name handlers =
+  interpretPluginEmbed name .
+  interpretHandlers handlers
+
 withPluginEmbed ::
   Members BasicStack r =>
   Members HandlerDeps r =>
-  Member (Handlers !! HandlerError) r =>
+  Members NvimPlugin' r =>
   PluginName ->
-  Map MappingIdent (Handler r ()) ->
-  Map WatchedVariable (Object -> Handler r ()) ->
   Sem r a ->
   Sem r a
-withPluginEmbed name maps vars =
-  interpretBuiltinHandlers maps vars .
+withPluginEmbed name =
+  interpretBuiltinHandlers .
   interceptHandlers (builtinHandlers name) .
   withHost .
   insertAt @0
@@ -87,35 +92,40 @@ withPluginEmbed name maps vars =
 testPluginEmbed ::
   Members BasicStack r =>
   Members HandlerDeps r =>
-  Member (Handlers !! HandlerError) r =>
+  Members NvimPlugin' r =>
   PluginName ->
-  Map MappingIdent (Handler r ()) ->
-  Map WatchedVariable (Object -> Handler r ()) ->
   InterpretersFor TestEffects r
-testPluginEmbed name maps vars =
-  withPluginEmbed name maps vars .
+testPluginEmbed name =
+  withPluginEmbed name .
   resumeBootError @Rpc .
   resumeBootError @Settings .
   resumeBootError @Scratch .
   insertAt @3
 
+embedNvimPluginWith ::
+  Members BasicStack r =>
+  PluginName ->
+  InterpretersFor NvimPlugin' (HandlerDeps ++ r) ->
+  InterpretersFor TestPluginEmbedStack r
+embedNvimPluginWith name handlers =
+  interpretPluginEmbed name .
+  handlers .
+  testPluginEmbed name
+
 embedNvimPlugin ::
   Members BasicStack r =>
   PluginName ->
-  Map MappingIdent (PluginHandler r) ->
-  Map WatchedVariable (Object -> PluginHandler r) ->
   [RpcHandler (HandlerDeps ++ r)] ->
   InterpretersFor TestPluginEmbedStack r
-embedNvimPlugin name maps vars handlers =
-  interpretPluginEmbed name .
-  interpretHandlers handlers .
-  testPluginEmbed name maps vars
+embedNvimPlugin name handlers =
+  embedNvimPluginWith name $
+    interpretMappingHandlerNull .
+    interpretVariableWatcherNull .
+    interpretHandlers (hoistRpcHandlers raiseUnder2 handlers)
 
 embedNvimPlugin_ ::
   Members BasicStack r =>
   PluginName ->
-  Map MappingIdent (PluginHandler r) ->
-  Map WatchedVariable (Object -> PluginHandler r) ->
   InterpretersFor TestPluginEmbedStack r
-embedNvimPlugin_ name maps vars =
-  embedNvimPlugin name maps vars []
+embedNvimPlugin_ name =
+  embedNvimPlugin name []

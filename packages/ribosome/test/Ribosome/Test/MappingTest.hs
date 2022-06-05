@@ -10,7 +10,6 @@ import Ribosome.Data.Mapping (Mapping (Mapping), MappingIdent (MappingIdent))
 import Ribosome.Data.ScratchOptions (ScratchOptions (ScratchOptions))
 import qualified Ribosome.Effect.Scratch as Scratch
 import Ribosome.Effect.Scratch (Scratch)
-import Ribosome.Embed (embedNvimPlugin)
 import Ribosome.Host.Api.Data (nvimFeedkeys, vimCallFunction)
 import Ribosome.Host.Data.Execution (Execution (Sync))
 import Ribosome.Host.Data.HandlerError (resumeHandlerError)
@@ -19,8 +18,8 @@ import Ribosome.Host.Data.RpcHandler (Handler, RpcHandler)
 import qualified Ribosome.Host.Effect.Rpc as Rpc
 import Ribosome.Host.Effect.Rpc (Rpc)
 import Ribosome.Host.Handler (rpcFunction)
-import Ribosome.Host.Test.Run (runTest)
 import Ribosome.Test.Wait (assertWait)
+import Ribosome.Unit.Run (runTest, testHandlers)
 
 target :: [Text]
 target = ["line 1", "line 2"]
@@ -55,7 +54,7 @@ handlers =
 
 test_mapping :: UnitTest
 test_mapping =
-  runTest $ interpretSync $ embedNvimPlugin "test" [("mappingHandler", mappingHandler)] mempty handlers do
+  runTest $ interpretSync $ testHandlers handlers [("mappingHandler", mappingHandler)] mempty do
     () <- Rpc.sync (vimCallFunction @() "Setup" [])
     assertWait currentBufferContent (target ===)
     Rpc.notify (nvimFeedkeys "a" "x" False)

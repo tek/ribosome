@@ -19,11 +19,11 @@ import Ribosome.Host.Data.RpcError (RpcError)
 import Ribosome.Host.Effect.Rpc (Rpc)
 import Ribosome.Host.Embed (interpretEmbedExtra)
 import Ribosome.Host.IOStack (IOStack)
-import Ribosome.Host.Interpreter.Handlers (interpretHandlersNull)
 import Ribosome.Host.Interpreter.Process.Embed (interpretProcessCerealNvimEmbed, nvimArgs)
 import Ribosome.Host.Run (interpretRpcStack)
 import Ribosome.Host.Test.Data.TestConfig (host)
 import Ribosome.Host.Test.Run (TestConfStack, TestIOStack, runTestConf)
+import Ribosome.Interpreter.NvimPlugin (noHandlers)
 import Ribosome.Interpreter.Scratch (interpretScratch)
 import Ribosome.Interpreter.Settings (interpretSettingsRpc)
 import Ribosome.Interpreter.UserError (interpretUserErrorPrefixed)
@@ -64,7 +64,7 @@ testPlugin riboRoot = do
   let flake = toFilePath (target </> [relfile|flake.nix|])
   old <- embed (Text.readFile flake)
   embed (Text.writeFile flake (Text.replace "RIBOSOME" (toText riboRoot) old))
-  interpretTestPluginEmbed target $ interpretHandlersNull $ withPluginEmbed "test" mempty mempty do
+  interpretTestPluginEmbed target $ noHandlers $ withPluginEmbed "test" do
       resumeHoistError @RpcError @Rpc (TestError . show @Text) do
         Conc.timeout_ (liftH (failWith Nothing "RPC function did not appear")) (Minutes 2) do
           Time.while (MilliSeconds 500) (resumeAs @RpcError @Rpc True (False <$ nvimCallFunction @Int "Test" []))

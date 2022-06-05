@@ -1,10 +1,10 @@
-module Ribosome.Host.Test.Run where
+module Ribosome.Host.Unit.Run where
 
 import qualified Chronos
 import Conc (Restoration, interpretMaskFinal, interpretRace, interpretUninterruptibleMaskFinal)
 import Hedgehog.Internal.Property (Failure)
 import Log (interpretLogStderrConc)
-import Polysemy.Chronos (ChronosTime, interpretTimeChronos, interpretTimeChronosConstant)
+import Polysemy.Chronos (ChronosTime, interpretTimeChronos)
 import Polysemy.Test (Hedgehog, Test, TestError (TestError), UnitTest, runTestAuto)
 import Time (mkDatetime)
 

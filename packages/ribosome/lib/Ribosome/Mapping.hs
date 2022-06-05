@@ -1,13 +1,11 @@
 module Ribosome.Mapping where
 
-import qualified Data.Map.Strict as Map
 import Exon (exon)
 
 import Ribosome.Data.Mapping (Mapping (Mapping), MappingIdent (MappingIdent))
 import Ribosome.Data.PluginName (PluginName (PluginName))
 import Ribosome.Host.Api.Data (Buffer)
 import Ribosome.Host.Api.Effect (vimCommand)
-import Ribosome.Host.Data.HandlerError (HandlerError)
 import Ribosome.Host.Effect.Rpc (Rpc)
 import Ribosome.Host.Modify (bufdo)
 import Ribosome.PluginName (pluginNameCapitalized)
@@ -50,10 +48,3 @@ activateBufferMapping ::
 activateBufferMapping buffer mapping =
   bufdo buffer do
     mappingCmd " <buffer>" mapping
-
-mappingHandler ::
-  Map MappingIdent (Sem (Stop HandlerError : r) ()) ->
-  MappingIdent ->
-  Sem (Stop HandlerError : r) ()
-mappingHandler maps i =
-  join (stopNote "No handler for this mapping" (Map.lookup i maps))

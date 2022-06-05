@@ -5,6 +5,8 @@ import Data.MessagePack (Object)
 
 import Ribosome.Data.Locks (WatcherLock)
 import Ribosome.Data.WatchedVariable (WatchedVariable (WatchedVariable))
+import qualified Ribosome.Effect.VariableWatcher as VariableWatcher
+import Ribosome.Effect.VariableWatcher (VariableWatcher)
 import Ribosome.Host.Api.Effect (nvimGetVar)
 import Ribosome.Host.Data.HandlerError (HandlerError)
 import Ribosome.Host.Data.RpcError (RpcError)
@@ -12,35 +14,32 @@ import Ribosome.Host.Effect.Rpc (Rpc)
 import Ribosome.Locks (lockOrSkip)
 
 compareVar ::
-  Member (AtomicState (Map WatchedVariable Object)) r =>
+  Members [VariableWatcher, AtomicState (Map WatchedVariable Object)] r =>
   WatchedVariable ->
-  (Object -> Sem r ()) ->
   Object ->
   Maybe Object ->
   Sem r ()
-compareVar var handler new = \case
+compareVar var new = \case
   Just old | old == new ->
     unit
   _ -> do
     atomicModify' (Map.insert var new)
-    handler new
+    VariableWatcher.update new var
 
 checkVar ::
-  Members [AtomicState (Map WatchedVariable Object), Rpc !! RpcError] r =>
+  Members [VariableWatcher, AtomicState (Map WatchedVariable Object), Rpc !! RpcError] r =>
   WatchedVariable ->
-  (Object -> Sem r ()) ->
   Sem r ()
-checkVar var handler = do
+checkVar var = do
   old <- atomicGets (Map.lookup var)
   resume_ do
     new <- nvimGetVar (coerce var)
-    compareVar var (raise . handler) new old
+    compareVar var new old
 
 variableWatcherHandler ::
   Member (AtomicState (Map WatchedVariable Object)) r =>
-  Members [Rpc !! RpcError, Sync WatcherLock, Resource, Stop HandlerError] r =>
-  Map WatchedVariable (Object -> Sem r ()) ->
+  Members [VariableWatcher, Rpc !! RpcError, Sync WatcherLock, Resource, Stop HandlerError] r =>
   Sem r ()
-variableWatcherHandler vars =
+variableWatcherHandler =
   void $ lockOrSkip @WatcherLock do
-    Map.traverseWithKey checkVar vars
+    traverse_ checkVar =<< VariableWatcher.watchedVariables

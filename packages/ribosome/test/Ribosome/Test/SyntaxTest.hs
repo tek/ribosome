@@ -15,7 +15,7 @@ module Ribosome.Test.SyntaxTest where
 -- import Ribosome.Error.Report.Class (ReportError(..))
 -- import Ribosome.System.Time (sleep)
 -- import Ribosome.Test.Embed (defaultTestConfig)
--- import Ribosome.Test.Run (UnitTest)
+-- import Ribosome.Unit.Run (UnitTest)
 -- import Ribosome.Test.Screenshot (awaitScreenshot)
 -- import Ribosome.Test.Tmux (tmuxTest')
 
