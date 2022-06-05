@@ -11,6 +11,7 @@
       ribosome-host = fast;
       ribosome-host-test = fast;
       ribosome = fast;
+      ribosome-test = fast;
       integration = fast;
     };
     packages.test-plugin = ./packages/test-plugin;

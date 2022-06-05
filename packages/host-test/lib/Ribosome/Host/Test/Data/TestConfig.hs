@@ -7,7 +7,7 @@ data TestConfig =
     freezeTime :: Bool,
     host :: HostConfig
   }
-  deriving stock (Eq, Show)
+  deriving stock (Eq, Show, Generic)
 
 instance Default TestConfig where
   def =

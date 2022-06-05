@@ -13,7 +13,6 @@ import Ribosome.Host.Data.RpcType (fPattern)
 import Ribosome.Host.Effect.Rpc (Rpc)
 import Ribosome.Host.Embed (embedNvim)
 import Ribosome.Host.Handler (rpcAutocmd)
-import Ribosome.Host.Interpreter.Handlers (interpretHandlers)
 import Ribosome.Host.Test.Run (runTest)
 
 var :: Text
@@ -34,11 +33,11 @@ bn = do
   resumeHandlerError (nvimSetVar var (21 :: Int))
   void $ Sync.putWait (Seconds 5) ()
 
-regHandlers ::
+handlers ::
   ∀ r .
   Members [Rpc !! RpcError, Sync ()] r =>
   [RpcHandler r]
-regHandlers =
+handlers =
   [
     rpcAutocmd "Au" "User" def { fPattern = "Au" } (au @(Stop HandlerError : r)),
     rpcAutocmd "Bn" "BufNew" def (bn @(Stop HandlerError : r))
@@ -46,7 +45,7 @@ regHandlers =
 
 test_autocmd :: UnitTest
 test_autocmd =
-  runTest $ interpretSync $ embedNvim (interpretHandlers regHandlers) do
+  runTest $ interpretSync $ embedNvim handlers do
     nvimCommand "doautocmd User Au"
     Sync.takeWait (Seconds 5)
     assertJust @Int 12 =<< nvimGetVar var

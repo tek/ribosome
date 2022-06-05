@@ -12,7 +12,6 @@ import Ribosome.Host.Data.RpcHandler (RpcHandler)
 import Ribosome.Host.Effect.Rpc (Rpc)
 import Ribosome.Host.Embed (embedNvim)
 import Ribosome.Host.Handler (rpcCommand)
-import Ribosome.Host.Interpreter.Handlers (interpretHandlers)
 import Ribosome.Host.Test.Run (runTest)
 
 var :: Text
@@ -27,17 +26,17 @@ mods = \case
   CommandMods m ->
     resumeHandlerError (nvimSetVar var m)
 
-modsHandlers ::
+handlers ::
   ∀ r .
   Members [AtomicState Int, Rpc !! RpcError] r =>
   [RpcHandler r]
-modsHandlers =
+handlers =
   [
     rpcCommand "Mods" Sync (mods @(Stop HandlerError : r))
   ]
 
 test_mods :: UnitTest
 test_mods =
-  runTest $ interpretAtomic 0 $ embedNvim (interpretHandlers modsHandlers) do
+  runTest $ interpretAtomic 0 $ embedNvim handlers do
     nvimCommand "belowright silent lockmarks Mods"
     assertJust @Text "belowright lockmarks silent" =<< nvimGetVar var

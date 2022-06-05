@@ -17,7 +17,6 @@ import qualified Ribosome.Host.Effect.Rpc as Rpc
 import Ribosome.Host.Effect.Rpc (Rpc)
 import Ribosome.Host.Embed (embedNvim)
 import Ribosome.Host.Handler (rpcFunction)
-import Ribosome.Host.Interpreter.Handlers (interpretHandlers)
 import Ribosome.Host.Test.Run (runTest)
 
 var :: Text
@@ -60,7 +59,7 @@ callTest n =
 
 test_function :: UnitTest
 test_function =
-  runTest $ interpretAtomic 0 $ embedNvim (interpretHandlers handlers) $ interpretSync do
+  runTest $ interpretAtomic 0 $ embedNvim handlers $ interpretSync do
     nvimSetVar var (10 :: Int)
     Rpc.async (Data.nvimGetVar var) (void . Sync.putTry)
     assertRight (10 :: Int) =<< evalMaybe =<< Sync.wait (Seconds 5)

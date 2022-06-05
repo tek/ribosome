@@ -26,7 +26,7 @@ let
   };
 
   meta = {
-    version = "0.1.0.0";
+    version = import ./version.nix;
     license = "BSD-2-Clause-Patent";
     license-file = "LICENSE";
     author = "Torsten Schmits";
@@ -87,6 +87,7 @@ in {
       "generics-sop"
       "lens"
       "messagepack"
+      "network"
       "path"
       "polysemy-chronos"
       "polysemy-conc"
@@ -101,7 +102,9 @@ in {
       dependencies = [
         "chronos"
         "deepseq"
+        "generic-lens"
         "hedgehog"
+        "lens"
         "messagepack"
         "path"
         "polysemy-chronos"
@@ -158,13 +161,42 @@ in {
   ribosome-test = merge (project "ribosome-test" "Ribosome-Test") {
     synopsis = "Test tools for Ribosome";
     library.dependencies = [
+      "cereal"
+      "chiasma"
+      "chiasma-test"
+      "exon"
+      "generic-lens"
       "hedgehog"
+      "lens"
       "messagepack"
+      "network"
       "ribosome"
       "ribosome-host"
       "ribosome-host-test"
+      "path"
+      "path-io"
       "polysemy-test"
+      "polysemy-chronos"
+      "polysemy-process"
+      "typed-process"
     ];
+    tests.ribosome-test-unit = exe "ribosome-test" "test" {
+      dependencies = [
+        "aeson"
+        "chiasma"
+        "chiasma-test"
+        "hedgehog"
+        "messagepack"
+        "path"
+        "ribosome"
+        "ribosome-host"
+        "ribosome-host-test"
+        "ribosome-test"
+        "polysemy-conc"
+        "polysemy-test"
+        "tasty"
+      ];
+    };
   };
 
   ribosome-menu = merge (project "ribosome-menu" "Ribosome-Menu") {
@@ -240,7 +272,11 @@ in {
       dependencies = [
         "exon"
         "hedgehog"
+        "integration"
+        "ribosome"
         "ribosome-host"
+        "ribosome-host-test"
+        "ribosome-test"
         "path"
         "path-io"
         "polysemy-chronos"

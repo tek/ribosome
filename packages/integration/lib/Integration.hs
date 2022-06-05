@@ -22,4 +22,4 @@ handlers =
 
 integrationTest :: IO ()
 integrationTest =
-  runNvimPluginIO_ (PluginConfig "int" (setStderr Debug def)) mempty mempty handlers
+  runNvimPluginIO_ (PluginConfig "int" (setStderr Debug def)) handlers mempty mempty

@@ -1,23 +1,23 @@
 module Ribosome.Host.Test.Run where
 
 import qualified Chronos
-import Conc (Restoration, interpretMaskFinal, interpretUninterruptibleMaskFinal)
+import Conc (Restoration, interpretMaskFinal, interpretRace, interpretUninterruptibleMaskFinal)
 import Hedgehog.Internal.Property (Failure)
+import Log (interpretLogStderrConc)
 import Polysemy.Chronos (ChronosTime, interpretTimeChronos, interpretTimeChronosConstant)
-import Polysemy.Conc (interpretRace)
 import Polysemy.Test (Hedgehog, Test, TestError (TestError), UnitTest, runTestAuto)
 import Time (mkDatetime)
 
 import Ribosome.Host.Data.BootError (BootError (unBootError))
 import Ribosome.Host.Data.RpcHandler (RpcHandler)
 import Ribosome.Host.Effect.Rpc (Rpc)
-import Ribosome.Host.Embed (EmbedStack, embedNvimConf, embedNvim_)
-import Ribosome.Host.Interpreter.Handlers (interpretHandlers)
+import Ribosome.Host.Embed (HostEmbedStack, embedNvim, embedNvim_)
+import Ribosome.Host.IOStack (LogConfStack, interpretLogConfStack)
 import Ribosome.Host.Test.Data.TestConfig (TestConfig (TestConfig))
 
-type TestStack =
+type TestIOStack =
   [
-    ChronosTime,
+    Log,
     Mask Restoration,
     UninterruptibleMask Restoration,
     Race,
@@ -33,42 +33,68 @@ type TestStack =
     Final IO
   ]
 
+type TestConfStack =
+  LogConfStack ++ '[ChronosTime]
+
+type TestStack =
+  TestConfStack ++ TestIOStack
+
 type EmbedTestStack =
-  EmbedStack ++ TestStack
+  HostEmbedStack ++ TestStack
 
 testTime :: Chronos.Time
 testTime =
   Chronos.datetimeToTime (mkDatetime 2025 6 15 12 30 30)
 
-runTestConf ::
-  Bool ->
-  Sem TestStack () ->
+runUnitTest ::
+  HasCallStack =>
+  Sem TestIOStack () ->
   UnitTest
-runTestConf freezeTime =
+runUnitTest =
   runTestAuto .
   mapError (TestError . unBootError) .
   asyncToIOFinal .
   interpretRace .
   interpretUninterruptibleMaskFinal .
   interpretMaskFinal .
-  (if freezeTime then interpretTimeChronosConstant testTime else interpretTimeChronos)
+  interpretLogStderrConc
+
+runTestLogConf ::
+  Members [Error BootError, Resource, Race, Async, Embed IO] r =>
+  TestConfig ->
+  InterpretersFor TestConfStack r
+runTestLogConf (TestConfig freezeTime conf) =
+  (if freezeTime then interpretTimeChronosConstant testTime else interpretTimeChronos) .
+  interpretLogConfStack conf
+
+runTestConf ::
+  HasCallStack =>
+  TestConfig ->
+  Sem TestStack () ->
+  UnitTest
+runTestConf conf =
+  runUnitTest .
+  runTestLogConf conf
 
 runTest ::
+  HasCallStack =>
   Sem TestStack () ->
   UnitTest
 runTest =
-  runTestConf False
+  runTestConf def
 
 embedTestConf ::
+  HasCallStack =>
   TestConfig ->
   [RpcHandler EmbedTestStack] ->
   Sem (Rpc : EmbedTestStack) () ->
   UnitTest
-embedTestConf (TestConfig freeze conf) handlers =
-  runTestConf freeze .
-  embedNvimConf conf (interpretHandlers handlers)
+embedTestConf conf handlers =
+  runTestConf conf .
+  embedNvim handlers
 
 embedTest ::
+  HasCallStack =>
   [RpcHandler EmbedTestStack] ->
   Sem (Rpc : EmbedTestStack) () ->
   UnitTest
@@ -76,8 +102,9 @@ embedTest =
   embedTestConf def
 
 embedTest_ ::
+  HasCallStack =>
   Sem (Rpc : EmbedTestStack) () ->
   UnitTest
 embedTest_ =
-  runTestConf False .
+  runTest .
   embedNvim_

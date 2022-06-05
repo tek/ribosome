@@ -5,7 +5,7 @@ cabal-version: 2.2
 -- see: https://github.com/sol/hpack
 
 name:           ribosome-host
-version:        0.1.0.0
+version:        0.9.0.0
 synopsis:       Neovim plugin host for Polysemy
 description:    See https://hackage.haskell.org/package/ribosome-host/docs/Ribosome-Host.html
 category:       Neovim
@@ -45,6 +45,7 @@ library
       Ribosome.Host.Data.HostConfig
       Ribosome.Host.Data.HostError
       Ribosome.Host.Data.LuaRef
+      Ribosome.Host.Data.NvimSocket
       Ribosome.Host.Data.Range
       Ribosome.Host.Data.Request
       Ribosome.Host.Data.Response
@@ -63,6 +64,7 @@ library
       Ribosome.Host.Effect.Rpc
       Ribosome.Host.Effect.UserError
       Ribosome.Host.Embed
+      Ribosome.Host.Error
       Ribosome.Host.Handler
       Ribosome.Host.Handler.Codec
       Ribosome.Host.Handler.Command
@@ -72,7 +74,10 @@ library
       Ribosome.Host.Interpreter.Host
       Ribosome.Host.Interpreter.Id
       Ribosome.Host.Interpreter.Log
-      Ribosome.Host.Interpreter.Process
+      Ribosome.Host.Interpreter.Process.Cereal
+      Ribosome.Host.Interpreter.Process.Embed
+      Ribosome.Host.Interpreter.Process.Socket
+      Ribosome.Host.Interpreter.Process.Stdio
       Ribosome.Host.Interpreter.Responses
       Ribosome.Host.Interpreter.Rpc
       Ribosome.Host.Interpreter.UserError
@@ -82,7 +87,8 @@ library
       Ribosome.Host.RegisterHandlers
       Ribosome.Host.Remote
       Ribosome.Host.RpcCall
-      Ribosome.Host.RpcError
+      Ribosome.Host.Run
+      Ribosome.Host.Socket
       Ribosome.Host.Text
       Ribosome.Host.TH.Api.Generate
       Ribosome.Host.TH.Api.GenerateData
@@ -164,6 +170,7 @@ library
     , incipit
     , lens
     , messagepack
+    , network
     , path
     , polysemy
     , polysemy-chronos
@@ -269,8 +276,10 @@ test-suite ribosome-host-unit
       base >=4.12 && <5
     , chronos
     , deepseq
+    , generic-lens
     , hedgehog
     , incipit
+    , lens
     , messagepack
     , path
     , polysemy

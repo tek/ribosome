@@ -15,7 +15,6 @@ import qualified Ribosome.Host.Effect.Rpc as Rpc
 import Ribosome.Host.Effect.Rpc (Rpc)
 import Ribosome.Host.Embed (embedNvim)
 import Ribosome.Host.Handler (rpcFunction)
-import Ribosome.Host.Interpreter.Handlers (interpretHandlers)
 import Ribosome.Host.Test.Run (runTest)
 
 hand ::
@@ -36,7 +35,7 @@ handlers =
 
 test_notify :: UnitTest
 test_notify =
-  runTest $ interpretSync $ embedNvim (interpretHandlers handlers) do
+  runTest $ interpretSync $ embedNvim handlers do
     Rpc.notify (nvimCallFunction @() "Fun" [toMsgpack i])
     assertJust i =<< Sync.takeWait (Seconds 5)
   where

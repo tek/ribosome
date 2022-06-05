@@ -5,17 +5,19 @@ import Polysemy.Test (UnitTest)
 
 import Ribosome.Data.Mapping (MappingIdent)
 import Ribosome.Data.WatchedVariable (WatchedVariable)
-import Ribosome.Embed (PluginHandler, PluginStack, TestEffects, embedNvimPlugin)
+import Ribosome.Embed (HandlerDeps, PluginHandler, TestEffects, embedNvimPlugin)
+import Ribosome.Host.Data.HandlerError (HandlerError)
 import Ribosome.Host.Data.RpcHandler (RpcHandler)
+import Ribosome.Host.Effect.Handlers (Handlers)
 import Ribosome.Host.Test.Run (TestStack, runTest)
 
 type PluginTestStack =
-  PluginStack ++ TestStack
+  Handlers !! HandlerError : HandlerDeps ++ TestStack
 
 embedPluginTest ::
   Map MappingIdent (PluginHandler TestStack) ->
   Map WatchedVariable (Object -> PluginHandler TestStack) ->
-  [RpcHandler PluginTestStack] ->
+  [RpcHandler (HandlerDeps ++ TestStack)] ->
   Sem (TestEffects ++ PluginTestStack) () ->
   UnitTest
 embedPluginTest maps vars handlers =

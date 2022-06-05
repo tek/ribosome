@@ -21,6 +21,7 @@ import qualified Ribosome.Host.Effect.Host as Host
 import Ribosome.Host.Effect.Host (Host)
 import Ribosome.Host.Effect.Responses (Responses)
 import Ribosome.Host.Effect.Rpc (Rpc)
+import Ribosome.Host.Error (resumeBootError)
 import Ribosome.Host.Listener (listener)
 
 invalidMethod ::
@@ -76,7 +77,7 @@ register ::
 register =
   Handlers.register !! \ e -> throw (BootError [exon|Registering handlers: #{show e}|])
 
-type HostStack er =
+type Deps er =
   [
     Handlers !! HandlerError,
     Process RpcMessage (Either Text RpcMessage),
@@ -94,7 +95,7 @@ type HostStack er =
   ]
 
 withHost ::
-  Members (HostStack er) r =>
+  Members (Deps er) r =>
   InterpreterFor Host r
 withHost sem =
   interpretHost do
@@ -103,14 +104,14 @@ withHost sem =
       sem
 
 testHost ::
-  Members (HostStack er) r =>
+  Members (Deps er) r =>
   InterpretersFor [Rpc, Host] r
 testHost =
   withHost .
-  resumeHoistError @_ @Rpc (BootError . show @Text)
+  resumeBootError @Rpc
 
 runHost ::
-  Members (HostStack er) r =>
+  Members (Deps er) r =>
   Sem r ()
 runHost =
   interpretHost do

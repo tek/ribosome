@@ -10,7 +10,7 @@ data LogConfig =
     logLevelStderr :: Severity,
     logLevelFile :: Severity
   }
-  deriving stock (Eq, Show)
+  deriving stock (Eq, Show, Generic)
 
 instance Default LogConfig where
   def =
@@ -20,7 +20,7 @@ newtype HostConfig =
   HostConfig {
     hostLog :: LogConfig
   }
-  deriving stock (Eq, Show)
+  deriving stock (Eq, Show, Generic)
 
 instance Default HostConfig where
   def =

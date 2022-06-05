@@ -2,7 +2,7 @@ module Ribosome.Host.Listener where
 
 import Exon (exon)
 import qualified Polysemy.Conc as Sync
-import Polysemy.Conc (interpretAtomic, interpretEventsChan, interpretSyncAs)
+import Conc (interpretAtomic, interpretEventsChan, interpretSyncAs)
 import qualified Polysemy.Log as Log
 import qualified Polysemy.Process as Process
 import Polysemy.Process (Process)

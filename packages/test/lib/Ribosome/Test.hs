@@ -9,10 +9,10 @@ module Ribosome.Test (
   module Ribosome.Test.Wait,
 ) where
 
-import Ribosome.Embed
-import Ribosome.Host.Embed
+import Ribosome.Embed hiding (PluginHandler)
+import Ribosome.Host.Embed hiding (interpretRpcDeps)
 import Ribosome.Host.Test.Data.TestConfig
-import Ribosome.Host.Test.Run
+import Ribosome.Host.Test.Run hiding (runTestLogConf)
 import Ribosome.Test.Error
 import Ribosome.Test.Run
 import Ribosome.Test.Ui

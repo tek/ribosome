@@ -19,7 +19,6 @@ import Ribosome.Host.Data.RpcHandler (Handler, RpcHandler)
 import Ribosome.Host.Effect.Rpc (Rpc)
 import Ribosome.Host.Embed (embedNvim)
 import Ribosome.Host.Handler (rpcCommand)
-import Ribosome.Host.Interpreter.Handlers (interpretHandlers)
 import Ribosome.Host.Test.Run (runTest)
 
 var :: Text
@@ -92,7 +91,7 @@ rangeHandlers =
 
 test_range :: UnitTest
 test_range =
-  runTest $ embedNvim (interpretHandlers rangeHandlers) do
+  runTest $ embedNvim rangeHandlers do
     buf <- nvimGetCurrentBuf
     win <- nvimGetCurrentWin
     nvimBufSetLines buf 0 1 True ["1", "2", "3", "4", "5"]

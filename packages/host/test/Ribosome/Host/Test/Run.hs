@@ -1,9 +1,10 @@
 module Ribosome.Host.Test.Run where
 
 import qualified Chronos
+import Conc (Restoration, interpretMaskFinal, interpretRace, interpretUninterruptibleMaskFinal)
 import Hedgehog.Internal.Property (Failure)
-import Polysemy.Chronos (ChronosTime, interpretTimeChronosConstant)
-import Polysemy.Conc (interpretRace)
+import Log (interpretLogStderrConc)
+import Polysemy.Chronos (ChronosTime, interpretTimeChronos, interpretTimeChronosConstant)
 import Polysemy.Test (Hedgehog, Test, TestError (TestError), UnitTest, runTestAuto)
 import Time (mkDatetime)
 
@@ -11,12 +12,14 @@ import Ribosome.Host.Data.BootError (BootError (unBootError))
 import Ribosome.Host.Data.HostConfig (HostConfig)
 import Ribosome.Host.Data.RpcHandler (RpcHandler)
 import Ribosome.Host.Effect.Rpc (Rpc)
-import Ribosome.Host.Embed (EmbedStack, embedNvimConf, embedNvim_)
-import Ribosome.Host.Interpreter.Handlers (interpretHandlers)
+import Ribosome.Host.Embed (HostEmbedStack, embedNvim, embedNvim_)
+import Ribosome.Host.IOStack (LogConfStack, interpretLogConfStack)
 
-type TestStack =
+type TestIOStack =
   [
-    ChronosTime,
+    Log,
+    Mask Restoration,
+    UninterruptibleMask Restoration,
     Race,
     Async,
     Error BootError,
@@ -30,22 +33,45 @@ type TestStack =
     Final IO
   ]
 
+type TestConfStack =
+  LogConfStack ++ '[ChronosTime]
+
+type TestStack =
+  TestConfStack ++ TestIOStack
+
 type EmbedTestStack =
-  EmbedStack ++ TestStack
+  HostEmbedStack ++ TestStack
 
 testTime :: Chronos.Time
 testTime =
   Chronos.datetimeToTime (mkDatetime 2025 6 15 12 30 30)
 
-runTest ::
-  Sem TestStack () ->
+runUnitTest ::
+  Sem TestIOStack () ->
   UnitTest
-runTest =
+runUnitTest =
   runTestAuto .
   mapError (TestError . unBootError) .
   asyncToIOFinal .
   interpretRace .
-  interpretTimeChronosConstant testTime
+  interpretUninterruptibleMaskFinal .
+  interpretMaskFinal .
+  interpretLogStderrConc
+
+runTestConf ::
+  Members [Error BootError, Resource, Race, Async, Embed IO] r =>
+  HostConfig ->
+  InterpretersFor TestConfStack r
+runTestConf conf =
+  interpretTimeChronos .
+  interpretLogConfStack conf
+
+runTest ::
+  Sem TestStack () ->
+  UnitTest
+runTest =
+  runUnitTest .
+  runTestConf def
 
 embedTestConf ::
   HostConfig ->
@@ -53,8 +79,9 @@ embedTestConf ::
   Sem (Rpc : EmbedTestStack) () ->
   UnitTest
 embedTestConf conf handlers =
-  runTest .
-  embedNvimConf conf (interpretHandlers handlers)
+  runUnitTest .
+  runTestConf conf .
+  embedNvim handlers
 
 embedTest ::
   [RpcHandler EmbedTestStack] ->

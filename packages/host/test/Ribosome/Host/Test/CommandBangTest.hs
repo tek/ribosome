@@ -13,7 +13,6 @@ import Ribosome.Host.Data.RpcHandler (RpcHandler)
 import Ribosome.Host.Effect.Rpc (Rpc)
 import Ribosome.Host.Embed (embedNvim)
 import Ribosome.Host.Handler (rpcCommand)
-import Ribosome.Host.Interpreter.Handlers (interpretHandlers)
 import Ribosome.Host.Test.Run (runTest)
 
 var :: Text
@@ -31,18 +30,18 @@ bang = \case
   NoBang ->
     \ i -> resumeHandlerError (nvimSetVar @[_] var [toMsgpack False, toMsgpack i])
 
-bangHandlers ::
+handlers ::
   ∀ r .
   Members [AtomicState Int, Rpc !! RpcError] r =>
   [RpcHandler r]
-bangHandlers =
+handlers =
   [
     rpcCommand "Bang" Sync (bang @(Stop HandlerError : r))
   ]
 
 test_bang :: UnitTest
 test_bang =
-  runTest $ interpretAtomic 0 $ embedNvim (interpretHandlers bangHandlers) do
+  runTest $ interpretAtomic 0 $ embedNvim handlers do
     nvimCommand "Bang! 9"
     assertJust @(_, Int) (True, 9) =<< nvimGetVar var
     nvimCommand "Bang 10"

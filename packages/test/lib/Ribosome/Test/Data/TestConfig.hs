@@ -7,7 +7,7 @@ data TestConfig =
     freeze :: Bool,
     plugin :: PluginConfig
   }
-  deriving stock (Eq, Show)
+  deriving stock (Eq, Show, Generic)
 
 instance Default TestConfig where
   def =

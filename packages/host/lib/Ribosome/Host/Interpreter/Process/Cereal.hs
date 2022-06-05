@@ -1,4 +1,4 @@
-module Ribosome.Host.Interpreter.Process where
+module Ribosome.Host.Interpreter.Process.Cereal where
 
 import qualified Data.ByteString as ByteString
 import qualified Data.Serialize as Serialize

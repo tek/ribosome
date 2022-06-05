@@ -5,7 +5,7 @@ cabal-version: 2.2
 -- see: https://github.com/sol/hpack
 
 name:           ribosome-test
-version:        0.1.0.0
+version:        0.9.0.0
 synopsis:       Test tools for Ribosome
 description:    See https://hackage.haskell.org/package/ribosome-test/docs/Ribosome-Test.html
 category:       Neovim
@@ -93,15 +93,120 @@ library
   ghc-options: -Wall -Wredundant-constraints -Wincomplete-uni-patterns -Wmissing-deriving-strategies -Widentities -Wunused-packages -fplugin=Polysemy.Plugin
   build-depends:
       base >=4.12 && <5
+    , cereal
+    , chiasma
+    , chiasma-test
+    , exon
+    , generic-lens
+    , hedgehog
+    , incipit
+    , lens
+    , messagepack
+    , network
+    , path
+    , path-io
+    , polysemy
+    , polysemy-chronos
+    , polysemy-plugin
+    , polysemy-process
+    , polysemy-test
+    , ribosome
+    , ribosome-host
+    , ribosome-host-test
+    , typed-process
+  mixins:
+      base hiding (Prelude)
+  default-language: Haskell2010
+
+test-suite ribosome-test-unit
+  type: exitcode-stdio-1.0
+  main-is: Main.hs
+  other-modules:
+      Ribosome.Test.TmuxTest
+      Skip
+  hs-source-dirs:
+      test
+  default-extensions:
+      AllowAmbiguousTypes
+      ApplicativeDo
+      BangPatterns
+      BinaryLiterals
+      BlockArguments
+      ConstraintKinds
+      DataKinds
+      DefaultSignatures
+      DeriveAnyClass
+      DeriveDataTypeable
+      DeriveFoldable
+      DeriveFunctor
+      DeriveGeneric
+      DeriveLift
+      DeriveTraversable
+      DerivingStrategies
+      DerivingVia
+      DisambiguateRecordFields
+      DoAndIfThenElse
+      DuplicateRecordFields
+      EmptyDataDecls
+      ExistentialQuantification
+      FlexibleContexts
+      FlexibleInstances
+      FunctionalDependencies
+      GADTs
+      GeneralizedNewtypeDeriving
+      InstanceSigs
+      KindSignatures
+      LambdaCase
+      LiberalTypeSynonyms
+      MultiParamTypeClasses
+      MultiWayIf
+      NamedFieldPuns
+      OverloadedStrings
+      OverloadedLists
+      PackageImports
+      PartialTypeSignatures
+      PatternGuards
+      PatternSynonyms
+      PolyKinds
+      QuantifiedConstraints
+      QuasiQuotes
+      RankNTypes
+      RecordWildCards
+      RecursiveDo
+      RoleAnnotations
+      ScopedTypeVariables
+      StandaloneDeriving
+      TemplateHaskell
+      TupleSections
+      TypeApplications
+      TypeFamilies
+      TypeFamilyDependencies
+      TypeOperators
+      TypeSynonymInstances
+      UndecidableInstances
+      UnicodeSyntax
+      ViewPatterns
+      StandaloneKindSignatures
+      OverloadedLabels
+  ghc-options: -Wall -Wredundant-constraints -Wincomplete-uni-patterns -Wmissing-deriving-strategies -Widentities -Wunused-packages -fplugin=Polysemy.Plugin -threaded -rtsopts -with-rtsopts=-N
+  build-depends:
+      aeson
+    , base >=4.12 && <5
+    , chiasma
+    , chiasma-test
     , hedgehog
     , incipit
     , messagepack
+    , path
     , polysemy
+    , polysemy-conc
     , polysemy-plugin
     , polysemy-test
     , ribosome
     , ribosome-host
     , ribosome-host-test
+    , ribosome-test
+    , tasty
   mixins:
       base hiding (Prelude)
   default-language: Haskell2010

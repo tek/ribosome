@@ -4,61 +4,73 @@ import qualified Data.Text as Text
 import qualified Data.Text.IO as Text
 import Exon (exon)
 import Hedgehog.Internal.Property (failWith)
+import Log (Severity (Trace))
 import Path (Abs, Dir, Path, reldir, relfile, toFilePath, (</>))
 import Path.IO (copyDirRecur)
-import Polysemy.Chronos (interpretTimeChronos)
 import qualified Polysemy.Conc as Conc
-import Polysemy.Conc (interpretRace)
-import Polysemy.Log (Severity (Trace), interpretLogStdoutLevelConc)
 import qualified Polysemy.Test as Test
-import Polysemy.Test (Hedgehog, Test, TestError (TestError), UnitTest, assertEq, liftH, runTestAuto)
+import Polysemy.Test (TestError (TestError), UnitTest, assertEq, liftH)
 import qualified Polysemy.Time as Time
 import Polysemy.Time (MilliSeconds (MilliSeconds), Minutes (Minutes))
+import Ribosome.Embed (HandlerDeps, withPluginEmbed)
 import Ribosome.Host.Api.Effect (nvimCallFunction)
-import Ribosome.Host.Data.BootError (unBootError)
 import Ribosome.Host.Data.HostConfig (hostLog, logLevelStderr)
 import Ribosome.Host.Data.RpcError (RpcError)
 import Ribosome.Host.Effect.Rpc (Rpc)
-import Ribosome.Host.Embed (basicCliArgs, interpretCoreDeps, interpretHostEmbedCore)
+import Ribosome.Host.Embed (interpretEmbedExtra)
+import Ribosome.Host.IOStack (IOStack)
 import Ribosome.Host.Interpreter.Handlers (interpretHandlersNull)
-import Ribosome.Host.Interpreter.Host (withHost)
-import Ribosome.Host.Interpreter.UserError (interpretUserErrorInfo)
+import Ribosome.Host.Interpreter.Process.Embed (interpretProcessCerealNvimEmbed, nvimArgs)
+import Ribosome.Host.Run (interpretRpcStack)
+import Ribosome.Host.Test.Data.TestConfig (host)
+import Ribosome.Host.Test.Run (TestConfStack, TestIOStack, runTestConf)
+import Ribosome.Interpreter.Scratch (interpretScratch)
+import Ribosome.Interpreter.Settings (interpretSettingsRpc)
+import Ribosome.Interpreter.UserError (interpretUserErrorPrefixed)
 import System.Environment (lookupEnv)
 import System.Process.Typed (ProcessConfig, proc)
 
-conf ::
+import Integration ()
+
+nvimProc ::
   Path Abs Dir ->
   ProcessConfig () () ()
-conf path =
-  proc "nvim" (basicCliArgs <> ["--headless", "--cmd", [exon|set rtp+=#{toFilePath path}|]])
+nvimProc path =
+  proc "nvim" (nvimArgs <> ["--headless", "--cmd", [exon|set rtp+=#{toFilePath path}|]])
+
+interpretTestPluginEmbed ::
+  Member Log r =>
+  Members IOStack r =>
+  Path Abs Dir ->
+  InterpretersFor HandlerDeps r
+interpretTestPluginEmbed target =
+  runReader "test" .
+  interpretUserErrorPrefixed .
+  interpretProcessCerealNvimEmbed Nothing (Just (nvimProc target)) .
+  interpretEmbedExtra .
+  interpretRpcStack .
+  interpretSettingsRpc .
+  interpretScratch
 
 testPlugin ::
-  Members [Test, Hedgehog IO, Error TestError, Resource, Embed IO, Final IO] r =>
+  Members TestIOStack r =>
+  Members TestConfStack r =>
   Text ->
   Sem r ()
-testPlugin riboRoot =
-  asyncToIOFinal $
-  interpretRace $
-  interpretTimeChronos $
-  interpretUserErrorInfo $
-  interpretLogStdoutLevelConc (Just Trace) $
-  mapError (TestError . unBootError) do
-    source <- Test.fixturePath [reldir|plugin|]
-    target <- Test.tempDir [reldir|plugin|]
-    embed (copyDirRecur source target)
-    let flake = toFilePath (target </> [relfile|flake.nix|])
-    old <- embed (Text.readFile flake)
-    embed (Text.writeFile flake (Text.replace "RIBOSOME" (toText riboRoot) old))
-    interpretCoreDeps def { hostLog = def { logLevelStderr = Trace } } $
-      interpretHostEmbedCore Nothing (Just (conf target)) $
-      interpretHandlersNull $
-      withHost do
-        resumeHoistError @RpcError @Rpc (TestError . show @Text) do
-          Conc.timeout_ (liftH (failWith Nothing "RPC function did not appear")) (Minutes 2) do
-            Time.while (MilliSeconds 500) (resumeAs @RpcError True (False <$ nvimCallFunction @Int "Test" []))
-          assertEq (5 :: Int) =<< nvimCallFunction "Test" []
+testPlugin riboRoot = do
+  source <- Test.fixturePath [reldir|plugin|]
+  target <- Test.tempDir [reldir|plugin|]
+  embed (copyDirRecur source target)
+  let flake = toFilePath (target </> [relfile|flake.nix|])
+  old <- embed (Text.readFile flake)
+  embed (Text.writeFile flake (Text.replace "RIBOSOME" (toText riboRoot) old))
+  interpretTestPluginEmbed target $ interpretHandlersNull $ withPluginEmbed "test" mempty mempty do
+      resumeHoistError @RpcError @Rpc (TestError . show @Text) do
+        Conc.timeout_ (liftH (failWith Nothing "RPC function did not appear")) (Minutes 2) do
+          Time.while (MilliSeconds 500) (resumeAs @RpcError @Rpc True (False <$ nvimCallFunction @Int "Test" []))
+        assertEq (5 :: Int) =<< nvimCallFunction "Test" []
 
 test_plugin :: UnitTest
 test_plugin =
-  runTestAuto do
+  runTestConf def { host = def { hostLog = def { logLevelStderr = Trace } } } do
     traverse_ (testPlugin . toText) =<< embed (lookupEnv "RIBOSOME_ROOT")

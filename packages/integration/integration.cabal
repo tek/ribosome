@@ -5,7 +5,7 @@ cabal-version: 2.2
 -- see: https://github.com/sol/hpack
 
 name:           integration
-version:        0.1.0.0
+version:        0.9.0.0
 synopsis:       Neovim plugin host for Polysemy
 description:    Internal project for testing Ribosome
 category:       Neovim
@@ -181,6 +181,7 @@ test-suite integration
     , exon
     , hedgehog
     , incipit
+    , integration
     , path
     , path-io
     , polysemy
@@ -189,7 +190,10 @@ test-suite integration
     , polysemy-plugin
     , polysemy-process
     , polysemy-test
+    , ribosome
     , ribosome-host
+    , ribosome-host-test
+    , ribosome-test
     , tasty
     , typed-process
   mixins:

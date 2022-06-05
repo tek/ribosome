@@ -35,16 +35,16 @@ import Ribosome.Data.Setting (Setting (Setting))
 import Ribosome.Data.SettingError (SettingError (SettingError))
 import Ribosome.Effect.Scratch (Scratch)
 import Ribosome.Effect.Settings (Settings)
-import Ribosome.Embed (embedNvimPlugin, embedNvimPluginConf, embedNvimPlugin_, interpretPlugin, testPlugin)
+import Ribosome.Embed (embedNvimPlugin, embedNvimPlugin_, interpretPluginEmbed, testPluginEmbed)
 import Ribosome.Host
 import Ribosome.Locks (lockOrSkip)
 import Ribosome.Remote (
-  interpretNvimPlugin,
   interpretPluginRemote,
   runNvimPlugin,
   runNvimPluginIO,
   runNvimPluginIO_,
   runNvimPlugin_,
+  runPluginRemote,
   )
 
 -- $intro
@@ -75,7 +75,7 @@ import Ribosome.Remote (
 -- >
 -- > main :: IO ()
 -- > main =
--- >   runNvimPluginIO_ (PluginConfig "count-plugin" def) mempty mempty [rpcFunction "Count" Sync count]
+-- >   runNvimPluginIO_ (PluginConfig "counter" def) [rpcFunction "Count" Sync count] mempty mempty
 --
 -- This app can be used as a plugin by running it with @jobstart@ from Neovim:
 --

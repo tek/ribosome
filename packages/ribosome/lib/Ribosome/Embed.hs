@@ -4,44 +4,40 @@ import Data.MessagePack (Object)
 
 import Ribosome.Data.Mapping (MappingIdent)
 import Ribosome.Data.PluginName (PluginName)
-import Ribosome.Data.SettingError (SettingError)
 import Ribosome.Data.WatchedVariable (WatchedVariable)
 import Ribosome.Effect.BuiltinHandlers (BuiltinHandlers)
 import Ribosome.Effect.Scratch (Scratch)
 import Ribosome.Effect.Settings (Settings)
-import Ribosome.Host.Data.BootError (BootError (BootError))
+import Ribosome.Host.Data.BootError (BootError)
 import Ribosome.Host.Data.HandlerError (HandlerError)
-import Ribosome.Host.Data.HostConfig (HostConfig)
-import Ribosome.Host.Data.RpcError (RpcError)
 import Ribosome.Host.Data.RpcHandler (Handler, RpcHandler)
+import Ribosome.Host.Effect.Handlers (Handlers)
 import Ribosome.Host.Effect.Rpc (Rpc)
-import Ribosome.Host.Embed (EmbedStack, interpretCoreDeps, interpretHostEmbedCore)
-import Ribosome.Host.IOStack (IOStack)
-import Ribosome.Host.Interpreter.Handlers (interpretHandlers)
-import Ribosome.Host.Interpreter.Host (testHost)
+import Ribosome.Host.Embed (EmbedExtra, interpretEmbedExtra)
+import Ribosome.Host.Error (resumeBootError)
+import Ribosome.Host.IOStack (BasicStack, IOStack)
+import Ribosome.Host.Interpreter.Handlers (interceptHandlers, interpretHandlers)
+import Ribosome.Host.Interpreter.Host (withHost)
+import Ribosome.Host.Interpreter.Process.Embed (interpretProcessCerealNvimEmbed)
+import Ribosome.Host.Run (RpcDeps, RpcStack, interpretRpcStack)
 import Ribosome.Interpreter.BuiltinHandlers (interpretBuiltinHandlers)
 import Ribosome.Interpreter.Scratch (interpretScratch)
 import Ribosome.Interpreter.Settings (interpretSettingsRpc)
 import Ribosome.Interpreter.UserError (interpretUserErrorPrefixed)
 import Ribosome.Plugin.Builtin (builtinHandlers)
+import Ribosome.Run (PluginEffects)
 
-type PluginDeps =
-  '[Reader PluginName]
+type BasicPluginEmbedStack =
+  RpcStack ++ EmbedExtra ++ RpcDeps ++ '[Reader PluginName]
 
-type BasicPluginStack =
-  EmbedStack ++ PluginDeps
+type HandlerDeps =
+  PluginEffects ++ BasicPluginEmbedStack
 
-type PluginEffects =
-  [
-    Scratch !! RpcError,
-    Settings !! SettingError
-  ]
+type PluginEmbedStack =
+  BuiltinHandlers !! HandlerError : HandlerDeps
 
-type HandlerStack =
-  PluginEffects ++ BasicPluginStack
-
-type PluginStack =
-  BuiltinHandlers !! HandlerError : HandlerStack
+type PluginHandler r =
+  Handler (Handlers !! HandlerError : HandlerDeps ++ r) ()
 
 type TestEffects =
   [
@@ -50,88 +46,76 @@ type TestEffects =
     Rpc
   ]
 
-type TestPluginStack =
-  TestEffects ++ PluginStack
+type TestPluginEmbedStack =
+  TestEffects ++ Handlers !! HandlerError : HandlerDeps
 
-type PluginHandler r =
-  Handler (HandlerStack ++ r) ()
-
-interpretPluginStack ::
-  Members IOStack r =>
-  HostConfig ->
-  PluginName ->
-  InterpretersFor BasicPluginStack r
-interpretPluginStack conf name =
-  runReader name .
-  interpretCoreDeps conf .
+interpretRpcDeps ::
+  Members [Reader PluginName, Error BootError, Log, Resource, Race, Async, Embed IO] r =>
+  InterpretersFor RpcDeps r
+interpretRpcDeps =
   interpretUserErrorPrefixed .
-  interpretHostEmbedCore Nothing Nothing
+  interpretProcessCerealNvimEmbed Nothing Nothing
 
-interpretPluginEffects ::
-  ∀ r r' .
-  r' ~ PluginEffects ++ r =>
+interpretPluginEmbed ::
+  Member Log r =>
   Members IOStack r =>
-  Members BasicPluginStack r =>
-  Map MappingIdent (Handler r' ()) ->
-  Map WatchedVariable (Object -> Handler r' ()) ->
-  InterpretersFor (BuiltinHandlers !! HandlerError : PluginEffects) r
-interpretPluginEffects maps vars =
+  PluginName ->
+  InterpretersFor HandlerDeps r
+interpretPluginEmbed name =
+  runReader name .
+  interpretRpcDeps .
+  interpretEmbedExtra .
+  interpretRpcStack .
   interpretSettingsRpc .
-  interpretScratch .
-  interpretBuiltinHandlers maps vars
+  interpretScratch
 
-interpretPlugin ::
-  Members IOStack r =>
-  HostConfig ->
+withPluginEmbed ::
+  Members BasicStack r =>
+  Members HandlerDeps r =>
+  Member (Handlers !! HandlerError) r =>
   PluginName ->
-  Map MappingIdent (PluginHandler r) ->
-  Map WatchedVariable (Object -> PluginHandler r) ->
-  InterpretersFor PluginStack r
-interpretPlugin conf name maps vars =
-  interpretPluginStack conf name .
-  interpretPluginEffects maps vars
+  Map MappingIdent (Handler r ()) ->
+  Map WatchedVariable (Object -> Handler r ()) ->
+  Sem r a ->
+  Sem r a
+withPluginEmbed name maps vars =
+  interpretBuiltinHandlers maps vars .
+  interceptHandlers (builtinHandlers name) .
+  withHost .
+  insertAt @0
 
-testPlugin ::
-  ∀ r .
-  Members IOStack r =>
-  Members PluginStack r =>
+testPluginEmbed ::
+  Members BasicStack r =>
+  Members HandlerDeps r =>
+  Member (Handlers !! HandlerError) r =>
   PluginName ->
-  [RpcHandler r] ->
+  Map MappingIdent (Handler r ()) ->
+  Map WatchedVariable (Object -> Handler r ()) ->
   InterpretersFor TestEffects r
-testPlugin name handlers =
-  interpretHandlers (builtinHandlers name <> handlers) .
-  testHost .
-  resumeHoistError @_ @Settings (BootError . show @Text) .
-  resumeHoistError @_ @Scratch (BootError . show @Text) .
+testPluginEmbed name maps vars =
+  withPluginEmbed name maps vars .
+  resumeBootError @Rpc .
+  resumeBootError @Settings .
+  resumeBootError @Scratch .
   insertAt @3
 
-embedNvimPluginConf ::
-  Members IOStack r =>
-  HostConfig ->
-  PluginName ->
-  Map MappingIdent (PluginHandler r) ->
-  Map WatchedVariable (Object -> PluginHandler r) ->
-  [RpcHandler (PluginStack ++ r)] ->
-  InterpretersFor TestPluginStack r
-embedNvimPluginConf conf name maps vars handlers =
-  interpretPlugin conf name maps vars .
-  testPlugin name handlers
-
 embedNvimPlugin ::
-  Members IOStack r =>
+  Members BasicStack r =>
   PluginName ->
   Map MappingIdent (PluginHandler r) ->
   Map WatchedVariable (Object -> PluginHandler r) ->
-  [RpcHandler (PluginStack ++ r)] ->
-  InterpretersFor TestPluginStack r
-embedNvimPlugin =
-  embedNvimPluginConf def
+  [RpcHandler (HandlerDeps ++ r)] ->
+  InterpretersFor TestPluginEmbedStack r
+embedNvimPlugin name maps vars handlers =
+  interpretPluginEmbed name .
+  interpretHandlers handlers .
+  testPluginEmbed name maps vars
 
 embedNvimPlugin_ ::
-  Members IOStack r =>
+  Members BasicStack r =>
   PluginName ->
   Map MappingIdent (PluginHandler r) ->
   Map WatchedVariable (Object -> PluginHandler r) ->
-  InterpretersFor TestPluginStack r
+  InterpretersFor TestPluginEmbedStack r
 embedNvimPlugin_ name maps vars =
   embedNvimPlugin name maps vars []
