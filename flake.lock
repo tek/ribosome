@@ -10,11 +10,11 @@
         "polysemy-time": "polysemy-time_3"
       },
       "locked": {
-        "lastModified": 1654289192,
-        "narHash": "sha256-nDkwIQYmUZNTIPvHrIuFjkdfL4UvdWr9JRgBCRQ+o9E=",
+        "lastModified": 1654513516,
+        "narHash": "sha256-vkItPIZXYmQgPydYI/gpMlv5kkS9pTB/3Zg9RYsnWi8=",
         "owner": "tek",
         "repo": "chiasma",
-        "rev": "bd7ba39aeecd274f1c0f1f1b03f90b13a8404f98",
+        "rev": "8ff6bb97f7c0e5c92ecf9f788993d78703d18c04",
         "type": "github"
       },
       "original": {

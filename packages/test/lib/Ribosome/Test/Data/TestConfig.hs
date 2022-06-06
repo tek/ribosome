@@ -1,5 +1,7 @@
 module Ribosome.Test.Data.TestConfig where
 
+import Chiasma.Test.Tmux (TmuxTestConf (ttcGui))
+
 import Ribosome.Data.PluginConfig (PluginConfig (PluginConfig))
 
 data TestConfig =
@@ -12,3 +14,14 @@ data TestConfig =
 instance Default TestConfig where
   def =
     TestConfig False (PluginConfig "test" def)
+
+data TmuxTestConfig =
+  TmuxTestConfig {
+    core :: TestConfig,
+    tmux :: TmuxTestConf
+  }
+  deriving stock (Eq, Show, Generic)
+
+instance Default TmuxTestConfig where
+  def =
+    TmuxTestConfig def def { ttcGui = False }

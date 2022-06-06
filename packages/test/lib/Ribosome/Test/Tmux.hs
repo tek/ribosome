@@ -7,8 +7,9 @@ import Chiasma.Data.SendKeysParams (Key (Lit))
 import Chiasma.Data.TmuxError (TmuxError)
 import Chiasma.Effect.TmuxApi (Tmux)
 import Chiasma.Effect.TmuxClient (NativeTmux)
-import Chiasma.Test.Tmux (TestTmuxEffects, TmuxTestConf (ttcGui), withSystemTempDir, withTestTmux)
+import Chiasma.Test.Tmux (TestTmuxEffects, TmuxTestConf, withSystemTempDir, withTestTmux)
 import Chiasma.Tmux (withTmux)
+import Control.Lens ((.~))
 import Data.MessagePack (Object)
 import Exon (exon)
 import Hedgehog.Internal.Property (Failure)
@@ -31,7 +32,7 @@ import Ribosome.IOStack (BasicPluginStack, TestEffects)
 import Ribosome.Interpreter.NvimPlugin (interpretNvimPlugin, rpcHandlers)
 import Ribosome.Path (pathText)
 import Ribosome.Socket (HandlerDeps, interpretPluginSocket, testPluginSocket)
-import Ribosome.Test.Data.TestConfig (TestConfig)
+import Ribosome.Test.Data.TestConfig (TmuxTestConfig (TmuxTestConfig))
 import Ribosome.Test.Embed (runTestConf)
 import Ribosome.Test.Wait (assertWait)
 
@@ -60,10 +61,6 @@ type StackWith r =
 
 type Stack =
   StackWith '[]
-
-tmuxConf :: TmuxTestConf
-tmuxConf =
-  def { ttcGui = True }
 
 interpretTmuxErrors ::
   Member (Error BootError) r =>
@@ -101,10 +98,10 @@ withTmuxNvim sem = do
   runReader (NvimSocket socket) sem
 
 runTmuxNvim ::
-  TestConfig ->
+  TmuxTestConfig ->
   Sem TmuxTestStack () ->
   UnitTest
-runTmuxNvim conf =
+runTmuxNvim (TmuxTestConfig conf tmuxConf) =
   runTestConf conf .
   withTmuxTest tmuxConf .
   restop @TmuxError @NativeTmux .
@@ -113,19 +110,25 @@ runTmuxNvim conf =
   raiseUnder2 .
   withTmuxNvim
 
-runPluginTmuxTest ::
-  TestConfig ->
+runTmuxTestConf ::
+  TmuxTestConfig ->
   Sem HandlerStack () ->
   UnitTest
-runPluginTmuxTest conf =
+runTmuxTestConf conf =
   runTmuxNvim conf .
   interpretPluginSocket
 
-runTest ::
+runTmuxTest ::
   Sem HandlerStack () ->
   UnitTest
-runTest =
-  runPluginTmuxTest def
+runTmuxTest =
+  runTmuxTestConf def
+
+runTmuxGuiTest ::
+  Sem HandlerStack () ->
+  UnitTest
+runTmuxGuiTest =
+  runTmuxTestConf (def & #tmux . #ttcGui .~ True)
 
 testPluginTmuxHandlers ::
   Members BasicPluginStack r =>
@@ -140,13 +143,13 @@ testPluginTmuxHandlers handlers maps vars =
 
 testPluginTmuxConf ::
   ∀ r .
-  TestConfig ->
+  TmuxTestConfig ->
   Members HandlerStack (r ++ HandlerStack) =>
   InterpretersFor (NvimPlugin : r) HandlerStack ->
   Sem (StackWith r) () ->
   UnitTest
 testPluginTmuxConf conf handlers =
-  runPluginTmuxTest conf .
+  runTmuxTestConf conf .
   handlers .
   testPluginSocket
 
