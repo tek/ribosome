@@ -1,7 +1,7 @@
 module Ribosome.Host.Embed where
 
 import Conc (ChanConsumer, ChanEvents, interpretEventsChan)
-import qualified Polysemy.Process as Process
+import qualified Polysemy.Process.Effect.Process as Process
 import Polysemy.Process (Process)
 
 import Ribosome.Host.Data.BootError (BootError)
