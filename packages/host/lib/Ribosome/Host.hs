@@ -1,4 +1,5 @@
 module Ribosome.Host (
+  module Ribosome.Host.Api.Data,
   module Ribosome.Host.Class.Msgpack.Array,
   module Ribosome.Host.Class.Msgpack.Decode,
   module Ribosome.Host.Class.Msgpack.Encode,
@@ -17,6 +18,7 @@ module Ribosome.Host (
   module Ribosome.Host.Error,
 ) where
 
+import Ribosome.Host.Api.Data (Buffer, Tabpage, Window)
 import Ribosome.Host.Class.Msgpack.Array (msgpackArray)
 import Ribosome.Host.Class.Msgpack.Decode (MsgpackDecode (fromMsgpack))
 import Ribosome.Host.Class.Msgpack.Encode (MsgpackEncode (toMsgpack))
