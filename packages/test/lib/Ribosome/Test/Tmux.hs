@@ -176,8 +176,8 @@ testHandlersTmux ::
 testHandlersTmux handlers =
   testPluginTmux @'[] (rpcHandlers handlers)
 
-testRibosomeTmux ::
+testEmbedTmux ::
   Sem Stack () ->
   UnitTest
-testRibosomeTmux =
+testEmbedTmux =
   testHandlersTmux mempty

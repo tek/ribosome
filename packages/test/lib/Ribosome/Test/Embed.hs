@@ -12,7 +12,7 @@ import Ribosome.Effect.NvimPlugin (NvimPlugin)
 import Ribosome.Embed (HandlerDeps, interpretPluginEmbed, testPluginEmbed)
 import Ribosome.Host.Data.BootError (BootError)
 import Ribosome.Host.Data.RpcHandler (Handler, RpcHandler)
-import Ribosome.Host.Interpret (type (|>))
+import Ribosome.Host.Interpret (HigherOrder, type (|>))
 import qualified Ribosome.Host.Test.Data.TestConfig as Host
 import qualified Ribosome.Host.Test.Run as Host
 import Ribosome.Host.Test.Run (TestConfStack, TestStack, runUnitTest)
@@ -46,11 +46,11 @@ runTestConf conf =
   runUnitTest .
   runTestLogConf conf
 
-runPluginEmbedTest ::
+runEmbedTest ::
   TestConfig ->
   Sem PluginTestStack () ->
   UnitTest
-runPluginEmbedTest conf =
+runEmbedTest conf =
   runTestConf conf .
   interpretPluginEmbed
 
@@ -58,7 +58,7 @@ runTest ::
   Sem PluginTestStack () ->
   UnitTest
 runTest =
-  runPluginEmbedTest def
+  runEmbedTest def
 
 testPluginHandlers ::
   Members BasicPluginStack r =>
@@ -74,18 +74,18 @@ testPluginHandlers handlers maps vars =
 testPluginConf ::
   ∀ r .
   TestConfig ->
-  Members PluginTestStack (r ++ PluginTestStack) =>
+  HigherOrder r PluginTestStack =>
   InterpretersFor (NvimPlugin : r) PluginTestStack ->
   Sem (StackWith r) () ->
   UnitTest
 testPluginConf conf handlers =
-  runPluginEmbedTest conf .
+  runEmbedTest conf .
   handlers .
   testPluginEmbed
 
 testPlugin ::
   ∀ r .
-  Members PluginTestStack (r ++ PluginTestStack) =>
+  HigherOrder r PluginTestStack =>
   InterpretersFor (NvimPlugin : r) PluginTestStack ->
   Sem (StackWith r) () ->
   UnitTest
@@ -99,15 +99,55 @@ testPlugin_ ::
 testPlugin_ =
   testPlugin @'[]
 
+testHandlersConf ::
+  ∀ r .
+  HigherOrder r PluginTestStack =>
+  TestConfig ->
+  InterpretersFor r PluginTestStack ->
+  [RpcHandler (r ++ PluginTestStack)] ->
+  Sem (StackWith r) () ->
+  UnitTest
+testHandlersConf conf effs handlers =
+  testPluginConf @r conf (effs . rpcHandlers handlers)
+
 testHandlers ::
+  ∀ r .
+  HigherOrder r PluginTestStack =>
+  InterpretersFor r PluginTestStack ->
+  [RpcHandler (r ++ PluginTestStack)] ->
+  Sem (StackWith r) () ->
+  UnitTest
+testHandlers =
+  testHandlersConf @r def
+
+testHandlers_ ::
   [RpcHandler PluginTestStack] ->
   Sem Stack () ->
   UnitTest
-testHandlers handlers =
-  testPlugin @'[] (rpcHandlers handlers)
+testHandlers_ =
+  testHandlers @'[] id
 
-testRibosome ::
+testEmbedConf ::
+  ∀ r .
+  HigherOrder r PluginTestStack =>
+  TestConfig ->
+  InterpretersFor r PluginTestStack ->
+  Sem (StackWith r) () ->
+  UnitTest
+testEmbedConf conf effs =
+  testHandlersConf @r conf effs mempty
+
+testEmbed ::
+  ∀ r .
+  HigherOrder r PluginTestStack =>
+  InterpretersFor r PluginTestStack ->
+  Sem (StackWith r) () ->
+  UnitTest
+testEmbed =
+  testEmbedConf @r def
+
+testEmbed_ ::
   Sem Stack () ->
   UnitTest
-testRibosome =
-  testHandlers mempty
+testEmbed_ =
+  testHandlers_ mempty

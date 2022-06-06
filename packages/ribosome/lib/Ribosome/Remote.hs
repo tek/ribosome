@@ -5,6 +5,7 @@ import Ribosome.Data.PluginName (PluginName)
 import Ribosome.Effect.NvimPlugin (NvimPlugin)
 import Ribosome.Host.Data.RpcHandler (RpcHandler)
 import Ribosome.Host.IOStack (IOStack)
+import Ribosome.Host.Interpret (HigherOrder)
 import Ribosome.Host.Interpreter.Host (runHost)
 import Ribosome.Host.Interpreter.Process.Stdio (interpretProcessCerealStdio)
 import Ribosome.Host.Run (RpcDeps, RpcStack, interpretRpcStack)
@@ -51,35 +52,64 @@ runPluginHostRemote =
   interpretBuiltinHandlers $
   interceptHandlersBuiltin runHost
 
-runPluginRemote ::
-  InterpreterFor NvimPlugin RemoteStack ->
-  Sem BasicPluginStack ()
-runPluginRemote handlers =
-  interpretPluginRemote $
-  handlers runPluginHostRemote
-
 runNvimPlugin ::
+  ∀ r .
+  HigherOrder (NvimPlugin : r) RemoteStack =>
+  InterpretersFor (NvimPlugin : r) RemoteStack ->
+  Sem BasicPluginStack ()
+runNvimPlugin handlers =
+  interpretPluginRemote (handlers runPluginHostRemote)
+
+runNvimPlugin_ ::
   InterpreterFor NvimPlugin RemoteStack ->
   Sem BasicPluginStack ()
-runNvimPlugin =
-  runPluginRemote
+runNvimPlugin_ =
+  runNvimPlugin @'[]
 
 runNvimHandlers ::
+  ∀ r .
+  HigherOrder r RemoteStack =>
+  InterpretersFor r RemoteStack ->
+  [RpcHandler (r ++ RemoteStack)] ->
+  Sem BasicPluginStack ()
+runNvimHandlers effs handlers =
+  runNvimPlugin @r (effs . rpcHandlers handlers)
+
+runNvimHandlers_ ::
   [RpcHandler RemoteStack] ->
   Sem BasicPluginStack ()
-runNvimHandlers handlers =
-  runPluginRemote (rpcHandlers handlers)
+runNvimHandlers_ =
+  runNvimHandlers @'[] id
 
 runNvimPluginIO ::
+  ∀ r .
+  HigherOrder (NvimPlugin : r) RemoteStack =>
+  PluginConfig ->
+  InterpretersFor (NvimPlugin : r) RemoteStack ->
+  IO ()
+runNvimPluginIO conf handlers =
+  runBasicPluginStack conf (runNvimPlugin @r handlers)
+
+runNvimPluginIO_ ::
   PluginConfig ->
   InterpreterFor NvimPlugin RemoteStack ->
   IO ()
-runNvimPluginIO conf handlers =
-  runBasicPluginStack conf (runNvimPlugin handlers)
+runNvimPluginIO_ =
+  runNvimPluginIO @'[]
 
 runNvimHandlersIO ::
+  ∀ r .
+  HigherOrder r RemoteStack =>
+  PluginConfig ->
+  InterpretersFor r RemoteStack ->
+  [RpcHandler (r ++ RemoteStack)] ->
+  IO ()
+runNvimHandlersIO conf effs handlers =
+  runBasicPluginStack conf (runNvimHandlers @r effs handlers)
+
+runNvimHandlersIO_ ::
   PluginConfig ->
   [RpcHandler RemoteStack] ->
   IO ()
-runNvimHandlersIO conf handlers =
-  runBasicPluginStack conf (runNvimHandlers handlers)
+runNvimHandlersIO_ conf =
+  runNvimHandlersIO @'[] conf id

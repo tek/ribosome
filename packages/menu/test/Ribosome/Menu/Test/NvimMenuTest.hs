@@ -52,7 +52,7 @@ import Ribosome.Menu.Prompt.Run (withPromptInput)
 import Ribosome.Menu.Prompt.Transition (basicTransition)
 import Ribosome.Menu.Run (nvimMenu, nvimMenuWith, staticNvimMenu)
 import Ribosome.Test.Error (resumeTestError)
-import Ribosome.Test.Embed (testRibosome)
+import Ribosome.Test.Embed (testEmbed_)
 
 sleep ::
   Double ->
@@ -137,7 +137,7 @@ nvimMenuTest =
 
 test_nvimMenuPure :: UnitTest
 test_nvimMenuPure =
-  testRibosome $ interpretSync do
+  testEmbed_ $ interpretSync do
     nvimMenuTest (promptInput pureChars)
 
 nativeChars :: [Text]
@@ -146,14 +146,14 @@ nativeChars =
 
 test_nvimMenuNative :: UnitTest
 test_nvimMenuNative =
-  testRibosome $ interpretSync do
+  testEmbed_ $ interpretSync do
     inp <- getCharStream (MilliSeconds 10)
     withPromptInput (Just (MilliSeconds 10)) nativeChars do
       nvimMenuTest inp
 
 test_nvimMenuInterrupt :: UnitTest
 test_nvimMenuInterrupt =
-  testRibosome $ interpretMaskFinal $ interpretSync do
+  testEmbed_ $ interpretMaskFinal $ interpretSync do
     conf <- promptConfig <$> getCharStream (MilliSeconds 10)
     (MenuResult.Aborted ===) =<< withPromptInput (Just (MilliSeconds 50)) ["<c-c>", "<cr>"] do
       resumeTestError (nvimMenuWith @_ @() fuzzy def (menuItems items) Consumer.basic conf)
@@ -177,14 +177,14 @@ navMappings =
 
 test_nvimMenuNav :: UnitTest
 test_nvimMenuNav =
-  testRibosome $ interpretSync do
+  testEmbed_ $ interpretSync do
     assertEq (MenuResult.Success "toem") =<< do
       withPromptInput (Just (MilliSeconds 10)) navChars do
         runNvimMenu navMappings =<< getCharStream (MilliSeconds 10)
 
 test_nvimMenuQuit :: UnitTest
 test_nvimMenuQuit =
-  testRibosome $ interpretMaskFinal $ resumeTestError @Scratch do
+  testEmbed_ $ interpretMaskFinal $ resumeTestError @Scratch do
     void $ staticNvimMenu def [] Consumer.basic (PromptConfig inp basicTransition nvimPromptRenderer [])
     assertEq [""] =<< traverse bufferGetName =<< filterM buflisted =<< vimGetBuffers
   where
@@ -233,7 +233,7 @@ test_entrySlice =
 
 test_menuScrollUp :: UnitTest
 test_menuScrollUp =
-  testRibosome $ interpretMaskFinal $ resumeTestError @Scratch do
+  testEmbed_ $ interpretMaskFinal $ resumeTestError @Scratch do
     let prompt = PromptConfig (promptInputWith (Just 0.2) (Just 0.01) chars) basicTransition nvimPromptRenderer []
     Success a <- nvimMenu def { maxSize = Just 4 } (menuItems its) consumer prompt
     4 === length a

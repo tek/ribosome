@@ -7,6 +7,8 @@ module Ribosome (
 
   -- $project
 
+  module Ribosome.Effect.Scratch,
+  module Ribosome.Effect.Settings,
   module Ribosome.Data.FloatOptions,
   module Ribosome.Data.PluginConfig,
   module Ribosome.Data.Register,
@@ -16,16 +18,15 @@ module Ribosome (
   module Ribosome.Data.ScratchState,
   module Ribosome.Data.Setting,
   module Ribosome.Data.SettingError,
-  module Ribosome.Effect.Scratch,
-  module Ribosome.Effect.Settings,
   module Ribosome.Embed,
   module Ribosome.Host,
+  module Ribosome.IOStack,
   module Ribosome.Locks,
   module Ribosome.Remote,
 ) where
 
 import Ribosome.Data.FloatOptions (FloatOptions (FloatOptions))
-import Ribosome.Data.PluginConfig (PluginConfig (PluginConfig))
+import Ribosome.Data.PluginConfig (PluginConfig (PluginConfig), pluginNamed)
 import Ribosome.Data.Register (Register, registerRepr)
 import Ribosome.Data.RegisterType (RegisterType)
 import Ribosome.Data.ScratchId (ScratchId (ScratchId))
@@ -37,15 +38,20 @@ import Ribosome.Effect.Scratch (Scratch)
 import Ribosome.Effect.Settings (Settings)
 import Ribosome.Embed (embedNvimPlugin, embedNvimPlugin_, interpretPluginEmbed, testPluginEmbed)
 import Ribosome.Host
+import Ribosome.IOStack (BasicPluginStack, TestEffects, runBasicPluginStack)
 import Ribosome.Locks (lockOrSkip)
 import Ribosome.Remote (
+  RemoteStack,
   interpretPluginRemote,
   runNvimHandlers,
   runNvimHandlersIO,
+  runNvimHandlersIO_,
+  runNvimHandlers_,
   runNvimPlugin,
   runNvimPluginIO,
+  runNvimPluginIO_,
+  runNvimPlugin_,
   runPluginHostRemote,
-  runPluginRemote,
   )
 
 -- $intro
@@ -76,7 +82,7 @@ import Ribosome.Remote (
 -- >
 -- > main :: IO ()
 -- > main =
--- >   runNvimHandlersIO (PluginConfig "counter" def) [rpcFunction "Count" Sync count]
+-- >   runNvimHandlersIO_ (PluginConfig "counter" def) [rpcFunction "Count" Sync count]
 --
 -- This app can be used as a plugin by running it with @jobstart@ from Neovim:
 --

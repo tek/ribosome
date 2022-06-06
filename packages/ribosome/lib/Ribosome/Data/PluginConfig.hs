@@ -9,3 +9,11 @@ data PluginConfig =
     host :: HostConfig
   }
   deriving stock (Eq, Show, Generic)
+
+pluginNamed :: PluginName -> PluginConfig
+pluginNamed name =
+  PluginConfig name def
+
+instance IsString PluginConfig where
+  fromString =
+    pluginNamed . fromString

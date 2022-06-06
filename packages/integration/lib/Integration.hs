@@ -7,7 +7,7 @@ import Ribosome.Host.Data.Execution (Execution (Sync))
 import Ribosome.Host.Data.HostConfig (setStderr)
 import Ribosome.Host.Data.RpcHandler (RpcHandler (RpcHandler))
 import qualified Ribosome.Host.Data.RpcType as RpcType
-import Ribosome.Remote (runNvimHandlersIO)
+import Ribosome.Remote (runNvimHandlersIO_)
 
 hand ::
   [Object] ->
@@ -22,4 +22,4 @@ handlers =
 
 integrationTest :: IO ()
 integrationTest =
-  runNvimHandlersIO (PluginConfig "int" (setStderr Debug def)) handlers
+  runNvimHandlersIO_ (PluginConfig "int" (setStderr Debug def)) handlers
