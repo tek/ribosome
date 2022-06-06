@@ -5,7 +5,7 @@ cabal-version: 2.2
 -- see: https://github.com/sol/hpack
 
 name:           ribosome
-version:        0.9.0.0
+version:        0.9.9.9
 synopsis:       Neovim plugin framework for Polysemy
 description:    See https://hackage.haskell.org/package/ribosome/docs/Ribosome.html
 category:       Neovim
