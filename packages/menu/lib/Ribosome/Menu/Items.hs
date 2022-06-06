@@ -17,7 +17,7 @@ import Ribosome.Menu.Data.MenuConsumer (MenuWidget)
 import Ribosome.Menu.Data.MenuData (cursor, entries, history, items)
 import qualified Ribosome.Menu.Data.MenuItem as MenuItem
 import Ribosome.Menu.Data.MenuItem (MenuItem)
-import Ribosome.Menu.Data.MenuState (CursorLock, ItemsLock, MenuSem, menuWrite, semState, unSemS)
+import Ribosome.Menu.Data.MenuState (MenuSem, menuWrite, semState, unSemS)
 import Ribosome.Menu.ItemLens (focus, selected, selected')
 
 -- |Run an action with the focused entry if the menu is non-empty.
@@ -37,14 +37,14 @@ withFocus' f =
 -- |Run an action with the focused entry and quit the menu with the returned value.
 -- If the menu was empty, do nothing (i.e. skip the event).
 withFocus ::
-  Members [Sync ItemsLock, Sync CursorLock, Resource, Embed IO] r =>
+  Members [Resource, Embed IO] r =>
   (i -> MenuSem i r (Sem r a)) ->
   MenuWidget i r a
 withFocus f =
   Just . maybe MenuAction.Continue MenuAction.success <$> menuWrite (withFocus' f)
 
 withFocusM ::
-  Members [Sync ItemsLock, Sync CursorLock, Resource, Embed IO] r =>
+  Members [Resource, Embed IO] r =>
   (i -> Sem r a) ->
   MenuWidget i r a
 withFocusM f =
@@ -67,14 +67,14 @@ withSelection' f =
 -- |Run an action with the selection or the focused entry and quit the menu with the returned value.
 -- If the menu was empty, do nothing (i.e. skip the event).
 withSelection ::
-  Members [Sync ItemsLock, Sync CursorLock, Resource, Embed IO] r =>
+  Members [Resource, Embed IO] r =>
   (NonEmpty i -> MenuSem i r (Sem r a)) ->
   MenuWidget i r a
 withSelection f =
   Just . maybe MenuAction.Continue MenuAction.success <$> menuWrite (withSelection' f)
 
 withSelectionM ::
-  Members [Sync ItemsLock, Sync CursorLock, Resource, Embed IO] r =>
+  Members [Resource, Embed IO] r =>
   (NonEmpty i -> Sem r a) ->
   MenuWidget i r a
 withSelectionM f =
@@ -83,7 +83,7 @@ withSelectionM f =
 -- |Run an action with each entry in the selection or the focused entry and quit the menu with '()'.
 -- If the menu was empty, do nothing (i.e. skip the event).
 traverseSelection_ ::
-  Members [Sync ItemsLock, Sync CursorLock, Resource, Embed IO] r =>
+  Members [Resource, Embed IO] r =>
   (i -> MenuSem i r ()) ->
   MenuWidget i r ()
 traverseSelection_ f =
