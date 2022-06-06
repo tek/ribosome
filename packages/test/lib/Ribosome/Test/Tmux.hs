@@ -98,6 +98,7 @@ withTmuxNvim sem = do
   runReader (NvimSocket socket) sem
 
 runTmuxNvim ::
+  HasCallStack =>
   TmuxTestConfig ->
   Sem TmuxTestStack () ->
   UnitTest
@@ -111,6 +112,7 @@ runTmuxNvim (TmuxTestConfig conf tmuxConf) =
   withTmuxNvim
 
 runTmuxTestConf ::
+  HasCallStack =>
   TmuxTestConfig ->
   Sem HandlerStack () ->
   UnitTest
@@ -119,12 +121,14 @@ runTmuxTestConf conf =
   interpretPluginSocket
 
 runTmuxTest ::
+  HasCallStack =>
   Sem HandlerStack () ->
   UnitTest
 runTmuxTest =
   runTmuxTestConf def
 
 runTmuxGuiTest ::
+  HasCallStack =>
   Sem HandlerStack () ->
   UnitTest
 runTmuxGuiTest =
@@ -143,8 +147,9 @@ testPluginTmuxHandlers handlers maps vars =
 
 testPluginTmuxConf ::
   ∀ r .
-  TmuxTestConfig ->
+  HasCallStack =>
   Members HandlerStack (r ++ HandlerStack) =>
+  TmuxTestConfig ->
   InterpretersFor (NvimPlugin : r) HandlerStack ->
   Sem (StackWith r) () ->
   UnitTest
@@ -155,6 +160,7 @@ testPluginTmuxConf conf handlers =
 
 testPluginTmux ::
   ∀ r .
+  HasCallStack =>
   Members HandlerStack (r ++ HandlerStack) =>
   InterpretersFor (NvimPlugin : r) HandlerStack ->
   Sem (StackWith r) () ->
@@ -163,6 +169,7 @@ testPluginTmux =
   testPluginTmuxConf @r def
 
 testPluginTmux_ ::
+  HasCallStack =>
   InterpreterFor NvimPlugin HandlerStack ->
   Sem Stack () ->
   UnitTest
@@ -170,6 +177,7 @@ testPluginTmux_ =
   testPluginTmux @'[]
 
 testHandlersTmux ::
+  HasCallStack =>
   [RpcHandler HandlerStack] ->
   Sem Stack () ->
   UnitTest
@@ -177,6 +185,7 @@ testHandlersTmux handlers =
   testPluginTmux @'[] (rpcHandlers handlers)
 
 testEmbedTmux ::
+  HasCallStack =>
   Sem Stack () ->
   UnitTest
 testEmbedTmux =

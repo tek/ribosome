@@ -47,6 +47,7 @@ runTestConf conf =
   runTestLogConf conf
 
 runEmbedTest ::
+  HasCallStack =>
   TestConfig ->
   Sem PluginTestStack () ->
   UnitTest
@@ -55,6 +56,7 @@ runEmbedTest conf =
   interpretPluginEmbed
 
 runTest ::
+  HasCallStack =>
   Sem PluginTestStack () ->
   UnitTest
 runTest =
@@ -73,8 +75,9 @@ testPluginHandlers handlers maps vars =
 
 testPluginConf ::
   ∀ r .
-  TestConfig ->
+  HasCallStack =>
   HigherOrder r PluginTestStack =>
+  TestConfig ->
   InterpretersFor (NvimPlugin : r) PluginTestStack ->
   Sem (StackWith r) () ->
   UnitTest
@@ -85,6 +88,7 @@ testPluginConf conf handlers =
 
 testPlugin ::
   ∀ r .
+  HasCallStack =>
   HigherOrder r PluginTestStack =>
   InterpretersFor (NvimPlugin : r) PluginTestStack ->
   Sem (StackWith r) () ->
@@ -93,6 +97,7 @@ testPlugin =
   testPluginConf @r def
 
 testPlugin_ ::
+  HasCallStack =>
   InterpreterFor NvimPlugin PluginTestStack ->
   Sem Stack () ->
   UnitTest
@@ -101,6 +106,7 @@ testPlugin_ =
 
 testHandlersConf ::
   ∀ r .
+  HasCallStack =>
   HigherOrder r PluginTestStack =>
   TestConfig ->
   InterpretersFor r PluginTestStack ->
@@ -112,6 +118,7 @@ testHandlersConf conf effs handlers =
 
 testHandlers ::
   ∀ r .
+  HasCallStack =>
   HigherOrder r PluginTestStack =>
   InterpretersFor r PluginTestStack ->
   [RpcHandler (r ++ PluginTestStack)] ->
@@ -121,6 +128,7 @@ testHandlers =
   testHandlersConf @r def
 
 testHandlers_ ::
+  HasCallStack =>
   [RpcHandler PluginTestStack] ->
   Sem Stack () ->
   UnitTest
@@ -129,6 +137,7 @@ testHandlers_ =
 
 testEmbedConf ::
   ∀ r .
+  HasCallStack =>
   HigherOrder r PluginTestStack =>
   TestConfig ->
   InterpretersFor r PluginTestStack ->
@@ -139,6 +148,7 @@ testEmbedConf conf effs =
 
 testEmbed ::
   ∀ r .
+  HasCallStack =>
   HigherOrder r PluginTestStack =>
   InterpretersFor r PluginTestStack ->
   Sem (StackWith r) () ->
@@ -147,6 +157,7 @@ testEmbed =
   testEmbedConf @r def
 
 testEmbed_ ::
+  HasCallStack =>
   Sem Stack () ->
   UnitTest
 testEmbed_ =
