@@ -4,47 +4,53 @@ import Data.MessagePack (Object)
 import Polysemy.Test (UnitTest)
 
 import Ribosome.Data.Mapping (MappingIdent)
+import Ribosome.Data.PluginName (PluginName)
 import Ribosome.Data.WatchedVariable (WatchedVariable)
-import Ribosome.Effect.NvimPlugin (NvimPlugin')
-import Ribosome.Embed (HandlerDeps, TestEffects, interpretPluginEmbed, testPluginEmbed)
+import Ribosome.Effect.NvimPlugin (NvimPlugin)
+import Ribosome.Embed (HandlerDeps, interpretPluginEmbed, testPluginEmbed)
 import Ribosome.Host.Data.RpcHandler (Handler, RpcHandler)
+import Ribosome.Host.Interpret (type (|>))
 import qualified Ribosome.Host.Test.Run as Host
 import Ribosome.Host.Test.Run (TestStack)
-import Ribosome.Interpreter.NvimPlugin (pluginHandlers)
+import Ribosome.IOStack (TestEffects)
+import Ribosome.Interpreter.NvimPlugin (interpretNvimPlugin)
+
+type HandlerTestStack =
+  HandlerDeps ++ Reader PluginName : TestStack
 
 type PluginTestStack =
-  HandlerDeps ++ TestStack
+  TestEffects ++ NvimPlugin : HandlerTestStack
 
 runTest ::
-  Sem PluginTestStack () ->
+  Sem HandlerTestStack () ->
   UnitTest
 runTest =
   Host.runTest .
-  interpretPluginEmbed "test"
+  runReader "test" .
+  interpretPluginEmbed
 
 testHandlers ::
-  Members PluginTestStack r =>
+  Members HandlerTestStack r =>
   [RpcHandler r] ->
   Map MappingIdent (Handler r ()) ->
   Map WatchedVariable (Object -> Handler r ()) ->
-  InterpretersFor (TestEffects ++ NvimPlugin') r
+  InterpretersFor (TestEffects |> NvimPlugin) r
 testHandlers handlers maps vars =
-  pluginHandlers handlers maps vars .
-  testPluginEmbed "test"
+  interpretNvimPlugin handlers maps vars .
+  testPluginEmbed
 
 runTestHandlers ::
-  [RpcHandler PluginTestStack] ->
-  Map MappingIdent (Handler PluginTestStack ()) ->
-  Map WatchedVariable (Object -> Handler PluginTestStack ()) ->
-  Sem (TestEffects ++ NvimPlugin' ++ PluginTestStack) () ->
+  [RpcHandler HandlerTestStack] ->
+  Map MappingIdent (Handler HandlerTestStack ()) ->
+  Map WatchedVariable (Object -> Handler HandlerTestStack ()) ->
+  Sem PluginTestStack () ->
   UnitTest
 runTestHandlers handlers maps vars =
   runTest .
-  pluginHandlers handlers maps vars .
-  testPluginEmbed "test"
+  testHandlers handlers maps vars
 
 runTestRibosome ::
-  Sem (TestEffects ++ NvimPlugin' ++ PluginTestStack) () ->
+  Sem PluginTestStack () ->
   UnitTest
 runTestRibosome =
   runTestHandlers mempty mempty mempty

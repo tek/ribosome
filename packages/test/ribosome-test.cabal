@@ -20,8 +20,8 @@ library
   exposed-modules:
       Ribosome.Test
       Ribosome.Test.Data.TestConfig
+      Ribosome.Test.Embed
       Ribosome.Test.Error
-      Ribosome.Test.Run
       Ribosome.Test.Screenshot
       Ribosome.Test.Tmux
       Ribosome.Test.Ui

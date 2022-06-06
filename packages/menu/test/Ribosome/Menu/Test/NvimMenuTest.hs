@@ -52,7 +52,7 @@ import Ribosome.Menu.Prompt.Run (withPromptInput)
 import Ribosome.Menu.Prompt.Transition (basicTransition)
 import Ribosome.Menu.Run (nvimMenu, nvimMenuWith, staticNvimMenu)
 import Ribosome.Test.Error (resumeTestError)
-import Ribosome.Test.Run (testRibosome)
+import Ribosome.Test.Embed (testRibosome)
 
 sleep ::
   Double ->

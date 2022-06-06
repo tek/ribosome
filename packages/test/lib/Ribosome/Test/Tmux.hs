@@ -19,16 +19,20 @@ import qualified Polysemy.Test as Test
 import Polysemy.Test (Hedgehog, Test, UnitTest, assert)
 
 import Ribosome.Data.Mapping (MappingIdent)
-import Ribosome.Data.PluginConfig (PluginConfig (..))
+import Ribosome.Data.PluginName (PluginName)
 import Ribosome.Data.WatchedVariable (WatchedVariable)
+import Ribosome.Effect.NvimPlugin (NvimPlugin)
 import Ribosome.Host.Data.BootError (BootError (BootError))
 import Ribosome.Host.Data.NvimSocket (NvimSocket (NvimSocket))
-import Ribosome.Host.Data.RpcHandler (RpcHandler)
-import qualified Ribosome.Host.Test.Data.TestConfig as Host
-import Ribosome.Host.Test.Run (TestStack, runTestConf)
+import Ribosome.Host.Data.RpcHandler (Handler, RpcHandler)
+import Ribosome.Host.Interpret (type (|>))
+import Ribosome.Host.Test.Run (TestStack)
+import Ribosome.IOStack (BasicPluginStack, TestEffects)
+import Ribosome.Interpreter.NvimPlugin (interpretNvimPlugin, rpcHandlers)
 import Ribosome.Path (pathText)
-import Ribosome.Socket (PluginHandler, PluginSocketStack, TestPluginSocketStack, socketNvimPlugin)
-import Ribosome.Test.Data.TestConfig (TestConfig (TestConfig))
+import Ribosome.Socket (HandlerDeps, interpretPluginSocket, testPluginSocket)
+import Ribosome.Test.Data.TestConfig (TestConfig)
+import Ribosome.Test.Embed (runTestConf)
 import Ribosome.Test.Wait (assertWait)
 
 type TmuxErrors =
@@ -45,37 +49,40 @@ type TmuxErrors =
 type TmuxStack =
   TestTmuxEffects ++ TmuxErrors
 
-type TmuxStack' =
-  Reader NvimSocket : Tmux : TmuxStack
-
 type TmuxTestStack =
-  TmuxStack' ++ TestStack
+  Reader NvimSocket : Tmux : TmuxStack ++ Reader PluginName : TestStack
 
-type TmuxHandler =
-  PluginHandler TmuxTestStack
+type HandlerStack =
+  HandlerDeps ++ TmuxTestStack
 
-type TmuxPluginStack =
-  PluginSocketStack ++ TmuxTestStack
+type StackWith r =
+  TestEffects ++ NvimPlugin : r ++ HandlerStack
 
-type TestTmuxPluginStack =
-  TestPluginSocketStack ++ TmuxTestStack
+type Stack =
+  StackWith '[]
 
 tmuxConf :: TmuxTestConf
 tmuxConf =
   def { ttcGui = True }
 
-withTmuxTest ::
-  Members TestStack r =>
-  TmuxTestConf ->
-  InterpretersFor TmuxStack r
-withTmuxTest conf =
+interpretTmuxErrors ::
+  Member (Error BootError) r =>
+  InterpretersFor TmuxErrors r
+interpretTmuxErrors =
   mapError BootError .
   mapError @TmuxError (BootError . show) .
   stopToError .
   mapError @RenderError (BootError . show) .
   stopToError .
   mapError @CodecError (BootError . show) .
-  stopToError .
+  stopToError
+
+withTmuxTest ::
+  Members TestStack r =>
+  TmuxTestConf ->
+  InterpretersFor TmuxStack r
+withTmuxTest conf =
+  interpretTmuxErrors .
   withSystemTempDir .
   withTestTmux conf
 
@@ -93,19 +100,81 @@ withTmuxNvim sem = do
   assertWait (pure socket) (assert <=< doesPathExist)
   runReader (NvimSocket socket) sem
 
-tmuxPluginTestConf ::
+runTmuxNvim ::
   TestConfig ->
-  [RpcHandler (PluginSocketStack ++ TmuxTestStack)] ->
-  Map MappingIdent TmuxHandler ->
-  Map WatchedVariable (Object -> TmuxHandler) ->
-  Sem TestTmuxPluginStack () ->
+  Sem TmuxTestStack () ->
   UnitTest
-tmuxPluginTestConf (TestConfig freeze (PluginConfig name conf)) handlers maps vars =
-  runTestConf (Host.TestConfig freeze conf) .
+runTmuxNvim conf =
+  runTestConf conf .
   withTmuxTest tmuxConf .
   restop @TmuxError @NativeTmux .
   withTmux .
   restop @CodecError @Tmux .
   raiseUnder2 .
-  withTmuxNvim .
-  socketNvimPlugin handlers name maps vars
+  withTmuxNvim
+
+runPluginTmuxTest ::
+  TestConfig ->
+  Sem HandlerStack () ->
+  UnitTest
+runPluginTmuxTest conf =
+  runTmuxNvim conf .
+  interpretPluginSocket
+
+runTest ::
+  Sem HandlerStack () ->
+  UnitTest
+runTest =
+  runPluginTmuxTest def
+
+testPluginTmuxHandlers ::
+  Members BasicPluginStack r =>
+  Members HandlerDeps r =>
+  [RpcHandler r] ->
+  Map MappingIdent (Handler r ()) ->
+  Map WatchedVariable (Object -> Handler r ()) ->
+  InterpretersFor (TestEffects |> NvimPlugin) r
+testPluginTmuxHandlers handlers maps vars =
+  interpretNvimPlugin handlers maps vars .
+  testPluginSocket
+
+testPluginTmuxConf ::
+  ∀ r .
+  TestConfig ->
+  Members HandlerStack (r ++ HandlerStack) =>
+  InterpretersFor (NvimPlugin : r) HandlerStack ->
+  Sem (StackWith r) () ->
+  UnitTest
+testPluginTmuxConf conf handlers =
+  runPluginTmuxTest conf .
+  handlers .
+  testPluginSocket
+
+testPluginTmux ::
+  ∀ r .
+  Members HandlerStack (r ++ HandlerStack) =>
+  InterpretersFor (NvimPlugin : r) HandlerStack ->
+  Sem (StackWith r) () ->
+  UnitTest
+testPluginTmux =
+  testPluginTmuxConf @r def
+
+testPluginTmux_ ::
+  InterpreterFor NvimPlugin HandlerStack ->
+  Sem Stack () ->
+  UnitTest
+testPluginTmux_ =
+  testPluginTmux @'[]
+
+testHandlersTmux ::
+  [RpcHandler HandlerStack] ->
+  Sem Stack () ->
+  UnitTest
+testHandlersTmux handlers =
+  testPluginTmux @'[] (rpcHandlers handlers)
+
+testRibosomeTmux ::
+  Sem Stack () ->
+  UnitTest
+testRibosomeTmux =
+  testHandlersTmux mempty

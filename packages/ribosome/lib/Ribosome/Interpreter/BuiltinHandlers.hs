@@ -7,7 +7,7 @@ import Ribosome.Data.Locks (WatcherLock (WatcherLock))
 import Ribosome.Data.WatchedVariable (WatchedVariable)
 import Ribosome.Effect.BuiltinHandlers (BuiltinHandlers (Mapping, Variables))
 import qualified Ribosome.Effect.MappingHandler as MappingHandler
-import Ribosome.Effect.NvimPlugin (NvimPlugin')
+import Ribosome.Effect.MappingHandler (MappingHandler)
 import Ribosome.Effect.VariableWatcher (VariableWatcher)
 import Ribosome.Host.Data.HandlerError (HandlerError)
 import Ribosome.Host.Data.RpcError (RpcError)
@@ -16,7 +16,7 @@ import Ribosome.VariableWatcher (variableWatcherHandler)
 
 interpretBuiltinHandlers ::
   ∀ r .
-  Members NvimPlugin' r =>
+  Members [VariableWatcher !! HandlerError, MappingHandler !! HandlerError] r =>
   Members [Rpc !! RpcError, Race, Resource, Embed IO] r =>
   InterpreterFor (BuiltinHandlers !! HandlerError) r
 interpretBuiltinHandlers =
