@@ -11,6 +11,7 @@ module Ribosome (
   module Ribosome.Effect.Settings,
   module Ribosome.Data.FloatOptions,
   module Ribosome.Data.PluginConfig,
+  module Ribosome.Data.PluginName,
   module Ribosome.Data.Register,
   module Ribosome.Data.RegisterType,
   module Ribosome.Data.ScratchId,
@@ -27,6 +28,7 @@ module Ribosome (
 
 import Ribosome.Data.FloatOptions (FloatOptions (FloatOptions))
 import Ribosome.Data.PluginConfig (PluginConfig (PluginConfig), pluginNamed)
+import Ribosome.Data.PluginName (PluginName (PluginName))
 import Ribosome.Data.Register (Register, registerRepr)
 import Ribosome.Data.RegisterType (RegisterType)
 import Ribosome.Data.ScratchId (ScratchId (ScratchId))
