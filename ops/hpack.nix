@@ -168,6 +168,7 @@ in {
       "generic-lens"
       "hedgehog"
       "lens"
+      "lens-regex-pcre"
       "messagepack"
       "network"
       "ribosome"

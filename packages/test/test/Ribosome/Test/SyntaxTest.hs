@@ -1,0 +1,22 @@
+module Ribosome.Test.SyntaxTest where
+
+import Polysemy.Test (UnitTest)
+
+import Ribosome.Api.Buffer (setCurrentBufferContent)
+import Ribosome.Api.Syntax (executeSyntax)
+import Ribosome.Data.Syntax (Syntax (Syntax))
+import Ribosome.Syntax (syntaxHighlight, syntaxMatch)
+import Ribosome.Test.Screenshot (awaitScreenshot)
+import Ribosome.Test.Tmux (testEmbedTmux)
+
+syntax :: Syntax
+syntax =
+  Syntax [syntaxMatch "TestColons" "::"] [syntaxHighlight "TestColons"
+    [("cterm", "reverse"), ("ctermfg", "1"), ("gui", "reverse"), ("guifg", "#dc322f")]] []
+
+test_syntax :: UnitTest
+test_syntax =
+  testEmbedTmux do
+    setCurrentBufferContent ["function :: String -> Int", "function _ = 5"]
+    _ <- executeSyntax syntax
+    awaitScreenshot False "syntax" 0

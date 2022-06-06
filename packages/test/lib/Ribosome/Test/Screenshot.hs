@@ -1,55 +1,67 @@
 module Ribosome.Test.Screenshot where
 
--- import Chiasma.Data.TmuxError (TmuxError)
--- import Chiasma.Data.TmuxThunk (TmuxThunk)
--- import qualified Chiasma.Test.Screenshot as Chiasma (screenshot)
--- import Control.Monad.Catch (MonadMask)
--- import Control.Monad.Free.Class (MonadFree)
--- import Hedgehog (TestT, (===))
+import qualified Chiasma.Test.Screenshot as Chiasma
+import Chiasma.TmuxApi (Tmux)
+import Control.Lens ((.~))
+import Control.Lens.Regex.Text (regex, group)
+import Exon (exon)
+import Hedgehog.Internal.Property (Failure)
+import qualified Log
+import Path (reldir)
+import Polysemy.Chronos (ChronosTime)
+import qualified Polysemy.Test as Test
+import Polysemy.Test (Hedgehog, Test, TestError (TestError), (===))
+import Prelude hiding (group)
+import qualified Time
+import Time (Seconds (Seconds))
 
--- import Ribosome.Orphans ()
--- import Ribosome.System.Time (sleep)
--- import Ribosome.Test.Await (await)
--- import Ribosome.Test.Orphans ()
--- import Ribosome.Test.Unit (fixture)
--- import Ribosome.Tmux.Run (runTmux)
+import Ribosome.Test.Wait (assertWait)
 
--- screenshot ::
---   MonadFree TmuxThunk m =>
---   MonadIO m =>
---   Text ->
---   Bool ->
---   Int ->
---   m (Maybe ([Text], [Text]))
--- screenshot name record pane = do
---   storage <- fixture "screenshots"
---   Chiasma.screenshot record storage name pane
+-- |Nvim appears to add random whitespace sequences, optionally interspersed with color codes, to empty lines.
+-- This remotes that noise from lines starting with `\ESC[94m~\ESC[39m`.
+sanitize :: Text -> Text
+sanitize =
+  [regex|\x{1b}\[94m~\x{1b}\[39m(\s*(\x{1b}\[94m\s*\x{1b}\[39m\s*)?)$|] . group 0 .~ ""
 
--- assertScreenshot ::
---   MonadIO m =>
---   MonadMask m =>
---   Nvim m =>
---   Text ->
---   Bool ->
---   Int ->
---   TestT m ()
--- assertScreenshot name record pane = do
---   lift (runTmux (screenshot name record pane)) >>= check
---   where
---     check (Just (current, existing)) =
---       existing === current
---     check Nothing =
---       return ()
+screenshot ::
+  Members [Tmux, Test, Error TestError, Embed IO] r =>
+  Bool ->
+  Text ->
+  Int ->
+  Sem r (Maybe ([Text], [Text]))
+screenshot record name pane = do
+  storage <- Test.fixturePath [reldir|screenshots|]
+  mapError TestError (Chiasma.screenshotSanitized sanitize record storage name pane)
 
--- awaitScreenshot ::
---   MonadIO m =>
---   MonadMask m =>
---   Nvim m =>
---   Text ->
---   Bool ->
---   Int ->
---   TestT m ()
--- awaitScreenshot name True pane =
---   sleep 1 <* lift (runTmux (screenshot name True pane))
--- awaitScreenshot name False pane =
---   await (const (assertScreenshot name False pane)) unit
+assertScreenshot ::
+  Members [Tmux, Hedgehog IO, Test, Error TestError, Error Failure, ChronosTime, Race, Embed IO] r =>
+  Text ->
+  Int ->
+  Sem r ()
+assertScreenshot name pane = do
+  assertWait (screenshot False name pane) (traverse_ check)
+  where
+    check (current, existing) =
+      existing === current
+
+updateScreeshot ::
+  Members [Tmux, Hedgehog IO, Test, Error TestError, Error Failure, ChronosTime, Log, Race, Embed IO] r =>
+  Text ->
+  Int ->
+  Sem r ()
+updateScreeshot name pane = do
+  Log.info [exon|Waiting for one second before storing new screenshot for '#{name}'|]
+  Time.sleep (Seconds 1)
+  void (screenshot True name pane)
+
+awaitScreenshot ::
+  Members [Tmux, Hedgehog IO, Test, Error TestError, Error Failure, ChronosTime, Log, Race, Embed IO] r =>
+  Bool ->
+  Text ->
+  Int ->
+  Sem r ()
+awaitScreenshot = \case
+  True ->
+    updateScreeshot
+  False ->
+    assertScreenshot

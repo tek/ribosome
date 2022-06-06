@@ -101,6 +101,7 @@ library
     , hedgehog
     , incipit
     , lens
+    , lens-regex-pcre
     , messagepack
     , network
     , path
@@ -122,6 +123,7 @@ test-suite ribosome-test-unit
   type: exitcode-stdio-1.0
   main-is: Main.hs
   other-modules:
+      Ribosome.Test.SyntaxTest
       Ribosome.Test.TmuxTest
       Skip
   hs-source-dirs:
