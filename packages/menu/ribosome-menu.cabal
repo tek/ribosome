@@ -59,6 +59,7 @@ library
       Ribosome.Menu.Prompt.Data.PromptState
       Ribosome.Menu.Prompt.Data.PromptUpdate
       Ribosome.Menu.Prompt.Data.TextUpdate
+      Ribosome.Menu.Prompt.Input
       Ribosome.Menu.Prompt.Nvim
       Ribosome.Menu.Prompt.Run
       Ribosome.Menu.Prompt.Transition

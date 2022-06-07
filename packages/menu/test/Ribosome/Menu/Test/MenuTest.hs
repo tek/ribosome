@@ -41,11 +41,9 @@ import Ribosome.Menu.Prompt.Data.Prompt (Prompt)
 import Ribosome.Menu.Prompt.Data.PromptConfig (
   PromptConfig (PromptConfig),
   PromptFlag (StartInsert),
-  PromptInput (PromptInput),
   PromptListening,
   )
-import qualified Ribosome.Menu.Prompt.Data.PromptInputEvent as PromptInputEvent
-import Ribosome.Menu.Prompt.Data.PromptInputEvent (PromptInputEvent)
+import Ribosome.Menu.Prompt.Input (promptInputWith)
 import Ribosome.Menu.Prompt.Run (noPromptRenderer)
 import Ribosome.Menu.Prompt.Transition (basicTransition)
 import Ribosome.Menu.Run (runMenu)
@@ -55,12 +53,6 @@ sleep ::
   IO ()
 sleep t =
   threadDelay (round (t * 1000000))
-
-promptInput ::
-  [Text] ->
-  SerialT IO PromptInputEvent
-promptInput chars =
-  Streamly.fromListM [PromptInputEvent.Character c <$ sleep 0.01 | c <- chars]
 
 menuItems ::
   Monad m =>
@@ -116,7 +108,7 @@ menuTest consumer items chars = do
     Sync.block
   where
     promptConfig =
-      PromptConfig (PromptInput (const (promptInput chars))) basicTransition noPromptRenderer [StartInsert]
+      PromptConfig (promptInputWith Nothing (Just 0.01) (Streamly.fromList chars)) basicTransition noPromptRenderer [StartInsert]
 
 promptTest ::
   Members [AtomicState [Prompt], Resource, Race, Embed IO, Final IO] r =>

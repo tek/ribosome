@@ -1,6 +1,5 @@
 module Ribosome.Menu.Test.NvimMenuTest where
 
-import Control.Concurrent.Lifted (threadDelay)
 import Control.Lens (element, use, (^?))
 import qualified Data.Map.Strict as Map
 import Polysemy.Conc (interpretMaskFinal, interpretSync)
@@ -43,38 +42,16 @@ import Ribosome.Menu.Prompt.Data.Prompt (Prompt (Prompt), PromptText (PromptText
 import Ribosome.Menu.Prompt.Data.PromptConfig (
   PromptConfig (PromptConfig),
   PromptFlag (StartInsert),
-  PromptInput (PromptInput),
+  PromptInput,
   PromptListening,
   )
-import qualified Ribosome.Menu.Prompt.Data.PromptInputEvent as PromptInputEvent (PromptInputEvent (..))
+import Ribosome.Menu.Prompt.Input (promptInput, promptInputWith)
 import Ribosome.Menu.Prompt.Nvim (getCharStream, nvimPromptRenderer)
 import Ribosome.Menu.Prompt.Run (withPromptInput)
 import Ribosome.Menu.Prompt.Transition (basicTransition)
 import Ribosome.Menu.Run (nvimMenu, nvimMenuWith, staticNvimMenu)
-import Ribosome.Test.Error (resumeTestError)
 import Ribosome.Test.Embed (testEmbed_)
-
-sleep ::
-  Double ->
-  IO ()
-sleep t =
-  threadDelay (round (t * 1000000))
-
-promptInputWith ::
-  Maybe Double ->
-  Maybe Double ->
-  SerialT IO Text ->
-  PromptInput
-promptInputWith delay interval chars =
-  PromptInput \ _ -> do
-    traverse_ (Stream.fromEffect . sleep) delay
-    maybe id Stream.delay interval (PromptInputEvent.Character <$> chars)
-
-promptInput ::
-  [Text] ->
-  PromptInput
-promptInput =
-  promptInputWith Nothing Nothing . Stream.fromList
+import Ribosome.Test.Error (resumeTestError)
 
 menuItems ::
   Monad m =>
