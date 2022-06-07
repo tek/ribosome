@@ -205,11 +205,12 @@ updateItems ::
   t IO (MenuItem i) ->
   t IO MenuEvent
 updateItems lower itemFilter =
+  flip Stream.serial (Stream.fromPure MenuEvent.Exhausted) .
   Stream.mapM insert .
   Stream.foldIterateM chunker (pure [])
   where
     insert new =
-      MenuEvent.NewItem <$ lower (subsumeMenuStateSem (menuItemsState (insertItems itemFilter new)))
+      MenuEvent.NewItems <$ lower (subsumeMenuStateSem (menuItemsState (insertItems itemFilter new)))
     chunker = pure . \case
       [] ->
         Fold.take 100 Fold.toList

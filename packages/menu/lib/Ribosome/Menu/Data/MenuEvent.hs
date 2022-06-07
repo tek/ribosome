@@ -11,7 +11,9 @@ data MenuEvent =
   |
   Mapping Text
   |
-  NewItem
+  NewItems
+  |
+  Exhausted
   |
   Quit QuitReason
   deriving stock (Eq, Show)

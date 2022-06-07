@@ -52,8 +52,10 @@ eventAction = \case
     MenuAction.Render
   MenuEvent.Mapping _ ->
     MenuAction.Continue
-  MenuEvent.NewItem ->
+  MenuEvent.NewItems ->
     MenuAction.Render
+  MenuEvent.Exhausted ->
+    MenuAction.Continue
   MenuEvent.Quit QuitReason.Aborted ->
     MenuAction.Quit (pure MenuResult.Aborted)
   MenuEvent.Quit (QuitReason.Error msg) ->
