@@ -22,13 +22,12 @@ import Ribosome.Host.Effect.Rpc (Rpc)
 import Ribosome.Menu.Data.CursorIndex (CursorIndex (CursorIndex))
 import Ribosome.Menu.Data.Entry (Entries, Entry (Entry))
 import Ribosome.Menu.Data.Menu (Menu)
-import qualified Ribosome.Menu.Data.MenuData as Menu
-import Ribosome.Menu.Data.MenuData (entries)
 import Ribosome.Menu.Data.MenuItem (MenuItem (MenuItem))
 import qualified Ribosome.Menu.Data.MenuRenderEvent as MenuRenderEvent (MenuRenderEvent (..))
 import Ribosome.Menu.Data.MenuRenderer (MenuRenderer (MenuRenderer))
-import Ribosome.Menu.Data.MenuView (MenuView (MenuView), botIndex, cursorLine, menuView, topIndex)
-import Ribosome.Menu.Data.NvimMenuState (NvimMenuState, cursorIndex, indexes)
+import Ribosome.Menu.Data.MenuView (MenuView (MenuView))
+import Ribosome.Menu.Data.NvimMenuState (NvimMenuState, botIndex, cursorLine, topIndex)
+import Ribosome.Menu.ItemLens (cursor, entries)
 import Ribosome.Syntax (HiLink (..), Syntax (Syntax), SyntaxItem (..), syntaxMatch)
 
 marker :: Char
@@ -87,8 +86,8 @@ entrySlice ents bot top =
 newEntrySlice ::
   StateT NvimMenuState (ReaderT (Menu i) Identity) [Entry i]
 newEntrySlice = do
-  bot <- use botIndex
-  top <- use topIndex
+  bot <- use (#view . #botIndex)
+  top <- use (#view . #topIndex)
   ents <- view entries
   pure (toList (entrySlice ents bot top))
 
@@ -153,13 +152,13 @@ updateMenuState ::
   Int ->
   StateT NvimMenuState (ReaderT (Menu i) Identity) ([Entry i], Bool)
 updateMenuState scratchMax = do
-  oldIndexes <- use indexes
-  newCursor <- view Menu.cursor
+  oldIndexes <- use #indexes
+  newCursor <- view cursor
   count <- views entries (getSum . foldMap (Sum . Seq.length))
-  menuView %= computeView newCursor (min count scratchMax) count
-  cursorIndex .= newCursor
+  #view %= computeView newCursor (min count scratchMax) count
+  #cursorIndex .= newCursor
   visible <- newEntrySlice
-  newIndexes <- indexes <.= (entryId <$> visible)
+  newIndexes <- #indexes <.= (entryId <$> visible)
   pure (visible, newIndexes /= oldIndexes)
 
 windowLine ::

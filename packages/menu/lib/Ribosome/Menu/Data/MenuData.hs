@@ -1,6 +1,5 @@
 module Ribosome.Menu.Data.MenuData where
 
-import Control.Lens (makeClassy)
 import Data.Trie (Trie)
 
 import Ribosome.Menu.Data.CursorIndex (CursorIndex)
@@ -17,25 +16,21 @@ instance Default MenuQuery where
 
 data MenuItems a =
   MenuItems {
-    _items :: Items a,
-    _entries :: Entries a,
-    _history :: Trie (Entries a),
-    _itemCount :: Int,
-    _currentQuery :: MenuQuery
+    items :: Items a,
+    entries :: Entries a,
+    history :: Trie (Entries a),
+    itemCount :: Int,
+    currentQuery :: MenuQuery
   }
-  deriving stock (Eq, Show)
-
-makeClassy ''MenuItems
+  deriving stock (Eq, Show, Generic)
 
 instance Default (MenuItems a) where
   def =
     MenuItems mempty mempty mempty 0 mempty
 
 newtype MenuCursor =
-  MenuCursor { _cursor :: CursorIndex }
+  MenuCursor { cursor :: CursorIndex }
   deriving stock (Eq, Show, Generic)
-
-makeClassy ''MenuCursor
 
 instance Default MenuCursor where
   def =

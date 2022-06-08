@@ -1,17 +1,14 @@
 module Ribosome.Menu.Data.MenuItem where
 
-import Control.Lens (makeClassy)
 import qualified Data.IntMap.Strict as IntMap
 
 data MenuItem a =
   MenuItem {
-    _meta :: a,
-    _text :: Text,
-    _truncated :: Text
+    meta :: a,
+    text :: Text,
+    truncated :: Text
   }
-  deriving stock (Eq, Show, Ord, Functor)
-
-makeClassy ''MenuItem
+  deriving stock (Eq, Show, Ord, Functor, Generic)
 
 type Items a =
   IntMap (MenuItem a)

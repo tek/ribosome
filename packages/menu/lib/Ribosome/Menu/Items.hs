@@ -3,7 +3,7 @@
 -- 'withFocus' and 'withSelection' will skip processing of the event downstream if the menu is empty.
 module Ribosome.Menu.Items where
 
-import Control.Lens (use, uses, (%=), (.=), (^.), (|>))
+import Control.Lens (use, uses, (%=), (.=), (|>))
 import qualified Data.IntMap.Strict as IntMap
 import qualified Data.IntSet as IntSet
 import qualified Data.Sequence as Seq
@@ -14,11 +14,10 @@ import qualified Ribosome.Menu.Data.Entry as Entry
 import Ribosome.Menu.Data.Entry (Entries, Entry)
 import qualified Ribosome.Menu.Data.MenuAction as MenuAction
 import Ribosome.Menu.Data.MenuConsumer (MenuWidget)
-import Ribosome.Menu.Data.MenuData (cursor, entries, history, items)
 import qualified Ribosome.Menu.Data.MenuItem as MenuItem
 import Ribosome.Menu.Data.MenuItem (MenuItem)
 import Ribosome.Menu.Data.MenuState (MenuSem, menuWrite, semState, unSemS)
-import Ribosome.Menu.ItemLens (focus, selected, selected')
+import Ribosome.Menu.ItemLens (cursor, entries, focus, history, items, selected, selected')
 
 -- |Run an action with the focused entry if the menu is non-empty.
 withFocusItem ::
@@ -32,7 +31,7 @@ withFocus' ::
   (i -> MenuSem i r a) ->
   MenuSem i r (Maybe a)
 withFocus' f =
-  withFocusItem (f . MenuItem._meta)
+  withFocusItem (f . MenuItem.meta)
 
 -- |Run an action with the focused entry and quit the menu with the returned value.
 -- If the menu was empty, do nothing (i.e. skip the event).
@@ -144,8 +143,8 @@ popSelection curs initial =
   unify (popEntriesFallback check initial)
   where
     check i e =
-      justIf (e ^. Entry.selected) (Right (i, e ^. Entry.index)) <|>
-      justIf (curs == i) (Left (e ^. Entry.index))
+      justIf (Entry.selected e) (Right (i, Entry.index e)) <|>
+      justIf (curs == i) (Left (Entry.index e))
     unify = \case
       Right (is, ent) ->
         (unzip is, ent)

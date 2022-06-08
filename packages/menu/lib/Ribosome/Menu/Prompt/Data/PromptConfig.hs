@@ -1,6 +1,5 @@
 module Ribosome.Menu.Prompt.Data.PromptConfig where
 
-import Control.Lens (makeClassy, view)
 import Streamly.Prelude (SerialT)
 
 import Ribosome.Menu.Prompt.Data.PromptInputEvent (PromptInputEvent)
@@ -26,13 +25,12 @@ newtype PromptEventHandler r =
 
 data PromptConfig r =
   PromptConfig {
-    _source :: PromptInput,
-    _handleEvent :: [PromptFlag] -> PromptEventHandler r,
-    _render :: PromptRenderer r,
-    _flags :: [PromptFlag]
+    source :: PromptInput,
+    handleEvent :: [PromptFlag] -> PromptEventHandler r,
+    render :: PromptRenderer r,
+    flags :: [PromptFlag]
   }
-
-makeClassy ''PromptConfig
+  deriving stock (Generic)
 
 hoistPromptConfig ::
   (∀ x . Sem r x -> Sem r' x) ->
@@ -40,8 +38,8 @@ hoistPromptConfig ::
   PromptConfig r'
 hoistPromptConfig f PromptConfig {..} =
   PromptConfig {
-    _handleEvent = \ flg -> PromptEventHandler \ e s -> f (unPromptEventHandler (_handleEvent flg) e s),
-    _render = hoistPromptRenderer f _render,
+    handleEvent = \ flg -> PromptEventHandler \ e s -> f (unPromptEventHandler (handleEvent flg) e s),
+    render = hoistPromptRenderer f render,
     ..
   }
 
@@ -54,7 +52,7 @@ instance TestPromptFlag [PromptFlag] where
 
 instance TestPromptFlag (PromptConfig r) where
   promptFlag flag =
-    promptFlag flag . view flags
+    promptFlag flag . flags
 
 startInsert :: TestPromptFlag a => a -> Bool
 startInsert =

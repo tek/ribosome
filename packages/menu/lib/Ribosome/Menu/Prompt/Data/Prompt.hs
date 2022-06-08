@@ -1,7 +1,5 @@
 module Ribosome.Menu.Prompt.Data.Prompt where
 
-import Control.Lens (makeClassy)
-
 import qualified Ribosome.Menu.Prompt.Data.PromptState as PromptState
 import Ribosome.Menu.Prompt.Data.PromptState (PromptState)
 
@@ -24,13 +22,11 @@ newtype PromptText =
 
 data Prompt =
   Prompt {
-     _cursor :: Int,
-     _state :: PromptState,
-     _text :: PromptText
+     cursor :: Int,
+     state :: PromptState,
+     text :: PromptText
   }
-  deriving stock (Eq, Show)
-
-makeClassy ''Prompt
+  deriving stock (Eq, Show, Generic)
 
 instance Default Prompt where
   def =

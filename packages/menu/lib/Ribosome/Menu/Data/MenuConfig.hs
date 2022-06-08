@@ -1,6 +1,5 @@
 module Ribosome.Menu.Data.MenuConfig where
 
-import Control.Lens (makeClassy)
 import Streamly.Prelude (SerialT)
 
 import Ribosome.Menu.Data.MenuConsumer (MenuConsumer, hoistMenuConsumer)
@@ -12,14 +11,13 @@ import Ribosome.Menu.Prompt.Data.PromptConfig (PromptConfig, hoistPromptConfig)
 
 data MenuConfig r i a =
   MenuConfig {
-    _items :: SerialT IO (MenuItem i),
-    _itemFilter :: MenuItemFilter i,
-    _consumer :: MenuConsumer i r a,
-    _render :: MenuRenderer r i,
-    _prompt :: PromptConfig r
+    items :: SerialT IO (MenuItem i),
+    itemFilter :: MenuItemFilter i,
+    consumer :: MenuConsumer i r a,
+    render :: MenuRenderer r i,
+    prompt :: PromptConfig r
   }
-
-makeClassy ''MenuConfig
+  deriving stock (Generic)
 
 hoistMenuConfig ::
   (∀ x . Sem r x -> Sem r' x) ->
@@ -28,8 +26,8 @@ hoistMenuConfig ::
   MenuConfig r' i a
 hoistMenuConfig f g MenuConfig {..} =
   MenuConfig {
-    _consumer = hoistMenuConsumer f g _consumer,
-    _render = hoistMenuRenderer f _render,
-    _prompt = hoistPromptConfig f _prompt,
+    consumer = hoistMenuConsumer f g consumer,
+    render = hoistMenuRenderer f render,
+    prompt = hoistPromptConfig f prompt,
     ..
   }

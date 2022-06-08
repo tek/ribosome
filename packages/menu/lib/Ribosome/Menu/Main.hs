@@ -3,6 +3,7 @@ module Ribosome.Menu.Main where
 import Control.Concurrent.STM (atomically)
 import Control.Concurrent.STM.TMChan (TMChan, writeTMChan)
 import Control.Lens ((^.))
+import Data.Generics.Labels ()
 import Exon (exon)
 import Polysemy.Conc (interpretAtomic, interpretSyncAs)
 import qualified Polysemy.Log as Log
@@ -14,7 +15,6 @@ import Streamly.Prelude (AsyncT, SerialT)
 import Ribosome.Final (inFinal_)
 import Ribosome.Menu.Data.MenuAction (MenuAction)
 import qualified Ribosome.Menu.Data.MenuAction as MenuAction (MenuAction (..))
-import qualified Ribosome.Menu.Data.MenuConfig as MenuConfig
 import Ribosome.Menu.Data.MenuConfig (MenuConfig (MenuConfig))
 import Ribosome.Menu.Data.MenuConsumer (MenuConsumer (MenuConsumer))
 import qualified Ribosome.Menu.Data.MenuEvent as MenuEvent
@@ -181,6 +181,6 @@ menuMain ::
   Sem r (MenuResult a)
 menuMain conf =
   interpretMenu $
-  withPromptStream (hoistPromptConfig (insertAt @0) (conf ^. MenuConfig.prompt)) \ (promptControl, promptEvents) -> do
+  withPromptStream (hoistPromptConfig (insertAt @0) (conf ^. #prompt)) \ (promptControl, promptEvents) -> do
     stream <- menuStream conf promptControl (Stream.fromSerial promptEvents)
     insertAt @0 . menuResult =<< embed (Stream.last stream)

@@ -3,9 +3,10 @@ module Ribosome.Menu.Data.MenuState where
 import Control.Lens ((^.))
 import qualified Control.Monad.State as State
 import Control.Monad.State (MonadState)
+import Data.Generics.Labels ()
 import qualified Polysemy.Conc as Sync
 
-import Ribosome.Menu.Data.Menu (Menu (Menu), cursor, prompt)
+import Ribosome.Menu.Data.Menu (Menu (Menu))
 import Ribosome.Menu.Data.MenuData (MenuCursor, MenuItems)
 import Ribosome.Menu.Prompt.Data.Prompt (Prompt)
 
@@ -130,7 +131,7 @@ runMenu f =
   itemsLock do
     cursorLock do
       menu <- readMenu
-      (Menu newItems newState _, result) <- insertAt @0 (runState menu (f (menu ^. prompt)))
+      (Menu newItems newState _, result) <- insertAt @0 (runState menu (f (menu ^. #prompt)))
       atomicPut newItems
       atomicPut newState
       pure result
@@ -142,8 +143,8 @@ runMenuRead ::
 runMenuRead action =
   cursorLock do
     menu <- readMenu
-    (newMenu, a) <- insertAt @0 (runState menu (action (menu ^. prompt)))
-    a <$ atomicPut (newMenu ^. cursor)
+    (newMenu, a) <- insertAt @0 (runState menu (action (menu ^. #prompt)))
+    a <$ atomicPut (newMenu ^. #cursor)
 
 setPrompt ::
   Member (AtomicState Prompt) r =>

@@ -1,20 +1,16 @@
 module Ribosome.Menu.Data.MenuView where
 
-import Control.Lens (makeClassy)
-
 import Ribosome.Menu.Data.CursorIndex (CursorIndex)
 import Ribosome.Menu.Data.CursorLine (CursorLine)
 
 data MenuView =
   MenuView {
-    _topIndex :: Int,
-    _botIndex :: Int,
-    _cursor :: CursorIndex,
-    _cursorLine :: CursorLine
+    topIndex :: Int,
+    botIndex :: Int,
+    cursor :: CursorIndex,
+    cursorLine :: CursorLine
   }
-  deriving stock (Eq, Show)
-
-makeClassy ''MenuView
+  deriving stock (Eq, Show, Generic)
 
 instance Default MenuView where
   def =

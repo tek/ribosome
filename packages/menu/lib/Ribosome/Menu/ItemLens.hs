@@ -1,17 +1,43 @@
-{-# options_ghc -Wno-redundant-constraints #-}
-
+{-# OPTIONS_GHC -Wno-redundant-constraints #-}
 module Ribosome.Menu.ItemLens where
 
-import Control.Lens (Getter, element, to, views, (^.), (^?))
+import Control.Lens (Getter, Lens', LensLike', element, to, views, (^.), (^?))
+import Data.Generics.Labels ()
 import qualified Data.IntMap.Strict as IntMap
+import Data.Trie (Trie)
 
 import Ribosome.Menu.Combinators (filterEntries, foldEntries, sortedEntries)
 import Ribosome.Menu.Data.CursorIndex (CursorIndex (CursorIndex))
 import qualified Ribosome.Menu.Data.Entry as Entry
-import Ribosome.Menu.Data.Entry (Entry)
-import Ribosome.Menu.Data.MenuData (HasMenuCursor, HasMenuItems, cursor, entries)
+import Ribosome.Menu.Data.Entry (Entries, Entry)
+import Ribosome.Menu.Data.Menu (Menu)
+import Ribosome.Menu.Data.MenuData (MenuQuery)
 import qualified Ribosome.Menu.Data.MenuItem as MenuItem
-import Ribosome.Menu.Data.MenuItem (MenuItem)
+import Ribosome.Menu.Data.MenuItem (Items, MenuItem)
+
+cursor :: Lens' (Menu i) CursorIndex
+cursor =
+  #cursor . #cursor
+
+entries :: Lens' (Menu i) (Entries i)
+entries =
+  #items . #entries
+
+history :: Lens' (Menu i) (Trie (Entries i))
+history =
+  #items . #history
+
+items :: Lens' (Menu i) (Items i)
+items =
+  #items . #items
+
+currentQuery :: Lens' (Menu i) MenuQuery
+currentQuery =
+  #items . #currentQuery
+
+itemCount :: Lens' (Menu i) Int
+itemCount =
+  #items . #itemCount
 
 filterIndexesFlat :: [Int] -> [a] -> [a]
 filterIndexesFlat indexes =
@@ -40,78 +66,61 @@ filterIndexes indexes m =
   IntMap.restrictKeys m indexes
 
 entriesByIndex ::
-  HasMenuCursor a =>
-  HasMenuItems a i =>
   [Int] ->
-  a ->
+  Menu i ->
   [Entry i]
 entriesByIndex indexes menu =
   filterIndexesFlat indexes (menu ^. sortedEntries)
 
 itemsByEntryIndex ::
-  HasMenuCursor a =>
-  HasMenuItems a i =>
   [Int] ->
-  a ->
+  Menu i ->
   Maybe (NonEmpty (MenuItem i))
 itemsByEntryIndex indexes menu =
-  nonEmpty (Entry._item <$> entriesByIndex indexes menu)
+  nonEmpty (Entry.item <$> entriesByIndex indexes menu)
 
 getFocus ::
-  HasMenuCursor a =>
-  HasMenuItems a i =>
-  a ->
+  Menu i ->
   Maybe (MenuItem i)
 getFocus menu =
-  menu ^? sortedEntries . element (fromIntegral (menu ^. cursor)) . Entry.item
+  menu ^? sortedEntries . element (fromIntegral (menu ^. cursor)) . #item
 
 focus ::
-  HasMenuCursor a =>
-  HasMenuItems a i =>
-  Getter a (Maybe (MenuItem i))
+  Contravariant f =>
+  LensLike' f (Menu i) (Maybe (MenuItem i))
 focus =
   to getFocus
 
 selectedItemsOnly ::
-  HasMenuItems a i =>
-  a ->
+  Menu i ->
   Maybe (NonEmpty (MenuItem i))
 selectedItemsOnly =
-  nonEmpty . fmap Entry._item . views entries (filterEntries \ _ -> Entry._selected)
+  nonEmpty . fmap Entry.item . views (#items . #entries) (filterEntries (const Entry.selected))
 
 selectedOnly ::
-  HasMenuItems a i =>
-  Getter a (Maybe (NonEmpty (MenuItem i)))
+  Getter (Menu i) (Maybe (NonEmpty (MenuItem i)))
 selectedOnly =
   to selectedItemsOnly
 
 selectedItems ::
-  HasMenuCursor a =>
-  HasMenuItems a i =>
-  a ->
+  Menu i ->
   Maybe (NonEmpty (MenuItem i))
 selectedItems m =
   selectedItemsOnly m <|> (pure <$> getFocus m)
 
 selected' ::
-  HasMenuCursor a =>
-  HasMenuItems a i =>
-  Getter a (Maybe (NonEmpty (MenuItem i)))
+  Getter (Menu i) (Maybe (NonEmpty (MenuItem i)))
 selected' =
   to selectedItems
 
 selected ::
-  HasMenuCursor a =>
-  HasMenuItems a i =>
-  Getter a (Maybe (NonEmpty i))
+  Getter (Menu i) (Maybe (NonEmpty i))
 selected =
-  to (fmap (fmap MenuItem._meta) . selectedItems)
+  to (fmap (fmap MenuItem.meta) . selectedItems)
 
 menuItemsByIndexes ::
-  HasMenuCursor a =>
-  HasMenuItems a i =>
   [Int] ->
-  a ->
+  Menu i ->
   [MenuItem i]
 menuItemsByIndexes indexes =
   maybe [] toList . itemsByEntryIndex indexes
@@ -120,12 +129,10 @@ menuItemsByIndexes indexes =
 -- This needs two passes since the result should be sorted and it's impossible to know whether the focus should be
 -- included or not before the entire dataset was traversed.
 unselectedItems ::
-  HasMenuCursor a =>
-  HasMenuItems a i =>
-  a ->
+  Menu i ->
   [MenuItem i]
 unselectedItems menu =
-  Entry._item <$> views entries filterUnselected menu
+  Entry.item <$> views (#items . #entries) filterUnselected menu
   where
     filterUnselected =
       uncurry extract .
@@ -134,7 +141,7 @@ unselectedItems menu =
     extract ents = \case
       True -> mapMaybe rightToMaybe ents
       False -> either id id <$> ents
-    folder (z, _) _ e | Entry._selected e =
+    folder (z, _) _ e | Entry.selected e =
       (z, True)
     folder (z, foundSelected) i e | i == cursorIndex =
       (Left e : z, foundSelected)
@@ -144,8 +151,6 @@ unselectedItems menu =
       menu ^. cursor
 
 unselected ::
-  HasMenuCursor a =>
-  HasMenuItems a i =>
-  Getter a [MenuItem i]
+  Getter (Menu i) [MenuItem i]
 unselected =
   to unselectedItems

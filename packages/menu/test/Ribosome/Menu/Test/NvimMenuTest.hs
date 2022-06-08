@@ -24,19 +24,16 @@ import Ribosome.Menu.Combinators (sortedEntries)
 import qualified Ribosome.Menu.Consumer as Consumer
 import Ribosome.Menu.Consumer (Mappings)
 import Ribosome.Menu.Data.CursorIndex (CursorIndex (CursorIndex))
-import qualified Ribosome.Menu.Data.Entry as Entry (item)
 import Ribosome.Menu.Data.Entry (intEntries)
-import qualified Ribosome.Menu.Data.Menu as Menu
 import Ribosome.Menu.Data.MenuAction (MenuAction)
 import Ribosome.Menu.Data.MenuConsumer (MenuWidget)
-import qualified Ribosome.Menu.Data.MenuData as MenuCursor
 import Ribosome.Menu.Data.MenuItem (MenuItem, simpleMenuItem)
-import qualified Ribosome.Menu.Data.MenuItem as MenuItem (text)
 import qualified Ribosome.Menu.Data.MenuResult as MenuResult
 import Ribosome.Menu.Data.MenuResult (MenuResult (Success))
 import Ribosome.Menu.Data.MenuState (MenuSem, SemS (SemS), menuRead, menuWrite, semState)
 import Ribosome.Menu.Data.MenuView (MenuView (MenuView))
 import Ribosome.Menu.Filters (fuzzy)
+import Ribosome.Menu.ItemLens (cursor)
 import Ribosome.Menu.Nvim (computeView, entrySlice)
 import Ribosome.Menu.Prompt.Data.Prompt (Prompt (Prompt), PromptText (PromptText))
 import Ribosome.Menu.Prompt.Data.PromptConfig (
@@ -77,9 +74,9 @@ exec ::
 exec =
   menuWrite do
     semState do
-      CursorIndex s <- use MenuCursor.cursor
+      CursorIndex s <- use cursor
       fs <- use sortedEntries
-      SemS (maybe menuOk menuResult (fs ^? element s . Entry.item . MenuItem.text))
+      SemS (maybe menuOk menuResult (fs ^? element s . #item . #text))
 
 promptConfig ::
   Members [Rpc, Rpc !! RpcError, Final IO] r =>
@@ -139,7 +136,7 @@ test_nvimMenuInterrupt =
 returnPrompt ::
   MenuSem Text r (Maybe (MenuAction r Text))
 returnPrompt = do
-  Prompt _ _ (PromptText text) <- semState (use Menu.prompt)
+  Prompt _ _ (PromptText text) <- semState (use #prompt)
   menuResult text
 
 navChars :: [Text]

@@ -1,7 +1,8 @@
 module Ribosome.Menu.Filters where
 
-import Control.Lens (view, (^.))
+import Control.Lens (view)
 import Data.Composition ((.:))
+import Data.Generics.Labels ()
 import qualified Data.IntMap.Strict as IntMap
 import qualified Data.Sequence as Seq
 import qualified Data.Text as Text
@@ -28,7 +29,7 @@ entry index item =
 
 matchSubstring :: Text -> Int -> MenuItem a -> Maybe (Int, Entry a)
 matchSubstring query index item =
-  bool Nothing (Just (0, entry index item)) (textContains query (item ^. MenuItem.text))
+  bool Nothing (Just (0, entry index item)) (textContains query (MenuItem.text item))
 
 substringItemFilter :: MenuItemFilter a
 substringItemFilter =
@@ -40,14 +41,14 @@ substringItemFilter =
         trans =
           if Text.null query then id else filter matcher
         matcher =
-          textContains query . view (Entry.item . MenuItem.text)
+          textContains query . view (#item . #text)
     initial (MenuQuery query) items =
       IntMap.singleton 0 (Seq.fromList (uncurry entry <$> trans (IntMap.toList items)))
       where
         trans =
           if Text.null query then id else filter matcher
         matcher =
-          textContains query . view MenuItem.text . snd
+          textContains query . MenuItem.text . snd
 
 matchFuzzy :: Bool -> Text -> Int -> MenuItem a -> Maybe (Int, Entry a)
 matchFuzzy sel (toString -> query) index item@(MenuItem _ (toString -> text) _) = do
@@ -65,7 +66,7 @@ filterFuzzy False "" =
 filterFuzzy True "" =
   pure .
   Entry.fromList .
-  fmap \ (i, item) -> (1000 - Text.length (item ^. MenuItem.text), Entry item i False)
+  fmap \ (i, item) -> (1000 - Text.length (MenuItem.text item), Entry item i False)
 filterFuzzy _ (toText -> query) =
   fmap Entry.fromList .
   Stream.parMapMaybeIO 100 (uncurry (matchFuzzy False query))

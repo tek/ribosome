@@ -12,7 +12,7 @@ import Streamly.Prelude (AsyncT, IsStream, SerialT)
 
 import Ribosome.Menu.Combinators (push)
 import Ribosome.Menu.Data.Entry (Entries, insertFiltered)
-import Ribosome.Menu.Data.MenuData (MenuCursor, MenuQuery (MenuQuery), currentQuery, entries, history, itemCount, items)
+import Ribosome.Menu.Data.MenuData (MenuCursor, MenuQuery (MenuQuery))
 import qualified Ribosome.Menu.Data.MenuEvent as MenuEvent
 import Ribosome.Menu.Data.MenuEvent (MenuEvent)
 import Ribosome.Menu.Data.MenuItem (MenuItem)
@@ -56,10 +56,10 @@ resetFiltered ::
   MenuItemFilter i ->
   MenuItemsSemS r i ()
 resetFiltered query (MenuItemFilter _ itemFilter _) = do
-  its <- use items
+  its <- use #items
   new <- SemS (embed (itemFilter query its))
-  entries .= new
-  currentQuery .= query
+  #entries .= new
+  #currentQuery .= query
 
 popFiltered ::
   Member (Embed IO) r =>
@@ -67,12 +67,12 @@ popFiltered ::
   MenuItemFilter i ->
   MenuItemsSemS r i ()
 popFiltered query@(MenuQuery (encodeUtf8 -> queryBs)) itemFilter =
-  maybe (resetFiltered query itemFilter) matching =<< uses history (`Trie.match` queryBs)
+  maybe (resetFiltered query itemFilter) matching =<< uses #history (`Trie.match` queryBs)
   where
     matching = \case
       (_, f, "") -> do
-        entries .= f
-        currentQuery .= query
+        #entries .= f
+        #currentQuery .= query
       (_, f, _) ->
         refineFiltered query itemFilter f
 
@@ -82,7 +82,7 @@ appendFilter ::
   MenuItemFilter i ->
   MenuItemsSemS r i ()
 appendFilter query filt =
-  ifM (uses entries null) (resetFiltered query filt) (refineFiltered query filt =<< use entries)
+  ifM (uses #entries null) (resetFiltered query filt) (refineFiltered query filt =<< use #entries)
 
 promptChange ::
   Member (Embed IO) r =>
@@ -106,13 +106,13 @@ insertItem ::
   MenuItemsSem r i ()
 insertItem (MenuItemFilter match _ _) item _ _ =
   semState do
-    index <- use itemCount
-    itemCount += 1
-    items %= IntMap.insert index item
-    MenuQuery query <- use currentQuery
+    index <- use #itemCount
+    #itemCount += 1
+    #items %= IntMap.insert index item
+    MenuQuery query <- use #currentQuery
     for_ (match query index item) \ (score, fitem) -> do
-      entries %= insertFiltered score fitem
-      history .= mempty
+      #entries %= insertFiltered score fitem
+      #history .= mempty
 
 insertItems ::
   Member (Embed IO) r =>
@@ -123,15 +123,15 @@ insertItems ::
   MenuItemsSem r i ()
 insertItems (MenuItemFilter _ filt _) new _ _ =
   semState do
-    index <- use itemCount
-    itemCount += length new
+    index <- use #itemCount
+    #itemCount += length new
     let newI = IntMap.fromList (zip [index..] new)
-    items %= IntMap.union newI
-    query <- use currentQuery
+    #items %= IntMap.union newI
+    query <- use #currentQuery
     ents <- SemS (embed (filt query newI))
-    entries %= IntMap.unionWith (<>) ents
+    #entries %= IntMap.unionWith (<>) ents
     unless (null ents) do
-      history .= mempty
+      #history .= mempty
 
 promptItemUpdate ::
   Member (Embed IO) r =>
@@ -155,7 +155,7 @@ queryUpdate ::
 queryUpdate itemFilter =
   menuItemsState \ prompt _ ->
     semState do
-      change <- uses currentQuery (diffPrompt prompt)
+      change <- uses #currentQuery (diffPrompt prompt)
       promptItemUpdate itemFilter change prompt
       pure MenuEvent.PromptEdit
 

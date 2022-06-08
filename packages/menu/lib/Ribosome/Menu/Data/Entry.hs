@@ -1,35 +1,28 @@
 module Ribosome.Menu.Data.Entry where
 
-import Control.Lens (makeClassy)
 import qualified Data.IntMap.Strict as IntMap
 
 import Ribosome.Host.Data.Tuple (dup)
-import Ribosome.Menu.Data.MenuItem (HasMenuItem (menuItem), MenuItem (_truncated), simpleMenuItem)
+import Ribosome.Menu.Data.MenuItem (MenuItem (truncated), simpleMenuItem)
 
 data Entry a =
   Entry {
-    _item :: MenuItem a,
-    _index :: Int,
-    _selected :: Bool
+    item :: MenuItem a,
+    index :: Int,
+    selected :: Bool
   }
-  deriving stock (Eq, Show)
-
-makeClassy ''Entry
+  deriving stock (Eq, Show, Generic)
 
 instance Eq a => Ord (Entry a) where
   compare =
-    comparing _index <> comparing (_truncated . _item)
-
-instance HasMenuItem (Entry a) a where
-  menuItem =
-    item
+    comparing index <> comparing (truncated . item)
 
 type Entries a =
   IntMap (Seq (Entry a))
 
 tuple :: Entry a -> (Int, MenuItem a)
 tuple Entry {..} =
-  (_index, _item)
+  (index, item)
 
 insertFiltered :: Int -> Entry a -> Entries a -> Entries a
 insertFiltered i it =

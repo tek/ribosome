@@ -1,7 +1,5 @@
 module Ribosome.Host.Data.CommandOptions where
 
-import Control.Lens (makeClassy_)
-
 newtype Nargs =
   Nargs { unNargs :: Text }
   deriving stock (Eq, Show)
@@ -38,9 +36,7 @@ data CommandOptions =
     register :: Bool,
     buffer :: Bool
   }
-  deriving stock (Eq, Show)
-
-makeClassy_ ''CommandOptions
+  deriving stock (Eq, Show, Generic)
 
 instance Default CommandOptions where
   def =

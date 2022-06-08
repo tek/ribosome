@@ -1,15 +1,15 @@
 module Ribosome.Menu.Action where
 
 import Control.Lens (to, use, (%=), (%~))
+import Data.Generics.Labels ()
 
 import Ribosome.Menu.Combinators (numVisible, overEntries)
 import Ribosome.Menu.Data.CursorIndex (CursorIndex (CursorIndex))
-import qualified Ribosome.Menu.Data.Entry as Entry
 import qualified Ribosome.Menu.Data.MenuAction as MenuAction
 import Ribosome.Menu.Data.MenuAction (MenuAction)
 import Ribosome.Menu.Data.MenuConsumer (MenuWidget)
-import Ribosome.Menu.Data.MenuData (cursor, entries)
 import Ribosome.Menu.Data.MenuState (MenuSem, SemS (SemS), menuRead, menuWrite, semState, unSemS)
+import Ribosome.Menu.ItemLens (cursor, entries)
 import Ribosome.Menu.Prompt.Data.Prompt (Prompt)
 
 act ::
@@ -88,7 +88,7 @@ toggleSelected = do
     CursorIndex cur <- use cursor
     entries %= overEntries \ index ->
       if index == cur
-      then Entry.selected %~ not
+      then #selected %~ not
       else id
     SemS (cycleMenu 1)
 
@@ -103,7 +103,7 @@ menuToggleAll ::
   MenuWidget i r a
 menuToggleAll =
   menuModify $ semState do
-    entries %= overEntries (const (Entry.selected %~ not))
+    entries %= overEntries (const (#selected %~ not))
 
 menuUpdatePrompt ::
   Prompt ->

@@ -1,24 +1,36 @@
 module Ribosome.Menu.Data.NvimMenuState where
 
-import Control.Lens (makeClassy)
+import Control.Lens (Lens')
+import Data.Generics.Labels ()
 
 import Ribosome.Menu.Data.CursorIndex (CursorIndex)
-import Ribosome.Menu.Data.MenuView (HasMenuView (menuView), MenuView)
+import Ribosome.Menu.Data.CursorLine (CursorLine)
+import Ribosome.Menu.Data.MenuView (MenuView)
 
 data NvimMenuState =
   NvimMenuState {
-    _view :: MenuView,
-    _cursorIndex :: CursorIndex,
-    _indexes :: [(Int, Bool)]
+    view :: MenuView,
+    cursorIndex :: CursorIndex,
+    indexes :: [(Int, Bool)]
   }
-  deriving stock (Eq, Show)
-
-makeClassy ''NvimMenuState
+  deriving stock (Eq, Show, Generic)
 
 instance Default NvimMenuState where
   def =
     NvimMenuState def 0 def
 
-instance HasMenuView NvimMenuState where
-  menuView =
-    view
+topIndex :: Lens' NvimMenuState Int
+topIndex =
+  #view . #topIndex
+
+botIndex :: Lens' NvimMenuState Int
+botIndex =
+  #view . #botIndex
+
+cursor :: Lens' NvimMenuState CursorIndex
+cursor =
+  #view . #cursor
+
+cursorLine :: Lens' NvimMenuState CursorLine
+cursorLine =
+  #view . #cursorLine

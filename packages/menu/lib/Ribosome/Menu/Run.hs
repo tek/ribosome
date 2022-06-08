@@ -21,7 +21,6 @@ import Ribosome.Host.Class.Msgpack.Decode (fromMsgpack)
 import Ribosome.Host.Class.Msgpack.Encode (toMsgpack)
 import Ribosome.Host.Data.RpcError (RpcError)
 import Ribosome.Host.Effect.Rpc (Rpc)
-import qualified Ribosome.Menu.Data.MenuConfig as MenuConfig
 import Ribosome.Menu.Data.MenuConfig (MenuConfig (MenuConfig))
 import Ribosome.Menu.Data.MenuConsumer (MenuConsumer, hoistMenuConsumer)
 import Ribosome.Menu.Data.MenuItem (MenuItem)
@@ -31,7 +30,6 @@ import Ribosome.Menu.Data.NvimMenuState (NvimMenuState)
 import Ribosome.Menu.Filters (fuzzyItemFilter)
 import Ribosome.Menu.Main (menuMain)
 import Ribosome.Menu.Nvim (menuSyntax, nvimMenuRenderer)
-import qualified Ribosome.Menu.Prompt.Data.PromptConfig as PromptConfig
 import Ribosome.Menu.Prompt.Data.PromptConfig (PromptConfig, PromptListening, hoistPromptConfig)
 import Ribosome.Menu.Prompt.Data.PromptRenderer (PromptRenderer (PromptRenderer))
 import qualified Ribosome.Settings as Settings
@@ -59,7 +57,7 @@ runMenu ::
   MenuConfig r i a ->
   Sem r (MenuResult a)
 runMenu config =
-  bracketPrompt (config ^. MenuConfig.prompt . PromptConfig.render)
+  bracketPrompt (config ^. #prompt . #render)
   where
     bracketPrompt (PromptRenderer acquire release _) =
       bracket acquire release \ _ -> menuMain config

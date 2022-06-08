@@ -4,6 +4,7 @@ import Conc (interpretSyncAs, withAsync_)
 import Control.Concurrent.STM (atomically)
 import Control.Concurrent.STM.TMChan (TMChan, closeTMChan, newTMChan)
 import Control.Lens ((^.))
+import Data.Generics.Labels ()
 import qualified Data.Text as Text (drop, dropEnd, isPrefixOf, length, splitAt)
 import Exon (exon)
 import qualified Log
@@ -20,13 +21,11 @@ import Ribosome.Host.Data.Tuple (dup)
 import Ribosome.Host.Effect.Rpc (Rpc)
 import Ribosome.Menu.Prompt.Data.CursorUpdate (CursorUpdate)
 import qualified Ribosome.Menu.Prompt.Data.CursorUpdate as CursorUpdate (CursorUpdate (..))
-import qualified Ribosome.Menu.Prompt.Data.Prompt as Prompt
 import Ribosome.Menu.Prompt.Data.Prompt (
   Prompt (Prompt),
   PromptChange (PromptAppend, PromptRandom, PromptUnappend),
   PromptText (PromptText),
   )
-import qualified Ribosome.Menu.Prompt.Data.PromptConfig as PromptConfig
 import Ribosome.Menu.Prompt.Data.PromptConfig (
   PromptConfig (PromptConfig),
   PromptEventHandler (PromptEventHandler),
@@ -134,7 +133,7 @@ updatePrompt ::
   Prompt ->
   m (Maybe (Prompt, PromptEvent))
 updatePrompt handleEvent input prompt = do
-  handleEvent input (prompt ^. Prompt.state) <&> \case
+  handleEvent input (prompt ^. #state) <&> \case
     PromptUpdate.Modify newState cursorUpdate textUpdate -> do
       Just (modifyPrompt newState cursorUpdate textUpdate prompt, modifyEvent textUpdate)
     PromptUpdate.Ignore ->
@@ -217,7 +216,7 @@ withPromptStream ::
   Sem r a
 withPromptStream config use = do
   (chan, listenQuit, close, control) <- controlChannel
-  interpretSyncAs (pristinePrompt (startInsert (config ^. PromptConfig.flags))) do
+  interpretSyncAs (pristinePrompt (startInsert (config ^. #flags))) do
     res <- inFinal \ _ lower pur ex ->
       pur (chan, Stream.finally close (promptWithControl (fmap ex . lower) config control listenQuit))
     raise (use res)

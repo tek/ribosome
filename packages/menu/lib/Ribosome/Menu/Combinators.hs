@@ -7,7 +7,8 @@ import Data.Sequence ((|>))
 import qualified Data.Trie as Trie
 
 import Ribosome.Menu.Data.Entry (Entries, Entry)
-import Ribosome.Menu.Data.MenuData (HasMenuItems, MenuQuery (MenuQuery), currentQuery, entries, history)
+import Ribosome.Menu.Data.Menu (Menu)
+import Ribosome.Menu.Data.MenuData (MenuQuery (MenuQuery))
 import Ribosome.Menu.Data.MenuState (MenuItemsSemS)
 
 push ::
@@ -15,28 +16,26 @@ push ::
   Entries a ->
   MenuItemsSemS r a ()
 push newQuery new = do
-  MenuQuery oldQuery <- use currentQuery
-  old <- use entries
-  entries .= new
-  history %= Trie.insert (encodeUtf8 oldQuery) old
-  currentQuery .= newQuery
+  MenuQuery oldQuery <- use #currentQuery
+  old <- use #entries
+  #entries .= new
+  #history %= Trie.insert (encodeUtf8 oldQuery) old
+  #currentQuery .= newQuery
 
 numVisible ::
-  HasMenuItems a i =>
-  a ->
+  Menu i ->
   Int
 numVisible =
-  sum . fmap length . view entries
+  sum . fmap length . view (#items . #entries)
 
 sortEntries :: Entries i -> [Entry i]
 sortEntries =
   concatMap (toList . snd) . IntMap.toDescList
 
 sortedEntries ::
-  HasMenuItems a i =>
-  Getter a [Entry i]
+  Getter (Menu i) [Entry i]
 sortedEntries =
-  entries . to sortEntries
+  #items . #entries . to sortEntries
 
 overEntries ::
   (Int -> Entry i -> Entry i) ->
