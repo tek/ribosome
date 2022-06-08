@@ -8,10 +8,9 @@ module Ribosome.Menu.Items.Read where
 import Control.Lens (use)
 
 import qualified Ribosome.Menu.Data.MenuAction as MenuAction
-import Ribosome.Menu.Data.MenuConsumer (MenuWidget)
 import qualified Ribosome.Menu.Data.MenuItem as MenuItem
 import Ribosome.Menu.Data.MenuItem (MenuItem)
-import Ribosome.Menu.Data.MenuState (MenuSem, menuRead, semState)
+import Ribosome.Menu.Data.MenuState (CursorLock, MenuSem, MenuStateEffects, MenuWidget', menuRead, semState)
 import Ribosome.Menu.ItemLens (focus, selected, selected')
 
 -- |Run an action with the focused entry if the menu is non-empty.
@@ -31,18 +30,12 @@ withFocus' f =
 -- |Run an action with the focused entry and quit the menu with the returned value.
 -- If the menu was empty, do nothing (i.e. skip the event).
 withFocus ::
-  Members [Resource, Embed IO] r =>
-  (i -> MenuSem i r (Sem r a)) ->
-  MenuWidget i r a
+  Members (MenuStateEffects i) r =>
+  Members [Sync CursorLock, Resource, Embed IO] r =>
+  (i -> MenuSem i r a) ->
+  MenuWidget' r a
 withFocus f =
   Just . maybe MenuAction.Continue MenuAction.success <$> menuRead (withFocus' f)
-
-withFocusM ::
-  Members [Resource, Embed IO] r =>
-  (i -> Sem r a) ->
-  MenuWidget i r a
-withFocusM f =
-  withFocus (pure . f)
 
 -- |Run an action with the selection or the focused entry if the menu is non-empty.
 withSelectionItems ::
@@ -61,24 +54,19 @@ withSelection' f =
 -- |Run an action with the selection or the focused entry and quit the menu with the returned value.
 -- If the menu was empty, do nothing (i.e. skip the event).
 withSelection ::
-  Members [Resource, Embed IO] r =>
-  (NonEmpty i -> MenuSem i r (Sem r a)) ->
-  MenuWidget i r a
+  Members (MenuStateEffects i) r =>
+  Members [Sync CursorLock, Resource, Embed IO] r =>
+  (NonEmpty i -> MenuSem i r a) ->
+  MenuWidget' r a
 withSelection f =
   Just . maybe MenuAction.Continue MenuAction.success <$> menuRead (withSelection' f)
-
-withSelectionM ::
-  Members [Resource, Embed IO] r =>
-  (NonEmpty i -> Sem r a) ->
-  MenuWidget i r a
-withSelectionM f =
-  withSelection (pure . f)
 
 -- |Run an action with each entry in the selection or the focused entry and quit the menu with '()'.
 -- If the menu was empty, do nothing (i.e. skip the event).
 traverseSelection_ ::
-  Members [Resource, Embed IO] r =>
+  Members (MenuStateEffects i) r =>
+  Members [Sync CursorLock, Resource, Embed IO] r =>
   (i -> MenuSem i r ()) ->
-  MenuWidget i r ()
+  MenuWidget' r ()
 traverseSelection_ f =
-  withSelection ((unit <$) . traverse_ f)
+  withSelection (traverse_ f)

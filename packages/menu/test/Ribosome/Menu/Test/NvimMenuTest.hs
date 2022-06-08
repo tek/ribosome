@@ -2,8 +2,7 @@ module Ribosome.Menu.Test.NvimMenuTest where
 
 import Control.Lens (element, use, (^?))
 import qualified Data.Map.Strict as Map
-import Polysemy.Conc (interpretMaskFinal, interpretSync)
-import Polysemy.Conc.Interpreter.Mask (Restoration)
+import Polysemy.Conc (Restoration, interpretSync)
 import Polysemy.Test (Hedgehog, TestError, UnitTest, assertEq, runTestAuto, unitTest, (===))
 import qualified Streamly.Internal.Data.Stream.IsStream as Stream
 import Streamly.Prelude (SerialT)
@@ -19,20 +18,21 @@ import Ribosome.Effect.Settings (Settings)
 import Ribosome.Host.Api.Effect (bufferGetName, vimGetBuffers, vimGetWindows)
 import Ribosome.Host.Data.RpcError (RpcError)
 import Ribosome.Host.Effect.Rpc (Rpc)
-import Ribosome.Menu.Action (menuOk, menuResult)
+import Ribosome.Menu.Action (menuOk, menuSuccess)
 import Ribosome.Menu.Combinators (sortedEntries)
-import qualified Ribosome.Menu.Consumer as Consumer
-import Ribosome.Menu.Consumer (Mappings)
 import Ribosome.Menu.Data.CursorIndex (CursorIndex (CursorIndex))
 import Ribosome.Menu.Data.Entry (intEntries)
 import Ribosome.Menu.Data.MenuAction (MenuAction)
-import Ribosome.Menu.Data.MenuConsumer (MenuWidget)
 import Ribosome.Menu.Data.MenuItem (MenuItem, simpleMenuItem)
 import qualified Ribosome.Menu.Data.MenuResult as MenuResult
 import Ribosome.Menu.Data.MenuResult (MenuResult (Success))
-import Ribosome.Menu.Data.MenuState (MenuSem, SemS (SemS), menuRead, menuWrite, semState)
+import Ribosome.Menu.Data.MenuState (MenuSem, MenuWidget, SemS (SemS), menuRead, menuWrite, semState)
 import Ribosome.Menu.Data.MenuView (MenuView (MenuView))
+import Ribosome.Menu.Data.NvimMenuState (NvimMenuState)
+import Ribosome.Menu.Effect.PromptRenderer (NvimPrompt, PromptRenderer)
 import Ribosome.Menu.Filters (fuzzy)
+import Ribosome.Menu.Interpreter.MenuConsumer (Mappings, basic, withMappings)
+import Ribosome.Menu.Interpreter.PromptRenderer (interpretPromptRendererNvim)
 import Ribosome.Menu.ItemLens (cursor)
 import Ribosome.Menu.Nvim (computeView, entrySlice)
 import Ribosome.Menu.Prompt.Data.Prompt (Prompt (Prompt), PromptText (PromptText))
@@ -76,7 +76,7 @@ exec =
     semState do
       CursorIndex s <- use cursor
       fs <- use sortedEntries
-      SemS (maybe menuOk menuResult (fs ^? element s . #item . #text))
+      SemS (maybe menuOk menuSuccess (fs ^? element s . #item . #text))
 
 promptConfig ::
   Members [Rpc, Rpc !! RpcError, Final IO] r =>
@@ -86,14 +86,15 @@ promptConfig source =
   PromptConfig source basicTransition nvimPromptRenderer [StartInsert]
 
 runNvimMenu ::
+  Show a =>
   Members [Scratch !! RpcError, Rpc !! RpcError, Settings !! SettingError, Error TestError] r =>
-  Members [Sync PromptListening, Rpc, Reader PluginName, Log, Resource, Race, Embed IO, Final IO] r =>
-  Mappings Text (Scratch : Mask Restoration : r) a ->
+  Members [Sync PromptListening, Rpc, Reader PluginName, Log, Mask Restoration, Resource, Race, Embed IO, Final IO] r =>
+  Mappings Text (PromptRenderer : AtomicState NvimMenuState : NvimPrompt : Scratch : r) a ->
   PromptInput ->
   Sem r (MenuResult a)
 runNvimMenu maps source =
-  interpretMaskFinal $ resumeTestError @Scratch do
-    nvimMenuWith fuzzy def { maxSize = Just 4 } (menuItems items) (Consumer.withMappings maps) (promptConfig source)
+  resumeTestError @Scratch $ interpretPromptRendererNvim do
+    nvimMenuWith fuzzy def { maxSize = Just 4 } (menuItems items) (withMappings maps) (promptConfig source)
 
 mappings ::
   Members [Resource, Embed IO] r =>
@@ -103,7 +104,7 @@ mappings =
 
 nvimMenuTest ::
   Members [Scratch !! RpcError, Rpc !! RpcError, Settings !! SettingError, Hedgehog IO, Error TestError] r =>
-  Members [Sync PromptListening, Rpc, Reader PluginName, Log, Resource, Race, Embed IO, Final IO] r =>
+  Members [Sync PromptListening, Rpc, Reader PluginName, Log, Mask Restoration, Resource, Race, Embed IO, Final IO] r =>
   PromptInput ->
   Sem r ()
 nvimMenuTest =
@@ -127,17 +128,18 @@ test_nvimMenuNative =
 
 test_nvimMenuInterrupt :: UnitTest
 test_nvimMenuInterrupt =
-  testEmbed_ $ interpretMaskFinal $ interpretSync do
+  testEmbed_ $ interpretSync do
     conf <- promptConfig <$> getCharStream (MilliSeconds 10)
     (MenuResult.Aborted ===) =<< withPromptInput (Just (MilliSeconds 50)) ["<c-c>", "<cr>"] do
-      resumeTestError (nvimMenuWith @_ @() fuzzy def (menuItems items) Consumer.basic conf)
+      resumeTestError @Scratch $ interpretPromptRendererNvim do
+        nvimMenuWith @_ @() fuzzy def (menuItems items) basic conf
     assertEq 1 . length =<< vimGetWindows
 
 returnPrompt ::
-  MenuSem Text r (Maybe (MenuAction r Text))
+  MenuSem Text r (Maybe (MenuAction Text))
 returnPrompt = do
   Prompt _ _ (PromptText text) <- semState (use #prompt)
-  menuResult text
+  menuSuccess text
 
 navChars :: [Text]
 navChars =
@@ -158,8 +160,8 @@ test_nvimMenuNav =
 
 test_nvimMenuQuit :: UnitTest
 test_nvimMenuQuit =
-  testEmbed_ $ interpretMaskFinal $ resumeTestError @Scratch do
-    void $ staticNvimMenu def [] Consumer.basic (PromptConfig inp basicTransition nvimPromptRenderer [])
+  testEmbed_ $ resumeTestError @Scratch do
+    void $ staticNvimMenu def [] (basic @_ @()) (PromptConfig inp basicTransition nvimPromptRenderer [])
     assertEq [""] =<< traverse bufferGetName =<< filterM buflisted =<< vimGetBuffers
   where
     inp =
@@ -207,18 +209,16 @@ test_entrySlice =
 
 test_menuScrollUp :: UnitTest
 test_menuScrollUp =
-  testEmbed_ $ interpretMaskFinal $ resumeTestError @Scratch do
+  testEmbed_ $ resumeTestError @Scratch do
     let prompt = PromptConfig (promptInputWith (Just 0.2) (Just 0.01) chars) basicTransition nvimPromptRenderer []
-    Success a <- nvimMenu def { maxSize = Just 4 } (menuItems its) consumer prompt
+    Success a <- nvimMenu @_ @[Text] def { maxSize = Just 4 } (menuItems its) (withMappings (Map.singleton "cr" content)) prompt
     4 === length a
   where
     chars =
       Stream.fromList (replicate 20 "k" <> ["cr"])
-    consumer =
-      Consumer.withMappings (Map.singleton "cr" content)
     content = do
       [_, mb] <- vimGetBuffers
-      menuResult =<< bufferContent mb
+      menuSuccess =<< bufferContent mb
     its =
       replicate 100 "item"
 

@@ -16,71 +16,59 @@ import Ribosome.Effect.Scratch (Scratch)
 import qualified Ribosome.Effect.Settings as Settings
 import Ribosome.Effect.Settings (Settings)
 import Ribosome.Host.Api.Data (Window)
-import Ribosome.Host.Api.Effect (nvimWinGetConfig, vimCallFunction, vimGetWindows, windowSetOption)
-import Ribosome.Host.Class.Msgpack.Decode (fromMsgpack)
-import Ribosome.Host.Class.Msgpack.Encode (toMsgpack)
+import Ribosome.Host.Api.Effect (nvimWinGetConfig, vimGetWindows, windowSetOption)
 import Ribosome.Host.Data.RpcError (RpcError)
 import Ribosome.Host.Effect.Rpc (Rpc)
 import Ribosome.Menu.Data.MenuConfig (MenuConfig (MenuConfig))
-import Ribosome.Menu.Data.MenuConsumer (MenuConsumer, hoistMenuConsumer)
 import Ribosome.Menu.Data.MenuItem (MenuItem)
 import Ribosome.Menu.Data.MenuItemFilter (MenuItemFilter)
 import Ribosome.Menu.Data.MenuResult (MenuResult)
+import Ribosome.Menu.Data.MenuState (MenuStateStack)
 import Ribosome.Menu.Data.NvimMenuState (NvimMenuState)
+import Ribosome.Menu.Effect.MenuConsumer (MenuConsumer)
+import Ribosome.Menu.Effect.PromptRenderer (NvimPrompt, PromptRenderer)
 import Ribosome.Menu.Filters (fuzzyItemFilter)
-import Ribosome.Menu.Main (menuMain)
+import Ribosome.Menu.Interpreter.PromptRenderer (interpretPromptRendererNvim)
+import Ribosome.Menu.Main (runMenu)
 import Ribosome.Menu.Nvim (menuSyntax, nvimMenuRenderer)
 import Ribosome.Menu.Prompt.Data.PromptConfig (PromptConfig, PromptListening, hoistPromptConfig)
-import Ribosome.Menu.Prompt.Data.PromptRenderer (PromptRenderer (PromptRenderer))
 import qualified Ribosome.Settings as Settings
 
 isFloat ::
-  Member Rpc r =>
+  Member (Rpc !! RpcError) r =>
   Window ->
   Sem r Bool
-isFloat =
-  fmap (check . fromMsgpack) . nvimWinGetConfig
+isFloat win =
+  False <! (check <$> nvimWinGetConfig win)
   where
-    check (Right (WindowConfig relative _ _)) =
+    check (WindowConfig relative _ _) =
       not (Text.null relative)
-    check _ =
-      False
 
 closeFloats ::
-  Member Rpc r =>
+  Members [Rpc, Rpc !! RpcError] r =>
   Sem r ()
 closeFloats = do
   traverse_ closeWindow =<< filterM isFloat =<< vimGetWindows
 
-runMenu ::
-  Members [Sync PromptListening, Log, Mask res, Resource, Race, Embed IO, Final IO] r =>
-  MenuConfig r i a ->
-  Sem r (MenuResult a)
-runMenu config =
-  bracketPrompt (config ^. #prompt . #render)
-  where
-    bracketPrompt (PromptRenderer acquire release _) =
-      bracket acquire release \ _ -> menuMain config
-
 nvimMenuWith ::
-  ∀ i a res r .
-  Members [Scratch, Rpc, Rpc !! RpcError, Settings !! SettingError] r =>
-  Members [Sync PromptListening, Log, Mask res, Resource, Race, Embed IO, Final IO] r =>
+  ∀ i a pres mres r .
+  Show a =>
+  Members [Scoped pres PromptRenderer, Scratch, Rpc, Rpc !! RpcError, Settings !! SettingError] r =>
+  Members [Sync PromptListening, Log, Mask mres, Resource, Race, Embed IO, Final IO] r =>
   MenuItemFilter i ->
   ScratchOptions ->
   SerialT IO (MenuItem i) ->
-  MenuConsumer i r a ->
+  InterpreterFor (MenuConsumer a) (MenuStateStack i ++ PromptRenderer : AtomicState NvimMenuState : r) ->
   PromptConfig r ->
   Sem r (MenuResult a)
 nvimMenuWith itemFilter options items consumer promptConfig = do
-  _ :: Int <- vimCallFunction "inputsave" []
   whenM (Settings.or True Settings.menuCloseFloats) closeFloats
   run =<< Scratch.open (withSyntax (ensureSize options))
   where
     run scratch = do
-      windowSetOption (scratch ^. #window) "cursorline" (toMsgpack True) !>> Log.debug "Failed to set cursorline"
+      windowSetOption (scratch ^. #window) "cursorline" True !>> Log.debug "Failed to set cursorline"
       interpretAtomic (def :: NvimMenuState) do
-        runMenu (MenuConfig items itemFilter (hoistMenuConsumer raise (insertAt @5) consumer) (nvimMenuRenderer scratch) (hoistPromptConfig raise promptConfig))
+        runMenu consumer (MenuConfig items itemFilter (nvimMenuRenderer scratch) (hoistPromptConfig raise promptConfig))
     ensureSize =
       #size %~ (<|> Just 1)
     withSyntax =
@@ -88,24 +76,26 @@ nvimMenuWith itemFilter options items consumer promptConfig = do
 
 nvimMenu ::
   ∀ i a res r .
+  Show a =>
   Members [Scratch, Rpc, Rpc !! RpcError, Settings !! SettingError] r =>
   Members [Log, Mask res, Resource, Race, Embed IO, Final IO] r =>
   ScratchOptions ->
   SerialT IO (MenuItem i) ->
-  MenuConsumer i (Sync PromptListening : r) a ->
-  PromptConfig (Sync PromptListening : r) ->
+  InterpreterFor (MenuConsumer a) (MenuStateStack i ++ PromptRenderer : AtomicState NvimMenuState : NvimPrompt : Sync PromptListening : r) ->
+  PromptConfig (NvimPrompt : Sync PromptListening : r) ->
   Sem r (MenuResult a)
 nvimMenu scro items consumer conf =
-  interpretSync do
+  interpretSync $ interpretPromptRendererNvim do
     nvimMenuWith (fuzzyItemFilter True) scro items consumer conf
 
 staticNvimMenuWith ::
-  Members [Scratch, Rpc !! RpcError, Rpc, Settings !! SettingError] r =>
+  Show a =>
+  Members [Scoped pres PromptRenderer, Scratch, Rpc !! RpcError, Rpc, Settings !! SettingError] r =>
   Members [Sync PromptListening, Log, Mask res, Resource, Race, Embed IO, Final IO] r =>
   MenuItemFilter i ->
   ScratchOptions ->
   [MenuItem i] ->
-  MenuConsumer i r a ->
+  InterpreterFor (MenuConsumer a) (MenuStateStack i ++ PromptRenderer : AtomicState NvimMenuState : r) ->
   PromptConfig r ->
   Sem r (MenuResult a)
 staticNvimMenuWith itemFilter options items =
@@ -115,13 +105,14 @@ staticNvimMenuWith itemFilter options items =
       #size %~ (<|> Just (length items))
 
 staticNvimMenu ::
+  Show a =>
   Members [Scratch, Rpc !! RpcError, Rpc, Settings !! SettingError] r =>
   Members [Log, Mask res, Resource, Race, Embed IO, Final IO] r =>
   ScratchOptions ->
   [MenuItem i] ->
-  MenuConsumer i (Sync PromptListening : r) a ->
-  PromptConfig (Sync PromptListening : r) ->
+  InterpreterFor (MenuConsumer a) (MenuStateStack i ++ PromptRenderer : AtomicState NvimMenuState : NvimPrompt : Sync PromptListening : r) ->
+  PromptConfig (NvimPrompt : Sync PromptListening : r) ->
   Sem r (MenuResult a)
 staticNvimMenu scro items consumer conf =
-  interpretSync do
+  interpretSync $ interpretPromptRendererNvim do
     staticNvimMenuWith (fuzzyItemFilter True) scro items consumer conf

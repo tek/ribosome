@@ -7,6 +7,7 @@ import Data.Generics.Labels ()
 import qualified Polysemy.Conc as Sync
 
 import Ribosome.Menu.Data.Menu (Menu (Menu))
+import Ribosome.Menu.Data.MenuAction (MenuAction)
 import Ribosome.Menu.Data.MenuData (MenuCursor, MenuItems)
 import Ribosome.Menu.Prompt.Data.Prompt (Prompt)
 
@@ -40,10 +41,7 @@ type MenuStateEffects i =
   ]
 
 type MenuStateStack i =
-  [
-    AtomicState (MenuItems i),
-    AtomicState MenuCursor,
-    AtomicState Prompt,
+  MenuStateEffects i ++ [
     Sync ItemsLock,
     Sync CursorLock
   ]
@@ -59,6 +57,12 @@ type MenuSem i r a =
 
 type MenuItemsSem r i a =
   WithMenu '[State (MenuItems i)] i r a
+
+type MenuWidget' r a =
+  Sem r (Maybe (MenuAction a))
+
+type MenuWidget i r a =
+  MenuStateSem i r (Maybe (MenuAction a))
 
 subsumeMenuStateSem ::
   Members (MenuStateStack i) r =>
@@ -137,9 +141,10 @@ runMenu f =
       pure result
 
 runMenuRead ::
-  Members [Resource, Embed IO] r =>
+  Members (MenuStateEffects i) r =>
+  Members [Sync CursorLock, Resource, Embed IO] r =>
   (Prompt -> MenuSem i r a) ->
-  MenuStateSem i r a
+  Sem r a
 runMenuRead action =
   cursorLock do
     menu <- readMenu
@@ -161,8 +166,9 @@ menuWrite action =
   insertAt @0 (runMenu (const action))
 
 menuRead ::
-  Members [Resource, Embed IO] r =>
+  Members (MenuStateEffects i) r =>
+  Members [Sync CursorLock, Resource, Embed IO] r =>
   MenuSem i r a ->
-  MenuStateSem i r a
+  Sem r a
 menuRead action =
   insertAt @0 (runMenuRead (const action))

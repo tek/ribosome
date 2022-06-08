@@ -13,10 +13,9 @@ import Ribosome.Menu.Data.CursorIndex (CursorIndex (CursorIndex))
 import qualified Ribosome.Menu.Data.Entry as Entry
 import Ribosome.Menu.Data.Entry (Entries, Entry)
 import qualified Ribosome.Menu.Data.MenuAction as MenuAction
-import Ribosome.Menu.Data.MenuConsumer (MenuWidget)
 import qualified Ribosome.Menu.Data.MenuItem as MenuItem
 import Ribosome.Menu.Data.MenuItem (MenuItem)
-import Ribosome.Menu.Data.MenuState (MenuSem, menuWrite, semState, unSemS)
+import Ribosome.Menu.Data.MenuState (MenuSem, MenuWidget, menuWrite, semState, unSemS)
 import Ribosome.Menu.ItemLens (cursor, entries, focus, history, items, selected, selected')
 
 -- |Run an action with the focused entry if the menu is non-empty.
@@ -37,17 +36,10 @@ withFocus' f =
 -- If the menu was empty, do nothing (i.e. skip the event).
 withFocus ::
   Members [Resource, Embed IO] r =>
-  (i -> MenuSem i r (Sem r a)) ->
+  (i -> MenuSem i r a) ->
   MenuWidget i r a
 withFocus f =
   Just . maybe MenuAction.Continue MenuAction.success <$> menuWrite (withFocus' f)
-
-withFocusM ::
-  Members [Resource, Embed IO] r =>
-  (i -> Sem r a) ->
-  MenuWidget i r a
-withFocusM f =
-  withFocus (pure . f)
 
 -- |Run an action with the selection or the focused entry if the menu is non-empty.
 withSelectionItems ::
@@ -67,17 +59,10 @@ withSelection' f =
 -- If the menu was empty, do nothing (i.e. skip the event).
 withSelection ::
   Members [Resource, Embed IO] r =>
-  (NonEmpty i -> MenuSem i r (Sem r a)) ->
+  (NonEmpty i -> MenuSem i r a) ->
   MenuWidget i r a
 withSelection f =
   Just . maybe MenuAction.Continue MenuAction.success <$> menuWrite (withSelection' f)
-
-withSelectionM ::
-  Members [Resource, Embed IO] r =>
-  (NonEmpty i -> Sem r a) ->
-  MenuWidget i r a
-withSelectionM f =
-  withSelection (pure . f)
 
 -- |Run an action with each entry in the selection or the focused entry and quit the menu with '()'.
 -- If the menu was empty, do nothing (i.e. skip the event).
@@ -86,7 +71,7 @@ traverseSelection_ ::
   (i -> MenuSem i r ()) ->
   MenuWidget i r ()
 traverseSelection_ f =
-  withSelection ((unit <$) . traverse_ f)
+  withSelection (traverse_ f)
 
 adaptCursorAfterDeletion :: [Int] -> CursorIndex -> CursorIndex
 adaptCursorAfterDeletion deleted (CursorIndex curs) =

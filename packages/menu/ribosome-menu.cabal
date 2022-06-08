@@ -21,14 +21,12 @@ library
       Ribosome.Menu
       Ribosome.Menu.Action
       Ribosome.Menu.Combinators
-      Ribosome.Menu.Consumer
       Ribosome.Menu.Data.CursorIndex
       Ribosome.Menu.Data.CursorLine
       Ribosome.Menu.Data.Entry
       Ribosome.Menu.Data.Menu
       Ribosome.Menu.Data.MenuAction
       Ribosome.Menu.Data.MenuConfig
-      Ribosome.Menu.Data.MenuConsumer
       Ribosome.Menu.Data.MenuData
       Ribosome.Menu.Data.MenuEvent
       Ribosome.Menu.Data.MenuItem
@@ -40,7 +38,11 @@ library
       Ribosome.Menu.Data.MenuView
       Ribosome.Menu.Data.NvimMenuState
       Ribosome.Menu.Data.QuitReason
+      Ribosome.Menu.Effect.MenuConsumer
+      Ribosome.Menu.Effect.PromptRenderer
       Ribosome.Menu.Filters
+      Ribosome.Menu.Interpreter.MenuConsumer
+      Ribosome.Menu.Interpreter.PromptRenderer
       Ribosome.Menu.ItemLens
       Ribosome.Menu.Items
       Ribosome.Menu.Items.Read
