@@ -19,6 +19,7 @@ import Ribosome.Api.Input (syntheticInput)
 import Ribosome.Final (inFinal)
 import Ribosome.Host.Data.Tuple (dup)
 import Ribosome.Host.Effect.Rpc (Rpc)
+import Ribosome.Menu.Effect.PromptEvents (PromptEvents, handlePromptEvent)
 import qualified Ribosome.Menu.Effect.PromptRenderer as PromptRenderer
 import Ribosome.Menu.Effect.PromptRenderer (PromptRenderer)
 import Ribosome.Menu.Prompt.Data.CursorUpdate (CursorUpdate)
@@ -28,23 +29,16 @@ import Ribosome.Menu.Prompt.Data.Prompt (
   PromptChange (PromptAppend, PromptRandom, PromptUnappend),
   PromptText (PromptText),
   )
-import Ribosome.Menu.Prompt.Data.PromptConfig (
-  PromptConfig (PromptConfig),
-  PromptEventHandler (PromptEventHandler),
-  PromptInput (PromptInput),
-  PromptListening (PromptListening),
-  startInsert,
-  )
+import Ribosome.Menu.Prompt.Data.PromptConfig (PromptInput (PromptInput), PromptListening (PromptListening))
 import qualified Ribosome.Menu.Prompt.Data.PromptControlEvent as PromptControlEvent
 import Ribosome.Menu.Prompt.Data.PromptControlEvent (PromptControlEvent)
 import qualified Ribosome.Menu.Prompt.Data.PromptEvent as PromptEvent
 import Ribosome.Menu.Prompt.Data.PromptEvent (PromptEvent)
 import Ribosome.Menu.Prompt.Data.PromptInputEvent (PromptInputEvent)
 import qualified Ribosome.Menu.Prompt.Data.PromptInputEvent as PromptInputEvent (PromptInputEvent (..))
-import Ribosome.Menu.Prompt.Data.PromptState (PromptState)
-import qualified Ribosome.Menu.Prompt.Data.PromptState as PromptState (PromptState (..))
+import Ribosome.Menu.Prompt.Data.PromptMode (PromptMode)
+import qualified Ribosome.Menu.Prompt.Data.PromptMode as PromptMode (PromptMode (..))
 import qualified Ribosome.Menu.Prompt.Data.PromptUpdate as PromptUpdate
-import Ribosome.Menu.Prompt.Data.PromptUpdate (PromptUpdate)
 import Ribosome.Menu.Prompt.Data.TextUpdate (TextUpdate)
 import qualified Ribosome.Menu.Prompt.Data.TextUpdate as TextUpdate (TextUpdate (..))
 import Ribosome.Menu.Stream.Util (chanStream, takeUntilNothing)
@@ -98,7 +92,7 @@ updateLastChange old new
   | Text.length new + 1 == Text.length old && Text.isPrefixOf new old = PromptUnappend
   | otherwise = PromptRandom
 
-modifyPrompt :: PromptState -> CursorUpdate -> TextUpdate -> Prompt -> Prompt
+modifyPrompt :: PromptMode -> CursorUpdate -> TextUpdate -> Prompt -> Prompt
 modifyPrompt newState cursorUpdate textUpdate (Prompt cursor _ (PromptText text)) =
   Prompt updatedCursor newState (PromptText updatedText)
   where
@@ -128,13 +122,12 @@ ignoreEvent = \case
     PromptEvent.Quit
 
 updatePrompt ::
-  Monad m =>
-  (PromptInputEvent -> PromptState -> m PromptUpdate) ->
+  Member PromptEvents r =>
   PromptInputEvent ->
   Prompt ->
-  m (Maybe (Prompt, PromptEvent))
-updatePrompt handleEvent input prompt = do
-  handleEvent input (prompt ^. #state) <&> \case
+  Sem r (Maybe (Prompt, PromptEvent))
+updatePrompt input prompt = do
+  handlePromptEvent input (prompt ^. #state) <&> \case
     PromptUpdate.Modify newState cursorUpdate textUpdate -> do
       Just (modifyPrompt newState cursorUpdate textUpdate prompt, modifyEvent textUpdate)
     PromptUpdate.Ignore ->
@@ -155,13 +148,12 @@ logPromptUpdate event res =
       (_, Nothing) -> "unhandled"
 
 updatePromptState ::
-  Member Log r =>
-  (PromptInputEvent -> PromptState -> Sem r PromptUpdate) ->
+  Members [PromptEvents, Log] r =>
   PromptInputEvent ->
   Prompt ->
   Sem r (Prompt, Maybe (Prompt, PromptEvent))
-updatePromptState handleEvent input old = do
-  res <- updatePrompt handleEvent input old <&> \case
+updatePromptState input old = do
+  res <- updatePrompt input old <&> \case
     Just (new, output) ->
       (new, Just (new, output))
     Nothing ->
@@ -169,13 +161,12 @@ updatePromptState handleEvent input old = do
   res <$ logPromptUpdate input res
 
 processPromptEvent ::
-  Members [Sync Prompt, Mask res, Log, Resource] r =>
-  PromptEventHandler r ->
+  Members [PromptEvents, Sync Prompt, Mask res, Log, Resource] r =>
   Either PromptControlEvent PromptInputEvent ->
   Sem r (Maybe (Prompt, PromptEvent))
-processPromptEvent (PromptEventHandler handleEvent) = \case
+processPromptEvent = \case
   Right event ->
-    Sync.modify (updatePromptState handleEvent event)
+    Sync.modify (updatePromptState event)
   Left PromptControlEvent.Quit ->
     pure Nothing
   Left (PromptControlEvent.Set (Prompt cursor state (PromptText text))) -> do
@@ -183,16 +174,16 @@ processPromptEvent (PromptEventHandler handleEvent) = \case
     pure (Just (newPrompt, PromptEvent.Edit))
 
 promptWithControl ::
-  Members [PromptRenderer, Sync Prompt, Sync PromptListening, Mask res, Log, Resource] r =>
+  Members [PromptEvents, PromptRenderer, Sync Prompt, Sync PromptListening, Mask res, Log, Resource] r =>
   (∀ x . Sem r x -> IO (Maybe x)) ->
-  PromptConfig r ->
+  PromptInput ->
   SerialT IO PromptControlEvent ->
   MVar () ->
   SerialT IO (Prompt, PromptEvent)
-promptWithControl lower (PromptConfig (PromptInput source) handler flags) control listenQuit =
+promptWithControl lower (PromptInput source) control listenQuit =
   Stream.tapAsync (Fold.drainBy (lower . PromptRenderer.renderPrompt . fst)) $
   takeUntilNothing $
-  Stream.mapM (liftIO . fmap join . lower . processPromptEvent (handler flags)) $
+  Stream.mapM (liftIO . fmap join . lower . processPromptEvent) $
   Stream.parallelMin (Left <$> Stream.before (lower (Sync.putTry PromptListening)) control) (Right <$> sourceWithInit)
   where
     sourceWithInit =
@@ -208,18 +199,19 @@ controlChannel = do
 
 pristinePrompt :: Bool -> Prompt
 pristinePrompt insert =
-  Prompt 0 (if insert then PromptState.Insert else PromptState.Normal) ""
+  Prompt 0 (if insert then PromptMode.Insert else PromptMode.Normal) ""
 
 withPromptStream ::
-  Members [PromptRenderer, Mask res, Sync PromptListening, Log, Resource, Race, Embed IO, Final IO] r =>
-  PromptConfig (Sync Prompt : r) ->
+  Members [PromptEvents, PromptRenderer, Mask res, Sync PromptListening, Log, Resource, Race, Embed IO, Final IO] r =>
+  Prompt ->
+  PromptInput ->
   ((TMChan PromptControlEvent, SerialT IO (Prompt, PromptEvent)) -> Sem r a) ->
   Sem r a
-withPromptStream config use = do
+withPromptStream initial promptInput use = do
   (chan, listenQuit, close, control) <- controlChannel
-  interpretSyncAs (pristinePrompt (startInsert (config ^. #flags))) do
+  interpretSyncAs initial do
     res <- inFinal \ _ lower pur ex ->
-      pur (chan, Stream.finally close (promptWithControl (fmap ex . lower) config control listenQuit))
+      pur (chan, Stream.finally close (promptWithControl (fmap ex . lower) promptInput control listenQuit))
     raise (use res)
 
 withPromptInput ::

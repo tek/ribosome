@@ -39,6 +39,7 @@ import Ribosome.Menu.Effect.MenuRenderer (MenuRenderer)
 import Ribosome.Menu.Effect.PromptRenderer (PromptRenderer, withPrompt)
 import Ribosome.Menu.Filters (fuzzyItemFilter)
 import Ribosome.Menu.Interpreter.MenuConsumer (forMappings, withMappings)
+import Ribosome.Menu.Interpreter.PromptEvents (interpretPromptEventsDefault)
 import Ribosome.Menu.Interpreter.PromptRenderer (interpretPromptRendererNull)
 import Ribosome.Menu.ItemLens (cursor, focus, items, selected', selectedOnly, unselected)
 import Ribosome.Menu.Items (deleteSelected, popSelection)
@@ -46,7 +47,6 @@ import Ribosome.Menu.Main (interpretMenu, menuMain)
 import Ribosome.Menu.Prompt.Data.Prompt (Prompt)
 import Ribosome.Menu.Prompt.Data.PromptConfig (PromptConfig (PromptConfig), PromptFlag (StartInsert), PromptListening)
 import Ribosome.Menu.Prompt.Input (promptInputWith)
-import Ribosome.Menu.Prompt.Transition (basicTransition)
 
 sleep ::
   Double ->
@@ -123,19 +123,21 @@ runMenuTest =
 menuTest ::
   Show a =>
   Members (MenuStack Text) r =>
-  Members [Log, Mask res, Race, Resource, Embed IO, Final IO] r =>
-  Members [MenuConsumer a, MenuRenderer Text, Sync PromptListening, Scoped pres PromptRenderer, Sync [[Entry Text]]] r =>
+  Members [MenuConsumer a, Log, Mask res, Race, Resource, Embed IO, Final IO] r =>
+  Members [MenuRenderer Text, Sync PromptListening, Scoped pres PromptRenderer, Sync [[Entry Text]]] r =>
   [Text] ->
   [Text] ->
   Sem r [[Entry Text]]
 menuTest its chars =
-  withPrompt do
+  withPrompt $ interpretPromptEventsDefault flags do
     menuMain conf *> Sync.block
   where
     conf =
       MenuConfig (menuItems its) (fuzzyItemFilter False) promptConfig
     promptConfig =
-      PromptConfig (promptInputWith Nothing (Just 0.01) (Streamly.fromList chars)) basicTransition [StartInsert]
+      PromptConfig (promptInputWith Nothing (Just 0.01) (Streamly.fromList chars)) flags
+    flags =
+      [StartInsert]
 
 promptTest ::
   Members [AtomicState [Prompt], Resource, Race, Embed IO, Final IO] r =>

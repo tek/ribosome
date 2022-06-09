@@ -19,7 +19,7 @@ import Ribosome.Menu.Main (interpretMenu)
 import Ribosome.Menu.Prompt.Data.Prompt (Prompt (Prompt))
 import qualified Ribosome.Menu.Prompt.Data.PromptEvent as PromptEvent
 import Ribosome.Menu.Prompt.Data.PromptEvent (PromptEvent)
-import qualified Ribosome.Menu.Prompt.Data.PromptState as PromptState
+import qualified Ribosome.Menu.Prompt.Data.PromptMode as PromptMode
 import Ribosome.Menu.UpdateState (promptEvent, updateItems)
 import qualified Streamly.Prelude as Stream
 import Streamly.Prelude (IsStream)
@@ -41,7 +41,7 @@ events =
   ]
   where
     p i =
-      Prompt i PromptState.Insert
+      Prompt i PromptMode.Insert
 
 fatalEither ::
   Show e =>

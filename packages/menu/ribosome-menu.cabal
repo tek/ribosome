@@ -39,10 +39,12 @@ library
       Ribosome.Menu.Data.QuitReason
       Ribosome.Menu.Effect.MenuConsumer
       Ribosome.Menu.Effect.MenuRenderer
+      Ribosome.Menu.Effect.PromptEvents
       Ribosome.Menu.Effect.PromptRenderer
       Ribosome.Menu.Filters
       Ribosome.Menu.Interpreter.MenuConsumer
       Ribosome.Menu.Interpreter.MenuRenderer
+      Ribosome.Menu.Interpreter.PromptEvents
       Ribosome.Menu.Interpreter.PromptRenderer
       Ribosome.Menu.ItemLens
       Ribosome.Menu.Items
@@ -59,13 +61,12 @@ library
       Ribosome.Menu.Prompt.Data.PromptControlEvent
       Ribosome.Menu.Prompt.Data.PromptEvent
       Ribosome.Menu.Prompt.Data.PromptInputEvent
-      Ribosome.Menu.Prompt.Data.PromptState
+      Ribosome.Menu.Prompt.Data.PromptMode
       Ribosome.Menu.Prompt.Data.PromptUpdate
       Ribosome.Menu.Prompt.Data.TextUpdate
       Ribosome.Menu.Prompt.Input
       Ribosome.Menu.Prompt.Nvim
       Ribosome.Menu.Prompt.Run
-      Ribosome.Menu.Prompt.Transition
       Ribosome.Menu.Settings
       Ribosome.Menu.Stream.Accumulate
       Ribosome.Menu.Stream.ChunkAfter

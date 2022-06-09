@@ -42,7 +42,6 @@ import Ribosome.Menu.Prompt.Data.PromptConfig (PromptConfig (PromptConfig), Prom
 import Ribosome.Menu.Prompt.Input (promptInput, promptInputWith)
 import Ribosome.Menu.Prompt.Nvim (getCharStream)
 import Ribosome.Menu.Prompt.Run (withPromptInput)
-import Ribosome.Menu.Prompt.Transition (basicTransition)
 import Ribosome.Test.Embed (testEmbed_)
 import Ribosome.Test.Error (resumeTestError)
 
@@ -74,9 +73,9 @@ exec =
 
 promptConfig ::
   PromptInput ->
-  PromptConfig r
+  PromptConfig
 promptConfig source =
-  PromptConfig source basicTransition [StartInsert]
+  PromptConfig source [StartInsert]
 
 mappings ::
   MenuWrite Text r =>
@@ -142,7 +141,7 @@ test_nvimMenuQuit :: UnitTest
 test_nvimMenuQuit =
   testEmbed_ $ interpretMenu do
     resumeTestError @Scratch $ interpretPromptRendererNvim $ basic do
-      void $ staticNvimMenuDef @() def [] (PromptConfig inp basicTransition [])
+      void $ staticNvimMenuDef @() def [] (PromptConfig inp [])
       assertEq [""] =<< traverse bufferGetName =<< filterM buflisted =<< vimGetBuffers
   where
     inp =
@@ -192,7 +191,7 @@ test_menuScrollUp :: UnitTest
 test_menuScrollUp =
   testEmbed_ $ interpretMenu do
     resumeTestError @Scratch $ interpretPromptRendererNvim $ basic do
-      let prompt = PromptConfig (promptInputWith (Just 0.2) (Just 0.01) chars) basicTransition []
+      let prompt = PromptConfig (promptInputWith (Just 0.2) (Just 0.01) chars) []
       Success a <-  withMappings (Map.singleton "cr" content) do
         nvimMenuDef def { maxSize = Just 4 } (menuItems its) prompt
       4 === length a

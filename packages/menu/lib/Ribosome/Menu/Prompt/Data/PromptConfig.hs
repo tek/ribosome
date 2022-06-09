@@ -3,8 +3,6 @@ module Ribosome.Menu.Prompt.Data.PromptConfig where
 import Streamly.Prelude (SerialT)
 
 import Ribosome.Menu.Prompt.Data.PromptInputEvent (PromptInputEvent)
-import Ribosome.Menu.Prompt.Data.PromptState (PromptState)
-import Ribosome.Menu.Prompt.Data.PromptUpdate (PromptUpdate)
 
 data PromptListening =
   PromptListening
@@ -19,42 +17,17 @@ data PromptFlag =
 newtype PromptInput =
   PromptInput { unPromptInput :: MVar () -> SerialT IO PromptInputEvent }
 
-newtype PromptEventHandler r =
-  PromptEventHandler { unPromptEventHandler :: PromptInputEvent -> PromptState -> Sem r PromptUpdate }
-
-data PromptConfig r =
+data PromptConfig =
   PromptConfig {
     source :: PromptInput,
-    handleEvent :: [PromptFlag] -> PromptEventHandler r,
     flags :: [PromptFlag]
   }
   deriving stock (Generic)
 
-hoistPromptConfig ::
-  (∀ x . Sem r x -> Sem r' x) ->
-  PromptConfig r ->
-  PromptConfig r'
-hoistPromptConfig f PromptConfig {..} =
-  PromptConfig {
-    handleEvent = \ flg -> PromptEventHandler \ e s -> f (unPromptEventHandler (handleEvent flg) e s),
-    ..
-  }
-
-class TestPromptFlag a where
-  promptFlag :: PromptFlag -> a -> Bool
-
-instance TestPromptFlag [PromptFlag] where
-  promptFlag =
-    elem
-
-instance TestPromptFlag (PromptConfig r) where
-  promptFlag flag =
-    promptFlag flag . flags
-
-startInsert :: TestPromptFlag a => a -> Bool
+startInsert :: [PromptFlag] -> Bool
 startInsert =
-  promptFlag StartInsert
+  elem StartInsert
 
-onlyInsert :: TestPromptFlag a => a -> Bool
+onlyInsert :: [PromptFlag] -> Bool
 onlyInsert =
-  promptFlag OnlyInsert
+  elem OnlyInsert

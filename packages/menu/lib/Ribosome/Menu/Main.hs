@@ -15,7 +15,7 @@ import Streamly.Prelude (AsyncT, SerialT)
 import Ribosome.Final (inFinal_)
 import Ribosome.Menu.Data.MenuAction (MenuAction)
 import qualified Ribosome.Menu.Data.MenuAction as MenuAction (MenuAction (..))
-import Ribosome.Menu.Data.MenuConfig (MenuConfig (MenuConfig), hoistMenuConfig)
+import Ribosome.Menu.Data.MenuConfig (MenuConfig (MenuConfig))
 import qualified Ribosome.Menu.Data.MenuEvent as MenuEvent
 import Ribosome.Menu.Data.MenuEvent (MenuEvent)
 import qualified Ribosome.Menu.Data.MenuResult as MenuResult
@@ -31,13 +31,14 @@ import qualified Ribosome.Menu.Data.QuitReason as QuitReason
 import Ribosome.Menu.Effect.MenuConsumer (MenuConsumer, menuConsumerEvent)
 import qualified Ribosome.Menu.Effect.MenuRenderer as MenuRenderer
 import Ribosome.Menu.Effect.MenuRenderer (MenuRenderer, withMenuRenderer)
+import Ribosome.Menu.Effect.PromptEvents (PromptEvents)
 import Ribosome.Menu.Effect.PromptRenderer (PromptRenderer, withPrompt)
 import Ribosome.Menu.Prompt.Data.Prompt (Prompt)
-import Ribosome.Menu.Prompt.Data.PromptConfig (PromptListening, hoistPromptConfig)
+import Ribosome.Menu.Prompt.Data.PromptConfig (PromptConfig (PromptConfig), PromptListening, startInsert)
 import qualified Ribosome.Menu.Prompt.Data.PromptControlEvent as PromptControlEvent
 import Ribosome.Menu.Prompt.Data.PromptControlEvent (PromptControlEvent)
 import Ribosome.Menu.Prompt.Data.PromptEvent (PromptEvent)
-import Ribosome.Menu.Prompt.Run (withPromptStream)
+import Ribosome.Menu.Prompt.Run (pristinePrompt, withPromptStream)
 import Ribosome.Menu.UpdateState (promptEvent, updateItems)
 
 eventAction ::
@@ -112,7 +113,7 @@ menuStream ::
   Show a =>
   Members (MenuStack i) r =>
   Members [MenuRenderer i, MenuConsumer a, Resource, Log, Embed IO, Final IO] r =>
-  MenuConfig r i a ->
+  MenuConfig i a ->
   TMChan PromptControlEvent ->
   AsyncT IO (Prompt, PromptEvent) ->
   Sem r (SerialT IO (MenuResult a))
@@ -121,7 +122,7 @@ menuStream (MenuConfig items itemFilter _) promptControl promptEvents =
   let
     handleAction action =
       lower_ do
-        Log.debug [exon|menuMain consumer: #{show action}|]
+        Log.debug [exon|menu consumer: #{show action}|]
         renderAction action
     prompt =
       promptEvent lowerMaybe itemFilter promptEvents
@@ -147,9 +148,9 @@ menuResult ::
   Sem r (MenuResult a)
 menuResult = \case
   Just result ->
-    result <$ Log.debug [exon|menuMain terminated: #{describe result}|]
+    result <$ Log.debug [exon|menu terminated: #{describe result}|]
   Nothing -> do
-    Log.debug "menuMain terminated without output"
+    Log.debug "menu terminated without output"
     pure (MenuResult.Error "no output")
   where
     describe = \case
@@ -173,34 +174,39 @@ interpretMenu =
 menuMain ::
   Show a =>
   Members (MenuStack i) r =>
-  Member PromptRenderer r =>
+  Members [PromptEvents, PromptRenderer] r =>
   Members [MenuConsumer a, MenuRenderer i, Sync PromptListening, Log, Mask res, Race, Resource, Embed IO, Final IO] r =>
-  MenuConfig r i a ->
+  MenuConfig i a ->
   Sem r (MenuResult a)
 menuMain conf =
-  withPromptStream (hoistPromptConfig (insertAt @0) (conf ^. #prompt)) \ (promptControl, promptEvents) -> do
+  withPromptStream initialPrompt promptInput \ (promptControl, promptEvents) -> do
     stream <- menuStream conf promptControl (Stream.fromSerial promptEvents)
     menuResult =<< embed (Stream.last stream)
+  where
+    initialPrompt =
+      pristinePrompt (startInsert flags)
+    PromptConfig promptInput flags =
+      conf ^. #prompt
 
 simpleMenu ::
   Show a =>
   Member (MenuRenderer i) r =>
-  Members [Scoped pres PromptRenderer, Log, Mask mres, Resource, Race, Embed IO, Final IO] r =>
+  Members [PromptEvents, Scoped pres PromptRenderer, Log, Mask mres, Resource, Race, Embed IO, Final IO] r =>
   InterpreterFor (MenuConsumer a) (Sync PromptListening : MenuStack i ++ PromptRenderer : r) ->
-  MenuConfig r i a ->
+  MenuConfig i a ->
   Sem r (MenuResult a)
 simpleMenu consumer config =
   withPrompt do
-    interpretMenu $ consumer $ menuMain (hoistMenuConfig (insertAt @0) config)
+    interpretMenu $ consumer $ menuMain config
 
 menu ::
   ∀ a i pres mrres res r .
   Show a =>
   Members (MenuStack i) r =>
-  Members [MenuConsumer a, Scoped pres PromptRenderer] r =>
+  Members [PromptEvents, MenuConsumer a, Scoped pres PromptRenderer] r =>
   Members [Scoped mrres (MenuRenderer i), Sync PromptListening, Log, Mask res, Race, Resource, Embed IO, Final IO] r =>
-  MenuConfig r i a ->
+  MenuConfig i a ->
   Sem r (MenuResult a)
 menu conf =
   withMenuRenderer $ withPrompt do
-    menuMain (hoistMenuConfig (insertAt @0) conf)
+    menuMain conf

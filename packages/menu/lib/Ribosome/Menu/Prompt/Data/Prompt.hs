@@ -1,7 +1,7 @@
 module Ribosome.Menu.Prompt.Data.Prompt where
 
-import qualified Ribosome.Menu.Prompt.Data.PromptState as PromptState
-import Ribosome.Menu.Prompt.Data.PromptState (PromptState)
+import qualified Ribosome.Menu.Prompt.Data.PromptMode as PromptMode
+import Ribosome.Menu.Prompt.Data.PromptMode (PromptMode)
 
 data PromptChange =
   PromptAppend
@@ -23,11 +23,11 @@ newtype PromptText =
 data Prompt =
   Prompt {
      cursor :: Int,
-     state :: PromptState,
+     state :: PromptMode,
      text :: PromptText
   }
   deriving stock (Eq, Show, Generic)
 
 instance Default Prompt where
   def =
-    Prompt 0 PromptState.Normal ""
+    Prompt 0 PromptMode.Normal ""

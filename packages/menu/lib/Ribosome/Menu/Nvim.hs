@@ -1,7 +1,6 @@
 module Ribosome.Menu.Nvim where
 
-import Control.Lens ((%~))
-import Polysemy.Conc (interpretSync)
+import Control.Lens ((%~), (^.))
 import qualified Streamly.Internal.Data.Stream.IsStream as Stream
 import Streamly.Prelude (SerialT)
 
@@ -16,10 +15,9 @@ import Ribosome.Menu.Data.MenuItem (MenuItem)
 import Ribosome.Menu.Data.MenuResult (MenuResult)
 import Ribosome.Menu.Data.MenuState (MenuStack)
 import Ribosome.Menu.Effect.MenuConsumer (MenuConsumer)
-import Ribosome.Menu.Effect.MenuRenderer (NvimRenderer)
-import Ribosome.Menu.Effect.PromptRenderer (NvimPrompt)
 import Ribosome.Menu.Filters (fuzzy)
 import Ribosome.Menu.Interpreter.MenuRenderer (interpretMenuRendererNvim)
+import Ribosome.Menu.Interpreter.PromptEvents (interpretPromptEventsDefault)
 import Ribosome.Menu.Interpreter.PromptRenderer (interpretPromptRendererNvim)
 import Ribosome.Menu.Main (menu)
 import Ribosome.Menu.Prompt.Data.PromptConfig (PromptConfig, PromptListening)
@@ -32,12 +30,14 @@ nvimMenuDef ::
   Members [Sync PromptListening, Log, Mask res, Race, Resource, Embed IO, Final IO] r =>
   ScratchOptions ->
   SerialT IO (MenuItem i) ->
-  PromptConfig (NvimRenderer i : NvimPrompt : r) ->
+  PromptConfig ->
   Sem r (MenuResult a)
 nvimMenuDef options items promptConfig =
-  interpretPromptRendererNvim $ interpretMenuRendererNvim (ensureSize options) do
+  interpretPromptRendererNvim $ interpretMenuRendererNvim (ensureSize options) $ interpretPromptEventsDefault flags do
     menu (MenuConfig items fuzzy promptConfig)
   where
+    flags =
+      promptConfig ^. #flags
     ensureSize =
       #size %~ (<|> Just 1)
 
@@ -49,11 +49,10 @@ staticNvimMenuDef ::
   Members [Sync PromptListening, Log, Mask res, Race, Resource, Embed IO, Final IO] r =>
   ScratchOptions ->
   [MenuItem i] ->
-  PromptConfig (NvimRenderer i : NvimPrompt : Sync PromptListening : r) ->
+  PromptConfig ->
   Sem r (MenuResult a)
-staticNvimMenuDef options items promptConfig =
-  interpretSync $ interpretPromptRendererNvim $ interpretMenuRendererNvim (ensureSize options) do
-    menu (MenuConfig (Stream.fromList items) fuzzy promptConfig)
+staticNvimMenuDef options items =
+  nvimMenuDef (ensureSize options) (Stream.fromList items)
   where
     ensureSize =
       #size %~ (<|> Just (length items))
