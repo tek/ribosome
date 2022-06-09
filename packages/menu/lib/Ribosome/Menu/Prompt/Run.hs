@@ -19,6 +19,8 @@ import Ribosome.Api.Input (syntheticInput)
 import Ribosome.Final (inFinal)
 import Ribosome.Host.Data.Tuple (dup)
 import Ribosome.Host.Effect.Rpc (Rpc)
+import qualified Ribosome.Menu.Effect.PromptRenderer as PromptRenderer
+import Ribosome.Menu.Effect.PromptRenderer (PromptRenderer)
 import Ribosome.Menu.Prompt.Data.CursorUpdate (CursorUpdate)
 import qualified Ribosome.Menu.Prompt.Data.CursorUpdate as CursorUpdate (CursorUpdate (..))
 import Ribosome.Menu.Prompt.Data.Prompt (
@@ -39,7 +41,6 @@ import qualified Ribosome.Menu.Prompt.Data.PromptEvent as PromptEvent
 import Ribosome.Menu.Prompt.Data.PromptEvent (PromptEvent)
 import Ribosome.Menu.Prompt.Data.PromptInputEvent (PromptInputEvent)
 import qualified Ribosome.Menu.Prompt.Data.PromptInputEvent as PromptInputEvent (PromptInputEvent (..))
-import Ribosome.Menu.Prompt.Data.PromptRenderer (PromptRenderer (PromptRenderer), render)
 import Ribosome.Menu.Prompt.Data.PromptState (PromptState)
 import qualified Ribosome.Menu.Prompt.Data.PromptState as PromptState (PromptState (..))
 import qualified Ribosome.Menu.Prompt.Data.PromptUpdate as PromptUpdate
@@ -182,14 +183,14 @@ processPromptEvent (PromptEventHandler handleEvent) = \case
     pure (Just (newPrompt, PromptEvent.Edit))
 
 promptWithControl ::
-  Members [Sync Prompt, Sync PromptListening, Mask res, Log, Resource] r =>
+  Members [PromptRenderer, Sync Prompt, Sync PromptListening, Mask res, Log, Resource] r =>
   (∀ x . Sem r x -> IO (Maybe x)) ->
   PromptConfig r ->
   SerialT IO PromptControlEvent ->
   MVar () ->
   SerialT IO (Prompt, PromptEvent)
-promptWithControl lower (PromptConfig (PromptInput source) handler renderer flags) control listenQuit =
-  Stream.tapAsync (Fold.drainBy (lower . render renderer . fst)) $
+promptWithControl lower (PromptConfig (PromptInput source) handler flags) control listenQuit =
+  Stream.tapAsync (Fold.drainBy (lower . PromptRenderer.renderPrompt . fst)) $
   takeUntilNothing $
   Stream.mapM (liftIO . fmap join . lower . processPromptEvent (handler flags)) $
   Stream.parallelMin (Left <$> Stream.before (lower (Sync.putTry PromptListening)) control) (Right <$> sourceWithInit)
@@ -210,7 +211,7 @@ pristinePrompt insert =
   Prompt 0 (if insert then PromptState.Insert else PromptState.Normal) ""
 
 withPromptStream ::
-  Members [Mask res, Sync PromptListening, Log, Resource, Race, Embed IO, Final IO] r =>
+  Members [PromptRenderer, Mask res, Sync PromptListening, Log, Resource, Race, Embed IO, Final IO] r =>
   PromptConfig (Sync Prompt : r) ->
   ((TMChan PromptControlEvent, SerialT IO (Prompt, PromptEvent)) -> Sem r a) ->
   Sem r a
@@ -220,11 +221,6 @@ withPromptStream config use = do
     res <- inFinal \ _ lower pur ex ->
       pur (chan, Stream.finally close (promptWithControl (fmap ex . lower) config control listenQuit))
     raise (use res)
-
-noPromptRenderer ::
-  PromptRenderer r
-noPromptRenderer =
-  PromptRenderer unit (const unit) (const unit)
 
 withPromptInput ::
   Members [Sync PromptListening, Rpc, Resource, Race, Async, Time t d] r =>

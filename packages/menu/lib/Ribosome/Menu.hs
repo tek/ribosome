@@ -9,11 +9,10 @@ module Ribosome.Menu (
   module Ribosome.Menu.Main,
   module Ribosome.Menu.Prompt,
   module Ribosome.Menu.Prompt.Data.PromptConfig,
-  module Ribosome.Menu.Prompt.Data.PromptRenderer,
   module Ribosome.Menu.Prompt.Data.PromptState,
   module Ribosome.Menu.Prompt.Nvim,
   module Ribosome.Menu.Prompt.Run,
-  module Ribosome.Menu.Run,
+  module Ribosome.Menu.Nvim,
 ) where
 
 import Ribosome.Menu.Action (
@@ -73,7 +72,8 @@ import Ribosome.Menu.Items (
   withSelection',
   withSelectionItems,
   )
-import Ribosome.Menu.Main (interpretMenu, menuMain)
+import Ribosome.Menu.Main (interpretMenu, menu, menuMain, simpleMenu)
+import Ribosome.Menu.Nvim (nvimMenuDef, staticNvimMenuDef)
 import Ribosome.Menu.Prompt (defaultPrompt)
 import Ribosome.Menu.Prompt.Data.PromptConfig (
   PromptConfig (PromptConfig),
@@ -85,8 +85,6 @@ import Ribosome.Menu.Prompt.Data.PromptConfig (
   onlyInsert,
   startInsert,
   )
-import Ribosome.Menu.Prompt.Data.PromptRenderer (PromptRenderer (PromptRenderer), hoistPromptRenderer)
 import Ribosome.Menu.Prompt.Data.PromptState (PromptState (..))
-import Ribosome.Menu.Prompt.Nvim (getCharStream, nvimPromptRenderer)
-import Ribosome.Menu.Prompt.Run (noPromptRenderer, pristinePrompt, withPromptInput, withPromptStream)
-import Ribosome.Menu.Run (staticNvimMenuWith)
+import Ribosome.Menu.Prompt.Nvim (getCharStream)
+import Ribosome.Menu.Prompt.Run (pristinePrompt, withPromptInput, withPromptStream)

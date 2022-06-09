@@ -18,12 +18,10 @@ import Ribosome.Menu.Data.MenuEvent (MenuEvent)
 import Ribosome.Menu.Data.MenuItem (MenuItem)
 import Ribosome.Menu.Data.MenuItemFilter (MenuItemFilter (MenuItemFilter))
 import Ribosome.Menu.Data.MenuState (
-  CursorLock,
-  ItemsLock,
   MenuItemsSem,
   MenuItemsSemS,
+  MenuStack,
   MenuStateSem,
-  MenuStateStack,
   SemS (SemS),
   menuItemsState,
   semState,
@@ -185,7 +183,7 @@ setPromptAndClassify prompt event = do
   classifyEvent event <$ setPrompt prompt
 
 promptEvent ::
-  Members (MenuStateStack i) r =>
+  Members (MenuStack i) r =>
   Members [Log, Resource, Embed IO] r =>
   (∀ x . Sem r x -> IO (Maybe x)) ->
   MenuItemFilter i ->
@@ -197,9 +195,9 @@ promptEvent lower itemFilter str =
   Stream.mkAsync str
 
 updateItems ::
-  Members (MenuStateStack i) r =>
   IsStream t =>
-  Members [Sync ItemsLock, Sync CursorLock, Log, Resource, Embed IO] r =>
+  Members (MenuStack i) r =>
+  Members [Log, Embed IO] r =>
   (∀ x . Sem r x -> IO (Maybe x)) ->
   MenuItemFilter i ->
   t IO (MenuItem i) ->

@@ -9,11 +9,11 @@ import Polysemy.Conc (interpretRace)
 import Polysemy.Log (Severity (Warn), interpretLogStderrLevelConc)
 import qualified Polysemy.Test as Test
 import Polysemy.Test (Test, TestError, interpretTestInSubdir)
-import Ribosome.Final (inFinal)
+import Ribosome.Final (inFinal_)
 import Ribosome.Menu.Combinators (sortedEntries)
 import Ribosome.Menu.Data.MenuEvent (MenuEvent)
 import Ribosome.Menu.Data.MenuItem (simpleMenuItem)
-import Ribosome.Menu.Data.MenuState (MenuStateSem, readMenu)
+import Ribosome.Menu.Data.MenuState (readMenu)
 import Ribosome.Menu.Filters (fuzzyItemFilter)
 import Ribosome.Menu.Main (interpretMenu)
 import Ribosome.Menu.Prompt.Data.Prompt (Prompt (Prompt))
@@ -70,21 +70,19 @@ appendBench ::
   [Text] ->
   Sem r [MenuEvent]
 appendBench files =
-  interpretMenu $ inFinal \ _ lower pur ex -> do
+  interpretMenu $ inFinal_ \ lowerMaybe _ pur -> do
     let
       filt =
         fuzzyItemFilter False
-      lowerMaybe :: ∀ x . MenuStateSem () r x -> IO (Maybe x)
-      lowerMaybe =
-        fmap ex . lower
       promptStream =
         promptEvent lowerMaybe filt events
       itemStream =
         Stream.fromSerial (updateItems lowerMaybe filt (simpleMenuItem () <$> Stream.fromList files))
     res <- Stream.toList (Stream.async promptStream itemStream)
     len <- lowerMaybe (length . view sortedEntries <$> readMenu)
-    when (fromMaybe 0 len /= 1401) (Base.throw (userError [exon|length is #{show len}|]))
-    pur res
+    if fromMaybe 0 len == 1401
+    then pur res
+    else Base.throw (userError [exon|length is #{show len}|])
 
 runBench :: Sem [Log, Race, Async, Resource, Embed IO, Final IO] a -> IO a
 runBench =

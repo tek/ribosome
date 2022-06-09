@@ -15,7 +15,7 @@ import Ribosome.Menu.Data.Entry (Entries, Entry)
 import qualified Ribosome.Menu.Data.MenuAction as MenuAction
 import qualified Ribosome.Menu.Data.MenuItem as MenuItem
 import Ribosome.Menu.Data.MenuItem (MenuItem)
-import Ribosome.Menu.Data.MenuState (MenuSem, MenuWidget, menuWrite, semState, unSemS)
+import Ribosome.Menu.Data.MenuState (MenuSem, MenuStack, MenuWidget', menuWrite, semState, unSemS)
 import Ribosome.Menu.ItemLens (cursor, entries, focus, history, items, selected, selected')
 
 -- |Run an action with the focused entry if the menu is non-empty.
@@ -35,9 +35,9 @@ withFocus' f =
 -- |Run an action with the focused entry and quit the menu with the returned value.
 -- If the menu was empty, do nothing (i.e. skip the event).
 withFocus ::
-  Members [Resource, Embed IO] r =>
+  Members (MenuStack i) r =>
   (i -> MenuSem i r a) ->
-  MenuWidget i r a
+  MenuWidget' r a
 withFocus f =
   Just . maybe MenuAction.Continue MenuAction.success <$> menuWrite (withFocus' f)
 
@@ -58,18 +58,18 @@ withSelection' f =
 -- |Run an action with the selection or the focused entry and quit the menu with the returned value.
 -- If the menu was empty, do nothing (i.e. skip the event).
 withSelection ::
-  Members [Resource, Embed IO] r =>
+  Members (MenuStack i) r =>
   (NonEmpty i -> MenuSem i r a) ->
-  MenuWidget i r a
+  MenuWidget' r a
 withSelection f =
   Just . maybe MenuAction.Continue MenuAction.success <$> menuWrite (withSelection' f)
 
 -- |Run an action with each entry in the selection or the focused entry and quit the menu with '()'.
 -- If the menu was empty, do nothing (i.e. skip the event).
 traverseSelection_ ::
-  Members [Resource, Embed IO] r =>
+  Members (MenuStack i) r =>
   (i -> MenuSem i r ()) ->
-  MenuWidget i r ()
+  MenuWidget' r ()
 traverseSelection_ f =
   withSelection (traverse_ f)
 

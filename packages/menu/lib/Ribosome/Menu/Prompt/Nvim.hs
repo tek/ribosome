@@ -21,7 +21,6 @@ import qualified Ribosome.Menu.Prompt.Data.InputEvent as InputEvent (InputEvent 
 import Ribosome.Menu.Prompt.Data.Prompt (Prompt (Prompt), PromptText (PromptText))
 import Ribosome.Menu.Prompt.Data.PromptConfig (PromptInput (PromptInput))
 import qualified Ribosome.Menu.Prompt.Data.PromptInputEvent as PromptInputEvent (PromptInputEvent (..))
-import Ribosome.Menu.Prompt.Data.PromptRenderer (PromptRenderer (PromptRenderer))
 import Ribosome.Text (escapeQuotes)
 
 quitChar :: Char
@@ -132,9 +131,3 @@ nvimRelease (NvimPromptResources gc) = do
   redraw
   vimCommand "echon ''"
   vimCallFunction "inputrestore" []
-
-nvimPromptRenderer ::
-  Members [Rpc, Rpc !! RpcError] r =>
-  PromptRenderer r
-nvimPromptRenderer =
-  PromptRenderer nvimAcquire nvimRelease nvimRenderPrompt

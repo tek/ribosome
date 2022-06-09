@@ -1,6 +1,6 @@
 module Ribosome.Menu.Test.MenuTest where
 
-import Conc (Restoration, interpretSync, interpretSyncAs)
+import Conc (Restoration, interpretSyncAs)
 import Control.Concurrent.Lifted (threadDelay)
 import Control.Lens (use, view, (^.))
 import qualified Control.Monad.Trans.State.Strict as MTL
@@ -19,35 +19,33 @@ import Ribosome.Menu.Action (menuIgnore, menuQuit)
 import Ribosome.Menu.Combinators (sortEntries, sortedEntries)
 import qualified Ribosome.Menu.Data.Entry as Entry
 import Ribosome.Menu.Data.Entry (Entries, Entry (Entry), simpleIntEntries)
-import Ribosome.Menu.Data.Menu (Menu, consMenu)
+import Ribosome.Menu.Data.Menu (consMenu)
 import Ribosome.Menu.Data.MenuConfig (MenuConfig (MenuConfig))
 import qualified Ribosome.Menu.Data.MenuEvent as MenuEvent
 import qualified Ribosome.Menu.Data.MenuItem as MenuItem
 import Ribosome.Menu.Data.MenuItem (Items, MenuItem, simpleMenuItem)
-import qualified Ribosome.Menu.Data.MenuRenderEvent as MenuRenderEvent
-import Ribosome.Menu.Data.MenuRenderEvent (MenuRenderEvent)
-import Ribosome.Menu.Data.MenuRenderer (MenuRenderer (MenuRenderer))
 import Ribosome.Menu.Data.MenuState (
   CursorLock,
+  MenuRead,
+  MenuStack,
   MenuStateEffects,
-  MenuStateStack,
-  MenuWidget,
   MenuWidget',
   menuRead,
   semState,
   )
 import Ribosome.Menu.Effect.MenuConsumer (MenuConsumer (MenuConsumerEvent))
-import Ribosome.Menu.Effect.PromptRenderer (PromptRenderer)
+import qualified Ribosome.Menu.Effect.MenuRenderer as MenuRenderer
+import Ribosome.Menu.Effect.MenuRenderer (MenuRenderer)
+import Ribosome.Menu.Effect.PromptRenderer (PromptRenderer, withPrompt)
 import Ribosome.Menu.Filters (fuzzyItemFilter)
 import Ribosome.Menu.Interpreter.MenuConsumer (forMappings, withMappings)
 import Ribosome.Menu.Interpreter.PromptRenderer (interpretPromptRendererNull)
 import Ribosome.Menu.ItemLens (cursor, focus, items, selected', selectedOnly, unselected)
 import Ribosome.Menu.Items (deleteSelected, popSelection)
-import Ribosome.Menu.Main (runMenu)
+import Ribosome.Menu.Main (interpretMenu, menuMain)
 import Ribosome.Menu.Prompt.Data.Prompt (Prompt)
 import Ribosome.Menu.Prompt.Data.PromptConfig (PromptConfig (PromptConfig), PromptFlag (StartInsert), PromptListening)
 import Ribosome.Menu.Prompt.Input (promptInputWith)
-import Ribosome.Menu.Prompt.Run (noPromptRenderer)
 import Ribosome.Menu.Prompt.Transition (basicTransition)
 
 sleep ::
@@ -78,7 +76,7 @@ storePrompt ::
   Member (AtomicState [Prompt]) r =>
   Members (MenuStateEffects i) r =>
   Members [Sync CursorLock, Resource, Embed IO] r =>
-  MenuConsumer a m x ->
+  MenuConsumer () m x ->
   Sem r x
 storePrompt = \case
     MenuConsumerEvent MenuEvent.PromptEdit ->
@@ -92,40 +90,61 @@ storePrompt = \case
 
 render ::
   Members [Sync [[Entry Text]], Mask Restoration, Resource] r =>
-  Menu Text ->
-  MenuRenderEvent ->
-  Sem r ()
-render menu = \case
-  MenuRenderEvent.Render -> do
-    let cur = view sortedEntries menu
-    Sync.modify_ (pure . (cur :))
-  MenuRenderEvent.Quit ->
-    unit
+  InterpreterFor (MenuRenderer Text) r
+render =
+  interpret \case
+    MenuRenderer.MenuRender menu -> do
+      Sync.modify_ (pure . (menu ^. sortedEntries :))
+    MenuRenderer.MenuRenderQuit ->
+      unit
+
+type TestStack =
+  [
+    Scoped () PromptRenderer,
+    MenuRenderer Text,
+    Sync PromptListening
+  ] ++ MenuStack Text ++ [
+    Log,
+    Sync [[Entry Text]],
+    Mask Restoration
+  ]
+
+runMenuTest ::
+  Members [Resource, Race, Embed IO, Final IO] r =>
+  InterpretersFor TestStack r
+runMenuTest =
+  interpretMaskFinal .
+  interpretSyncAs mempty .
+  interpretLogNull .
+  interpretMenu .
+  render .
+  interpretPromptRendererNull
 
 menuTest ::
-  Members [Resource, Race, Embed IO, Final IO] r =>
-  InterpreterFor (MenuConsumer ()) (MenuStateStack Text ++ PromptRenderer : Scoped () PromptRenderer : Log : Sync PromptListening : Sync [[Entry Text]] : Mask Restoration : r) ->
+  Show a =>
+  Members (MenuStack Text) r =>
+  Members [Log, Mask res, Race, Resource, Embed IO, Final IO] r =>
+  Members [MenuConsumer a, MenuRenderer Text, Sync PromptListening, Scoped pres PromptRenderer, Sync [[Entry Text]]] r =>
   [Text] ->
   [Text] ->
   Sem r [[Entry Text]]
-menuTest consumer its chars = do
-  interpretMaskFinal $ interpretSyncAs mempty $ interpretSync @PromptListening do
-    let
-      conf =
-        MenuConfig (menuItems its) (fuzzyItemFilter False) (MenuRenderer render) promptConfig
-    _ <- interpretLogNull (interpretPromptRendererNull (runMenu consumer conf))
-    Sync.block
+menuTest its chars =
+  withPrompt do
+    menuMain conf *> Sync.block
   where
+    conf =
+      MenuConfig (menuItems its) (fuzzyItemFilter False) promptConfig
     promptConfig =
-      PromptConfig (promptInputWith Nothing (Just 0.01) (Streamly.fromList chars)) basicTransition noPromptRenderer [StartInsert]
+      PromptConfig (promptInputWith Nothing (Just 0.01) (Streamly.fromList chars)) basicTransition [StartInsert]
 
 promptTest ::
   Members [AtomicState [Prompt], Resource, Race, Embed IO, Final IO] r =>
   [Text] ->
   [Text] ->
   Sem r [[Entry Text]]
-promptTest its chars = do
-  menuTest (interpret storePrompt) its chars
+promptTest its chars =
+  runMenuTest $ interpret storePrompt $ interpretPromptRendererNull $ withPrompt do
+    menuTest its chars
 
 items1 :: [Text]
 items1 =
@@ -200,8 +219,9 @@ items3 =
     ]
 
 exec ::
-  Members [AtomicState [Text], Resource, Embed IO] r =>
-  MenuWidget Text r ()
+  MenuRead i r =>
+  Member (AtomicState [Text]) r =>
+  MenuWidget' r ()
 exec =
   menuRead do
     fs <- semState (use sortedEntries)
@@ -211,8 +231,9 @@ exec =
 test_pureMenuExecute :: UnitTest
 test_pureMenuExecute = do
   runTestAuto $ interpretRace $ interpretAtomic [] do
-    _ <- menuTest (forMappings (Map.fromList [("cr", exec)])) items3 chars3
-    (items3 ===) =<< atomicGet
+    runMenuTest $ forMappings [("cr", exec)] do
+      void $ menuTest items3 chars3
+      (items3 ===) =<< atomicGet
 
 charsMulti :: [Text]
 charsMulti =
@@ -230,8 +251,9 @@ itemsMulti =
   ]
 
 execMulti ::
-  Members [AtomicState (Maybe (NonEmpty Text)), Resource, Embed IO] r =>
-  MenuWidget Text r ()
+  MenuRead i r =>
+  Member (AtomicState (Maybe (NonEmpty Text))) r =>
+  MenuWidget' r ()
 execMulti = do
   menuRead do
     selection <- semState (use selected')
@@ -241,7 +263,8 @@ execMulti = do
 test_menuMultiMark :: UnitTest
 test_menuMultiMark = do
   runTestAuto $ interpretRace $ interpretAtomic Nothing do
-    _ <- menuTest (withMappings (Map.fromList [("cr", execMulti)])) itemsMulti charsMulti
+    void $ runMenuTest $ withMappings (Map.fromList [("cr", execMulti)]) do
+      menuTest itemsMulti charsMulti
     (Just ["item5", "item4", "item3"] ===) =<< atomicGet
 
 charsToggle :: [Text]
@@ -262,8 +285,9 @@ itemsToggle =
   ]
 
 execToggle ::
-  Members [AtomicState (Maybe (NonEmpty Text)), Resource, Embed IO] r =>
-  MenuWidget Text r ()
+  MenuRead i r =>
+  Member (AtomicState (Maybe (NonEmpty Text))) r =>
+  MenuWidget' r ()
 execToggle = do
   menuRead do
     selection <- semState (use selectedOnly)
@@ -273,7 +297,8 @@ execToggle = do
 test_menuToggle :: UnitTest
 test_menuToggle = do
   runTestAuto $ interpretRace $ interpretAtomic Nothing do
-    _ <- menuTest (withMappings (Map.fromList [("cr", execToggle)])) itemsToggle charsToggle
+    void $ runMenuTest $ withMappings (Map.fromList [("cr", execToggle)]) do
+      menuTest itemsToggle charsToggle
     (Just ["abc", "a"] ===) =<< atomicGet
 
 charsExecuteThunk :: [Text]
@@ -288,8 +313,9 @@ itemsExecuteThunk =
   ]
 
 execExecuteThunk ::
-  Members [AtomicState [Text], Resource, Embed IO] r =>
-  MenuWidget Text r ()
+  MenuRead i r =>
+  Member (AtomicState [Text]) r =>
+  MenuWidget' r ()
 execExecuteThunk =
   menuRead do
     sel <- semState (use focus)
@@ -301,7 +327,8 @@ execExecuteThunk =
 test_menuExecuteThunk :: UnitTest
 test_menuExecuteThunk = do
   runTestAuto $ interpretRace $ interpretAtomic mempty do
-    _ <- menuTest (withMappings (Map.fromList [("cr", execExecuteThunk)])) itemsExecuteThunk charsExecuteThunk
+    void $ runMenuTest $ withMappings (Map.fromList [("cr", execExecuteThunk)]) do
+      menuTest itemsExecuteThunk charsExecuteThunk
     (["a", "b"] ===) =<< atomicGet
 
 testItems :: (Items (), Entries ())

@@ -37,17 +37,24 @@ type MenuStateEffects i =
   [
     AtomicState (MenuItems i),
     AtomicState MenuCursor,
-    AtomicState Prompt
+    AtomicState Prompt,
+    Resource
   ]
 
-type MenuStateStack i =
+type MenuStack i =
   MenuStateEffects i ++ [
     Sync ItemsLock,
     Sync CursorLock
   ]
 
+type MenuWrite i r =
+  Members (MenuStack i) r
+
+type MenuRead i r =
+  Members (Sync CursorLock : MenuStateEffects i) r
+
 type WithMenu es i r a =
-  Sem (es ++ MenuStateStack i ++ r) a
+  Sem (es ++ MenuStack i ++ r) a
 
 type MenuStateSem i r a =
   WithMenu '[] i r a
@@ -65,10 +72,11 @@ type MenuWidget i r a =
   MenuStateSem i r (Maybe (MenuAction a))
 
 subsumeMenuStateSem ::
-  Members (MenuStateStack i) r =>
+  Members (MenuStack i) r =>
   MenuStateSem i r a ->
   Sem r a
 subsumeMenuStateSem =
+  subsume .
   subsume .
   subsume .
   subsume .
@@ -97,8 +105,7 @@ readMenu =
   Menu <$> atomicGet <*> atomicGet <*> atomicGet
 
 modifyMenuCursor ::
-  Members [Resource, Embed IO] r =>
-  Sem (Reader (Menu i) : MenuStateStack i ++ r) (a, MenuCursor) ->
+  Sem (Reader (Menu i) : MenuStack i ++ r) (a, MenuCursor) ->
   MenuStateSem i r a
 modifyMenuCursor f =
   cursorLock do
@@ -108,7 +115,6 @@ modifyMenuCursor f =
     pure result
 
 modifyMenuItems ::
-  Members [Resource, Embed IO] r =>
   WithMenu '[Reader (Menu i)] i r (MenuItems i, a) ->
   MenuStateSem i r a
 modifyMenuItems f =
@@ -119,7 +125,6 @@ modifyMenuItems f =
     pure result
 
 menuItemsState ::
-  Members [Resource, Embed IO] r =>
   (Prompt -> MenuCursor -> MenuItemsSem r i a) ->
   MenuStateSem i r a
 menuItemsState f =
@@ -128,9 +133,9 @@ menuItemsState f =
     raise (runState i (f p s))
 
 runMenu ::
-  Members [Resource, Embed IO] r =>
+  MenuWrite i r =>
   (Prompt -> Sem (State (Menu i) : r) a) ->
-  MenuStateSem i r a
+  Sem r a
 runMenu f =
   itemsLock do
     cursorLock do
@@ -141,8 +146,7 @@ runMenu f =
       pure result
 
 runMenuRead ::
-  Members (MenuStateEffects i) r =>
-  Members [Sync CursorLock, Resource, Embed IO] r =>
+  MenuRead i r =>
   (Prompt -> MenuSem i r a) ->
   Sem r a
 runMenuRead action =
@@ -159,15 +163,14 @@ setPrompt =
   atomicPut
 
 menuWrite ::
-  Members [Resource, Embed IO] r =>
+  MenuWrite i r =>
   MenuSem i r a ->
-  MenuStateSem i r a
+  Sem r a
 menuWrite action =
-  insertAt @0 (runMenu (const action))
+  runMenu (const action)
 
 menuRead ::
-  Members (MenuStateEffects i) r =>
-  Members [Sync CursorLock, Resource, Embed IO] r =>
+  MenuRead i r =>
   MenuSem i r a ->
   Sem r a
 menuRead action =

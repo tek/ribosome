@@ -4,7 +4,7 @@ import Ribosome.Menu.Prompt.Data.Prompt (Prompt)
 import Ribosome.Menu.Prompt.Nvim (NvimPromptResources)
 
 data PromptRenderer :: Effect where
-  Render :: Prompt -> PromptRenderer m ()
+  RenderPrompt :: Prompt -> PromptRenderer m ()
 
 makeSem ''PromptRenderer
 

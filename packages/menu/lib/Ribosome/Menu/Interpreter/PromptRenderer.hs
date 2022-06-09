@@ -4,13 +4,13 @@ import Conc (interpretScoped, interpretScopedAs)
 
 import Ribosome.Host.Data.RpcError (RpcError)
 import Ribosome.Host.Effect.Rpc (Rpc)
-import Ribosome.Menu.Effect.PromptRenderer (PromptRenderer (Render))
+import Ribosome.Menu.Effect.PromptRenderer (PromptRenderer (RenderPrompt))
 import Ribosome.Menu.Prompt.Nvim (NvimPromptResources, nvimAcquire, nvimRelease, nvimRenderPrompt)
 
 interpretPromptRendererNull :: InterpreterFor (Scoped () PromptRenderer) r
 interpretPromptRendererNull =
   interpretScopedAs unit \ () -> \case
-    Render _ -> unit
+    RenderPrompt _ -> unit
 
 withNvimResources ::
   Members [Rpc, Rpc !! RpcError, Resource] r =>
@@ -24,4 +24,4 @@ interpretPromptRendererNvim ::
   InterpreterFor (Scoped NvimPromptResources PromptRenderer) r
 interpretPromptRendererNvim =
   interpretScoped withNvimResources \ _ -> \case
-    Render prompt -> nvimRenderPrompt prompt
+    RenderPrompt prompt -> nvimRenderPrompt prompt

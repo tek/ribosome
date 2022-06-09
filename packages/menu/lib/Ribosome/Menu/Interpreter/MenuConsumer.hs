@@ -5,15 +5,15 @@ import Data.Map.Strict ((!?))
 
 import Ribosome.Menu.Action (menuCycle, menuToggle, menuToggleAll)
 import qualified Ribosome.Menu.Data.MenuEvent as MenuEvent
-import Ribosome.Menu.Data.MenuState (MenuStateStack, MenuWidget)
+import Ribosome.Menu.Data.MenuState (MenuStack, MenuWidget')
 import Ribosome.Menu.Effect.MenuConsumer (MenuConsumer (MenuConsumerEvent))
 
-type Mappings i r a =
-  Map Text (MenuWidget i r a)
+type Mappings r a =
+  Map Text (MenuWidget' r a)
 
 defaultMappings ::
-  Members [Resource, Embed IO] r =>
-  Mappings i r a
+  Members (MenuStack i) r =>
+  Mappings r a
 defaultMappings =
   Map.fromList [
     ("k", menuCycle 1),
@@ -25,9 +25,9 @@ defaultMappings =
   ]
 
 forMappings ::
-  ∀ i a r .
-  Mappings i r a ->
-  InterpreterFor (MenuConsumer a) (MenuStateStack i ++ r)
+  ∀ a r .
+  Mappings r a ->
+  InterpreterFor (MenuConsumer a) r
 forMappings mappings =
   interpret \case
     MenuConsumerEvent (MenuEvent.Mapping char) -> do
@@ -38,19 +38,15 @@ forMappings mappings =
 
 withMappings ::
   ∀ i a r .
-  Members [Resource, Embed IO] r =>
-  Mappings i r a ->
-  InterpreterFor (MenuConsumer a) (MenuStateStack i ++ r)
+  Members (MenuStack i) r =>
+  Mappings r a ->
+  InterpreterFor (MenuConsumer a) r
 withMappings extraMappings =
   forMappings (Map.union extraMappings defaultMappings)
 
 basic ::
-  ∀ i a r .
-  Members [Resource, Embed IO] r =>
-  InterpreterFor (MenuConsumer a) (MenuStateStack i ++ r)
+  ∀ a i r .
+  Members (MenuStack i) r =>
+  InterpreterFor (MenuConsumer a) r
 basic =
   withMappings mempty
-
-interpretMenuConsumer :: m ()
-interpretMenuConsumer =
-  undefined

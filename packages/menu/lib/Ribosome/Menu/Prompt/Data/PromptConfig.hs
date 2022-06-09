@@ -3,7 +3,6 @@ module Ribosome.Menu.Prompt.Data.PromptConfig where
 import Streamly.Prelude (SerialT)
 
 import Ribosome.Menu.Prompt.Data.PromptInputEvent (PromptInputEvent)
-import Ribosome.Menu.Prompt.Data.PromptRenderer (PromptRenderer, hoistPromptRenderer)
 import Ribosome.Menu.Prompt.Data.PromptState (PromptState)
 import Ribosome.Menu.Prompt.Data.PromptUpdate (PromptUpdate)
 
@@ -27,7 +26,6 @@ data PromptConfig r =
   PromptConfig {
     source :: PromptInput,
     handleEvent :: [PromptFlag] -> PromptEventHandler r,
-    render :: PromptRenderer r,
     flags :: [PromptFlag]
   }
   deriving stock (Generic)
@@ -39,7 +37,6 @@ hoistPromptConfig ::
 hoistPromptConfig f PromptConfig {..} =
   PromptConfig {
     handleEvent = \ flg -> PromptEventHandler \ e s -> f (unPromptEventHandler (handleEvent flg) e s),
-    render = hoistPromptRenderer f render,
     ..
   }
 

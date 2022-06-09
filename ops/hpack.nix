@@ -213,6 +213,7 @@ in {
       "lifted-base"
       "monad-control"
       "mtl"
+      "polysemy-conc"
       "ribosome"
       "ribosome-host"
       "stm-chans"
