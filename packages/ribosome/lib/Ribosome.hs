@@ -22,6 +22,16 @@ module Ribosome (
   module Ribosome.Data.ScratchState,
   module Ribosome.Data.Setting,
   module Ribosome.Data.SettingError,
+  module Ribosome.Interpreter.BuiltinHandlers,
+  module Ribosome.Interpreter.MappingHandler,
+  module Ribosome.Interpreter.NvimPlugin,
+  module Ribosome.Interpreter.Persist,
+  module Ribosome.Interpreter.PersistPath,
+  module Ribosome.Interpreter.PluginName,
+  module Ribosome.Interpreter.Scratch,
+  module Ribosome.Interpreter.Settings,
+  module Ribosome.Interpreter.UserError,
+  module Ribosome.Interpreter.VariableWatcher,
   module Ribosome.Embed,
   module Ribosome.Host,
   module Ribosome.IOStack,
@@ -47,6 +57,16 @@ import Ribosome.Effect.Settings (Settings)
 import Ribosome.Embed (embedNvimPlugin, embedNvimPlugin_, interpretPluginEmbed, testPluginEmbed)
 import Ribosome.Host
 import Ribosome.IOStack (BasicPluginStack, TestEffects, runBasicPluginStack)
+import Ribosome.Interpreter.BuiltinHandlers
+import Ribosome.Interpreter.MappingHandler (interpretMappingHandler, interpretMappingHandlerNull)
+import Ribosome.Interpreter.NvimPlugin
+import Ribosome.Interpreter.Persist (interpretPersist)
+import Ribosome.Interpreter.PersistPath (interpretPersistPath, interpretPersistPathAt, interpretPersistPathSetting)
+import Ribosome.Interpreter.PluginName
+import Ribosome.Interpreter.Scratch
+import Ribosome.Interpreter.Settings (interpretSettingsRpc)
+import Ribosome.Interpreter.UserError (interpretUserErrorPrefixed)
+import Ribosome.Interpreter.VariableWatcher (interpretVariableWatcher, interpretVariableWatcherNull)
 import Ribosome.Locks (lockOrSkip)
 import Ribosome.Remote (
   RemoteStack,
