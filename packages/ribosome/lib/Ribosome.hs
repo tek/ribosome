@@ -12,6 +12,7 @@ module Ribosome (
   module Ribosome.Effect.Scratch,
   module Ribosome.Effect.Settings,
   module Ribosome.Data.FloatOptions,
+  module Ribosome.Data.PersistError,
   module Ribosome.Data.PluginConfig,
   module Ribosome.Data.PluginName,
   module Ribosome.Data.Register,
@@ -29,6 +30,7 @@ module Ribosome (
 ) where
 
 import Ribosome.Data.FloatOptions (FloatOptions (FloatOptions))
+import Ribosome.Data.PersistError (PersistError)
 import Ribosome.Data.PluginConfig (PluginConfig (PluginConfig), pluginNamed)
 import Ribosome.Data.PluginName (PluginName (PluginName))
 import Ribosome.Data.Register (Register, registerRepr)
