@@ -38,6 +38,7 @@ import Ribosome.Menu.Data.MenuState (
   MenuItemsSem,
   MenuSem,
   MenuStateSem,
+  MenuWidget,
   SemS (SemS),
   cursorLock,
   itemsLock,

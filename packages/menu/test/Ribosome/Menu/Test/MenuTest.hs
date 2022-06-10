@@ -29,7 +29,7 @@ import Ribosome.Menu.Data.MenuState (
   MenuRead,
   MenuStack,
   MenuStateEffects,
-  MenuWidget',
+  MenuWidget,
   menuRead,
   semState,
   )
@@ -65,7 +65,7 @@ store ::
   Member (AtomicState [Prompt]) r =>
   Members (MenuStateEffects i) r =>
   Members [Sync CursorLock, Resource, Embed IO] r =>
-  MenuWidget' r a
+  MenuWidget r a
 store = do
   menuRead do
     prompt <- semState (use #prompt)
@@ -223,7 +223,7 @@ items3 =
 exec ::
   MenuRead i r =>
   Member (AtomicState [Text]) r =>
-  MenuWidget' r ()
+  MenuWidget r ()
 exec =
   menuRead do
     fs <- semState (use sortedEntries)
@@ -255,7 +255,7 @@ itemsMulti =
 execMulti ::
   MenuRead i r =>
   Member (AtomicState (Maybe (NonEmpty Text))) r =>
-  MenuWidget' r ()
+  MenuWidget r ()
 execMulti = do
   menuRead do
     selection <- semState (use selected')
@@ -289,7 +289,7 @@ itemsToggle =
 execToggle ::
   MenuRead i r =>
   Member (AtomicState (Maybe (NonEmpty Text))) r =>
-  MenuWidget' r ()
+  MenuWidget r ()
 execToggle = do
   menuRead do
     selection <- semState (use selectedOnly)
@@ -317,7 +317,7 @@ itemsExecuteThunk =
 execExecuteThunk ::
   MenuRead i r =>
   Member (AtomicState [Text]) r =>
-  MenuWidget' r ()
+  MenuWidget r ()
 execExecuteThunk =
   menuRead do
     sel <- semState (use focus)

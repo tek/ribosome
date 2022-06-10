@@ -15,7 +15,7 @@ import Ribosome.Menu.Data.Entry (Entries, Entry)
 import qualified Ribosome.Menu.Data.MenuAction as MenuAction
 import qualified Ribosome.Menu.Data.MenuItem as MenuItem
 import Ribosome.Menu.Data.MenuItem (MenuItem)
-import Ribosome.Menu.Data.MenuState (MenuSem, MenuStack, MenuWidget', menuWrite, semState, unSemS)
+import Ribosome.Menu.Data.MenuState (MenuSem, MenuStack, MenuWidget, menuWrite, semState, unSemS)
 import Ribosome.Menu.ItemLens (cursor, entries, focus, history, items, selected, selected')
 
 -- |Run an action with the focused entry if the menu is non-empty.
@@ -37,7 +37,7 @@ withFocus' f =
 withFocus ::
   Members (MenuStack i) r =>
   (i -> MenuSem i r a) ->
-  MenuWidget' r a
+  MenuWidget r a
 withFocus f =
   Just . maybe MenuAction.Continue MenuAction.success <$> menuWrite (withFocus' f)
 
@@ -60,7 +60,7 @@ withSelection' f =
 withSelection ::
   Members (MenuStack i) r =>
   (NonEmpty i -> MenuSem i r a) ->
-  MenuWidget' r a
+  MenuWidget r a
 withSelection f =
   Just . maybe MenuAction.Continue MenuAction.success <$> menuWrite (withSelection' f)
 
@@ -69,7 +69,7 @@ withSelection f =
 traverseSelection_ ::
   Members (MenuStack i) r =>
   (i -> MenuSem i r ()) ->
-  MenuWidget' r ()
+  MenuWidget r ()
 traverseSelection_ f =
   withSelection (traverse_ f)
 

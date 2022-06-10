@@ -23,7 +23,7 @@ import Ribosome.Menu.Data.MenuResult (MenuResult (Success))
 import Ribosome.Menu.Data.MenuState (
   MenuRead,
   MenuSem,
-  MenuWidget',
+  MenuWidget,
   MenuWrite,
   SemS (SemS),
   menuRead,
@@ -62,7 +62,7 @@ items =
 
 exec ::
   MenuWrite i r =>
-  MenuWidget' r Text
+  MenuWidget r Text
 exec =
   menuWrite do
     semState do

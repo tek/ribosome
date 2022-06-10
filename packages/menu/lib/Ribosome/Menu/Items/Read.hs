@@ -10,7 +10,7 @@ import Control.Lens (use)
 import qualified Ribosome.Menu.Data.MenuAction as MenuAction
 import qualified Ribosome.Menu.Data.MenuItem as MenuItem
 import Ribosome.Menu.Data.MenuItem (MenuItem)
-import Ribosome.Menu.Data.MenuState (CursorLock, MenuSem, MenuStateEffects, MenuWidget', menuRead, semState)
+import Ribosome.Menu.Data.MenuState (CursorLock, MenuSem, MenuStateEffects, MenuWidget, menuRead, semState)
 import Ribosome.Menu.ItemLens (focus, selected, selected')
 
 -- |Run an action with the focused entry if the menu is non-empty.
@@ -33,7 +33,7 @@ withFocus ::
   Members (MenuStateEffects i) r =>
   Members [Sync CursorLock, Resource, Embed IO] r =>
   (i -> MenuSem i r a) ->
-  MenuWidget' r a
+  MenuWidget r a
 withFocus f =
   Just . maybe MenuAction.Continue MenuAction.success <$> menuRead (withFocus' f)
 
@@ -57,7 +57,7 @@ withSelection ::
   Members (MenuStateEffects i) r =>
   Members [Sync CursorLock, Resource, Embed IO] r =>
   (NonEmpty i -> MenuSem i r a) ->
-  MenuWidget' r a
+  MenuWidget r a
 withSelection f =
   Just . maybe MenuAction.Continue MenuAction.success <$> menuRead (withSelection' f)
 
@@ -67,6 +67,6 @@ traverseSelection_ ::
   Members (MenuStateEffects i) r =>
   Members [Sync CursorLock, Resource, Embed IO] r =>
   (i -> MenuSem i r ()) ->
-  MenuWidget' r ()
+  MenuWidget r ()
 traverseSelection_ f =
   withSelection (traverse_ f)

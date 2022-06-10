@@ -65,11 +65,8 @@ type MenuSem i r a =
 type MenuItemsSem r i a =
   WithMenu '[State (MenuItems i)] i r a
 
-type MenuWidget' r a =
+type MenuWidget r a =
   Sem r (Maybe (MenuAction a))
-
-type MenuWidget i r a =
-  MenuStateSem i r (Maybe (MenuAction a))
 
 subsumeMenuStateSem ::
   Members (MenuStack i) r =>

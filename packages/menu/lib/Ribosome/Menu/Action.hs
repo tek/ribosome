@@ -12,7 +12,7 @@ import Ribosome.Menu.Data.MenuState (
   MenuSem,
   MenuStateEffects,
   MenuStack,
-  MenuWidget',
+  MenuWidget,
   SemS (SemS),
   menuRead,
   menuWrite,
@@ -65,7 +65,7 @@ cycleMenu offset = do
 menuModify ::
   Members (MenuStack i) r =>
   MenuSem i r () ->
-  MenuWidget' r a
+  MenuWidget r a
 menuModify action = do
   menuWrite action
   menuRender
@@ -74,7 +74,7 @@ menuNavigate ::
   Members (MenuStateEffects i) r =>
   Member (Sync CursorLock) r =>
   MenuSem i r () ->
-  MenuWidget' r a
+  MenuWidget r a
 menuNavigate action = do
   menuRead action
   menuRender
@@ -83,7 +83,7 @@ menuCycle ::
   Members (MenuStateEffects i) r =>
   Member (Sync CursorLock) r =>
   Int ->
-  MenuWidget' r a
+  MenuWidget r a
 menuCycle offset =
   menuNavigate (cycleMenu offset)
 
@@ -100,19 +100,19 @@ toggleSelected = do
 
 menuToggle ::
   Members (MenuStack i) r =>
-  MenuWidget' r a
+  MenuWidget r a
 menuToggle =
   menuModify toggleSelected
 
 menuToggleAll ::
   Members (MenuStack i) r =>
-  MenuWidget' r a
+  MenuWidget r a
 menuToggleAll =
   menuModify $ semState do
     entries %= overEntries (const (#selected %~ not))
 
 menuUpdatePrompt ::
   Prompt ->
-  MenuWidget' r a
+  MenuWidget r a
 menuUpdatePrompt prompt =
   act (MenuAction.UpdatePrompt prompt)
