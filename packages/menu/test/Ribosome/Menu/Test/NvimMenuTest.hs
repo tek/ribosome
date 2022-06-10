@@ -125,7 +125,7 @@ navMappings ::
   MenuRead Text r =>
   Mappings r Text
 navMappings =
-  Map.fromList [("cr", menuRead returnPrompt)]
+  [("cr", menuRead returnPrompt)]
 
 test_nvimMenuNav :: UnitTest
 test_nvimMenuNav =

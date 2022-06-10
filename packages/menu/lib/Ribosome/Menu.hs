@@ -7,6 +7,7 @@ module Ribosome.Menu (
   module Ribosome.Menu.Data.MenuItem,
   module Ribosome.Menu.Data.MenuState,
   module Ribosome.Menu.Filters,
+  module Ribosome.Menu.Interpreter.MenuConsumer,
   module Ribosome.Menu.ItemLens,
   module Ribosome.Menu.Items,
   module Ribosome.Menu.Main,
@@ -36,9 +37,11 @@ import Ribosome.Menu.Data.MenuState (
   CursorLock,
   ItemsLock,
   MenuItemsSem,
+  MenuRead,
   MenuSem,
   MenuStateSem,
   MenuWidget,
+  MenuWrite,
   SemS (SemS),
   cursorLock,
   itemsLock,
@@ -55,6 +58,7 @@ import Ribosome.Menu.Effect.MenuRenderer (MenuRenderer (..), withMenuRenderer)
 import Ribosome.Menu.Effect.PromptEvents (PromptEvents (..))
 import Ribosome.Menu.Effect.PromptRenderer (PromptRenderer (..), withPrompt)
 import Ribosome.Menu.Filters (fuzzy, fuzzyItemFilter, substringItemFilter)
+import Ribosome.Menu.Interpreter.MenuConsumer (Mappings, basic, defaultMappings, forMappings, withMappings)
 import Ribosome.Menu.ItemLens (
   entriesByIndex,
   focus,
