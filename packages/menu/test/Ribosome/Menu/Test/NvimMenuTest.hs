@@ -32,7 +32,6 @@ import Ribosome.Menu.Data.MenuState (
   )
 import Ribosome.Menu.Data.MenuView (MenuView (MenuView))
 import Ribosome.Menu.Interpreter.MenuConsumer (Mappings, basic, withMappings)
-import Ribosome.Menu.Interpreter.PromptRenderer (interpretPromptRendererNvim)
 import Ribosome.Menu.ItemLens (cursor)
 import Ribosome.Menu.Main (interpretMenu)
 import Ribosome.Menu.Nvim (nvimMenuDef, staticNvimMenuDef)
@@ -86,7 +85,7 @@ mappings =
 test_nvimMenuPure :: UnitTest
 test_nvimMenuPure =
   testEmbed_ $ interpretMenu do
-    result <- resumeTestError @Scratch $ interpretPromptRendererNvim $ withMappings mappings do
+    result <- resumeTestError @Scratch $ withMappings mappings do
       nvimMenuDef def { maxSize = Just 4 } (menuItems items) (promptConfig (promptInput pureChars))
     MenuResult.Success "item4" === result
 
@@ -99,7 +98,7 @@ test_nvimMenuNative =
   testEmbed_ $ interpretMenu do
     inp <- getCharStream (MilliSeconds 10)
     withPromptInput (Just (MilliSeconds 10)) nativeChars do
-      result <- resumeTestError @Scratch $ interpretPromptRendererNvim $ withMappings mappings do
+      result <- resumeTestError @Scratch $ withMappings mappings do
         nvimMenuDef def { maxSize = Just 4 } (menuItems items) (promptConfig inp)
       MenuResult.Success "item4" === result
 
@@ -108,7 +107,7 @@ test_nvimMenuInterrupt =
   testEmbed_ $ interpretMenu do
     conf <- promptConfig <$> getCharStream (MilliSeconds 10)
     assertEq MenuResult.Aborted =<< withPromptInput (Just (MilliSeconds 50)) ["<c-c>", "<cr>"] do
-      resumeTestError @Scratch $ interpretPromptRendererNvim $ basic @() do
+      resumeTestError @Scratch $ basic @() do
         nvimMenuDef def (menuItems items) conf
     assertEq 1 . length =<< vimGetWindows
 
@@ -134,13 +133,13 @@ test_nvimMenuNav =
     assertEq (MenuResult.Success "toem") =<< do
       withPromptInput (Just (MilliSeconds 10)) navChars do
         source <- getCharStream (MilliSeconds 10)
-        resumeTestError @Scratch $ interpretPromptRendererNvim $ withMappings navMappings do
+        resumeTestError @Scratch $ withMappings navMappings do
           nvimMenuDef def { maxSize = Just 4 } (menuItems items) (promptConfig source)
 
 test_nvimMenuQuit :: UnitTest
 test_nvimMenuQuit =
   testEmbed_ $ interpretMenu do
-    resumeTestError @Scratch $ interpretPromptRendererNvim $ basic do
+    resumeTestError @Scratch $ basic do
       void $ staticNvimMenuDef @() def [] (PromptConfig inp [])
       assertEq [""] =<< traverse bufferGetName =<< filterM buflisted =<< vimGetBuffers
   where
@@ -190,7 +189,7 @@ test_entrySlice =
 test_menuScrollUp :: UnitTest
 test_menuScrollUp =
   testEmbed_ $ interpretMenu do
-    resumeTestError @Scratch $ interpretPromptRendererNvim $ basic do
+    resumeTestError @Scratch $ basic do
       let prompt = PromptConfig (promptInputWith (Just 0.2) (Just 0.01) chars) []
       Success a <-  withMappings (Map.singleton "cr" content) do
         nvimMenuDef def { maxSize = Just 4 } (menuItems its) prompt
