@@ -86,6 +86,7 @@ library
       Ribosome.Locks
       Ribosome.Mapping
       Ribosome.Path
+      Ribosome.Persist
       Ribosome.Plugin.Builtin
       Ribosome.PluginName
       Ribosome.Register

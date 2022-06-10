@@ -7,6 +7,8 @@ module Ribosome (
 
   -- $project
 
+  module Ribosome.Effect.NvimPlugin,
+  module Ribosome.Effect.Persist,
   module Ribosome.Effect.Scratch,
   module Ribosome.Effect.Settings,
   module Ribosome.Data.FloatOptions,
@@ -36,6 +38,8 @@ import Ribosome.Data.ScratchOptions (ScratchOptions (ScratchOptions), defaultScr
 import Ribosome.Data.ScratchState (ScratchState (ScratchState))
 import Ribosome.Data.Setting (Setting (Setting))
 import Ribosome.Data.SettingError (SettingError (SettingError))
+import Ribosome.Effect.NvimPlugin (NvimPlugin, NvimPluginEffects)
+import Ribosome.Effect.Persist (Persist)
 import Ribosome.Effect.Scratch (Scratch)
 import Ribosome.Effect.Settings (Settings)
 import Ribosome.Embed (embedNvimPlugin, embedNvimPlugin_, interpretPluginEmbed, testPluginEmbed)
