@@ -7,6 +7,7 @@ module Ribosome.Menu (
   module Ribosome.Menu.Data.MenuAction,
   module Ribosome.Menu.Data.MenuItem,
   module Ribosome.Menu.Data.MenuState,
+  module Ribosome.Menu.Prompt.Data.Prompt,
   module Ribosome.Menu.Filters,
   module Ribosome.Menu.Interpreter.MenuConsumer,
   module Ribosome.Menu.ItemLens,
@@ -88,6 +89,7 @@ import Ribosome.Menu.Items (
 import Ribosome.Menu.Main (interpretMenu, menu, menuMain, simpleMenu)
 import Ribosome.Menu.Nvim (nvimMenuDef, staticNvimMenuDef)
 import Ribosome.Menu.Prompt (defaultPrompt)
+import Ribosome.Menu.Prompt.Data.Prompt (Prompt (Prompt))
 import Ribosome.Menu.Prompt.Data.PromptConfig (
   PromptConfig (PromptConfig),
   PromptFlag (..),
