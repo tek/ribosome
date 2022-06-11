@@ -4,6 +4,7 @@ module Ribosome.Host (
   module Ribosome.Host.Class.Msgpack.Decode,
   module Ribosome.Host.Class.Msgpack.Encode,
   module Ribosome.Host.Class.Msgpack.Map,
+  module Ribosome.Host.Data.BootError,
   module Ribosome.Host.Data.Execution,
   module Ribosome.Host.Data.HandlerError,
   module Ribosome.Host.Data.HostConfig,
@@ -23,6 +24,7 @@ import Ribosome.Host.Class.Msgpack.Array (msgpackArray)
 import Ribosome.Host.Class.Msgpack.Decode (MsgpackDecode (fromMsgpack))
 import Ribosome.Host.Class.Msgpack.Encode (MsgpackEncode (toMsgpack))
 import Ribosome.Host.Class.Msgpack.Map (msgpackMap)
+import Ribosome.Host.Data.BootError (BootError (BootError))
 import Ribosome.Host.Data.Execution (Execution (Async, Sync))
 import Ribosome.Host.Data.HandlerError (
   ErrorMessage (ErrorMessage),
