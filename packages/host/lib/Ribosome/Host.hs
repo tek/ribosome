@@ -21,9 +21,10 @@ module Ribosome.Host (
   module Ribosome.Host.Effect.Errors,
   module Ribosome.Host.Effect.Rpc,
   module Ribosome.Host.Embed,
-  module Ribosome.Host.Handler,
-  module Ribosome.Host.Remote,
   module Ribosome.Host.Error,
+  module Ribosome.Host.Handler,
+  module Ribosome.Host.Modify,
+  module Ribosome.Host.Remote,
 ) where
 
 import Ribosome.Host.Api.Data (Buffer, Tabpage, Window)
@@ -59,4 +60,5 @@ import Ribosome.Host.Effect.Rpc (Rpc, async, notify, sync)
 import Ribosome.Host.Embed (embedNvim, embedNvim_, interpretHostEmbed, testHostEmbed, withHostEmbed)
 import Ribosome.Host.Error (ignoreRpcError)
 import Ribosome.Host.Handler (rpcAutocmd, rpcCommand, rpcFunction)
+import Ribosome.Host.Modify (bufdo, modifyCmd, noautocmd, silent, silentBang, windo)
 import Ribosome.Host.Remote (interpretHostRemote, runHostRemote, runHostRemoteIO)
