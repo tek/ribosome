@@ -52,6 +52,13 @@ silentBang ::
 silentBang =
   modifyCmd "silent!"
 
+noautocmd ::
+  Member Rpc r =>
+  Sem r a ->
+  Sem r a
+noautocmd =
+  modifyCmd "noautocmd"
+
 windo ::
   Member Rpc r =>
   Window ->
