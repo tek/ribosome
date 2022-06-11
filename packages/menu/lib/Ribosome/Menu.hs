@@ -89,7 +89,7 @@ import Ribosome.Menu.Items (
 import Ribosome.Menu.Main (interpretMenu, menu, menuMain, simpleMenu)
 import Ribosome.Menu.Nvim (nvimMenuDef, staticNvimMenuDef)
 import Ribosome.Menu.Prompt (defaultPrompt)
-import Ribosome.Menu.Prompt.Data.Prompt (Prompt (Prompt))
+import Ribosome.Menu.Prompt.Data.Prompt (Prompt (Prompt), PromptText (PromptText))
 import Ribosome.Menu.Prompt.Data.PromptConfig (
   PromptConfig (PromptConfig),
   PromptFlag (..),
