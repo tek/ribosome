@@ -1,6 +1,5 @@
 module Ribosome.Test.Wait where
 
-import GHC.Stack (withFrozenCallStack)
 import Hedgehog.Internal.Property (Failure, failWith, liftTest, mkTest)
 import qualified Polysemy.Conc as Conc
 import Polysemy.Conc (interpretAtomic)

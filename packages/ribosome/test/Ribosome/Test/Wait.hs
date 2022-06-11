@@ -1,12 +1,11 @@
 module Ribosome.Test.Wait where
 
-import GHC.Stack (withFrozenCallStack)
 import Hedgehog.Internal.Property (Failure, failWith, liftTest, mkTest)
 import qualified Polysemy.Conc as Conc
+import Polysemy.Conc (interpretAtomic)
 import Polysemy.Test (Hedgehog, liftH)
 import qualified Polysemy.Time as Time
 import Polysemy.Time (MilliSeconds (MilliSeconds), Seconds (Seconds))
-import Polysemy.Conc (interpretAtomic)
 
 assertWaitFor ::
   Monad m =>

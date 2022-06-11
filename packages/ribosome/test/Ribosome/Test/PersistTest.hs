@@ -27,6 +27,6 @@ test_persist :: UnitTest
 test_persist =
   embedTest_ do
     dir <- Test.tempDir [reldir|persist|]
-    raiseResumable (interpretPersistPathAt dir) $ interpretPersist "thing" $ resumeTestError do
+    interpretPersistPathAt False dir $ interpretPersist "thing" $ resumeTestError do
       Persist.store Nothing thing
       assertJust thing =<< Persist.load Nothing

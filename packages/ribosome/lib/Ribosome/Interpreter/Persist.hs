@@ -10,7 +10,7 @@ import Ribosome.Data.PersistError (PersistError)
 import Ribosome.Data.PersistPathError (PersistPathError)
 import qualified Ribosome.Effect.Persist as Persist
 import Ribosome.Effect.Persist (Persist)
-import Ribosome.Effect.PersistPath (PersistPath, persistPath)
+import Ribosome.Effect.PersistPath (PersistPath, persistRoot)
 import Ribosome.Host.Data.BootError (BootError (BootError))
 import Ribosome.Host.Interpret (with)
 import Ribosome.Path (pathText)
@@ -19,7 +19,7 @@ persistBase ::
   Members [PersistPath !! PersistPathError, Stop PersistError] r =>
   Sem r (Path Abs Dir)
 persistBase =
-  resumeHoist PersistError.Path persistPath
+  resumeHoist PersistError.Path persistRoot
 
 loadFile ::
   FromJSON a =>
