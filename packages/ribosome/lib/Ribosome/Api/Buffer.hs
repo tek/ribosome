@@ -18,6 +18,7 @@ import Ribosome.Host.Api.Effect (
   nvimBufDelete,
   nvimCallFunction,
   nvimCommand,
+  nvimGetCurrentBuf,
   nvimWinSetBuf,
   vimGetBuffers,
   vimGetCurrentBuffer,
@@ -123,7 +124,7 @@ addBuffer ::
   Text ->
   Sem r ()
 addBuffer path =
-  nvimCommand ("badd " <> path)
+  nvimCommand [exon|badd #{path}|]
 
 fileBuffer ::
   Path Abs Dir ->
@@ -178,3 +179,19 @@ bufferCount ::
   Sem r Natural
 bufferCount =
   fromIntegral . length <$> vimGetBuffers
+
+bufferPath ::
+  Member Rpc r =>
+  Buffer ->
+  Sem r (Maybe (Path Abs File))
+bufferPath buffer = do
+  Rpc.sync do
+    cwd <- Data.vimCallFunction "getcwd" []
+    name <- Data.bufferGetName buffer
+    pure (fileBuffer cwd buffer name <&> \ (FileBuffer _ path) -> path)
+
+currentBufferPath ::
+  Member Rpc r =>
+  Sem r (Maybe (Path Abs File))
+currentBufferPath =
+  bufferPath =<< nvimGetCurrentBuf
