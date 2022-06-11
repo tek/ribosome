@@ -52,7 +52,12 @@ let
     "-fplugin=Polysemy.Plugin"
   ];
 
-  dependencies = [base "incipit" "polysemy" "polysemy-plugin"];
+  dependencies = [
+      { name = "base"; version = ">= 4.12 && < 5"; mixin = "hiding (Prelude)"; }
+      { name = "incipit"; version = ">= 0.3"; mixin = ["(Incipit as Prelude)" "hiding (Incipit)"]; }
+      "polysemy"
+      "polysemy-plugin"
+    ];
 
   project = name: doc: merge (meta // { library = paths name; } // options) {
     inherit name;

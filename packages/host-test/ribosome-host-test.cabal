@@ -89,7 +89,7 @@ library
       base >=4.12 && <5
     , chronos
     , hedgehog
-    , incipit
+    , incipit >=0.3
     , polysemy
     , polysemy-chronos
     , polysemy-plugin
@@ -97,4 +97,6 @@ library
     , ribosome-host
   mixins:
       base hiding (Prelude)
+    , incipit (Incipit as Prelude)
+    , incipit hiding (Incipit)
   default-language: Haskell2010

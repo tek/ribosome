@@ -88,7 +88,7 @@ library
       base >=4.12 && <5
     , exon
     , hedgehog
-    , incipit
+    , incipit >=0.3
     , messagepack
     , path
     , path-io
@@ -104,6 +104,8 @@ library
     , typed-process
   mixins:
       base hiding (Prelude)
+    , incipit (Incipit as Prelude)
+    , incipit hiding (Incipit)
   default-language: Haskell2010
 
 test-suite integration
@@ -180,7 +182,7 @@ test-suite integration
       base >=4.12 && <5
     , exon
     , hedgehog
-    , incipit
+    , incipit >=0.3
     , integration
     , path
     , path-io
@@ -198,4 +200,6 @@ test-suite integration
     , typed-process
   mixins:
       base hiding (Prelude)
+    , incipit (Incipit as Prelude)
+    , incipit hiding (Incipit)
   default-language: Haskell2010

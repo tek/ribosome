@@ -168,7 +168,7 @@ library
     , base >=4.12 && <5
     , exon
     , generic-lens
-    , incipit
+    , incipit >=0.3
     , lens
     , messagepack
     , path
@@ -180,6 +180,8 @@ library
     , ribosome-host
   mixins:
       base hiding (Prelude)
+    , incipit (Incipit as Prelude)
+    , incipit hiding (Incipit)
   default-language: Haskell2010
 
 test-suite ribosome-unit
@@ -266,7 +268,7 @@ test-suite ribosome-unit
       aeson
     , base >=4.12 && <5
     , hedgehog
-    , incipit
+    , incipit >=0.3
     , messagepack
     , path
     , polysemy
@@ -279,4 +281,6 @@ test-suite ribosome-unit
     , tasty
   mixins:
       base hiding (Prelude)
+    , incipit (Incipit as Prelude)
+    , incipit hiding (Incipit)
   default-language: Haskell2010

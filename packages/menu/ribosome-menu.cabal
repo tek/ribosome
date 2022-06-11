@@ -146,7 +146,7 @@ library
     , exon
     , fuzzyfind
     , generic-lens
-    , incipit
+    , incipit >=0.3
     , lens
     , lifted-base
     , monad-control
@@ -161,6 +161,8 @@ library
     , transformers
   mixins:
       base hiding (Prelude)
+    , incipit (Incipit as Prelude)
+    , incipit hiding (Incipit)
   default-language: Haskell2010
 
 test-suite ribosome-menu-unit
@@ -239,7 +241,7 @@ test-suite ribosome-menu-unit
   build-depends:
       base >=4.12 && <5
     , hedgehog
-    , incipit
+    , incipit >=0.3
     , lens
     , lifted-base
     , polysemy
@@ -256,6 +258,8 @@ test-suite ribosome-menu-unit
     , transformers
   mixins:
       base hiding (Prelude)
+    , incipit (Incipit as Prelude)
+    , incipit hiding (Incipit)
   default-language: Haskell2010
 
 benchmark ribosome-menu-bench
@@ -330,7 +334,7 @@ benchmark ribosome-menu-bench
       base >=4.12 && <5
     , criterion
     , exon
-    , incipit
+    , incipit >=0.3
     , lens
     , path
     , polysemy
@@ -342,4 +346,6 @@ benchmark ribosome-menu-bench
     , streamly
   mixins:
       base hiding (Prelude)
+    , incipit (Incipit as Prelude)
+    , incipit hiding (Incipit)
   default-language: Haskell2010

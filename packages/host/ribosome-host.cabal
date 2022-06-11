@@ -167,7 +167,7 @@ library
     , exon
     , flatparse
     , generics-sop
-    , incipit
+    , incipit >=0.3
     , lens
     , messagepack
     , network
@@ -184,6 +184,8 @@ library
     , typed-process
   mixins:
       base hiding (Prelude)
+    , incipit (Incipit as Prelude)
+    , incipit hiding (Incipit)
   default-language: Haskell2010
 
 test-suite ribosome-host-unit
@@ -278,7 +280,7 @@ test-suite ribosome-host-unit
     , deepseq
     , generic-lens
     , hedgehog
-    , incipit
+    , incipit >=0.3
     , lens
     , messagepack
     , path
@@ -292,4 +294,6 @@ test-suite ribosome-host-unit
     , time
   mixins:
       base hiding (Prelude)
+    , incipit (Incipit as Prelude)
+    , incipit hiding (Incipit)
   default-language: Haskell2010

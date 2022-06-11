@@ -87,8 +87,8 @@ chunkAfterIteration ::
   (a -> ChunkAfter c e s) ->
   Either Int (CAState c, [Chunked c e s]) ->
   m (Fold m (Either Int a) (Either Int (CAState c, [Chunked c e s])))
-chunkAfterIteration timeout classify e = do
-  pure . either pristine update $ e
+chunkAfterIteration timeout classify e =
+  pure (either pristine update e)
   where
     pristine tick =
       Fold.head <&> \case
@@ -111,6 +111,6 @@ chunkAfter ::
 chunkAfter clock timeout classify =
   Stream.concatMap (Stream.fromList . snd) .
   Stream.rights .
-  Stream.foldIterateM (chunkAfterIteration (round (timeout / clock)) classify) (pure (Left 0)) .
+  Stream.foldIterateM (chunkAfterIteration (round (fromMaybe 0 (timeout / clock))) classify) (pure (Left 0)) .
   flip Stream.parallelFst (Left <$> Stream.delay clock (Stream.enumerateFrom 0)) .
   Stream.map Right
