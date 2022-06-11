@@ -8,6 +8,7 @@ module Ribosome.Host (
   module Ribosome.Host.Data.Execution,
   module Ribosome.Host.Data.HandlerError,
   module Ribosome.Host.Data.HostConfig,
+  module Ribosome.Host.Data.HostError,
   module Ribosome.Host.Data.RpcError,
   module Ribosome.Host.Data.RpcHandler,
   module Ribosome.Host.Data.StoredError,
@@ -37,6 +38,7 @@ import Ribosome.Host.Data.HandlerError (
   toHandlerError,
   )
 import Ribosome.Host.Data.HostConfig (HostConfig (..), LogConfig (..), setStderr)
+import Ribosome.Host.Data.HostError (HostError (..))
 import Ribosome.Host.Data.RpcError (RpcError (RpcError))
 import Ribosome.Host.Data.RpcHandler (Handler, RpcHandler (RpcHandler), simpleHandler)
 import Ribosome.Host.Data.StoredError (StoredError (StoredError))
