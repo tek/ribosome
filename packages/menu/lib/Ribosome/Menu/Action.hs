@@ -10,8 +10,8 @@ import Ribosome.Menu.Data.MenuAction (MenuAction)
 import Ribosome.Menu.Data.MenuState (
   CursorLock,
   MenuSem,
-  MenuStateEffects,
   MenuStack,
+  MenuStateEffects,
   MenuWidget,
   SemS (SemS),
   menuRead,
@@ -24,33 +24,33 @@ import Ribosome.Menu.Prompt.Data.Prompt (Prompt)
 
 act ::
   MenuAction a ->
-  Sem r (Maybe (MenuAction a))
+  MenuWidget r a
 act =
   pure . Just
 
 menuIgnore ::
-  Sem r (Maybe (MenuAction a))
+  MenuWidget r a
 menuIgnore =
   pure Nothing
 
 menuOk ::
-  Sem r (Maybe (MenuAction a))
+  MenuWidget r a
 menuOk =
   pure (Just MenuAction.Continue)
 
 menuRender ::
-  Sem r (Maybe (MenuAction a))
+  MenuWidget r a
 menuRender =
   act MenuAction.Render
 
 menuQuit ::
-  Sem r (Maybe (MenuAction a))
+  MenuWidget r a
 menuQuit =
   act MenuAction.abort
 
 menuSuccess ::
   a ->
-  Sem r (Maybe (MenuAction a))
+  MenuWidget r a
 menuSuccess ma =
   act (MenuAction.success ma)
 
