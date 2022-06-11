@@ -39,10 +39,10 @@ logHandlerError ::
   Members [Rpc !! e, Errors, UserError, Log] r =>
   HostError ->
   Sem r ()
-logHandlerError (HostError asy (HandlerError msg@(ErrorMessage user log severity) htag)) = do
+logHandlerError (HostError report (HandlerError msg@(ErrorMessage user log severity) htag)) = do
   Log.log severity (Text.unlines log)
   Errors.store htag msg
-  when asy (echoError user severity)
+  when report (echoError user severity)
 
 interpretDataLogRpc ::
   Show e =>

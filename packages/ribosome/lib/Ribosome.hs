@@ -33,6 +33,7 @@ module Ribosome (
   module Ribosome.Interpreter.UserError,
   module Ribosome.Interpreter.VariableWatcher,
   module Ribosome.Embed,
+  module Ribosome.Errors,
   module Ribosome.Host,
   module Ribosome.IOStack,
   module Ribosome.Locks,
@@ -55,6 +56,7 @@ import Ribosome.Effect.Persist (Persist)
 import Ribosome.Effect.Scratch (Scratch)
 import Ribosome.Effect.Settings (Settings)
 import Ribosome.Embed (embedNvimPlugin, embedNvimPlugin_, interpretPluginEmbed, testPluginEmbed)
+import Ribosome.Errors (reportError, storeError)
 import Ribosome.Host
 import Ribosome.IOStack (BasicPluginStack, TestEffects, runBasicPluginStack)
 import Ribosome.Interpreter.BuiltinHandlers

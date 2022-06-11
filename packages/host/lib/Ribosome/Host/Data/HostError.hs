@@ -4,7 +4,7 @@ import Ribosome.Host.Data.HandlerError (HandlerError)
 
 data HostError =
   HostError {
-    async :: Bool,
+    report :: Bool,
     error :: HandlerError
   }
   deriving stock (Show)
