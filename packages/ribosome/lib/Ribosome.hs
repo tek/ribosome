@@ -67,7 +67,7 @@ import Ribosome.Interpreter.Scratch
 import Ribosome.Interpreter.Settings (interpretSettingsRpc)
 import Ribosome.Interpreter.UserError (interpretUserErrorPrefixed)
 import Ribosome.Interpreter.VariableWatcher (interpretVariableWatcher, interpretVariableWatcherNull)
-import Ribosome.Locks (lockOrSkip)
+import Ribosome.Locks (lockOrSkip, lockOrSkip_)
 import Ribosome.Remote (
   RemoteStack,
   interpretPluginRemote,
