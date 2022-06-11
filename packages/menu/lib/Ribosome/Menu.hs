@@ -4,6 +4,7 @@ module Ribosome.Menu (
   module Ribosome.Menu.Effect.MenuRenderer,
   module Ribosome.Menu.Effect.PromptEvents,
   module Ribosome.Menu.Effect.PromptRenderer,
+  module Ribosome.Menu.Data.MenuAction,
   module Ribosome.Menu.Data.MenuItem,
   module Ribosome.Menu.Data.MenuState,
   module Ribosome.Menu.Filters,
@@ -32,6 +33,7 @@ import Ribosome.Menu.Action (
   menuToggleAll,
   menuUpdatePrompt,
   )
+import Ribosome.Menu.Data.MenuAction
 import Ribosome.Menu.Data.MenuItem (MenuItem (MenuItem), simpleMenuItem)
 import Ribosome.Menu.Data.MenuState (
   CursorLock,
