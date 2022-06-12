@@ -57,7 +57,7 @@ import Ribosome.Effect.Persist (Persist)
 import Ribosome.Effect.Scratch (Scratch)
 import Ribosome.Effect.Settings (Settings)
 import Ribosome.Embed (embedNvimPlugin, embedNvimPlugin_, interpretPluginEmbed, testPluginEmbed)
-import Ribosome.Errors (reportError, resumeReportError, storeError)
+import Ribosome.Errors (reportError, reportStop, resumeReportError, storeError)
 import Ribosome.Host
 import Ribosome.IOStack (BasicPluginStack, TestEffects, runBasicPluginStack)
 import Ribosome.Interpreter.BuiltinHandlers

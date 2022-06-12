@@ -44,6 +44,17 @@ reportError htag e =
   withFrozenCallStack do
     storeError True htag e
 
+reportStop ::
+  ∀ e r .
+  ToErrorMessage e =>
+  Member (DataLog HostError) r =>
+  Maybe HandlerTag ->
+  Sem (Stop e : r) () ->
+  Sem r ()
+reportStop t sem =
+  withFrozenCallStack do
+    either (reportError t) pure =<< runStop sem
+
 resumeReportError ::
   ∀ eff e r .
   ToErrorMessage e =>
