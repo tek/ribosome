@@ -37,6 +37,7 @@ module Ribosome (
   module Ribosome.Host,
   module Ribosome.IOStack,
   module Ribosome.Locks,
+  module Ribosome.Path,
   module Ribosome.Remote,
 ) where
 
@@ -70,6 +71,7 @@ import Ribosome.Interpreter.Settings (interpretSettingsRpc)
 import Ribosome.Interpreter.UserError (interpretUserErrorPrefixed)
 import Ribosome.Interpreter.VariableWatcher (interpretVariableWatcher, interpretVariableWatcherNull)
 import Ribosome.Locks (lockOrSkip, lockOrSkip_)
+import Ribosome.Path (pathText)
 import Ribosome.Remote (
   RemoteStack,
   interpretPluginRemote,
