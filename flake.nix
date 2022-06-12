@@ -4,9 +4,10 @@
   inputs = {
     hix.url = github:tek/hix;
     chiasma.url = github:tek/chiasma/main;
+    polysemy-conc.url = github:tek/polysemy-conc;
   };
 
-  outputs = { self, hix, chiasma, ... }:
+  outputs = { self, hix, chiasma, polysemy-conc, ... }:
   let
     RIBOSOME_ROOT = builtins.toPath self;
 
@@ -20,6 +21,7 @@
       massiv = hackage "0.6.1.0" "133ixc95qw10ni54y4hrq7swq7bskf398s11zdakdvnj9v6hwlsr";
       scheduler = hackage "1.5.0" "143bsd0kfknrhdz37599k2didxmplljdpnf1ixmdfh4r9hnrp9f3";
       integration = inputs;
+      polysemy-conc = source.package polysemy-conc "conc";
       ribosome = nvimBin inputs;
       ribosome-host = nvimBin inputs;
       ribosome-menu = nvimBin inputs;
