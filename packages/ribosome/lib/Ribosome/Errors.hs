@@ -22,6 +22,7 @@ import Ribosome.Host.Effect.Rpc (Rpc)
 import Ribosome.IOStack (TestEffects)
 
 storeError ::
+  ∀ e r .
   ToErrorMessage e =>
   Member (DataLog HostError) r =>
   Bool ->
@@ -33,6 +34,7 @@ storeError report htag (toHandlerError (fromMaybe GlobalTag htag) -> err) =
     dataLog (HostError report err)
 
 reportError ::
+  ∀ e r .
   ToErrorMessage e =>
   Member (DataLog HostError) r =>
   Maybe HandlerTag ->
@@ -43,6 +45,7 @@ reportError htag e =
     storeError True htag e
 
 resumeReportError ::
+  ∀ eff e r .
   ToErrorMessage e =>
   Members [eff !! e, DataLog HostError] r =>
   Maybe HandlerTag ->
