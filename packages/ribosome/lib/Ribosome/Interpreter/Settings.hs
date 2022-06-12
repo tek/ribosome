@@ -4,11 +4,12 @@ import Exon (exon)
 
 import Ribosome.Data.PluginName (PluginName (PluginName))
 import Ribosome.Data.Setting (Setting (Setting))
-import Ribosome.Data.SettingError (SettingError (SettingError))
+import qualified Ribosome.Data.SettingError as SettingError
+import Ribosome.Data.SettingError (SettingError)
 import Ribosome.Effect.Settings (Settings (Get, Update))
 import Ribosome.Host.Api.Effect (vimGetVar, vimSetVar)
 import Ribosome.Host.Class.Msgpack.Decode (MsgpackDecode)
-import Ribosome.Host.Data.RpcError (RpcError (RpcError))
+import Ribosome.Host.Data.RpcError (RpcError)
 import Ribosome.Host.Effect.Rpc (Rpc)
 import Ribosome.PluginName (pluginName)
 
@@ -32,14 +33,15 @@ settingRaw s =
   vimGetVar =<< settingVariableName s
 
 fallback ::
-  Member (Stop SettingError) r =>
+  Members [Reader PluginName, Stop SettingError] r =>
   Setting a ->
   Sem r a
 fallback = \case
   Setting _ _ (Just a) ->
     pure a
-  Setting key _ Nothing ->
-    stop (SettingError [exon|Mandatory setting '#{key}' is unset|])
+  s@(Setting _ _ Nothing) -> do
+    n <- settingVariableName s
+    stop (SettingError.Unset n)
 
 interpretSettingsRpc ::
   Members [Rpc !! RpcError, Reader PluginName] r =>
@@ -50,4 +52,4 @@ interpretSettingsRpc =
       settingRaw s !>> fallback s
     Update s a -> do
       n <- settingVariableName s
-      resumeHoist coerce (vimSetVar n a)
+      resumeHoist (SettingError.UpdateFailed n) (vimSetVar n a)

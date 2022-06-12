@@ -1,7 +1,6 @@
 module Ribosome.Host.Data.HandlerError where
 
 import Exon (exon)
-import GHC.Stack (withFrozenCallStack)
 import Polysemy.Log (Severity (Error))
 import Prelude hiding (tag)
 import Text.Show (showParen, showsPrec)

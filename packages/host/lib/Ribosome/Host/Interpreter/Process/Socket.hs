@@ -26,7 +26,7 @@ withSocket use =
         socket <- Socket.socket Socket.AF_UNIX Socket.Stream 0
         socket <$ Socket.connect socket (Socket.SockAddrUnix (toFilePath path))
     release =
-      ignoreException . Socket.close
+      tryAny_ . Socket.close
 
 interpretProcessCerealSocket ::
   ∀ a r .

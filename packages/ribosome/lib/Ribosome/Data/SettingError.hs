@@ -1,14 +1,20 @@
 module Ribosome.Data.SettingError where
 
+import Exon (exon)
 import Log (Severity (Error))
 
 import Ribosome.Host.Data.HandlerError (ErrorMessage (ErrorMessage), ToErrorMessage (toErrorMessage))
+import Ribosome.Host.Data.RpcError (RpcError (RpcError))
 
-newtype SettingError =
-  SettingError { unSettingError :: Text }
+data SettingError =
+  Unset Text
+  |
+  UpdateFailed Text RpcError
   deriving stock (Eq, Show)
-  deriving newtype (IsString, Ord)
 
 instance ToErrorMessage SettingError where
-  toErrorMessage (SettingError e) =
-    ErrorMessage e [e] Error
+  toErrorMessage = \case
+    Unset key ->
+      ErrorMessage [exon|Mandatory setting '#{key}' is unset|] ["SettingError.Unset:", key] Error
+    UpdateFailed key (RpcError err) ->
+      ErrorMessage [exon|Failed to update setting '#{key}': #{err}|] ["SettingError.UpdateFailed:", key, err] Error
