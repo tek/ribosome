@@ -2366,11 +2366,11 @@
         "polysemy-time": "polysemy-time_3"
       },
       "locked": {
-        "lastModified": 1655049277,
-        "narHash": "sha256-mBc4J6fKVoAc484CzVrpIEXJJ/HDwNqX5hP5BH4jaaQ=",
+        "lastModified": 1655049539,
+        "narHash": "sha256-RE4B0MIY/1Mubb3qWCknVGF1iySzlzBLGLEv6snrBwU=",
         "owner": "tek",
         "repo": "polysemy-conc",
-        "rev": "555d0108444fcf8a7fd3da6537594201eebba84f",
+        "rev": "47aa1d2357bb5d62688de25fd24bfe1a6977d234",
         "type": "github"
       },
       "original": {
