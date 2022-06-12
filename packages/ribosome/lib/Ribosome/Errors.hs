@@ -42,6 +42,16 @@ reportError htag e =
   withFrozenCallStack do
     storeError True htag e
 
+resumeReportError ::
+  ToErrorMessage e =>
+  Members [eff !! e, DataLog HostError] r =>
+  Maybe HandlerTag ->
+  Sem (eff : r) () ->
+  Sem r ()
+resumeReportError t sem =
+  withFrozenCallStack do
+    sem !! reportError t
+
 pluginHandlerErrors ::
   Members [Scratch !! RpcError, Settings !! SettingError, Rpc !! RpcError, Stop HandlerError] r =>
   InterpretersFor TestEffects r
