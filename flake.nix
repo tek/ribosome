@@ -22,6 +22,7 @@
       scheduler = hackage "1.5.0" "143bsd0kfknrhdz37599k2didxmplljdpnf1ixmdfh4r9hnrp9f3";
       integration = inputs;
       polysemy-conc = source.package polysemy-conc "conc";
+      polysemy-process = source.package polysemy-conc "process";
       ribosome = nvimBin inputs;
       ribosome-host = nvimBin inputs;
       ribosome-menu = nvimBin inputs;
