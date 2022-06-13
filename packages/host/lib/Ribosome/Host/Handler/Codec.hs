@@ -6,6 +6,7 @@ import Exon (exon)
 import Ribosome.Host.Class.Msgpack.Decode (pattern Msgpack, MsgpackDecode (fromMsgpack))
 import Ribosome.Host.Class.Msgpack.Encode (MsgpackEncode (toMsgpack))
 import Ribosome.Host.Data.Args (Args (Args))
+import Ribosome.Host.Data.Bang (Bang(NoBang))
 import Ribosome.Host.Data.Bar (Bar (Bar))
 import qualified Ribosome.Host.Data.HandlerError as HandlerError
 import Ribosome.Host.Data.HandlerError (HandlerError)
@@ -26,6 +27,18 @@ extraError ::
 extraError o =
   stop (HandlerError.simple [exon|Extraneous arguments: #{show o}|])
 
+optArg ::
+  Member (Stop HandlerError) r =>
+  MsgpackDecode a =>
+  a ->
+  [Object] ->
+  Sem r ([Object], a)
+optArg dflt = \case
+  [] -> pure ([], dflt)
+  (o : rest) -> do
+    a <- decodeArg o
+    pure (rest, a)
+
 class HandlerArg a r where
   handlerArg :: [Object] -> Sem r ([Object], a)
 
@@ -43,15 +56,18 @@ instance (
     Member (Stop HandlerError) r,
     MsgpackDecode a
   ) => HandlerArg (Maybe a) r where
-    handlerArg = \case
-      [] -> pure ([], Nothing)
-      (o : rest) -> do
-        a <- decodeArg o
-        pure (rest, a)
+    handlerArg =
+      optArg Nothing
 
 instance HandlerArg Bar r where
   handlerArg os =
     pure (os, Bar)
+
+instance (
+    Member (Stop HandlerError) r
+  ) => HandlerArg Bang r where
+    handlerArg =
+      optArg NoBang
 
 instance (
     Member (Stop HandlerError) r
