@@ -62,6 +62,7 @@ interpretPersist name =
         embed (encodeFile (toFilePath path) a)
       Persist.Load subpath -> do
         path <- filepath singleFile dir subpath
+        Log.debug [exon|Persistence path requested: #{show path}|]
         ifM (fromMaybe False <$> tryMaybe (doesFileExist path)) (loadFile path) (pure Nothing)
   where
     parse =
