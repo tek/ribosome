@@ -151,12 +151,13 @@ menuResult = \case
     result <$ Log.debug [exon|menu terminated: #{describe result}|]
   Nothing -> do
     Log.debug "menu terminated without output"
-    pure (MenuResult.Error "no output")
+    pure MenuResult.NoAction
   where
     describe = \case
       MenuResult.Success _ -> "success"
       MenuResult.Error msg -> msg
       MenuResult.Aborted -> "user interrupt"
+      MenuResult.NoAction -> "no action"
 
 interpretMenu ::
   ∀ i r .

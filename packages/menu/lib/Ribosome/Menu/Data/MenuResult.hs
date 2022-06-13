@@ -6,4 +6,6 @@ data MenuResult a =
   Aborted
   |
   Error Text
+  |
+  NoAction
   deriving stock (Eq, Show, Functor)
