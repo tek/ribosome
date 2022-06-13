@@ -4,10 +4,10 @@ import Exon (exon)
 import Path (Abs, Dir, File, Path, SomeBase (Abs, Rel), parseSomeDir, parseSomeFile, (</>))
 
 import Ribosome.Host.Api.Effect (nvimCommand, vimCallFunction)
+import qualified Ribosome.Host.Data.HandlerError as HandlerError
+import Ribosome.Host.Data.HandlerError (HandlerError)
 import Ribosome.Host.Effect.Rpc (Rpc)
 import Ribosome.Path (pathText)
-import Ribosome.Host.Data.HandlerError
-import qualified Ribosome.Host.Data.HandlerError as HandlerError
 
 nvimCwd ::
   Member Rpc r =>

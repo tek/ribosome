@@ -18,7 +18,7 @@ data OptionState =
   }
 
 type OptionStateZero =
-  'OptionState 'True 0 'False 'Nothing
+  'OptionState 'True 0 'True 'Nothing
 
 type family CommandSpecial (a :: Type) :: Bool where
   CommandSpecial (Range _) = 'True
@@ -111,9 +111,9 @@ instance RegularParam ('OptionState al 0 opt ('Just consumer)) m a where
   type TransRegular ('OptionState al 0 opt ('Just consumer)) m a =
     ArgsError consumer a
 
-instance RegularParam ('OptionState al 0 opt 'Nothing) 'True (Maybe a) where
-  type TransRegular ('OptionState al 0 opt 'Nothing) 'True (Maybe a) =
-    'OptionState 'False 1 'True 'Nothing
+instance RegularParam ('OptionState al count opt 'Nothing) 'True (Maybe a) where
+  type TransRegular ('OptionState al count opt 'Nothing) 'True (Maybe a) =
+    'OptionState 'False (count + 1) opt 'Nothing
 
 instance RegularParam ('OptionState al count opt 'Nothing) 'False a where
   type TransRegular ('OptionState al count opt 'Nothing) 'False a =
@@ -159,9 +159,13 @@ instance CommandHandler ('OptionState _a c o ('Just consumer)) (Sem r a) where
   commandOptions =
     ([], [])
 
-instance CommandHandler ('OptionState _a c o 'Nothing) (Sem r a) where
+instance CommandHandler ('OptionState _a c 'True 'Nothing) (Sem r a) where
   commandOptions =
     (["-nargs=*"], ["<f-args>"])
+
+instance CommandHandler ('OptionState _a c 'False 'Nothing) (Sem r a) where
+  commandOptions =
+    (["-nargs=+"], ["<f-args>"])
 
 instance (
     special ~ CommandSpecial a,

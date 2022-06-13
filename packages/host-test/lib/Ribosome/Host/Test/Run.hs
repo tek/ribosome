@@ -3,17 +3,18 @@ module Ribosome.Host.Test.Run where
 import qualified Chronos
 import Conc (Restoration, interpretMaskFinal, interpretRace, interpretUninterruptibleMaskFinal)
 import Hedgehog.Internal.Property (Failure)
-import Log (interpretLogStderrConc)
+import Log (Severity (Trace), interpretLogStderrConc)
 import Polysemy.Chronos (ChronosTime, interpretTimeChronos, interpretTimeChronosConstant)
 import Polysemy.Test (Hedgehog, Test, TestError (TestError), UnitTest, runTestAuto)
 import Time (mkDatetime)
 
 import Ribosome.Host.Data.BootError (BootError (unBootError))
+import Ribosome.Host.Data.HostConfig (setStderr)
 import Ribosome.Host.Data.RpcHandler (RpcHandler)
 import Ribosome.Host.Effect.Rpc (Rpc)
 import Ribosome.Host.Embed (HostEmbedStack, embedNvim, embedNvim_)
 import Ribosome.Host.IOStack (LogConfStack, interpretLogConfStack)
-import Ribosome.Host.Test.Data.TestConfig (TestConfig (TestConfig))
+import Ribosome.Host.Test.Data.TestConfig (TestConfig (TestConfig), host)
 
 type TestIOStack =
   [
@@ -82,6 +83,13 @@ runTest ::
   UnitTest
 runTest =
   runTestConf def
+
+runTestTrace ::
+  HasCallStack =>
+  Sem TestStack () ->
+  UnitTest
+runTestTrace =
+  runTestConf def { host = setStderr Trace def }
 
 embedTestConf ::
   HasCallStack =>
