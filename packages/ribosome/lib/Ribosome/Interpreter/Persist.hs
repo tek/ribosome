@@ -14,6 +14,7 @@ import Ribosome.Effect.PersistPath (PersistPath, persistRoot)
 import Ribosome.Host.Data.BootError (BootError (BootError))
 import Ribosome.Host.Interpret (with)
 import Ribosome.Path (pathText)
+import qualified Log
 
 persistBase ::
   Members [PersistPath !! PersistPathError, Stop PersistError] r =>
@@ -23,10 +24,11 @@ persistBase =
 
 loadFile ::
   FromJSON a =>
-  Members [Stop PersistError, Embed IO] r =>
+  Members [Stop PersistError, Log, Embed IO] r =>
   Path Abs File ->
   Sem r a
 loadFile file = do
+  Log.debug [exon|Loading persistence file: #{show file}|]
   stopEitherWith decodeFailed =<< stopNote notReadable =<< tryMaybe (eitherDecodeFileStrict' (toFilePath file))
   where
     notReadable =
@@ -47,7 +49,7 @@ filepath singleFile dir subpath = do
 interpretPersist ::
   ToJSON a =>
   FromJSON a =>
-  Members [PersistPath !! PersistPathError, Error BootError, Embed IO] r =>
+  Members [PersistPath !! PersistPathError, Error BootError, Log, Embed IO] r =>
   Text ->
   InterpreterFor (Persist a !! PersistError) r
 interpretPersist name =

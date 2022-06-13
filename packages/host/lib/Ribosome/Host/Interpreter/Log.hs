@@ -3,7 +3,15 @@ module Ribosome.Host.Interpreter.Log where
 import qualified Data.Text as Text
 import Exon (exon)
 import qualified Log
-import Log (Log (Log), Severity, formatLogEntry, interceptDataLogConc, interpretLogDataLogConc, interpretLogNull, setLogLevel)
+import Log (
+  Log (Log),
+  Severity,
+  formatLogEntry,
+  interceptDataLogConc,
+  interpretLogDataLogConc,
+  interpretLogNull,
+  setLogLevel,
+  )
 import Path (Abs, File, Path, toFilePath)
 import Polysemy.Chronos (ChronosTime, interpretTimeChronos)
 import Polysemy.Log (interpretLogStderrLevelConc)
