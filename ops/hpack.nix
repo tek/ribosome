@@ -90,7 +90,6 @@ in {
       "exon"
       "flatparse"
       "generics-sop"
-      "lens"
       "messagepack"
       "network"
       "path"
@@ -99,7 +98,6 @@ in {
       "polysemy-log"
       "polysemy-process"
       "template-haskell"
-      "time"
       "type-errors-pretty"
       "typed-process"
     ];
@@ -118,7 +116,6 @@ in {
         "polysemy-test"
         "ribosome-host"
         "tasty"
-        "time"
       ];
     };
   };

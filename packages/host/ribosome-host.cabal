@@ -167,7 +167,6 @@ library
     , flatparse
     , generics-sop
     , incipit >=0.3
-    , lens
     , messagepack
     , network
     , path
@@ -178,7 +177,6 @@ library
     , polysemy-plugin
     , polysemy-process
     , template-haskell
-    , time
     , type-errors-pretty
     , typed-process
   mixins:
@@ -292,7 +290,6 @@ test-suite ribosome-host-unit
     , polysemy-test
     , ribosome-host
     , tasty
-    , time
   mixins:
       base hiding (Prelude)
     , incipit (Incipit as Prelude)

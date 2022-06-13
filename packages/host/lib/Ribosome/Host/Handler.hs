@@ -88,3 +88,17 @@ rpcAutocmd ::
   RpcHandler r
 rpcAutocmd name event options h =
   RpcHandler (RpcType.Autocmd event options) name Async (handlerCodec h)
+
+rpc ::
+  ∀ r h .
+  HandlerCodec h r =>
+  CommandHandler OptionStateZero h =>
+  Text ->
+  Execution ->
+  h ->
+  [RpcHandler r]
+rpc name execution h =
+  [
+    rpcFunction name execution h,
+    rpcCommand name execution h
+  ]
