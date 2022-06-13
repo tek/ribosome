@@ -35,7 +35,7 @@ watcherRpc ::
   AutocmdEvent ->
   RpcHandler r
 watcherRpc (PluginName name) event =
-  rpcAutocmd method event def (restop @_ @_ @(Stop _ : r) BuiltinHandlers.variables)
+  rpcAutocmd method Async event def (restop @_ @_ @(Stop _ : r) BuiltinHandlers.variables)
   where
     method =
       [exon|#{capitalize name}VariableChanged#{unAutocmdEvent event}|]

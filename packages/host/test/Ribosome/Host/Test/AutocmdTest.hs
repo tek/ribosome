@@ -6,6 +6,7 @@ import Polysemy.Test (UnitTest, assertJust)
 import Polysemy.Time (Seconds (Seconds))
 
 import Ribosome.Host.Api.Effect (nvimCommand, nvimGetVar, nvimSetVar)
+import Ribosome.Host.Data.Execution (Execution (Async))
 import Ribosome.Host.Data.HandlerError (HandlerError, resumeHandlerError)
 import Ribosome.Host.Data.RpcError (RpcError)
 import Ribosome.Host.Data.RpcHandler (RpcHandler)
@@ -39,8 +40,8 @@ handlers ::
   [RpcHandler r]
 handlers =
   [
-    rpcAutocmd "Au" "User" def { fPattern = "Au" } (au @(Stop HandlerError : r)),
-    rpcAutocmd "Bn" "BufNew" def (bn @(Stop HandlerError : r))
+    rpcAutocmd "Au" Async "User" def { fPattern = "Au" } (au @(Stop HandlerError : r)),
+    rpcAutocmd "Bn" Async "BufNew" def (bn @(Stop HandlerError : r))
   ]
 
 test_autocmd :: UnitTest

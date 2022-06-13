@@ -2,7 +2,7 @@ module Ribosome.Host.Handler where
 
 import qualified Data.Text as Text
 
-import Ribosome.Host.Data.Execution (Execution (Async, Sync))
+import Ribosome.Host.Data.Execution (Execution (Sync))
 import qualified Ribosome.Host.Data.RpcHandler as RpcHandler
 import Ribosome.Host.Data.RpcHandler (Handler, RpcHandler (RpcHandler))
 import qualified Ribosome.Host.Data.RpcType as RpcType
@@ -82,12 +82,13 @@ rpcAutocmd ::
   ∀ r h .
   HandlerCodec h r =>
   Text ->
+  Execution ->
   AutocmdEvent ->
   AutocmdOptions ->
   h ->
   RpcHandler r
-rpcAutocmd name event options h =
-  RpcHandler (RpcType.Autocmd event options) name Async (handlerCodec h)
+rpcAutocmd name execution event options h =
+  RpcHandler (RpcType.Autocmd event options) name execution (handlerCodec h)
 
 rpc ::
   ∀ r h .
