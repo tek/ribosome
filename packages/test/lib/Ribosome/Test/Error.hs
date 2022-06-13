@@ -1,9 +1,15 @@
 module Ribosome.Test.Error where
 
+import Exon (exon)
 import Polysemy.Test (TestError (TestError))
 
-import qualified Ribosome.Host.Data.HandlerError as HandlerError
-import Ribosome.Host.Data.HandlerError (ToErrorMessage, mapHandlerError)
+import Ribosome.Host.Data.HandlerError (
+  ErrorMessage (ErrorMessage),
+  HandlerError (HandlerError),
+  ToErrorMessage,
+  handlerTagName,
+  mapHandlerError,
+  )
 import Ribosome.Host.Data.RpcHandler (Handler)
 
 resumeTestError ::
@@ -19,7 +25,10 @@ testHandler ::
   Handler r a ->
   Sem r a
 testHandler =
-  stopToError . mapStop (TestError . HandlerError.user . HandlerError.msg) . raiseUnder
+  stopToError . mapStop (TestError . message) . raiseUnder
+  where
+    message (HandlerError (ErrorMessage user log _) htag) =
+      unlines ([exon|#{handlerTagName htag}:|] : user : log)
 
 testError ::
   ∀ e r a .

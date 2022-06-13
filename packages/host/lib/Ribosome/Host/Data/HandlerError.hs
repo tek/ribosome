@@ -21,6 +21,11 @@ instance IsString HandlerTag where
   fromString =
     HandlerTag . toText
 
+handlerTagName :: HandlerTag -> Text
+handlerTagName = \case
+  GlobalTag -> "global"
+  HandlerTag t -> t
+
 data ErrorMessage =
   ErrorMessage {
     user :: Text,
