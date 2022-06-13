@@ -13,7 +13,7 @@ import Ribosome.Host.Data.RpcHandler (Handler)
 import Ribosome.Host.Effect.Rpc (Rpc)
 import Ribosome.Host.Embed (embedNvim)
 import Ribosome.Host.Handler (rpcCommand, rpcFunction)
-import Ribosome.Host.Test.Run (runTest)
+import Ribosome.Host.Unit.Run (runTest)
 
 fun ::
   Maybe Text ->
