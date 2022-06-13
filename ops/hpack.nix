@@ -107,6 +107,7 @@ in {
       dependencies = [
         "chronos"
         "deepseq"
+        "exon"
         "generic-lens"
         "hedgehog"
         "lens"

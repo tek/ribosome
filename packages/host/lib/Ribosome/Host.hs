@@ -17,6 +17,7 @@ module Ribosome.Host (
   module Ribosome.Host.Data.Range,
   module Ribosome.Host.Data.RpcError,
   module Ribosome.Host.Data.RpcHandler,
+  module Ribosome.Host.Data.RpcType,
   module Ribosome.Host.Data.StoredError,
   module Ribosome.Host.Effect.Errors,
   module Ribosome.Host.Effect.Rpc,
@@ -55,11 +56,12 @@ import Ribosome.Host.Data.HostError (HostError (..))
 import Ribosome.Host.Data.Range (Range (Range), RangeStyle (..))
 import Ribosome.Host.Data.RpcError (RpcError (RpcError))
 import Ribosome.Host.Data.RpcHandler (Handler, RpcHandler (RpcHandler), simpleHandler)
+import Ribosome.Host.Data.RpcType (CompleteStyle (..))
 import Ribosome.Host.Data.StoredError (StoredError (StoredError))
 import Ribosome.Host.Effect.Errors (Errors)
 import Ribosome.Host.Effect.Rpc (Rpc, async, notify, sync)
 import Ribosome.Host.Embed (embedNvim, embedNvim_, interpretHostEmbed, testHostEmbed, withHostEmbed)
 import Ribosome.Host.Error (ignoreRpcError)
-import Ribosome.Host.Handler (rpcAutocmd, rpcCommand, rpcFunction)
+import Ribosome.Host.Handler (completeBuiltin, completeWith, rpcAutocmd, rpcCommand, rpcFunction)
 import Ribosome.Host.Modify (bufdo, modifyCmd, noautocmd, silent, silentBang, windo)
 import Ribosome.Host.Remote (interpretHostRemote, runHostRemote, runHostRemoteIO)

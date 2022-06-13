@@ -37,7 +37,6 @@ library
       Ribosome.Host.Data.BootError
       Ribosome.Host.Data.ChannelId
       Ribosome.Host.Data.CommandMods
-      Ribosome.Host.Data.CommandOptions
       Ribosome.Host.Data.CommandRegister
       Ribosome.Host.Data.Event
       Ribosome.Host.Data.Execution
@@ -198,6 +197,7 @@ test-suite ribosome-host-unit
       Ribosome.Host.Test.AutocmdTest
       Ribosome.Host.Test.CommandArgsTest
       Ribosome.Host.Test.CommandBangTest
+      Ribosome.Host.Test.CommandCompleteTest
       Ribosome.Host.Test.CommandModsTest
       Ribosome.Host.Test.CommandParamErrorDecls
       Ribosome.Host.Test.CommandParamErrorTest
@@ -278,6 +278,7 @@ test-suite ribosome-host-unit
       base >=4.12 && <5
     , chronos
     , deepseq
+    , exon
     , generic-lens
     , hedgehog
     , incipit >=0.3

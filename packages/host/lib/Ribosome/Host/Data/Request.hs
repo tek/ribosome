@@ -9,7 +9,7 @@ import Ribosome.Host.Class.Msgpack.Encode (MsgpackEncode (toMsgpack))
 newtype RpcMethod =
   RpcMethod { unRpcMethod :: Text }
   deriving stock (Eq, Show, Generic)
-  deriving newtype (IsString, Ord, MsgpackDecode, MsgpackEncode)
+  deriving newtype (IsString, Ord, MsgpackDecode, MsgpackEncode, Semigroup, Monoid)
 
 newtype RequestId =
   RequestId { unRequestId :: Int64 }

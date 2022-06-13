@@ -18,7 +18,14 @@ import Ribosome.Host.Data.RpcError (RpcError (RpcError, unRpcError))
 import Ribosome.Host.Data.RpcHandler (RpcHandler (RpcHandler), rpcMethod)
 import qualified Ribosome.Host.Data.RpcType as AutocmdOptions
 import qualified Ribosome.Host.Data.RpcType as RpcType
-import Ribosome.Host.Data.RpcType (AutocmdEvent (AutocmdEvent), AutocmdOptions (AutocmdOptions), RpcType)
+import Ribosome.Host.Data.RpcType (
+  AutocmdEvent (AutocmdEvent),
+  AutocmdOptions (AutocmdOptions),
+  CommandArgs (CommandArgs),
+  CommandOptions (CommandOptions),
+  RpcType,
+  completionOption,
+  )
 import qualified Ribosome.Host.Effect.Rpc as Rpc
 import Ribosome.Host.Effect.Rpc (Rpc)
 
@@ -69,11 +76,11 @@ registerType i method name exec = \case
     [exon|function! #{name}(...) range
 return #{rpcCall i method exec (Just "a:000")}
 endfunction|]
-  RpcType.Command options args ->
+  RpcType.Command (CommandOptions options comp) (CommandArgs args) ->
     [exon|command! #{optionsText} #{name} call #{rpcCall i method exec (Just argsText)}|]
     where
       optionsText =
-        Text.intercalate " " options
+        Text.intercalate " " (foldMap (pure . completionOption) comp <> options)
       argsText =
         [exon|[#{Text.intercalate ", " args}]|]
   RpcType.Autocmd (AutocmdEvent event) AutocmdOptions {..} ->
