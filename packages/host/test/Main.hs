@@ -15,6 +15,7 @@ import Ribosome.Host.Test.CommandRegisterTest (test_register)
 import Ribosome.Host.Test.EventTest (test_errorEvent)
 import Ribosome.Host.Test.FunctionTest (test_function)
 import Ribosome.Host.Test.LogTest (test_logFile)
+import Ribosome.Host.Test.MaybeParamTest (test_maybeParams)
 import Ribosome.Host.Test.NotifyTest (test_notify)
 import Test.Tasty (TestTree, defaultMain, testGroup)
 
@@ -23,6 +24,7 @@ tests =
   testGroup "host" [
     unitTest "parse api info types" test_parseType,
     unitTest "function" test_function,
+    unitTest "function with Maybe params" test_maybeParams,
     unitTest "async function" test_async,
     testGroup "command" [
       unitTest "args" test_args,

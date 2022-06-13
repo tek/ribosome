@@ -10,9 +10,9 @@ import Ribosome.Host.Api.Effect (nvimCallFunction, nvimGetVar, nvimSetVar)
 import Ribosome.Host.Class.Msgpack.Encode (toMsgpack)
 import Ribosome.Host.Data.Bar (Bar (Bar))
 import Ribosome.Host.Data.Execution (Execution (Sync))
-import Ribosome.Host.Data.HandlerError (HandlerError, resumeHandlerError)
+import Ribosome.Host.Data.HandlerError (resumeHandlerError)
 import Ribosome.Host.Data.RpcError (RpcError)
-import Ribosome.Host.Data.RpcHandler (RpcHandler)
+import Ribosome.Host.Data.RpcHandler (Handler)
 import qualified Ribosome.Host.Effect.Rpc as Rpc
 import Ribosome.Host.Effect.Rpc (Rpc)
 import Ribosome.Host.Embed (embedNvim)
@@ -24,11 +24,11 @@ var =
   "test_var"
 
 hand ::
-  Members [AtomicState Int, Rpc !! RpcError, Stop HandlerError] r =>
+  Members [AtomicState Int, Rpc !! RpcError] r =>
   Bar ->
   Bool ->
   Int ->
-  Sem r Int
+  Handler r Int
 hand Bar _ n = do
   atomicGet >>= \case
     13 ->
@@ -36,15 +36,6 @@ hand Bar _ n = do
     _ -> do
       resumeHandlerError (nvimSetVar var n)
       47 <$ atomicPut 13
-
-handlers ::
-  ∀ r .
-  Members [AtomicState Int, Rpc !! RpcError] r =>
-  [RpcHandler r]
-handlers =
-  [
-    rpcFunction "Fun" Sync (hand @(Stop HandlerError : r))
-  ]
 
 targetError :: RpcError
 targetError =
@@ -59,7 +50,7 @@ callTest n =
 
 test_function :: UnitTest
 test_function =
-  runTest $ interpretAtomic 0 $ embedNvim handlers $ interpretSync do
+  runTest $ interpretAtomic 0 $ embedNvim [rpcFunction "Fun" Sync hand] $ interpretSync do
     nvimSetVar var (10 :: Int)
     Rpc.async (Data.nvimGetVar var) (void . Sync.putTry)
     assertRight (10 :: Int) =<< evalMaybe =<< Sync.wait (Seconds 5)

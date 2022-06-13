@@ -33,11 +33,21 @@ instance {-# overlappable #-} (
     Member (Stop HandlerError) r,
     MsgpackDecode a
   ) => HandlerArg a r where
-  handlerArg = \case
-    [] -> stop "too few arguments"
-    (o : rest) -> do
-      a <- decodeArg o
-      pure (rest, a)
+    handlerArg = \case
+      [] -> stop "too few arguments"
+      (o : rest) -> do
+        a <- decodeArg o
+        pure (rest, a)
+
+instance (
+    Member (Stop HandlerError) r,
+    MsgpackDecode a
+  ) => HandlerArg (Maybe a) r where
+    handlerArg = \case
+      [] -> pure ([], Nothing)
+      (o : rest) -> do
+        a <- decodeArg o
+        pure (rest, a)
 
 instance HandlerArg Bar r where
   handlerArg os =

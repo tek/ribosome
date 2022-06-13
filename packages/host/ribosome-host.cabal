@@ -204,6 +204,7 @@ test-suite ribosome-host-unit
       Ribosome.Host.Test.EventTest
       Ribosome.Host.Test.FunctionTest
       Ribosome.Host.Test.LogTest
+      Ribosome.Host.Test.MaybeParamTest
       Ribosome.Host.Test.MsgpackTest
       Ribosome.Host.Test.NotifyTest
       Ribosome.Host.Unit.Run
