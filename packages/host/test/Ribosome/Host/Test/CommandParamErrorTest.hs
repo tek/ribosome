@@ -29,7 +29,7 @@ argAfterArgsError =
 argsAfterArgError :: [Text]
 argsAfterArgError =
   [
-    "• Command option type Args may not come after non-option"
+    "• Command option type Bang may not come after non-option"
   ]
 
 test_paramError :: UnitTest

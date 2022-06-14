@@ -66,6 +66,16 @@ handlerError msg tag =
   withFrozenCallStack do
     stop (HandlerError msg tag)
 
+basicHandlerError ::
+  Member (Stop HandlerError) r =>
+  HasCallStack =>
+  Text ->
+  [Text] ->
+  Sem r a
+basicHandlerError user log =
+  withFrozenCallStack do
+    handlerError (ErrorMessage user log Error) GlobalTag
+
 instance IsString HandlerError where
   fromString =
     simple . toText

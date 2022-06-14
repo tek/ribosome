@@ -1,15 +1,16 @@
 module Ribosome.Host.Handler.Codec where
 
 import Data.MessagePack (Object)
+import qualified Data.Text as Text
 import Exon (exon)
 
-import Ribosome.Host.Class.Msgpack.Decode (pattern Msgpack, MsgpackDecode (fromMsgpack))
+import Ribosome.Host.Class.Msgpack.Decode (MsgpackDecode (fromMsgpack))
 import Ribosome.Host.Class.Msgpack.Encode (MsgpackEncode (toMsgpack))
-import Ribosome.Host.Data.Args (Args (Args))
-import Ribosome.Host.Data.Bang (Bang(NoBang))
+import Ribosome.Host.Data.Args (ArgList (ArgList), Args (Args))
+import Ribosome.Host.Data.Bang (Bang (NoBang))
 import Ribosome.Host.Data.Bar (Bar (Bar))
 import qualified Ribosome.Host.Data.HandlerError as HandlerError
-import Ribosome.Host.Data.HandlerError (HandlerError)
+import Ribosome.Host.Data.HandlerError (HandlerError, basicHandlerError)
 import Ribosome.Host.Data.RpcHandler (Handler, RpcHandlerFun)
 
 decodeArg ::
@@ -72,12 +73,22 @@ instance (
 instance (
     Member (Stop HandlerError) r
   ) => HandlerArg Args r where
-  handlerArg = \case
-    [] -> stop "Too few arguments"
-    (Msgpack a : rest) ->
-      pure (rest, Args a)
-    a : _ ->
-      stop (HandlerError.simple [exon|Invalid type for Args: #{show a}|])
+  handlerArg os =
+    case traverse fromMsgpack os of
+      Right a ->
+        pure ([], Args (Text.unwords a))
+      Left e ->
+        basicHandlerError [exon|Invalid arguments: #{show os}|] ["Invalid type for Args", show os, e]
+
+instance (
+    Member (Stop HandlerError) r
+  ) => HandlerArg ArgList r where
+  handlerArg os =
+    case traverse fromMsgpack os of
+      Right a ->
+        pure ([], ArgList a)
+      Left e ->
+        basicHandlerError [exon|Invalid arguments: #{show os}|] ["Invalid type for ArgList", show os, e]
 
 class HandlerCodec h r | h -> r where
   handlerCodec :: h -> RpcHandlerFun r

@@ -3,6 +3,8 @@
 module Ribosome.Host.Test.CommandParamErrorDecls where
 
 import Ribosome.Host.Data.Args (Args)
+import Ribosome.Host.Data.Bang (Bang)
+import Ribosome.Host.Data.HandlerError (HandlerError)
 import Ribosome.Host.Handler.Command (OptionStateZero, commandOptions)
 
 argAfterArgs ::
@@ -13,4 +15,4 @@ argAfterArgs =
 argsAfterArg ::
   ([Text], [Text])
 argsAfterArg =
-  commandOptions @OptionStateZero @(Int -> Args -> ())
+  commandOptions @OptionStateZero @(Int -> Bang -> Sem '[Stop HandlerError] ())

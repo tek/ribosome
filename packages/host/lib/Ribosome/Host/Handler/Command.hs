@@ -2,23 +2,36 @@ module Ribosome.Host.Handler.Command where
 
 import Type.Errors.Pretty (type (%), type (<>))
 
-import Ribosome.Host.Data.Args (Args, JsonArgs)
+import Ribosome.Host.Data.Args (ArgList, Args, JsonArgs)
 import Ribosome.Host.Data.Bang (Bang)
 import Ribosome.Host.Data.Bar (Bar)
 import Ribosome.Host.Data.CommandMods (CommandMods)
 import Ribosome.Host.Data.CommandRegister (CommandRegister)
 import Ribosome.Host.Data.Range (Range, RangeStyleOpt (rangeStyleArg, rangeStyleOpt))
 
+data ArgCount =
+  Zero
+  |
+  MinZero
+  |
+  MinOne
+  deriving stock (Eq, Show)
+
+type family Max (l :: ArgCount) (r :: ArgCount) :: ArgCount where
+  Max 'Zero r = r
+  Max 'MinZero 'MinOne = 'MinOne
+  Max l _ = l
+
 data OptionState =
   OptionState {
     allowed :: Bool,
-    count :: Nat,
+    minArgs :: ArgCount,
     optional :: Bool,
     argsConsumed :: Maybe Type
   }
 
 type OptionStateZero =
-  'OptionState 'True 0 'True 'Nothing
+  'OptionState 'True 'Zero 'True 'Nothing
 
 type family CommandSpecial (a :: Type) :: Bool where
   CommandSpecial (Range _) = 'True
@@ -27,6 +40,7 @@ type family CommandSpecial (a :: Type) :: Bool where
   CommandSpecial CommandMods = 'True
   CommandSpecial CommandRegister = 'True
   CommandSpecial Args = 'True
+  CommandSpecial ArgList = 'True
   CommandSpecial (JsonArgs _) = 'True
   CommandSpecial _ = 'False
 
@@ -43,61 +57,63 @@ class SpecialParam (state :: OptionState) (a :: Type) where
   specialArg =
     Nothing
 
-instance SpecialParam ('OptionState 'False c o ac) a where
-    type TransSpecial ('OptionState 'False c o ac) a =
-      TypeError ("Command option type " <> a <> " may not come after non-option")
+type family BeforeRegular (allowed :: Bool) (a :: Type) :: Constraint where
+  BeforeRegular 'False a =
+    TypeError ("Command option type " <> a <> " may not come after non-option") ~ ()
+  BeforeRegular 'True _ =
+    ()
 
 instance (
+    BeforeRegular al (Range rs),
     RangeStyleOpt rs
-  ) => SpecialParam ('OptionState 'True c o ac) (Range rs) where
+  ) => SpecialParam ('OptionState al c o ac) (Range rs) where
   specialOpt =
     Just (rangeStyleOpt @rs)
   specialArg =
     Just (rangeStyleArg @rs)
 
-instance SpecialParam ('OptionState 'True c o ac) Bang where
+instance (
+    BeforeRegular al Bang
+  ) => SpecialParam ('OptionState al c o ac) Bang where
   specialOpt =
     Just "-bang"
   specialArg =
     Just "'<bang>' == '!'"
 
-instance SpecialParam ('OptionState 'True c o ac) Bar where
+instance (
+    BeforeRegular al Bar
+  ) => SpecialParam ('OptionState al c o ac) Bar where
   specialOpt =
     Just "-bar"
   specialArg =
     Nothing
 
-instance SpecialParam ('OptionState 'True c o ac) CommandMods where
+instance (
+    BeforeRegular al CommandMods
+  ) => SpecialParam ('OptionState al c o ac) CommandMods where
   specialOpt =
     Nothing
   specialArg =
     Just "<q-mods>"
 
-instance SpecialParam ('OptionState 'True c o ac) CommandRegister where
+instance (
+    BeforeRegular al CommandRegister
+  ) => SpecialParam ('OptionState al c o ac) CommandRegister where
   specialOpt =
     Just "-register"
   specialArg =
     Just "<q-register>"
 
-instance SpecialParam ('OptionState 'True 0 o ac) Args where
-  type TransSpecial ('OptionState 'True 0 o _) _ =
-    'OptionState 'True 0 o ('Just Args)
+instance SpecialParam ('OptionState al count o 'Nothing) Args where
+  type TransSpecial ('OptionState al count o _) _ =
+    'OptionState 'True (Max count 'MinZero) o ('Just Args)
 
-  specialOpt =
-    Just "-nargs=1"
-  specialArg =
-    Just "<f-args>"
+instance SpecialParam ('OptionState al count o ac) ArgList where
+  type TransSpecial ('OptionState al count o _) _ =
+    'OptionState 'True (Max count 'MinZero) o ('Just ArgList)
 
 class RegularParam (state :: OptionState) (isMaybe :: Bool) a where
   type TransRegular state isMaybe a :: OptionState
-
-  regularOpt :: Maybe Text
-  regularOpt =
-    Nothing
-
-  regularArg :: Maybe Text
-  regularArg =
-    Nothing
 
 type family ArgsError consumer a where
   ArgsError consumer a =
@@ -107,17 +123,17 @@ type family ArgsError consumer a where
       "since " <> consumer <> " consumes all arguments"
     )
 
-instance RegularParam ('OptionState al 0 opt ('Just consumer)) m a where
-  type TransRegular ('OptionState al 0 opt ('Just consumer)) m a =
+instance RegularParam ('OptionState al count opt ('Just consumer)) m a where
+  type TransRegular ('OptionState al count opt ('Just consumer)) m a =
     ArgsError consumer a
 
 instance RegularParam ('OptionState al count opt 'Nothing) 'True (Maybe a) where
   type TransRegular ('OptionState al count opt 'Nothing) 'True (Maybe a) =
-    'OptionState 'False (count + 1) opt 'Nothing
+    'OptionState 'False (Max count 'MinZero) opt 'Nothing
 
 instance RegularParam ('OptionState al count opt 'Nothing) 'False a where
   type TransRegular ('OptionState al count opt 'Nothing) 'False a =
-    'OptionState 'False (count + 1) 'False 'Nothing
+    'OptionState 'False 'MinOne 'False 'Nothing
 
 class CommandParam (special :: Bool) (state :: OptionState) (a :: Type) where
   type TransState special state a :: OptionState
@@ -155,15 +171,15 @@ instance (
 class CommandHandler (state :: OptionState) h where
   commandOptions :: ([Text], [Text])
 
-instance CommandHandler ('OptionState _a c o ('Just consumer)) (Sem r a) where
+instance CommandHandler ('OptionState _a 'Zero o c) (Sem r a) where
   commandOptions =
-    ([], [])
+    (["-nargs=0"], [])
 
-instance CommandHandler ('OptionState _a c 'True 'Nothing) (Sem r a) where
+instance CommandHandler ('OptionState _a 'MinZero o c) (Sem r a) where
   commandOptions =
     (["-nargs=*"], ["<f-args>"])
 
-instance CommandHandler ('OptionState _a c 'False 'Nothing) (Sem r a) where
+instance CommandHandler ('OptionState _a 'MinOne o c) (Sem r a) where
   commandOptions =
     (["-nargs=+"], ["<f-args>"])
 
