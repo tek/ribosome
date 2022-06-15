@@ -14,7 +14,7 @@ data RegisterType =
   BlockWidth Int
   |
   Unknown Text
-  deriving stock (Eq, Show)
+  deriving stock (Eq, Show, Ord)
 
 instance IsString RegisterType where
   fromString "v" =
