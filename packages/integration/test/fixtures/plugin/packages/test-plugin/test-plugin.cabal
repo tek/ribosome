@@ -16,4 +16,6 @@ executable test-plugin
     , polysemy-plugin
   mixins:
       base hiding (Prelude)
+    , incipit hiding (Incipit)
+    , incipit (Incipit as Prelude)
   default-language: Haskell2010

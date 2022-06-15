@@ -139,6 +139,7 @@ in {
       "generic-lens"
       "lens"
       "messagepack"
+      "optparse-applicative"
       "path"
       "path-io"
       "polysemy-chronos"

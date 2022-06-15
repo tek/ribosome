@@ -38,6 +38,8 @@ library
       Ribosome.Api.Undo
       Ribosome.Api.Variable
       Ribosome.Api.Window
+      Ribosome.Cli
+      Ribosome.Data.CliConfig
       Ribosome.Data.FileBuffer
       Ribosome.Data.FloatOptions
       Ribosome.Data.Locks
@@ -171,6 +173,7 @@ library
     , incipit >=0.3
     , lens
     , messagepack
+    , optparse-applicative
     , path
     , path-io
     , polysemy
