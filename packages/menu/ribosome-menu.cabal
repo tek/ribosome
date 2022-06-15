@@ -39,11 +39,13 @@ library
       Ribosome.Menu.Data.QuitReason
       Ribosome.Menu.Effect.MenuConsumer
       Ribosome.Menu.Effect.MenuRenderer
+      Ribosome.Menu.Effect.MenuTest
       Ribosome.Menu.Effect.PromptEvents
       Ribosome.Menu.Effect.PromptRenderer
       Ribosome.Menu.Filters
       Ribosome.Menu.Interpreter.MenuConsumer
       Ribosome.Menu.Interpreter.MenuRenderer
+      Ribosome.Menu.Interpreter.MenuTest
       Ribosome.Menu.Interpreter.PromptEvents
       Ribosome.Menu.Interpreter.PromptRenderer
       Ribosome.Menu.ItemLens
@@ -169,6 +171,7 @@ test-suite ribosome-menu-unit
   type: exitcode-stdio-1.0
   main-is: Main.hs
   other-modules:
+      Ribosome.Menu.Test.Menu
       Ribosome.Menu.Test.MenuTest
       Ribosome.Menu.Test.NvimMenuTest
       Ribosome.Menu.Test.PromptTest

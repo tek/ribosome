@@ -30,8 +30,7 @@ forMappings ::
   InterpreterFor (MenuConsumer a) r
 forMappings mappings =
   interpret \case
-    MenuConsumerEvent (MenuEvent.Mapping char) -> do
-      let
+    MenuConsumerEvent (MenuEvent.Mapping char) ->
       fromMaybe (pure Nothing) (mappings !? char)
     MenuConsumerEvent _ ->
       pure Nothing

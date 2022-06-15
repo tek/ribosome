@@ -14,7 +14,7 @@ import Ribosome.Menu.Combinators (sortedEntries)
 import Ribosome.Menu.Data.MenuEvent (MenuEvent)
 import Ribosome.Menu.Data.MenuItem (simpleMenuItem)
 import Ribosome.Menu.Data.MenuState (readMenu)
-import Ribosome.Menu.Filters (fuzzyItemFilter)
+import Ribosome.Menu.Filters (fuzzyMonotonic)
 import Ribosome.Menu.Main (interpretMenu)
 import Ribosome.Menu.Prompt.Data.Prompt (Prompt (Prompt))
 import qualified Ribosome.Menu.Prompt.Data.PromptEvent as PromptEvent
@@ -73,7 +73,7 @@ appendBench files =
   interpretMenu $ inFinal_ \ lowerMaybe _ pur -> do
     let
       filt =
-        fuzzyItemFilter False
+        fuzzyMonotonic
       promptStream =
         promptEvent lowerMaybe filt events
       itemStream =

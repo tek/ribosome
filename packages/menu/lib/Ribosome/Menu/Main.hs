@@ -113,7 +113,7 @@ menuStream ::
   Show a =>
   Members (MenuStack i) r =>
   Members [MenuRenderer i, MenuConsumer a, Resource, Log, Embed IO, Final IO] r =>
-  MenuConfig i a ->
+  MenuConfig i ->
   TMChan PromptControlEvent ->
   AsyncT IO (Prompt, PromptEvent) ->
   Sem r (SerialT IO (MenuResult a))
@@ -177,7 +177,7 @@ menuMain ::
   Members (MenuStack i) r =>
   Members [PromptEvents, PromptRenderer] r =>
   Members [MenuConsumer a, MenuRenderer i, Sync PromptListening, Log, Mask res, Race, Resource, Embed IO, Final IO] r =>
-  MenuConfig i a ->
+  MenuConfig i ->
   Sem r (MenuResult a)
 menuMain conf =
   withPromptStream initialPrompt promptInput \ (promptControl, promptEvents) -> do
@@ -194,7 +194,7 @@ simpleMenu ::
   Member (MenuRenderer i) r =>
   Members [PromptEvents, Scoped pres PromptRenderer, Log, Mask mres, Resource, Race, Embed IO, Final IO] r =>
   InterpreterFor (MenuConsumer a) (Sync PromptListening : MenuStack i ++ PromptRenderer : r) ->
-  MenuConfig i a ->
+  MenuConfig i ->
   Sem r (MenuResult a)
 simpleMenu consumer config =
   withPrompt do
@@ -206,7 +206,7 @@ menu ::
   Members (MenuStack i) r =>
   Members [PromptEvents, MenuConsumer a, Scoped pres PromptRenderer] r =>
   Members [Scoped mrres (MenuRenderer i), Sync PromptListening, Log, Mask res, Race, Resource, Embed IO, Final IO] r =>
-  MenuConfig i a ->
+  MenuConfig i ->
   Sem r (MenuResult a)
 menu conf =
   withMenuRenderer $ withPrompt do

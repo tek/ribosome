@@ -16,7 +16,7 @@ import Ribosome.Menu.Data.MenuItemFilter (MenuItemFilter)
 import Ribosome.Menu.Data.MenuResult (MenuResult)
 import Ribosome.Menu.Data.MenuState (MenuStack)
 import Ribosome.Menu.Effect.MenuConsumer (MenuConsumer)
-import Ribosome.Menu.Filters (fuzzy, fuzzyItemFilter)
+import Ribosome.Menu.Filters (fuzzy, fuzzyItemFilter, fuzzyMonotonic)
 import Ribosome.Menu.Interpreter.MenuRenderer (interpretMenuRendererNvim)
 import Ribosome.Menu.Interpreter.PromptEvents (interpretPromptEventsDefault)
 import Ribosome.Menu.Interpreter.PromptRenderer (interpretPromptRendererNvim)
@@ -44,7 +44,7 @@ nvimMenu ::
   Show a =>
   Members (NvimMenuStack i a res) r =>
   ScratchOptions ->
-  MenuConfig i a ->
+  MenuConfig i ->
   Sem r (MenuResult a)
 nvimMenu options config =
   interpretPromptRendererNvim $ interpretMenuRendererNvim (ensureSize options) $ interpretPromptEventsDefault flags do
@@ -90,4 +90,4 @@ staticNvimMenuDef ::
   PromptConfig ->
   Sem r (MenuResult a)
 staticNvimMenuDef =
-  staticNvimMenu (fuzzyItemFilter False)
+  staticNvimMenu fuzzyMonotonic

@@ -6,7 +6,7 @@ import Ribosome.Menu.Data.MenuItem (MenuItem)
 import Ribosome.Menu.Data.MenuItemFilter (MenuItemFilter)
 import Ribosome.Menu.Prompt.Data.PromptConfig (PromptConfig)
 
-data MenuConfig i a =
+data MenuConfig i =
   MenuConfig {
     items :: SerialT IO (MenuItem i),
     itemFilter :: MenuItemFilter i,

@@ -55,19 +55,31 @@ matchFuzzy sel (toString -> query) index item@(MenuItem _ (toString -> text) _) 
   Alignment score _ <- bestMatch query text
   pure (score, Entry item index sel)
 
--- if the query is empty, score shorter strings higher
+-- |This variant matches fuzzily but reserves the order of items.
+filterFuzzyMonotonic ::
+  String ->
+  [(Int, MenuItem a)] ->
+  IO [Entry a]
+filterFuzzyMonotonic = \case
+  "" ->
+    pure . fmap (uncurry entry)
+  (toText -> query) ->
+    fmap (fmap snd) <$> Stream.parMapMaybeIO 100 (uncurry (matchFuzzy False query))
+
+
 filterFuzzy ::
   Bool ->
   String ->
   [(Int, MenuItem a)] ->
   IO (Entries a)
+filterFuzzy True q =
+  fmap (IntMap.singleton 0 . Seq.fromList) . filterFuzzyMonotonic q
+-- if the query is empty, score shorter strings higher
 filterFuzzy False "" =
-  pure . IntMap.singleton 0 . Seq.fromList . fmap (uncurry entry)
-filterFuzzy True "" =
   pure .
   Entry.fromList .
   fmap \ (i, item) -> (1000 - Text.length (MenuItem.text item), Entry item i False)
-filterFuzzy _ (toText -> query) =
+filterFuzzy False (toText -> query) =
   fmap Entry.fromList .
   Stream.parMapMaybeIO 100 (uncurry (matchFuzzy False query))
 
@@ -83,14 +95,18 @@ refineFuzzy (toText -> query) =
       matchFuzzy sel query index item
 
 fuzzyItemFilter :: Bool -> MenuItemFilter a
-fuzzyItemFilter sortEmpty =
+fuzzyItemFilter monotonic =
   MenuItemFilter (matchFuzzy False) initial refine
   where
     initial (MenuQuery (toString -> query)) items =
-      filterFuzzy sortEmpty query (IntMap.toList items)
+      filterFuzzy monotonic query (IntMap.toList items)
     refine (MenuQuery (toString -> query)) items =
       refineFuzzy query (concatMap toList (IntMap.elems items))
 
 fuzzy :: MenuItemFilter a
 fuzzy =
+  fuzzyItemFilter False
+
+fuzzyMonotonic :: MenuItemFilter a
+fuzzyMonotonic =
   fuzzyItemFilter True
