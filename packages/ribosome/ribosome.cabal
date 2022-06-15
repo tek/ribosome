@@ -194,6 +194,7 @@ test-suite ribosome-unit
       Ribosome.Test.BufferTest
       Ribosome.Test.Error
       Ribosome.Test.MappingTest
+      Ribosome.Test.PathTest
       Ribosome.Test.PersistTest
       Ribosome.Test.ScratchTest
       Ribosome.Test.SettingTest
@@ -270,6 +271,7 @@ test-suite ribosome-unit
   build-depends:
       aeson
     , base >=4.12 && <5
+    , exon
     , hedgehog
     , incipit >=0.3
     , messagepack

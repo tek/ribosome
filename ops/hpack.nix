@@ -143,6 +143,7 @@ in {
     tests.ribosome-unit = exe "ribosome" "test" {
       dependencies = [
         "aeson"
+        "exon"
         "hedgehog"
         "messagepack"
         "path"

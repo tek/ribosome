@@ -37,8 +37,10 @@ parseNvimDir ::
   Member Rpc r =>
   Text ->
   Sem r (Maybe (Path Abs Dir))
-parseNvimDir =
-  traverse nvimRelativePath . parseSomeDir . toString
+parseNvimDir "" =
+  Just <$> nvimCwd
+parseNvimDir p =
+  traverse nvimRelativePath (parseSomeDir (toString p))
 
 parseNvimFile ::
   Member Rpc r =>
