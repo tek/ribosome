@@ -9,7 +9,7 @@ import Ribosome.Host.Interpret (HigherOrder)
 import Ribosome.Host.Interpreter.Host (runHost)
 import Ribosome.Host.Interpreter.Process.Stdio (interpretProcessCerealStdio)
 import Ribosome.Host.Run (RpcDeps, RpcStack, interpretRpcStack)
-import Ribosome.IOStack (BasicPluginStack, runBasicPluginStack)
+import Ribosome.IOStack (BasicPluginStack, runCli)
 import Ribosome.Interpreter.BuiltinHandlers (interpretBuiltinHandlers)
 import Ribosome.Interpreter.NvimPlugin (rpcHandlers, sendNvimPlugin)
 import Ribosome.Interpreter.Scratch (interpretScratch)
@@ -88,7 +88,7 @@ runNvimPluginIO ::
   InterpretersFor (NvimPlugin : r) RemoteStack ->
   IO ()
 runNvimPluginIO conf handlers =
-  runBasicPluginStack conf (runNvimPlugin @r handlers)
+  runCli conf (runNvimPlugin @r handlers)
 
 runNvimPluginIO_ ::
   PluginConfig ->
@@ -105,7 +105,7 @@ runNvimHandlersIO ::
   [RpcHandler (r ++ RemoteStack)] ->
   IO ()
 runNvimHandlersIO conf effs handlers =
-  runBasicPluginStack conf (runNvimHandlers @r effs handlers)
+  runCli conf (runNvimHandlers @r effs handlers)
 
 runNvimHandlersIO_ ::
   PluginConfig ->
