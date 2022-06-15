@@ -46,6 +46,7 @@ import Ribosome.Menu.Data.MenuState (
   MenuItemsSem,
   MenuRead,
   MenuSem,
+  MenuStack,
   MenuStateSem,
   MenuWidget,
   MenuWrite,

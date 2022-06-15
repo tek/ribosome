@@ -36,12 +36,6 @@ let
     build-type = "Simple";
   };
 
-  base = {
-    name = "base";
-    version = ">= 4.12 && < 5";
-    mixin = "hiding (Prelude)";
-  };
-
   options.ghc-options = [
     "-Wall"
     "-Wredundant-constraints"
