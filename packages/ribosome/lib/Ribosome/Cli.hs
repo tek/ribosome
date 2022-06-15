@@ -39,7 +39,10 @@ logParser ::
   Parser CliLogConfig
 logParser cwd = do
   logFile <- optional (option (filePathOption cwd) (long "log-file"))
-  pure (CliLogConfig logFile Nothing Nothing Nothing)
+  levelEcho <- optional (option severityOption (long "log-level-echo"))
+  levelStderr <- optional (option severityOption (long "log-level-stderr"))
+  levelFile <- optional (option severityOption (long "log-level-file"))
+  pure (CliLogConfig logFile levelEcho levelStderr levelFile)
 
 confParser ::
   Path Abs Dir ->
