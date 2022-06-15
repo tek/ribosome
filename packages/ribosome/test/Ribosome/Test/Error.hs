@@ -3,7 +3,13 @@ module Ribosome.Test.Error where
 import Exon (exon)
 import Polysemy.Test (TestError (TestError))
 
-import Ribosome.Host.Data.HandlerError (ErrorMessage (ErrorMessage), HandlerError (HandlerError))
+import Ribosome.Host.Data.HandlerError (
+  ErrorMessage (ErrorMessage),
+  HandlerError (HandlerError),
+  ToErrorMessage,
+  handlerTagName,
+  mapHandlerError,
+  )
 import Ribosome.Host.Data.RpcHandler (Handler)
 
 resumeTestError ::
