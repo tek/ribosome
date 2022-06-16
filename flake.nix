@@ -23,9 +23,9 @@
       integration = inputs;
       polysemy-conc = source.package polysemy-conc "conc";
       polysemy-process = source.package polysemy-conc "process";
-      ribosome = nvimBin inputs;
+      ribosome = inputs;
       ribosome-host = nvimBin inputs;
-      ribosome-menu = nvimBin inputs;
+      ribosome-menu = inputs;
       ribosome-test = inputs;
       streamly = hackage "0.8.1" "0ywyy7gxjnp32hx8kki0lfn94bnc9mzjh8g6mg65ff3vv28k2vdr";
       type-errors-pretty = notest jailbreak;
