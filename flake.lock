@@ -2373,11 +2373,11 @@
         "polysemy-time": "polysemy-time_3"
       },
       "locked": {
-        "lastModified": 1655377107,
-        "narHash": "sha256-US+btCOJ8Zm3PJFlS6wyDCuDj7G8CBrJGVRULFdGJMI=",
+        "lastModified": 1655511768,
+        "narHash": "sha256-2lSeoRgh3s9kgaIzJRhFaF/bNISwlzFP3hD/d8ayj3c=",
         "owner": "tek",
         "repo": "polysemy-conc",
-        "rev": "b92d2f6f2ec0916b3dca79bfd7b0bfdf19ae51fb",
+        "rev": "8222849b6f4018438b6ce5935fbdc4351ba285a9",
         "type": "github"
       },
       "original": {
