@@ -1,6 +1,7 @@
 module Ribosome.Errors (
   module Ribosome.Errors,
   module Ribosome.Host.Effect.Errors,
+  module Ribosome.Host.Interpreter.Errors,
 ) where
 
 import Log (dataLog)
@@ -19,6 +20,7 @@ import Ribosome.Host.Data.HostError (HostError (HostError))
 import Ribosome.Host.Data.RpcError (RpcError)
 import Ribosome.Host.Effect.Errors
 import Ribosome.Host.Effect.Rpc (Rpc)
+import Ribosome.Host.Interpreter.Errors
 import Ribosome.IOStack (TestEffects)
 
 storeError ::

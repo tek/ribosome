@@ -5,6 +5,7 @@ import Ribosome.Effect.NvimPlugin (NvimPlugin)
 import Ribosome.Effect.Scratch (Scratch)
 import Ribosome.Effect.Settings (Settings)
 import Ribosome.Host.Data.BootError (BootError)
+import Ribosome.Host.Data.HostConfig (LogConfig)
 import Ribosome.Host.Data.RpcHandler (RpcHandler)
 import Ribosome.Host.Effect.Rpc (Rpc)
 import Ribosome.Host.Embed (EmbedExtra, interpretEmbedExtra)
@@ -36,7 +37,7 @@ interpretRpcDeps =
   interpretProcessCerealNvimEmbed Nothing Nothing
 
 interpretPluginEmbed ::
-  Members [Log, Reader PluginName] r =>
+  Members [Log, Reader LogConfig, Reader PluginName] r =>
   Members IOStack r =>
   InterpretersFor HandlerDeps r
 interpretPluginEmbed =

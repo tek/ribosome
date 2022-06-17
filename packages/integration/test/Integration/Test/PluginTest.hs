@@ -16,7 +16,7 @@ import Polysemy.Time (MilliSeconds (MilliSeconds), Minutes (Minutes))
 import Ribosome.Data.PluginName (PluginName (PluginName))
 import Ribosome.Embed (HandlerDeps, withPluginEmbed)
 import Ribosome.Host.Api.Effect (nvimCallFunction)
-import Ribosome.Host.Data.HostConfig (hostLog, logLevelStderr)
+import Ribosome.Host.Data.HostConfig (LogConfig, hostLog, logLevelStderr)
 import Ribosome.Host.Data.RpcError (RpcError)
 import Ribosome.Host.Effect.Rpc (Rpc)
 import Ribosome.Host.Embed (interpretEmbedExtra)
@@ -42,7 +42,7 @@ nvimProc path =
   proc "nvim" (nvimArgs <> ["--headless", "--cmd", [exon|set rtp+=#{toFilePath path}|]])
 
 interpretTestPluginEmbed ::
-  Members [Reader PluginName, Log] r =>
+  Members [Reader PluginName, Reader LogConfig, Log] r =>
   Members IOStack r =>
   Path Abs Dir ->
   InterpretersFor HandlerDeps r

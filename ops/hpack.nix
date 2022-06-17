@@ -243,19 +243,9 @@ in {
     synopsis = "Neovim plugin host for Polysemy";
     description = "Internal project for testing Ribosome";
     library.dependencies = [
-        "exon"
-        "hedgehog"
         "messagepack"
         "ribosome"
         "ribosome-host"
-        "path"
-        "path-io"
-        "polysemy-chronos"
-        "polysemy-conc"
-        "polysemy-process"
-        "polysemy-test"
-        "tasty"
-        "typed-process"
     ];
     tests.integration = exe "integration" "test" {
       dependencies = [

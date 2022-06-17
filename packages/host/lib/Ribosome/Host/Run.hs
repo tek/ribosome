@@ -4,6 +4,7 @@ import Conc (ChanConsumer, ChanEvents, interpretEventsChan)
 import Polysemy.Process (Process)
 
 import Ribosome.Host.Data.Event (Event)
+import Ribosome.Host.Data.HostConfig (LogConfig)
 import Ribosome.Host.Data.HostError (HostError)
 import Ribosome.Host.Data.Request (RequestId)
 import Ribosome.Host.Data.Response (Response)
@@ -41,7 +42,7 @@ type RpcDeps =
 interpretRpcStack ::
   Members IOStack r =>
   Members RpcDeps r =>
-  Member Log r =>
+  Members [Log, Reader LogConfig] r =>
   InterpretersFor RpcStack r
 interpretRpcStack =
   interpretErrors .

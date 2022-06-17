@@ -1,6 +1,6 @@
 module Ribosome.Host.Test.Data.TestConfig where
 
-import Ribosome.Host.Data.HostConfig (HostConfig)
+import Ribosome.Host.Data.HostConfig (HostConfig (HostConfig), dataLogConc)
 
 data TestConfig =
   TestConfig {
@@ -11,4 +11,4 @@ data TestConfig =
 
 instance Default TestConfig where
   def =
-    TestConfig False def
+    TestConfig False (HostConfig def { dataLogConc = False })

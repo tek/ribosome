@@ -68,11 +68,11 @@ withDefault (PluginConfig name (HostConfig defLog)) cliConfig =
   where
     CliConfig (CliLogConfig file levelEcho levelStderr levelFile) =
       cliConfig
-    LogConfig defFile defLevelEcho defLevelStderr defLevelFile =
+    LogConfig defFile defLevelEcho defLevelStderr defLevelFile conc =
       defLog
     log =
       LogConfig (file <|> defFile) (fromMaybe defLevelEcho levelEcho) (fromMaybe defLevelStderr levelStderr)
-      (fromMaybe defLevelFile levelFile)
+      (fromMaybe defLevelFile levelFile) conc
 
 withCli ::
   PluginConfig ->

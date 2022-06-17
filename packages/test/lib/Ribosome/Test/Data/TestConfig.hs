@@ -3,6 +3,7 @@ module Ribosome.Test.Data.TestConfig where
 import Chiasma.Test.Tmux (TmuxTestConf (ttcGui))
 
 import Ribosome.Data.PluginConfig (PluginConfig (PluginConfig))
+import Ribosome.Host.Data.HostConfig (dataLogConc, HostConfig (HostConfig))
 
 data TestConfig =
   TestConfig {
@@ -13,7 +14,7 @@ data TestConfig =
 
 instance Default TestConfig where
   def =
-    TestConfig False (PluginConfig "test" def)
+    TestConfig False (PluginConfig "test" (HostConfig def { dataLogConc = False }))
 
 data TmuxTestConfig =
   TmuxTestConfig {

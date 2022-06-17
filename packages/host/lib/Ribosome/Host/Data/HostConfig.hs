@@ -8,13 +8,14 @@ data LogConfig =
     logFile :: Maybe (Path Abs File),
     logLevelEcho :: Severity,
     logLevelStderr :: Severity,
-    logLevelFile :: Severity
+    logLevelFile :: Severity,
+    dataLogConc :: Bool
   }
   deriving stock (Eq, Show, Generic)
 
 instance Default LogConfig where
   def =
-    LogConfig Nothing Info Crit Info
+    LogConfig Nothing Info Crit Info True
 
 newtype HostConfig =
   HostConfig {

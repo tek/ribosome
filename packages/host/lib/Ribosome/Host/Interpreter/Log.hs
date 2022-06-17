@@ -34,31 +34,35 @@ import Ribosome.Host.Effect.UserError (UserError, userError)
 echoError ::
   Show e =>
   Members [Rpc !! e, UserError, Log] r =>
+  Severity ->
   Text ->
   Severity ->
   Sem r ()
-echoError err severity =
+echoError minSeverity err severity | severity >= minSeverity =
   userError err severity >>= traverse_ \ msg ->
     nvimEcho [toMsgpack @[_] msg] True mempty !! \ e' ->
       Log.error [exon|Couldn't echo handler error: #{show e'}|]
+echoError _ _ _ =
+  unit
 
 logHandlerError ::
   Show e =>
   Members [Rpc !! e, Errors, UserError, Log] r =>
+  Severity ->
   HostError ->
   Sem r ()
-logHandlerError (HostError report (HandlerError msg@(ErrorMessage user log severity) htag)) = do
+logHandlerError minSeverity (HostError report (HandlerError msg@(ErrorMessage user log severity) htag)) = do
   Log.log severity (Text.unlines log)
   Errors.store htag msg
-  when report (echoError user severity)
+  when report (echoError minSeverity user severity)
 
 interpretDataLogRpc ::
   Show e =>
-  Members [Rpc !! e, Errors, UserError, Log, Resource, Race, Async, Embed IO] r =>
+  Members [Reader LogConfig, Rpc !! e, Errors, UserError, Log, Resource, Race, Async, Embed IO] r =>
   InterpreterFor (DataLog HostError) r
-interpretDataLogRpc =
-  interpretDataLog logHandlerError .
-  interceptDataLogConc 64
+interpretDataLogRpc sem = do
+  LogConfig {..} <- ask
+  interpretDataLog (logHandlerError logLevelEcho) ((if dataLogConc then interceptDataLogConc 64 else id) sem)
 
 interpretLogStderrFile ::
   Members [StderrLog, FileLog] r =>
