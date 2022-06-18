@@ -35,6 +35,9 @@ import Ribosome.Socket (HandlerDeps, interpretPluginSocket, testPluginSocket)
 import Ribosome.Test.Data.TestConfig (TmuxTestConfig (TmuxTestConfig))
 import Ribosome.Test.Embed (runTestConf)
 import Ribosome.Test.Wait (assertWait)
+import Chiasma.Effect.Codec (Codec)
+import Chiasma.Data.TmuxRequest (TmuxRequest)
+import Chiasma.Data.TmuxCommand (TmuxCommand)
 
 type TmuxErrors =
   [
@@ -51,7 +54,7 @@ type TmuxStack =
   TestTmuxEffects ++ TmuxErrors
 
 type TmuxTestStack =
-  Reader NvimSocket : Tmux : TmuxStack ++ Reader PluginName : TestStack
+  Reader NvimSocket : NativeTmux : TmuxStack ++ Reader PluginName : TestStack
 
 type HandlerStack =
   HandlerDeps ++ TmuxTestStack
@@ -88,12 +91,14 @@ nvimCmdline socket =
   [exon|nvim --listen #{pathText socket} -n -u NONE -i NONE --clean|]
 
 withTmuxNvim ::
-  Members [Tmux, Test, Hedgehog IO, ChronosTime, Error Failure, Race, Embed IO] r =>
+  Members [Test, Hedgehog IO, ChronosTime, Error Failure, Race, Embed IO] r =>
+  Members [NativeTmux, Codec TmuxCommand (Const TmuxRequest) (Const [Text]) !! CodecError, Stop CodecError] r =>
   InterpreterFor (Reader NvimSocket) r
 withTmuxNvim sem = do
   dir <- Test.tempDir [reldir|tmux-test|]
   let socket = dir </> [relfile|nvim-socket|]
-  sendKeys 0 [Lit (nvimCmdline socket)]
+  withTmux do
+    restop @CodecError @Tmux $ sendKeys 0 [Lit (nvimCmdline socket)]
   assertWait (pure socket) (assert <=< doesPathExist)
   runReader (NvimSocket socket) sem
 
@@ -106,9 +111,6 @@ runTmuxNvim (TmuxTestConfig conf tmuxConf) =
   runTestConf conf .
   withTmuxTest tmuxConf .
   restop @TmuxError @NativeTmux .
-  withTmux .
-  restop @CodecError @Tmux .
-  raiseUnder2 .
   withTmuxNvim
 
 runTmuxTestConf ::
