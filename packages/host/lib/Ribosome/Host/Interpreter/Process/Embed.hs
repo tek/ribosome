@@ -1,7 +1,7 @@
 module Ribosome.Host.Interpreter.Process.Embed where
 
 import Data.Serialize (Serialize)
-import Polysemy.Process (Process, ProcessOptions, withProcess)
+import Polysemy.Process (Process, ProcessOptions, withProcess_)
 import System.Process.Typed (ProcessConfig, proc)
 
 import Ribosome.Host.Data.BootError (BootError (BootError))
@@ -24,5 +24,5 @@ interpretProcessCerealNvimEmbed ::
 interpretProcessCerealNvimEmbed options conf =
   interpretProcessCerealNative (fromMaybe def options) (fromMaybe nvimProc conf) .
   resumeHoistError (BootError . show) .
-  withProcess @() .
+  withProcess_ @() .
   raiseUnder2

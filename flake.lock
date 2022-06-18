@@ -76,11 +76,11 @@
         "polysemy-conc": "polysemy-conc_3"
       },
       "locked": {
-        "lastModified": 1655563043,
-        "narHash": "sha256-S+UzX1nZsC6bSjpX1GSsCEHIzD6X/+tReEFClwOhdbQ=",
+        "lastModified": 1655565340,
+        "narHash": "sha256-2HiUzkE0qHIbHfOvhcnSPEuQfXFbMAG6N+uMVp2VIWI=",
         "owner": "tek",
         "repo": "chiasma",
-        "rev": "e8c7b32541c03425bd23bf8742cec3e3d6fefc2d",
+        "rev": "911fd320707fd135f58194290ca183692429ac67",
         "type": "github"
       },
       "original": {
@@ -2835,11 +2835,11 @@
         "polysemy-time": "polysemy-time_3"
       },
       "locked": {
-        "lastModified": 1655561252,
-        "narHash": "sha256-b3Gho7dgjzkRd8paPFM7axHk01GFlI6ZBNiXz2E3Cx8=",
+        "lastModified": 1655564867,
+        "narHash": "sha256-VUj8U3PSq4cORFoZvdI6DB7y6puzzLtsSLlvfZQZCuE=",
         "owner": "tek",
         "repo": "polysemy-conc",
-        "rev": "ce84ba276967a351c2689ba8304c945538fdaa37",
+        "rev": "de5cf77a17092fa64881e2a81f88b6801db983ad",
         "type": "github"
       },
       "original": {
@@ -2854,11 +2854,11 @@
         "polysemy-time": "polysemy-time_4"
       },
       "locked": {
-        "lastModified": 1655561252,
-        "narHash": "sha256-b3Gho7dgjzkRd8paPFM7axHk01GFlI6ZBNiXz2E3Cx8=",
+        "lastModified": 1655564867,
+        "narHash": "sha256-VUj8U3PSq4cORFoZvdI6DB7y6puzzLtsSLlvfZQZCuE=",
         "owner": "tek",
         "repo": "polysemy-conc",
-        "rev": "ce84ba276967a351c2689ba8304c945538fdaa37",
+        "rev": "de5cf77a17092fa64881e2a81f88b6801db983ad",
         "type": "github"
       },
       "original": {
