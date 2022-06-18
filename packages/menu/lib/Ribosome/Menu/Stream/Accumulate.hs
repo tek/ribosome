@@ -1,9 +1,6 @@
 module Ribosome.Menu.Stream.Accumulate where
 
-import qualified Control.Concurrent.Lifted as Lifted
-import Control.Exception.Lifted (finally)
-import Control.Monad.Catch (MonadCatch)
-import Control.Monad.Trans.Control (MonadBaseControl)
+import Control.Exception (finally)
 import Data.Sequence ((|>))
 import Prelude hiding (consume, finally, output)
 import Streamly.Internal.Data.Fold (Fold)
@@ -18,23 +15,21 @@ data CWState r c =
     lock :: MVar ()
   }
 
-newtype Work m r =
-  Work { unWork :: m (Maybe r) }
+newtype Work r =
+  Work { unWork :: IO (Maybe r) }
 
 work ::
-  MonadBaseControl IO m =>
   MVar () ->
-  m (Maybe r) ->
-  Work m r
+  IO (Maybe r) ->
+  Work r
 work mv mr =
-  Work (finally mr (Lifted.tryPutMVar mv ()))
+  Work (finally mr (tryPutMVar mv ()))
 
 extract ::
-  MonadIO m =>
-  MonadBaseControl IO m =>
-  (NonEmpty c -> m r) ->
+  MonadIO IO =>
+  (NonEmpty c -> IO r) ->
   CWState r c ->
-  (CWState r c, Work m r)
+  (CWState r c, Work r)
 extract consume s@CWState {..} =
   (s { buffer = mempty }, output (nonEmpty (toList buffer)))
   where
@@ -45,12 +40,11 @@ extract consume s@CWState {..} =
         Work (pure Nothing)
 
 elemStep ::
-  MonadIO m =>
-  MonadBaseControl IO m =>
-  (NonEmpty c -> m r) ->
+  MonadIO IO =>
+  (NonEmpty c -> IO r) ->
   CWState r c ->
   Either c r ->
-  m (Step (CWState r c) (CWState r c, Work m r))
+  IO (Step (CWState r c) (CWState r c, Work r))
 elemStep consume s@CWState {..} = \case
     Left c ->
       accumulate s {buffer = buffer |> c} <$> liftIO (tryTakeMVar lock)
@@ -64,12 +58,11 @@ elemStep consume s@CWState {..} = \case
         Partial newS
 
 chunkWhileFold ::
-  MonadIO m =>
-  MonadBaseControl IO m =>
-  (a -> m (Either c r)) ->
-  (NonEmpty c -> m r) ->
+  MonadIO IO =>
+  (a -> IO (Either c r)) ->
+  (NonEmpty c -> IO r) ->
   CWState r c ->
-  Fold m a (CWState r c, Work m r)
+  Fold IO a (CWState r c, Work r)
 chunkWhileFold classify consume initial =
   mkFoldM step (pure (Partial initial)) (pure . extract consume)
   where
@@ -77,40 +70,35 @@ chunkWhileFold classify consume initial =
       elemStep consume s <=< classify
 
 chunkWhileIteration ::
-  MonadIO m =>
-  MonadBaseControl IO m =>
-  (a -> m (Either c r)) ->
-  (NonEmpty c -> m r) ->
-  (CWState r c, Maybe (Work m r)) ->
-  m (Fold m a (CWState r c, Maybe (Work m r)))
+  MonadIO IO =>
+  (a -> IO (Either c r)) ->
+  (NonEmpty c -> IO r) ->
+  (CWState r c, Maybe (Work r)) ->
+  IO (Fold IO a (CWState r c, Maybe (Work r)))
 chunkWhileIteration classify consume (initial, _) =
   pure (second Just <$> chunkWhileFold classify consume initial)
 
 chunkWhileMain ::
-  MonadIO m =>
+  MonadIO IO =>
   IsStream t =>
-  Functor (t m) =>
-  MonadBaseControl IO m =>
-  (a -> m (Either c r)) ->
-  (NonEmpty c -> m r) ->
+  Functor (t IO) =>
+  (a -> IO (Either c r)) ->
+  (NonEmpty c -> IO r) ->
   CWState r c ->
-  t m a ->
-  t m (Work m r)
+  t IO a ->
+  t IO (Work r)
 chunkWhileMain classify consume initial =
   Stream.catMaybes .
   Stream.map snd .
   Stream.foldIterateM (chunkWhileIteration classify consume) (pure (initial, Nothing))
 
 mapMAcc ::
-  MonadIO m =>
   IsStream t =>
-  MonadCatch m =>
-  Functor (t m) =>
-  MonadBaseControl IO m =>
-  (a -> m (Either c r)) ->
-  (NonEmpty c -> m r) ->
-  t m a ->
-  t m r
+  Functor (t IO) =>
+  (a -> IO (Either c r)) ->
+  (NonEmpty c -> IO r) ->
+  t IO a ->
+  t IO r
 mapMAcc classify consume str =
   Stream.bracket_ (CWState mempty <$> liftIO (newMVar ())) (const unit) \ initial ->
     Stream.catMaybes $
@@ -119,14 +107,11 @@ mapMAcc classify consume str =
     str
 
 mapMAccMaybe ::
-  MonadIO m =>
   IsStream t =>
-  MonadCatch m =>
-  Functor (t m) =>
-  MonadBaseControl IO m =>
-  (a -> m (Maybe r)) ->
-  m r ->
-  t m a ->
-  t m r
+  Functor (t IO) =>
+  (a -> IO (Maybe r)) ->
+  IO r ->
+  t IO a ->
+  t IO r
 mapMAccMaybe classify consume =
   mapMAcc (fmap (maybeToRight ()) . classify) (const consume)

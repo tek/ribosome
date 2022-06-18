@@ -192,13 +192,10 @@ in {
     library.dependencies = [
       "bytestring-trie"
       "composition"
-      "exceptions"
       "exon"
       "fuzzyfind"
       "generic-lens"
       "lens"
-      "lifted-base"
-      "monad-control"
       "mtl"
       "polysemy-conc"
       "ribosome"
@@ -211,7 +208,6 @@ in {
       dependencies = [
         "hedgehog"
         "lens"
-        "lifted-base"
         "polysemy-conc"
         "polysemy-test"
         "ribosome"

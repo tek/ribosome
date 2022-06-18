@@ -144,14 +144,11 @@ library
       base >=4.12 && <5
     , bytestring-trie
     , composition
-    , exceptions
     , exon
     , fuzzyfind
     , generic-lens
     , incipit >=0.3
     , lens
-    , lifted-base
-    , monad-control
     , mtl
     , polysemy
     , polysemy-conc
@@ -246,7 +243,6 @@ test-suite ribosome-menu-unit
     , hedgehog
     , incipit >=0.3
     , lens
-    , lifted-base
     , polysemy
     , polysemy-conc
     , polysemy-plugin

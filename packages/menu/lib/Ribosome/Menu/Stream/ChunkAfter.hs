@@ -1,7 +1,5 @@
 module Ribosome.Menu.Stream.ChunkAfter where
 
-import Control.Monad.Catch (MonadThrow)
-import Control.Monad.Trans.Control (MonadBaseControl)
 import Data.Sequence ((|>))
 import Prelude hiding (output)
 import qualified Streamly.Internal.Data.Fold as Fold
@@ -98,16 +96,13 @@ chunkAfterIteration timeout classify e =
       Right . second toList <$> chunkAfterFold timeout classify s
 
 chunkAfter ::
-  MonadIO m =>
   IsStream t =>
-  MonadThrow m =>
-  Functor (t m) =>
-  MonadBaseControl IO m =>
+  Functor (t IO) =>
   Double ->
   Double ->
   (a -> ChunkAfter c e s) ->
-  t m a ->
-  t m (Chunked c e s)
+  t IO a ->
+  t IO (Chunked c e s)
 chunkAfter clock timeout classify =
   Stream.concatMap (Stream.fromList . snd) .
   Stream.rights .

@@ -11,7 +11,7 @@ tests =
   testGroup "menu" [
     test_menu,
     test_nvimMenu,
-    unitTest "" test_promptSet
+    unitTest "set prompt via event" test_promptSet
   ]
 
 main :: IO ()
