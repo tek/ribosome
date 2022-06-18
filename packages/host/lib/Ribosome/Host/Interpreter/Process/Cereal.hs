@@ -60,16 +60,16 @@ interpretProcessInputCereal =
       pure (Serialize.encode msg)
 
 interpretProcessCereal ::
-  ∀ resource a err r .
+  ∀ resource a r .
   Serialize a =>
-  Members [Scoped resource (SystemProcess !! err), Log, Resource, Race, Async, Embed IO] r =>
+  Members [Scoped resource (SystemProcess !! SystemProcessError), Log, Resource, Race, Async, Embed IO] r =>
   ProcessOptions ->
   InterpreterFor (Scoped () (Process a (Either Text a)) !! ProcessError) r
 interpretProcessCereal options =
   interpretProcessOutputLog @'Stderr .
   interpretProcessOutputCereal .
   interpretProcessInputCereal .
-  interpretProcess_ @resource @err options .
+  interpretProcess_ @resource options .
   raiseUnder3
 
 interpretProcessCerealNative ::
@@ -81,5 +81,5 @@ interpretProcessCerealNative ::
   InterpreterFor (Scoped () (Process a (Either Text a)) !! ProcessError) r
 interpretProcessCerealNative options conf =
   interpretSystemProcessNative_ conf .
-  interpretProcessCereal @PipesProcess @a @SystemProcessError options .
+  interpretProcessCereal @PipesProcess @a options .
   raiseUnder
