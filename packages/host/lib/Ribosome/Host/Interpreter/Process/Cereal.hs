@@ -12,9 +12,9 @@ import Polysemy.Process (
   ProcessOptions,
   ProcessOutputParseResult (Done, Fail, Partial),
   SystemProcess,
-  interpretProcess,
   interpretProcessOutputIncremental,
-  interpretSystemProcessNative,
+  interpretProcess_,
+  interpretSystemProcessNative_,
   )
 import Polysemy.Process.Data.ProcessError (ProcessError)
 import Polysemy.Process.Data.SystemProcessError (SystemProcessError)
@@ -69,7 +69,7 @@ interpretProcessCereal options =
   interpretProcessOutputLog @'Stderr .
   interpretProcessOutputCereal .
   interpretProcessInputCereal .
-  interpretProcess @resource @err options .
+  interpretProcess_ @resource @err options .
   raiseUnder3
 
 interpretProcessCerealNative ::
@@ -80,6 +80,6 @@ interpretProcessCerealNative ::
   ProcessConfig () () () ->
   InterpreterFor (Scoped () (Process a (Either Text a)) !! ProcessError) r
 interpretProcessCerealNative options conf =
-  interpretSystemProcessNative conf .
+  interpretSystemProcessNative_ conf .
   interpretProcessCereal @PipesProcess @a @SystemProcessError options .
   raiseUnder
