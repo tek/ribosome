@@ -5,6 +5,7 @@ import Chiasma.Data.CodecError (CodecError)
 import Chiasma.Data.RenderError (RenderError)
 import Chiasma.Data.SendKeysParams (Key (Lit))
 import Chiasma.Data.TmuxError (TmuxError)
+import Chiasma.Effect.Codec (NativeCommandCodec)
 import Chiasma.Effect.TmuxApi (Tmux)
 import Chiasma.Effect.TmuxClient (NativeTmux)
 import Chiasma.Test.Tmux (TestTmuxEffects, TmuxTestConf, withSystemTempDir, withTestTmux)
@@ -35,9 +36,6 @@ import Ribosome.Socket (HandlerDeps, interpretPluginSocket, testPluginSocket)
 import Ribosome.Test.Data.TestConfig (TmuxTestConfig (TmuxTestConfig))
 import Ribosome.Test.Embed (runTestConf)
 import Ribosome.Test.Wait (assertWait)
-import Chiasma.Effect.Codec (Codec)
-import Chiasma.Data.TmuxRequest (TmuxRequest)
-import Chiasma.Data.TmuxCommand (TmuxCommand)
 
 type TmuxErrors =
   [
@@ -92,7 +90,7 @@ nvimCmdline socket =
 
 withTmuxNvim ::
   Members [Test, Hedgehog IO, ChronosTime, Error Failure, Race, Embed IO] r =>
-  Members [NativeTmux, Codec TmuxCommand (Const TmuxRequest) (Const [Text]) !! CodecError, Stop CodecError] r =>
+  Members [NativeTmux, NativeCommandCodec !! CodecError, Stop CodecError] r =>
   InterpreterFor (Reader NvimSocket) r
 withTmuxNvim sem = do
   dir <- Test.tempDir [reldir|tmux-test|]

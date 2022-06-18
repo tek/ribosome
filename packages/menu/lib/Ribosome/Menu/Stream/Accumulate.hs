@@ -26,7 +26,6 @@ work mv mr =
   Work (finally mr (tryPutMVar mv ()))
 
 extract ::
-  MonadIO IO =>
   (NonEmpty c -> IO r) ->
   CWState r c ->
   (CWState r c, Work r)
@@ -40,7 +39,6 @@ extract consume s@CWState {..} =
         Work (pure Nothing)
 
 elemStep ::
-  MonadIO IO =>
   (NonEmpty c -> IO r) ->
   CWState r c ->
   Either c r ->
@@ -58,7 +56,6 @@ elemStep consume s@CWState {..} = \case
         Partial newS
 
 chunkWhileFold ::
-  MonadIO IO =>
   (a -> IO (Either c r)) ->
   (NonEmpty c -> IO r) ->
   CWState r c ->
@@ -70,7 +67,6 @@ chunkWhileFold classify consume initial =
       elemStep consume s <=< classify
 
 chunkWhileIteration ::
-  MonadIO IO =>
   (a -> IO (Either c r)) ->
   (NonEmpty c -> IO r) ->
   (CWState r c, Maybe (Work r)) ->
@@ -79,7 +75,6 @@ chunkWhileIteration classify consume (initial, _) =
   pure (second Just <$> chunkWhileFold classify consume initial)
 
 chunkWhileMain ::
-  MonadIO IO =>
   IsStream t =>
   Functor (t IO) =>
   (a -> IO (Either c r)) ->
