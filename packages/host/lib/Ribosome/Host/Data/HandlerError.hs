@@ -83,6 +83,10 @@ instance IsString HandlerError where
 class ToErrorMessage e where
   toErrorMessage :: e -> ErrorMessage
 
+instance ToErrorMessage ErrorMessage where
+  toErrorMessage =
+    id
+
 toHandlerError ::
   ToErrorMessage e =>
   HandlerTag ->
