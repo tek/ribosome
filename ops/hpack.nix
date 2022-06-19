@@ -217,6 +217,7 @@ in {
         "ribosome-test"
         "streamly"
         "tasty"
+        "tasty-hedgehog"
         "transformers"
       ];
     };

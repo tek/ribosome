@@ -254,6 +254,7 @@ test-suite ribosome-menu-unit
     , ribosome-test
     , streamly
     , tasty
+    , tasty-hedgehog
     , transformers
   mixins:
       base hiding (Prelude)

@@ -4,10 +4,12 @@ import Conc (interpretSync)
 import Control.Lens (use, view, (^.))
 import qualified Control.Monad.Trans.State.Strict as MTL
 import qualified Data.IntMap.Strict as IntMap
+import Hedgehog (property, test, withTests, TestLimit)
 import Polysemy (run)
 import Polysemy.Test (UnitTest, assertJust, runTestAuto, unitTest, (===))
 import qualified Sync
-import Test.Tasty (TestTree, testGroup)
+import Test.Tasty (TestName, TestTree, testGroup)
+import Test.Tasty.Hedgehog (testProperty)
 import Time (Seconds (Seconds))
 
 import Ribosome.Host.Test.Run (runUnitTest)
@@ -26,6 +28,14 @@ import Ribosome.Menu.Items (deleteSelected, popSelection)
 import Ribosome.Menu.Prompt.Data.Prompt (Prompt (Prompt))
 import Ribosome.Menu.Prompt.Data.PromptMode (PromptMode (Insert, Normal))
 import Ribosome.Menu.Test.Menu (assertItems, assertPrompt, menuTestDef, promptTest, runMenuTestStack)
+
+unitTestTimes ::
+  TestLimit ->
+  TestName ->
+  UnitTest ->
+  TestTree
+unitTestTimes n desc =
+  testProperty desc . withTests n . property . test
 
 items1 :: [Text]
 items1 =
@@ -251,11 +261,11 @@ test_menuUnselectedCursor =
 test_menu :: TestTree
 test_menu =
   testGroup "basic" [
-    unitTest "change mode" test_pureMenuModeChange,
-    unitTest "filter items" test_pureMenuFilter,
-    unitTest "execute an action" test_pureMenuExecute,
-    unitTest "mark multiple items" test_menuMultiMark,
-    unitTest "toggle selection items" test_menuToggle,
+    unitTestTimes 50 "change mode" test_pureMenuModeChange,
+    unitTestTimes 50 "filter items" test_pureMenuFilter,
+    unitTestTimes 50 "execute an action" test_pureMenuExecute,
+    unitTestTimes 50 "mark multiple items" test_menuMultiMark,
+    unitTestTimes 50 "toggle selection items" test_menuToggle,
     unitTest "delete selected" test_menuDeleteSelected,
     unitTest "unselected items with no selected items" test_menuUnselectedCursor
   ]
