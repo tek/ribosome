@@ -41,7 +41,7 @@ runEmbedTmuxGuiTest ::
   Sem HandlerStack () ->
   UnitTest
 runEmbedTmuxGuiTest =
-  runEmbedTmuxTestConf (def & #tmux . #ttcGui .~ True)
+  runEmbedTmuxTestConf (def & #tmux . #gui .~ True)
 
 testPluginEmbedTmuxConf ::
   ∀ r .

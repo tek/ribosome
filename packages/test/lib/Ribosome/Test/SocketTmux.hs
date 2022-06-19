@@ -74,7 +74,7 @@ runSocketTmuxGuiTest ::
   Sem HandlerStack () ->
   UnitTest
 runSocketTmuxGuiTest =
-  runSocketTmuxTestConf (def & #tmux . #ttcGui .~ True)
+  runSocketTmuxTestConf (def & #tmux . #gui .~ True)
 
 testPluginSocketTmuxConf ::
   ∀ r .

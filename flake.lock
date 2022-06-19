@@ -76,11 +76,11 @@
         "polysemy-conc": "polysemy-conc_3"
       },
       "locked": {
-        "lastModified": 1655641938,
-        "narHash": "sha256-qxmVrCEdvpsnt6Cl6Oj2HMS3Sz7yxfGmpxp9qfJ0GPo=",
+        "lastModified": 1655648545,
+        "narHash": "sha256-KbwTOo5cLjAzIKSmDDiMnWCF3C+wC25JuT/Vf6xL7S8=",
         "owner": "tek",
         "repo": "chiasma",
-        "rev": "dc50e593e08a118358b1d0c06d5803b7d1cb4b4d",
+        "rev": "65e2e27a6ebfc83d33b7835b6c9a59668e422e8b",
         "type": "github"
       },
       "original": {

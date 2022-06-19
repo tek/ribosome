@@ -1,9 +1,9 @@
 module Ribosome.Test.Data.TestConfig where
 
-import Chiasma.Test.Tmux (TmuxTestConf (ttcGui))
+import qualified Chiasma.Test.Data.TmuxTestConfig as Chiasma
 
 import Ribosome.Data.PluginConfig (PluginConfig (PluginConfig))
-import Ribosome.Host.Data.HostConfig (dataLogConc, HostConfig (HostConfig))
+import Ribosome.Host.Data.HostConfig (HostConfig (HostConfig), dataLogConc)
 
 data TestConfig =
   TestConfig {
@@ -19,10 +19,10 @@ instance Default TestConfig where
 data TmuxTestConfig =
   TmuxTestConfig {
     core :: TestConfig,
-    tmux :: TmuxTestConf
+    tmux :: Chiasma.TmuxTestConfig
   }
   deriving stock (Eq, Show, Generic)
 
 instance Default TmuxTestConfig where
   def =
-    TmuxTestConfig def def { ttcGui = False }
+    TmuxTestConfig def def { Chiasma.gui = False }

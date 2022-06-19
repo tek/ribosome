@@ -4,7 +4,8 @@ import Chiasma.Data.CodecError (CodecError)
 import Chiasma.Data.RenderError (RenderError)
 import Chiasma.Data.TmuxError (TmuxError)
 import Chiasma.Effect.TmuxClient (NativeTmux)
-import Chiasma.Test.Tmux (TestTmuxEffects, TmuxTestConf, withSystemTempDir, withTestTmux)
+import qualified Chiasma.Test.Data.TmuxTestConfig as Chiasma
+import Chiasma.Test.Tmux (TestTmuxEffects, withSystemTempDir, withTestTmux)
 import Polysemy.Test (UnitTest)
 
 import Ribosome.Data.PluginName (PluginName)
@@ -44,7 +45,7 @@ interpretTmuxErrors =
 
 withTmuxTest ::
   Members TestStack r =>
-  TmuxTestConf ->
+  Chiasma.TmuxTestConfig ->
   InterpretersFor TmuxBaseStack r
 withTmuxTest conf =
   interpretTmuxErrors .
