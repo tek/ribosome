@@ -108,6 +108,7 @@ renderAction = \case
   _ ->
     unit
 
+-- TODO replace TMChan with a Queue effect
 menuStream ::
   ∀ i r a .
   Show a =>

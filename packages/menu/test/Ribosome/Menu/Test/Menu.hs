@@ -35,6 +35,7 @@ import Ribosome.Menu.Main (interpretMenu)
 import Ribosome.Menu.Prompt (PromptFlag (StartInsert), PromptListening)
 import Ribosome.Menu.Prompt.Data.Prompt (Prompt)
 import Ribosome.Menu.Prompt.Data.PromptInputEvent (PromptInputEvent)
+import Ribosome.Menu.Data.MenuEvent (MenuEvent)
 
 enqueueItems ::
   Members [Hedgehog IO, Queue [Entry i]] r =>
@@ -94,6 +95,7 @@ runMenuTestStack =
 type PromptTest i =
   [
     MenuTest i,
+    Queue MenuEvent,
     Queue PromptInputEvent,
     Queue (MenuItem i),
     PromptEvents,
@@ -137,6 +139,6 @@ menuTestDef ::
   Members (MenuStack i) r =>
   Members [MenuConsumer result, MenuRenderer i, Scoped pres PromptRenderer] r =>
   Members [Sync PromptListening, Error TestError, Log, Mask Restoration, Race, Resource, Async, Embed IO, Final IO] r =>
-  InterpretersFor [MenuTest i, Queue PromptInputEvent, Queue (MenuItem i), PromptEvents, PromptRenderer] r
+  InterpretersFor [MenuTest i, Queue MenuEvent, Queue PromptInputEvent, Queue (MenuItem i), PromptEvents, PromptRenderer] r
 menuTestDef =
   menuTest [StartInsert] fuzzyMonotonic (Seconds 5) (throw . TestError)
