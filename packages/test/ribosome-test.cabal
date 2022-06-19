@@ -21,9 +21,11 @@ library
       Ribosome.Test
       Ribosome.Test.Data.TestConfig
       Ribosome.Test.Embed
+      Ribosome.Test.EmbedTmux
       Ribosome.Test.Error
       Ribosome.Test.Screenshot
-      Ribosome.Test.Tmux
+      Ribosome.Test.SocketTmux
+      Ribosome.Test.TmuxCommon
       Ribosome.Test.Ui
       Ribosome.Test.Wait
   hs-source-dirs:
@@ -121,8 +123,9 @@ test-suite ribosome-test-unit
   type: exitcode-stdio-1.0
   main-is: Main.hs
   other-modules:
+      Ribosome.Test.EmbedTmuxTest
+      Ribosome.Test.SocketTmuxTest
       Ribosome.Test.SyntaxTest
-      Ribosome.Test.TmuxTest
       Skip
   hs-source-dirs:
       test

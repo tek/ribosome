@@ -7,7 +7,7 @@ import Ribosome.Api.Syntax (executeSyntax)
 import Ribosome.Data.Syntax (Syntax (Syntax))
 import Ribosome.Syntax (syntaxHighlight, syntaxMatch)
 import Ribosome.Test.Screenshot (awaitScreenshot)
-import Ribosome.Test.Tmux (testEmbedTmux)
+import Ribosome.Test.SocketTmux (testSocketTmux)
 
 syntax :: Syntax
 syntax =
@@ -16,7 +16,7 @@ syntax =
 
 test_syntax :: UnitTest
 test_syntax =
-  testEmbedTmux do
+  testSocketTmux do
     setCurrentBufferContent ["function :: String -> Int", "function _ = 5"]
     _ <- executeSyntax syntax
     awaitScreenshot False "syntax" 0
