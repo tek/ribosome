@@ -97,7 +97,7 @@ mapMAcc ::
 mapMAcc classify consume str =
   Stream.bracket_ (CWState mempty <$> liftIO (newMVar ())) (const unit) \ initial ->
     Stream.catMaybes $
-    Stream.concatMapWith Stream.async (Stream.fromEffect . unWork) $
+    Stream.concatMapWith Stream.ahead (Stream.fromEffect . unWork) $
     chunkWhileMain classify consume initial
     str
 
