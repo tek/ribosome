@@ -30,6 +30,16 @@ testHandler =
     message (HandlerError (ErrorMessage user log _) htag) =
       unlines ([exon|#{handlerTagName htag}:|] : user : log)
 
+testHandlerAsync ::
+  Members [Error TestError, Async] r =>
+  Handler r a ->
+  Sem r (Sem r a)
+testHandlerAsync h = do
+  thread <- async do
+    runStop h
+  pure do
+    testHandler . stopEither =<< note (TestError "async handler didn't produce result") =<< await thread
+
 testError ::
   ∀ e r a .
   ToErrorMessage e =>
