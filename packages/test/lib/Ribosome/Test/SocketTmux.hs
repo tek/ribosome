@@ -3,7 +3,7 @@ module Ribosome.Test.SocketTmux where
 import Chiasma.Command.Pane (sendKeys)
 import Chiasma.Data.CodecError (CodecError)
 import Chiasma.Data.SendKeysParams (Key (Lit))
-import Chiasma.Effect.Codec (NativeCommandCodec)
+import Chiasma.Effect.Codec (NativeCommandCodecE)
 import Chiasma.Effect.TmuxApi (Tmux)
 import Chiasma.Effect.TmuxClient (NativeTmux)
 import Chiasma.Tmux (withTmux)
@@ -42,7 +42,7 @@ nvimCmdline socket =
 
 withSocketTmuxNvim ::
   Members [Test, Hedgehog IO, ChronosTime, Error Failure, Race, Embed IO] r =>
-  Members [NativeTmux, NativeCommandCodec, Stop CodecError] r =>
+  Members [NativeTmux, NativeCommandCodecE, Stop CodecError] r =>
   InterpreterFor (Reader NvimSocket) r
 withSocketTmuxNvim sem = do
   dir <- Test.tempDir [reldir|tmux-test|]
