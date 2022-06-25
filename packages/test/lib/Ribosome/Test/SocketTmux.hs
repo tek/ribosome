@@ -42,7 +42,7 @@ nvimCmdline socket =
 
 withSocketTmuxNvim ::
   Members [Test, Hedgehog IO, ChronosTime, Error Failure, Race, Embed IO] r =>
-  Members [NativeTmux, NativeCommandCodec !! CodecError, Stop CodecError] r =>
+  Members [NativeTmux, NativeCommandCodec, Stop CodecError] r =>
   InterpreterFor (Reader NvimSocket) r
 withSocketTmuxNvim sem = do
   dir <- Test.tempDir [reldir|tmux-test|]

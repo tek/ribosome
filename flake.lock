@@ -76,11 +76,11 @@
         "polysemy-conc": "polysemy-conc_3"
       },
       "locked": {
-        "lastModified": 1656098338,
-        "narHash": "sha256-/DJRfU+a6XiboN8uhKKMIM3J3FoXMWP/zhe4MUQuNZA=",
+        "lastModified": 1656115537,
+        "narHash": "sha256-cQZlLcNyZc8g0Q+sDDJC18o64DZLyCM3LRWOByVlfQI=",
         "owner": "tek",
         "repo": "chiasma",
-        "rev": "45ce231f629db9ed67c78ce872ac719a90a217bd",
+        "rev": "e5731a48a70d715fd34e9b888bf08c3368d3c1aa",
         "type": "github"
       },
       "original": {
@@ -2854,11 +2854,11 @@
         "polysemy-time": "polysemy-time_4"
       },
       "locked": {
-        "lastModified": 1655763173,
-        "narHash": "sha256-NHhdcyXTfm1YBq/KuZSKaC3Rcl+PFwFkS1Ly0cF6ozs=",
+        "lastModified": 1656102308,
+        "narHash": "sha256-qMQcCnkUhsX3/EOJqz+Kj6oQ6GGmlM025qCYfwFfrnI=",
         "owner": "tek",
         "repo": "polysemy-conc",
-        "rev": "5122ee8ca195b755cb289e63d5bc51931b13c9cb",
+        "rev": "369bda32ccabf46d656ebacd99676fdf55b9b18a",
         "type": "github"
       },
       "original": {
