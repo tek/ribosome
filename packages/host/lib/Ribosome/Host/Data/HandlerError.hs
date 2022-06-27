@@ -87,6 +87,9 @@ instance ToErrorMessage ErrorMessage where
   toErrorMessage =
     id
 
+instance ToErrorMessage Void where
+  toErrorMessage = \case
+
 toHandlerError ::
   ToErrorMessage e =>
   HandlerTag ->
