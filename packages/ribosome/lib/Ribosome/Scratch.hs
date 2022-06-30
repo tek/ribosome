@@ -6,6 +6,6 @@ module Ribosome.Scratch (
 ) where
 
 import Ribosome.Data.ScratchId (ScratchId (..))
-import Ribosome.Data.ScratchOptions (ScratchOptions (..))
+import Ribosome.Data.ScratchOptions (ScratchOptions (..), scratch)
 import Ribosome.Data.ScratchState (ScratchState (..))
 import Ribosome.Effect.Scratch (Scratch, find, get, kill, open, show, update)
