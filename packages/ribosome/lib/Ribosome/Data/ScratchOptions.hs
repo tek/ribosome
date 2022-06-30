@@ -26,10 +26,10 @@ data ScratchOptions =
   }
   deriving stock (Eq, Show, Generic)
 
-defaultScratchOptions :: ScratchId -> ScratchOptions
-defaultScratchOptions =
+scratch :: ScratchId -> ScratchOptions
+scratch =
   ScratchOptions False False False False True True False Nothing Nothing Nothing [] [] Nothing
 
 instance Default ScratchOptions where
   def =
-    defaultScratchOptions "scratch"
+    scratch "scratch"
