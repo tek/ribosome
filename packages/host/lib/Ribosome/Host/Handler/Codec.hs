@@ -54,11 +54,11 @@ instance {-# overlappable #-} (
         pure (rest, a)
 
 instance (
-    Member (Stop HandlerError) r,
-    MsgpackDecode a
+    HandlerArg a r
   ) => HandlerArg (Maybe a) r where
-    handlerArg =
-      optArg Nothing
+    handlerArg = \case
+      [] -> pure ([], Nothing)
+      os -> second Just <$> handlerArg os
 
 instance HandlerArg Bar r where
   handlerArg os =
