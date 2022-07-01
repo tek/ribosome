@@ -14,7 +14,7 @@ import Polysemy.Process (
   SystemProcess,
   interpretProcessOutputIncremental,
   interpretProcess_,
-  interpretSystemProcessNative_,
+  interpretSystemProcessNative_, SystemProcessScopeError,
   )
 import Polysemy.Process.Data.ProcessError (ProcessError)
 import Polysemy.Process.Data.SystemProcessError (SystemProcessError)
@@ -62,7 +62,8 @@ interpretProcessInputCereal =
 interpretProcessCereal ::
   ∀ resource a r .
   Serialize a =>
-  Members [Scoped resource (SystemProcess !! SystemProcessError), Log, Resource, Race, Async, Embed IO] r =>
+  Member (Scoped resource (SystemProcess !! SystemProcessError) !! SystemProcessScopeError) r =>
+  Members [Log, Resource, Race, Async, Embed IO] r =>
   ProcessOptions ->
   InterpreterFor (Scoped () (Process a (Either Text a)) !! ProcessError) r
 interpretProcessCereal options =

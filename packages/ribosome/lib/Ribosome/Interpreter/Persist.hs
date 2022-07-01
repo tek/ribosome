@@ -71,6 +71,7 @@ interpretPersist name =
       (,) <$> parseRelFile (toString [exon|#{name}.json|]) <*> parseRelDir (toString name)
 
 interpretPersistNull ::
+  ∀ a err r .
   InterpreterFor (Persist a !! err) r
 interpretPersistNull =
   interpretResumable \case
