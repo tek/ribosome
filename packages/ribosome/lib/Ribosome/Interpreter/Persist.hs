@@ -69,3 +69,12 @@ interpretPersist name =
       note (BootError [exon|Invalid persist name: #{name}|]) namePaths
     namePaths =
       (,) <$> parseRelFile (toString [exon|#{name}.json|]) <*> parseRelDir (toString name)
+
+interpretPersistNull ::
+  InterpreterFor (Persist a !! err) r
+interpretPersistNull =
+  interpretResumable \case
+    Persist.Store _ _ ->
+      unit
+    Persist.Load _ ->
+      pure Nothing

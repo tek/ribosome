@@ -65,7 +65,7 @@ import Ribosome.IOStack (BasicPluginStack, TestEffects, runBasicPluginStack)
 import Ribosome.Interpreter.BuiltinHandlers
 import Ribosome.Interpreter.MappingHandler (interpretMappingHandler, interpretMappingHandlerNull)
 import Ribosome.Interpreter.NvimPlugin
-import Ribosome.Interpreter.Persist (interpretPersist)
+import Ribosome.Interpreter.Persist (interpretPersist, interpretPersistNull)
 import Ribosome.Interpreter.PersistPath (interpretPersistPath, interpretPersistPathAt, interpretPersistPathSetting)
 import Ribosome.Interpreter.PluginName
 import Ribosome.Interpreter.Scratch
