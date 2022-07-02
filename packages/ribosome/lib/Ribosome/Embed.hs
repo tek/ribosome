@@ -2,19 +2,15 @@ module Ribosome.Embed where
 
 import Ribosome.Data.PluginName (PluginName)
 import Ribosome.Effect.NvimPlugin (NvimPlugin)
-import Ribosome.Effect.Scratch (Scratch)
-import Ribosome.Effect.Settings (Settings)
 import Ribosome.Host.Data.BootError (BootError)
 import Ribosome.Host.Data.HostConfig (LogConfig)
 import Ribosome.Host.Data.RpcHandler (RpcHandler)
-import Ribosome.Host.Effect.Rpc (Rpc)
 import Ribosome.Host.Embed (EmbedExtra, interpretEmbedExtra)
-import Ribosome.Host.Error (resumeBootError)
 import Ribosome.Host.IOStack (IOStack)
 import Ribosome.Host.Interpreter.Host (withHost)
 import Ribosome.Host.Interpreter.Process.Embed (interpretProcessCerealNvimEmbed)
 import Ribosome.Host.Run (RpcDeps, RpcStack, interpretRpcStack)
-import Ribosome.IOStack (BasicPluginStack, TestEffects)
+import Ribosome.IOStack (BasicPluginStack)
 import Ribosome.Interpreter.BuiltinHandlers (interpretBuiltinHandlers)
 import Ribosome.Interpreter.NvimPlugin (rpcHandlers, sendNvimPlugin)
 import Ribosome.Interpreter.Scratch (interpretScratch)
@@ -23,11 +19,11 @@ import Ribosome.Interpreter.UserError (interpretUserErrorPrefixed)
 import Ribosome.Plugin.Builtin (interceptHandlersBuiltin)
 import Ribosome.Run (PluginEffects)
 
-type HandlerDeps =
+type HandlerEffects =
   PluginEffects ++ RpcStack ++ EmbedExtra ++ RpcDeps
 
-type TestPluginEmbedStack =
-  TestEffects ++ NvimPlugin : HandlerDeps
+type PluginEmbedStack =
+  NvimPlugin : HandlerEffects
 
 interpretRpcDeps ::
   Members [Reader PluginName, Error BootError, Log, Resource, Race, Async, Embed IO] r =>
@@ -39,7 +35,7 @@ interpretRpcDeps =
 interpretPluginEmbed ::
   Members [Log, Reader LogConfig, Reader PluginName] r =>
   Members IOStack r =>
-  InterpretersFor HandlerDeps r
+  InterpretersFor HandlerEffects r
 interpretPluginEmbed =
   interpretRpcDeps .
   interpretEmbedExtra .
@@ -49,7 +45,7 @@ interpretPluginEmbed =
 
 withPluginEmbed ::
   Members BasicPluginStack r =>
-  Members HandlerDeps r =>
+  Members HandlerEffects r =>
   Member NvimPlugin r =>
   Sem r a ->
   Sem r a
@@ -60,36 +56,24 @@ withPluginEmbed =
   withHost .
   insertAt @0
 
-testPluginEmbed ::
-  Members BasicPluginStack r =>
-  Members HandlerDeps r =>
-  Member NvimPlugin r =>
-  InterpretersFor TestEffects r
-testPluginEmbed =
-  withPluginEmbed .
-  resumeBootError @Rpc .
-  resumeBootError @Settings .
-  resumeBootError @Scratch .
-  insertAt @3
-
 embedNvimPluginWith ::
   Members BasicPluginStack r =>
-  InterpreterFor NvimPlugin (HandlerDeps ++ r) ->
-  InterpretersFor TestPluginEmbedStack r
-embedNvimPluginWith handler =
+  InterpreterFor NvimPlugin (HandlerEffects ++ r) ->
+  InterpretersFor PluginEmbedStack r
+embedNvimPluginWith handlers =
   interpretPluginEmbed .
-  handler .
-  testPluginEmbed
+  handlers .
+  withPluginEmbed
 
 embedNvimPlugin ::
   Members BasicPluginStack r =>
-  [RpcHandler (HandlerDeps ++ r)] ->
-  InterpretersFor TestPluginEmbedStack r
+  [RpcHandler (HandlerEffects ++ r)] ->
+  InterpretersFor PluginEmbedStack r
 embedNvimPlugin handlers =
   embedNvimPluginWith (rpcHandlers handlers)
 
 embedNvimPlugin_ ::
   Members BasicPluginStack r =>
-  InterpretersFor TestPluginEmbedStack r
+  InterpretersFor PluginEmbedStack r
 embedNvimPlugin_ =
   embedNvimPlugin []

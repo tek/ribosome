@@ -4,18 +4,18 @@ import Control.Lens ((.~))
 import Polysemy.Test (UnitTest)
 
 import Ribosome.Effect.NvimPlugin (NvimPlugin)
-import Ribosome.Embed (HandlerDeps, interpretPluginEmbed, testPluginEmbed)
+import Ribosome.Embed (HandlerEffects, interpretPluginEmbed)
 import Ribosome.Host.Data.RpcHandler (RpcHandler)
-import Ribosome.IOStack (TestEffects)
 import Ribosome.Interpreter.NvimPlugin (rpcHandlers)
 import Ribosome.Test.Data.TestConfig (TmuxTestConfig)
+import Ribosome.Test.Embed (EmbedEffects, testPluginEmbed)
 import Ribosome.Test.TmuxCommon (TmuxStack, runTmuxNvim)
 
 type HandlerStack =
-  HandlerDeps ++ TmuxStack
+  HandlerEffects ++ TmuxStack
 
 type EmbedTmuxWith r =
-  TestEffects ++ NvimPlugin : r ++ HandlerStack
+  EmbedEffects ++ r ++ HandlerStack
 
 type EmbedTmux =
   EmbedTmuxWith '[]

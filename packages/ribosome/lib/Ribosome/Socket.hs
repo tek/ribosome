@@ -2,17 +2,13 @@ module Ribosome.Socket where
 
 import Ribosome.Data.PluginName (PluginName)
 import Ribosome.Effect.NvimPlugin (NvimPlugin)
-import Ribosome.Effect.Scratch (Scratch)
-import Ribosome.Effect.Settings (Settings)
 import Ribosome.Host.Data.BootError (BootError (BootError))
 import Ribosome.Host.Data.NvimSocket (NvimSocket)
 import Ribosome.Host.Data.RpcHandler (RpcHandler)
-import Ribosome.Host.Effect.Rpc (Rpc)
-import Ribosome.Host.Error (resumeBootError)
 import Ribosome.Host.Interpreter.Host (withHost)
 import Ribosome.Host.Interpreter.Process.Socket (interpretProcessCerealSocket)
 import Ribosome.Host.Run (RpcDeps, RpcStack, interpretRpcStack)
-import Ribosome.IOStack (BasicPluginStack, TestEffects)
+import Ribosome.IOStack (BasicPluginStack)
 import Ribosome.Interpreter.BuiltinHandlers (interpretBuiltinHandlers)
 import Ribosome.Interpreter.NvimPlugin (rpcHandlers, sendNvimPlugin)
 import Ribosome.Interpreter.Scratch (interpretScratch)
@@ -21,11 +17,11 @@ import Ribosome.Interpreter.UserError (interpretUserErrorPrefixed)
 import Ribosome.Plugin.Builtin (interceptHandlersBuiltin)
 import Ribosome.Run (PluginEffects)
 
-type HandlerDeps =
+type SocketHandlerEffects =
   PluginEffects ++ RpcStack ++ RpcDeps
 
-type TestPluginSocketStack =
-  TestEffects ++ NvimPlugin : HandlerDeps
+type PluginSocketStack =
+  NvimPlugin : SocketHandlerEffects
 
 interpretRpcDeps ::
   Members [Reader NvimSocket, Reader PluginName, Error BootError, Log, Resource, Race, Async, Embed IO] r =>
@@ -39,7 +35,7 @@ interpretRpcDeps =
 interpretPluginSocket ::
   Members BasicPluginStack r =>
   Member (Reader NvimSocket) r =>
-  InterpretersFor HandlerDeps r
+  InterpretersFor SocketHandlerEffects r
 interpretPluginSocket =
   interpretRpcDeps .
   interpretRpcStack .
@@ -48,7 +44,7 @@ interpretPluginSocket =
 
 withPluginSocket ::
   Members BasicPluginStack r =>
-  Members HandlerDeps r =>
+  Members SocketHandlerEffects r =>
   Member NvimPlugin r =>
   Sem r a ->
   Sem r a
@@ -59,39 +55,27 @@ withPluginSocket =
   withHost .
   insertAt @0
 
-testPluginSocket ::
-  Members BasicPluginStack r =>
-  Members HandlerDeps r =>
-  Member NvimPlugin r =>
-  InterpretersFor TestEffects r
-testPluginSocket =
-  withPluginSocket .
-  resumeBootError @Rpc .
-  resumeBootError @Settings .
-  resumeBootError @Scratch .
-  insertAt @3
-
 socketNvimPluginWith ::
   Members BasicPluginStack r =>
   Member (Reader NvimSocket) r =>
-  InterpreterFor NvimPlugin (HandlerDeps ++ r) ->
-  InterpretersFor TestPluginSocketStack r
+  InterpreterFor NvimPlugin (SocketHandlerEffects ++ r) ->
+  InterpretersFor PluginSocketStack r
 socketNvimPluginWith handlers =
   interpretPluginSocket .
   handlers .
-  testPluginSocket
+  withPluginSocket
 
 socketNvimPlugin ::
   Members BasicPluginStack r =>
   Member (Reader NvimSocket) r =>
-  [RpcHandler (HandlerDeps ++ r)] ->
-  InterpretersFor TestPluginSocketStack r
+  [RpcHandler (SocketHandlerEffects ++ r)] ->
+  InterpretersFor PluginSocketStack r
 socketNvimPlugin handlers =
   socketNvimPluginWith (rpcHandlers handlers)
 
 socketNvimPlugin_ ::
   Members BasicPluginStack r =>
   Member (Reader NvimSocket) r =>
-  InterpretersFor TestPluginSocketStack r
+  InterpretersFor PluginSocketStack r
 socketNvimPlugin_ =
   socketNvimPlugin []

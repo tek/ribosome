@@ -21,7 +21,6 @@ import Ribosome.Host.Data.RpcError (RpcError)
 import Ribosome.Host.Effect.Errors
 import Ribosome.Host.Effect.Rpc (Rpc)
 import Ribosome.Host.Interpreter.Errors
-import Ribosome.IOStack (TestEffects)
 
 storeError ::
   ∀ e r .
@@ -70,7 +69,7 @@ resumeReportError t sem =
 
 pluginHandlerErrors ::
   Members [Scratch !! RpcError, Settings !! SettingError, Rpc !! RpcError, Stop HandlerError] r =>
-  InterpretersFor TestEffects r
+  InterpretersFor [Scratch, Settings, Rpc] r
 pluginHandlerErrors =
   resumeHandlerError @Rpc .
   resumeHandlerError @Settings .

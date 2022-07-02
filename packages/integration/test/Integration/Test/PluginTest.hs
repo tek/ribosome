@@ -14,7 +14,7 @@ import Polysemy.Test (UnitTest, assertEq, liftH)
 import qualified Polysemy.Time as Time
 import Polysemy.Time (MilliSeconds (MilliSeconds), Minutes (Minutes))
 import Ribosome.Data.PluginName (PluginName (PluginName))
-import Ribosome.Embed (HandlerDeps, withPluginEmbed)
+import Ribosome.Embed (withPluginEmbed, HandlerEffects)
 import Ribosome.Host.Api.Effect (nvimCallFunction)
 import Ribosome.Host.Data.HostConfig (LogConfig, hostLog, logLevelStderr)
 import Ribosome.Host.Data.RpcError (RpcError)
@@ -45,7 +45,7 @@ interpretTestPluginEmbed ::
   Members [Reader PluginName, Reader LogConfig, Log] r =>
   Members IOStack r =>
   Path Abs Dir ->
-  InterpretersFor HandlerDeps r
+  InterpretersFor HandlerEffects r
 interpretTestPluginEmbed target =
   interpretUserErrorPrefixed .
   interpretProcessCerealNvimEmbed Nothing (Just (nvimProc target)) .

@@ -1,8 +1,8 @@
 module Ribosome.Test.Screenshot where
 
-import Chiasma.Data.TmuxCommand (TmuxCommand)
-import Chiasma.Effect.Codec (Codec)
-import Chiasma.Effect.TmuxClient (ScopedTmux)
+import Chiasma.Data.CodecError (CodecError)
+import Chiasma.Effect.Codec (NativeCommandCodecE)
+import Chiasma.Effect.TmuxClient (NativeTmux)
 import qualified Chiasma.Test.Screenshot as Chiasma
 import Chiasma.Tmux (withTmux)
 import Chiasma.TmuxApi (Tmux)
@@ -38,7 +38,7 @@ screenshot record name pane = do
   mapError TestError (Chiasma.screenshotSanitized sanitize record storage name pane)
 
 assertScreenshot ::
-  Members [ScopedTmux resource encode decode, Codec TmuxCommand encode decode !! err, Stop err] r =>
+  Members [NativeTmux, NativeCommandCodecE, Stop CodecError] r =>
   Members [Hedgehog IO, Test, Error TestError, Error Failure, ChronosTime, Race, Embed IO] r =>
   Text ->
   Int ->
@@ -51,7 +51,7 @@ assertScreenshot name pane =
       existing === current
 
 updateScreeshot ::
-  Members [ScopedTmux resource encode decode, Codec TmuxCommand encode decode !! err, Stop err] r =>
+  Members [NativeTmux, NativeCommandCodecE, Stop CodecError] r =>
   Members [Hedgehog IO, Test, Error TestError, Error Failure, ChronosTime, Log, Race, Embed IO] r =>
   Text ->
   Int ->
@@ -63,7 +63,7 @@ updateScreeshot name pane =
     void (screenshot True name pane)
 
 awaitScreenshot ::
-  Members [ScopedTmux resource encode decode, Codec TmuxCommand encode decode !! err, Stop err] r =>
+  Members [NativeTmux, NativeCommandCodecE, Stop CodecError] r =>
   Members [Hedgehog IO, Test, Error TestError, Error Failure, ChronosTime, Log, Race, Embed IO] r =>
   Bool ->
   Text ->

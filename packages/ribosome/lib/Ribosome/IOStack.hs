@@ -1,12 +1,9 @@
 module Ribosome.IOStack where
 
+import Ribosome.Cli (withCli)
 import Ribosome.Data.PluginConfig (PluginConfig (PluginConfig))
 import Ribosome.Data.PluginName (PluginName)
-import Ribosome.Effect.Scratch (Scratch)
-import Ribosome.Effect.Settings (Settings)
-import Ribosome.Host.Effect.Rpc (Rpc)
 import Ribosome.Host.IOStack (BasicStack, runBasicStack)
-import Ribosome.Cli (withCli)
 
 type BasicPluginStack =
   Reader PluginName : BasicStack
@@ -26,10 +23,3 @@ runCli ::
 runCli defaultConf prog =
   withCli defaultConf \ conf ->
     runBasicPluginStack conf prog
-
-type TestEffects =
-  [
-    Scratch,
-    Settings,
-    Rpc
-  ]

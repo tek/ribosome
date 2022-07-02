@@ -135,3 +135,7 @@ resumeHandlerError ::
   Sem r a
 resumeHandlerError =
   resumeHandlerErrorFrom GlobalTag
+
+handlerErrorMessage :: HandlerError -> Text
+handlerErrorMessage (HandlerError (ErrorMessage user log _) htag) =
+  unlines ([exon|#{handlerTagName htag}:|] : user : log)
