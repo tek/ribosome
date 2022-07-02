@@ -23,6 +23,7 @@ module Ribosome (
   module Ribosome.Data.ScratchState,
   module Ribosome.Data.Setting,
   module Ribosome.Data.SettingError,
+  module Ribosome.Data.WatchedVariable,
   module Ribosome.Interpreter.BuiltinHandlers,
   module Ribosome.Interpreter.MappingHandler,
   module Ribosome.Interpreter.NvimPlugin,
@@ -54,6 +55,7 @@ import Ribosome.Data.ScratchOptions (ScratchOptions (ScratchOptions), scratch)
 import Ribosome.Data.ScratchState (ScratchState (ScratchState))
 import Ribosome.Data.Setting (Setting (Setting))
 import Ribosome.Data.SettingError (SettingError)
+import Ribosome.Data.WatchedVariable (WatchedVariable (..))
 import Ribosome.Effect.NvimPlugin (NvimPlugin, NvimPluginEffects)
 import Ribosome.Effect.Persist (Persist)
 import Ribosome.Effect.Scratch (Scratch)
