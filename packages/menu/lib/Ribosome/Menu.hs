@@ -13,6 +13,7 @@ module Ribosome.Menu (
   module Ribosome.Menu.Prompt.Data.Prompt,
   module Ribosome.Menu.Filters,
   module Ribosome.Menu.Interpreter.MenuConsumer,
+  module Ribosome.Menu.Interpreter.PromptInput,
   module Ribosome.Menu.ItemLens,
   module Ribosome.Menu.Items,
   module Ribosome.Menu.Main,
@@ -69,6 +70,12 @@ import Ribosome.Menu.Effect.PromptInput (PromptInput)
 import Ribosome.Menu.Effect.PromptRenderer (PromptRenderer (..), withPrompt)
 import Ribosome.Menu.Filters (fuzzy, fuzzyItemFilter, substringItemFilter)
 import Ribosome.Menu.Interpreter.MenuConsumer (Mappings, basic, defaultMappings, forMappings, withMappings)
+import Ribosome.Menu.Interpreter.PromptInput (
+  interpretPromptInputCharList,
+  interpretPromptInputQueue,
+  interpretPromptInputNvim,
+  interpretPromptInputList,
+  )
 import Ribosome.Menu.ItemLens (
   entriesByIndex,
   focus,
