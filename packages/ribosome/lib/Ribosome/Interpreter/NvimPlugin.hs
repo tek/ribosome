@@ -18,7 +18,7 @@ import Ribosome.Interpreter.MappingHandler (interpretMappingHandler, interpretMa
 import Ribosome.Interpreter.VariableWatcher (interpretVariableWatcher, interpretVariableWatcherNull)
 
 pluginHandlers ::
-  Members [Rpc !! RpcError, Log, Error BootError] r =>
+  Members [Rpc !! RpcError, Log, Error BootError, Embed IO] r =>
   [RpcHandler r] ->
   Map MappingIdent (Handler r ()) ->
   Map WatchedVariable (Object -> Handler r ()) ->
@@ -29,7 +29,7 @@ pluginHandlers handlers maps vars =
   interpretHandlers (hoistRpcHandlers raiseUnder2 handlers)
 
 interpretNvimPlugin ::
-  Members [Rpc !! RpcError, Log, Error BootError] r =>
+  Members [Rpc !! RpcError, Log, Error BootError, Embed IO] r =>
   [RpcHandler r] ->
   Map MappingIdent (Handler r ()) ->
   Map WatchedVariable (Object -> Handler r ()) ->
