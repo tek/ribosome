@@ -15,6 +15,7 @@ module Ribosome (
   module Ribosome.Data.FloatOptions,
   module Ribosome.Data.Mapping,
   module Ribosome.Data.PersistError,
+  module Ribosome.Data.PersistPathError,
   module Ribosome.Data.PluginConfig,
   module Ribosome.Data.PluginName,
   module Ribosome.Data.Register,
@@ -47,6 +48,7 @@ module Ribosome (
 import Ribosome.Data.FloatOptions (FloatOptions (FloatOptions))
 import Ribosome.Data.Mapping (Mapping (Mapping), MappingIdent (MappingIdent))
 import Ribosome.Data.PersistError (PersistError)
+import Ribosome.Data.PersistPathError (PersistPathError)
 import Ribosome.Data.PluginConfig (PluginConfig (PluginConfig), pluginNamed)
 import Ribosome.Data.PluginName (PluginName (PluginName))
 import Ribosome.Data.Register (Register, registerRepr)
