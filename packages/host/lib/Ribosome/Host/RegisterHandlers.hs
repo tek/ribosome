@@ -11,10 +11,10 @@ import Ribosome.Host.Class.Msgpack.Decode (fromMsgpack)
 import Ribosome.Host.Data.ChannelId (ChannelId (ChannelId))
 import Ribosome.Host.Data.Execution (Execution (Async, Sync))
 import qualified Ribosome.Host.Data.HandlerError as HandlerError
-import Ribosome.Host.Data.HandlerError (HandlerError)
+import Ribosome.Host.Data.HandlerError (HandlerError, resumeHandlerError)
 import Ribosome.Host.Data.Request (RpcMethod (RpcMethod))
 import Ribosome.Host.Data.RpcCall (RpcCall)
-import Ribosome.Host.Data.RpcError (RpcError (RpcError, unRpcError))
+import Ribosome.Host.Data.RpcError (RpcError, rpcErrorMessage)
 import Ribosome.Host.Data.RpcHandler (RpcHandler (RpcHandler), rpcMethod)
 import qualified Ribosome.Host.Data.RpcType as AutocmdOptions
 import qualified Ribosome.Host.Data.RpcType as RpcType
@@ -33,7 +33,7 @@ channelId ::
   Members [Rpc !! RpcError, Stop HandlerError] r =>
   Sem r ChannelId
 channelId =
-  resumeHoist (HandlerError.simple . unRpcError) do
+  resumeHandlerError do
     nvimGetApiInfo >>= \case
       [fromMsgpack -> Right i, _] ->
         pure (ChannelId i)
@@ -44,8 +44,8 @@ registerFailed ::
   Member Log r =>
   RpcError ->
   Sem r ()
-registerFailed (RpcError e) =
-  Log.error [exon|Registering rpc handlers failed: #{e}|]
+registerFailed e =
+  Log.error [exon|Registering rpc handlers failed: #{rpcErrorMessage e}|]
 
 trigger :: Execution -> Text
 trigger = \case

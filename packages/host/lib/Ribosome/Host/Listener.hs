@@ -1,15 +1,15 @@
 module Ribosome.Host.Listener where
 
+import Conc (interpretAtomic, interpretEventsChan, interpretSyncAs)
 import Exon (exon)
 import qualified Polysemy.Conc as Sync
-import Conc (interpretAtomic, interpretEventsChan, interpretSyncAs)
 import qualified Polysemy.Log as Log
 import qualified Polysemy.Process as Process
 import Polysemy.Process (Process)
 
 import Ribosome.Host.Data.Request (RequestId (unRequestId), TrackedRequest (TrackedRequest))
 import Ribosome.Host.Data.Response (Response, TrackedResponse (TrackedResponse), formatResponse)
-import Ribosome.Host.Data.RpcError (RpcError (RpcError))
+import Ribosome.Host.Data.RpcError (RpcError)
 import qualified Ribosome.Host.Data.RpcMessage as RpcMessage
 import Ribosome.Host.Data.RpcMessage (RpcMessage, formatRpcMsg)
 import qualified Ribosome.Host.Effect.Host as Host
@@ -95,7 +95,7 @@ dispatch = \case
   RpcMessage.Request (TrackedRequest i req) ->
     void (async (sendWhenReady i =<< Host.request req))
   RpcMessage.Response (TrackedResponse i response) ->
-    Responses.respond i response !! \ (RpcError e) -> Log.error e
+    Responses.respond i response !! \ e -> Log.error (show e)
   RpcMessage.Notification req ->
     void (async (Host.notification req))
 

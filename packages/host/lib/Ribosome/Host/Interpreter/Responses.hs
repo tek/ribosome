@@ -4,7 +4,8 @@ import qualified Data.Map.Strict as Map
 import Exon (exon)
 import Polysemy.Conc (interpretAtomic)
 
-import Ribosome.Host.Data.RpcError (RpcError (RpcError))
+import qualified Ribosome.Host.Data.RpcError as RpcError
+import Ribosome.Host.Data.RpcError (RpcError)
 import Ribosome.Host.Effect.Responses (Responses (Add, Respond, Wait))
 import Ribosome.Host.Interpreter.Id (interpretInputNum)
 
@@ -19,7 +20,7 @@ failAbsentKey k f = \case
   Just resp ->
     f resp
   Nothing ->
-    stop (RpcError [exon|No response registered for #{show k}|])
+    stop (RpcError.Unexpected [exon|No response registered for #{show k}|])
 
 waitAndRemove ::
   Ord k =>

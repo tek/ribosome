@@ -55,7 +55,7 @@ import Ribosome.Host.Data.HandlerError (
 import Ribosome.Host.Data.HostConfig (HostConfig (..), LogConfig (..), setStderr)
 import Ribosome.Host.Data.HostError (HostError (..))
 import Ribosome.Host.Data.Range (Range (Range), RangeStyle (..))
-import Ribosome.Host.Data.RpcError (RpcError (RpcError))
+import Ribosome.Host.Data.RpcError (RpcError, rpcErrorMessage)
 import Ribosome.Host.Data.RpcHandler (Handler, RpcHandler (RpcHandler), simpleHandler)
 import Ribosome.Host.Data.RpcType (CompleteStyle (..))
 import Ribosome.Host.Data.StoredError (StoredError (StoredError))

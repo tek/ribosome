@@ -9,6 +9,7 @@ import Ribosome.Data.SettingError (SettingError)
 import Ribosome.Effect.Settings (Settings (Get, Update))
 import Ribosome.Host.Api.Effect (vimGetVar, vimSetVar)
 import Ribosome.Host.Class.Msgpack.Decode (MsgpackDecode)
+import qualified Ribosome.Host.Data.RpcError as RpcError
 import Ribosome.Host.Data.RpcError (RpcError)
 import Ribosome.Host.Effect.Rpc (Rpc)
 import Ribosome.PluginName (pluginName)
@@ -49,7 +50,11 @@ interpretSettingsRpc ::
 interpretSettingsRpc =
   interpretResumable \case
     Get s ->
-      settingRaw s !>> fallback s
+      settingRaw s !! \case
+        RpcError.Decode e -> do
+          n <- settingVariableName s
+          stop (SettingError.Decode n e)
+        RpcError.Unexpected _ -> fallback s
     Update s a -> do
       n <- settingVariableName s
       resumeHoist (SettingError.UpdateFailed n) (vimSetVar n a)

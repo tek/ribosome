@@ -13,7 +13,8 @@ import Ribosome.Host.Data.HostError (HostError (HostError))
 import Ribosome.Host.Data.Request (Request (Request), RequestId, RpcMethod (RpcMethod))
 import qualified Ribosome.Host.Data.Response as Response
 import Ribosome.Host.Data.Response (Response)
-import Ribosome.Host.Data.RpcError (RpcError (RpcError))
+import qualified Ribosome.Host.Data.RpcError as RpcError
+import Ribosome.Host.Data.RpcError (RpcError)
 import Ribosome.Host.Data.RpcMessage (RpcMessage)
 import qualified Ribosome.Host.Effect.Handlers as Handlers
 import Ribosome.Host.Effect.Handlers (Handlers)
@@ -28,7 +29,7 @@ invalidMethod ::
   Request ->
   Response
 invalidMethod (Request (RpcMethod name) _) =
-  Response.Error (RpcError [exon|Invalid method for request: #{name}|])
+  Response.Error (RpcError.Unexpected [exon|Invalid method for request: #{name}|])
 
 publishEvent ::
   Member (Events er Event) r =>
@@ -58,7 +59,7 @@ handle notification (Request method args) =
       pure (Just (Response.Success a))
     Left err@(HandlerError (ErrorMessage e _ _) _) -> do
       dataLog (HostError notification err)
-      pure (Just (Response.Error (RpcError e)))
+      pure (Just (Response.Error (RpcError.Unexpected e)))
 
 interpretHost ::
   Members [Handlers !! HandlerError, Rpc !! RpcError, DataLog HostError, Events er Event, Log, Final IO] r =>

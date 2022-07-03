@@ -6,11 +6,25 @@ import Ribosome.Host.Class.Msgpack.Decode (MsgpackDecode)
 import Ribosome.Host.Class.Msgpack.Encode (MsgpackEncode)
 import Ribosome.Host.Data.HandlerError (ErrorMessage (ErrorMessage), ToErrorMessage (toErrorMessage))
 
-newtype RpcError =
-  RpcError { unRpcError :: Text }
+data RpcError =
+  Unexpected Text
+  |
+  Decode Text
   deriving stock (Eq, Show, Generic)
-  deriving newtype (IsString, MsgpackEncode, MsgpackDecode)
+  deriving anyclass (MsgpackEncode, MsgpackDecode)
+
+instance IsString RpcError where
+  fromString =
+    Unexpected . toText
 
 instance ToErrorMessage RpcError where
-  toErrorMessage (RpcError e) =
-    ErrorMessage "Nvim API failure" [e] Error
+  toErrorMessage = \case
+    Unexpected e ->
+      ErrorMessage "Nvim API failure" [e] Error
+    Decode e ->
+      ErrorMessage "Msgpack decoding failed" [e] Error
+
+rpcErrorMessage :: RpcError -> Text
+rpcErrorMessage = \case
+  Unexpected e -> e
+  Decode e -> e

@@ -8,10 +8,12 @@ import Ribosome.Data.PluginName (PluginName)
 import Ribosome.Data.ScratchId (ScratchId (ScratchId))
 import Ribosome.Data.ScratchState (ScratchState)
 import Ribosome.Effect.Scratch (Scratch (Find, Get, Kill, Show, Update))
-import Ribosome.Host.Data.RpcError (RpcError (RpcError))
+import qualified Ribosome.Host.Data.RpcError as RpcError
+import Ribosome.Host.Data.RpcError (RpcError)
 import Ribosome.Host.Effect.Rpc (Rpc)
 import Ribosome.Internal.Scratch (killScratch, lookupScratch, setScratchContent, showInScratch)
 
+-- TODO add ScratchError
 interpretScratchAtomic ::
   Members [Rpc !! RpcError, AtomicState (Map ScratchId ScratchState), Reader PluginName, Log, Resource] r =>
   InterpreterFor (Scratch !! RpcError) r
@@ -20,7 +22,7 @@ interpretScratchAtomic =
     Show text options ->
       restop (showInScratch text options)
     Update i text -> do
-      s <- stopNote (RpcError [exon|No scratch buffer named '#{coerce i}' exists|]) =<< lookupScratch i
+      s <- stopNote (RpcError.Unexpected [exon|No scratch buffer named '#{coerce i}' exists|]) =<< lookupScratch i
       s <$ restop @_ @Rpc (setScratchContent s text)
     Kill i ->
       traverse_ killScratch =<< lookupScratch i

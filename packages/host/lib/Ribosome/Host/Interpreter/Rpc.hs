@@ -10,7 +10,8 @@ import Ribosome.Host.Data.Request (Request, RequestId, TrackedRequest (TrackedRe
 import qualified Ribosome.Host.Data.Response as Response
 import Ribosome.Host.Data.Response (Response)
 import Ribosome.Host.Data.RpcCall (RpcCall)
-import Ribosome.Host.Data.RpcError (RpcError (RpcError))
+import qualified Ribosome.Host.Data.RpcError as RpcError
+import Ribosome.Host.Data.RpcError (RpcError)
 import qualified Ribosome.Host.Data.RpcMessage as RpcMessage
 import Ribosome.Host.Data.RpcMessage (RpcMessage)
 import qualified Ribosome.Host.Effect.Responses as Responses
@@ -33,7 +34,7 @@ request exec req decode = do
   Process.send (RpcMessage.Request treq)
   restop (Responses.wait reqId) >>= \case
     Response.Success a ->
-      stopEitherWith RpcError (decode a)
+      stopEitherWith RpcError.Decode (decode a)
     Response.Error e ->
       stop e
 
