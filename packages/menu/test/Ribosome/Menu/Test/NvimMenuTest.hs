@@ -1,6 +1,6 @@
 module Ribosome.Menu.Test.NvimMenuTest where
 
-import Control.Lens (element, use, (^?))
+import Control.Lens (element, use, (^?), (.~))
 import qualified Data.Map.Strict as Map
 import Polysemy.Test (UnitTest, assertEq, runTestAuto, unitTest, (===))
 import qualified Streamly.Internal.Data.Stream.IsStream as Stream
@@ -34,7 +34,7 @@ import Ribosome.Menu.Data.MenuView (MenuView (MenuView))
 import Ribosome.Menu.Interpreter.MenuConsumer (Mappings, basic, withMappings)
 import Ribosome.Menu.ItemLens (cursor)
 import Ribosome.Menu.Main (interpretMenu)
-import Ribosome.Menu.Nvim (nvimMenuDef, staticNvimMenuDef)
+import Ribosome.Menu.Nvim (nvimMenuWith, runNvimMenu, staticNvimMenu_)
 import Ribosome.Menu.NvimRenderer (computeView, entrySlice)
 import Ribosome.Menu.Prompt.Data.Prompt (Prompt (Prompt), PromptText (PromptText))
 import Ribosome.Menu.Prompt.Data.PromptConfig (PromptConfig (PromptConfig), PromptFlag (StartInsert), PromptInput)
@@ -43,6 +43,15 @@ import Ribosome.Menu.Prompt.Nvim (getCharStream)
 import Ribosome.Menu.Prompt.Run (withPromptInput)
 import Ribosome.Test.Embed (testEmbed_)
 import Ribosome.Test.Error (resumeTestError)
+import Ribosome.Menu.Test.Menu (staticNvimMenuTestDef)
+import Ribosome.Menu.Effect.MenuTest (sendCharWait, sendChar)
+import qualified Ribosome.Menu.Effect.MenuTest as MenuTest
+
+staticMenuItems ::
+  [Text] ->
+  [MenuItem Text]
+staticMenuItems =
+  fmap (simpleMenuItem "name")
 
 menuItems ::
   [Text] ->
@@ -74,19 +83,19 @@ promptConfig ::
   PromptInput ->
   PromptConfig
 promptConfig source =
-  PromptConfig source [StartInsert]
+  PromptConfig (Just source) [StartInsert]
 
 mappings ::
   MenuWrite Text r =>
   Mappings r Text
 mappings =
-  Map.fromList [("cr", exec)]
+  [("cr", exec)]
 
 test_nvimMenuPure :: UnitTest
 test_nvimMenuPure =
   testEmbed_ $ interpretMenu do
     result <- resumeTestError @Scratch $ withMappings mappings do
-      nvimMenuDef def { maxSize = Just 4 } (menuItems items) (promptConfig (promptInput pureChars))
+      runNvimMenu $ nvimMenuWith def { maxSize = Just 4 } (menuItems items) (promptConfig (promptInput pureChars))
     MenuResult.Success "item4" === result
 
 nativeChars :: [Text]
@@ -99,7 +108,7 @@ test_nvimMenuNative =
     inp <- getCharStream (MilliSeconds 10)
     withPromptInput (Just (MilliSeconds 10)) nativeChars do
       result <- resumeTestError @Scratch $ withMappings mappings do
-        nvimMenuDef def { maxSize = Just 4 } (menuItems items) (promptConfig inp)
+        runNvimMenu $ nvimMenuWith def { maxSize = Just 4 } (menuItems items) (promptConfig inp)
       MenuResult.Success "item4" === result
 
 test_nvimMenuInterrupt :: UnitTest
@@ -108,7 +117,7 @@ test_nvimMenuInterrupt =
     conf <- promptConfig <$> getCharStream (MilliSeconds 10)
     assertEq MenuResult.Aborted =<< withPromptInput (Just (MilliSeconds 50)) ["<c-c>", "<cr>"] do
       resumeTestError @Scratch $ basic @() do
-        nvimMenuDef def (menuItems items) conf
+        runNvimMenu $ nvimMenuWith def (menuItems items) conf
     assertEq 1 . length =<< vimGetWindows
 
 returnPrompt ::
@@ -119,7 +128,7 @@ returnPrompt = do
 
 navChars :: [Text]
 navChars =
-  ["i", "t", "e", "m", "1", "<bs>", "<esc>", "h", "h", "h", "h", "h", "x", "a", "o", "<cr>"]
+  ["i", "i", "t", "e", "m", "1", "bs", "esc", "h", "h", "h", "h", "h", "x", "a", "o", "cr"]
 
 navMappings ::
   MenuRead Text r =>
@@ -129,22 +138,27 @@ navMappings =
 
 test_nvimMenuNav :: UnitTest
 test_nvimMenuNav =
-  testEmbed_ $ interpretMenu do
-    assertEq (MenuResult.Success "toem") =<< do
-      withPromptInput (Just (MilliSeconds 10)) navChars do
-        source <- getCharStream (MilliSeconds 10)
-        resumeTestError @Scratch $ withMappings navMappings do
-          nvimMenuDef def { maxSize = Just 4 } (menuItems items) (promptConfig source)
+  testEmbed_ $ interpretMenu $ withMappings navMappings do
+    result <- staticNvimMenuTestDef @Text conf do
+      traverse_ sendCharWait navChars
+      MenuTest.result
+    MenuResult.Success "toem" === result
+  where
+    conf =
+      staticNvimMenu_ (staticMenuItems items)
+      & #scratch . #maxSize .~ Just 4
 
 test_nvimMenuQuit :: UnitTest
 test_nvimMenuQuit =
-  testEmbed_ $ interpretMenu do
-    resumeTestError @Scratch $ basic do
-      void $ staticNvimMenuDef @() def [] (PromptConfig inp [])
-      assertEq [""] =<< traverse bufferGetName =<< filterM buflisted =<< vimGetBuffers
+  testEmbed_ $ interpretMenu $ basic do
+    result <- staticNvimMenuTestDef @Void @Void conf do
+      sendChar "esc"
+      MenuTest.result
+    MenuResult.NoAction === result
+    assertEq [""] =<< traverse bufferGetName =<< filterM buflisted =<< vimGetBuffers
   where
-    inp =
-      promptInputWith (Just 0.5) Nothing (Stream.repeat "esc")
+    conf =
+      staticNvimMenu_ []
 
 nmenuBot :: MenuView
 nmenuBot =
@@ -190,9 +204,9 @@ test_menuScrollUp :: UnitTest
 test_menuScrollUp =
   testEmbed_ $ interpretMenu do
     resumeTestError @Scratch $ basic do
-      let prompt = PromptConfig (promptInputWith (Just 0.2) (Just 0.01) chars) []
-      Success a <-  withMappings (Map.singleton "cr" content) do
-        nvimMenuDef def { maxSize = Just 4 } (menuItems its) prompt
+      let prompt = PromptConfig (Just (promptInputWith (Just 0.2) (Just 0.01) chars)) []
+      Success a <- withMappings (Map.singleton "cr" content) do
+        runNvimMenu $ nvimMenuWith def { maxSize = Just 4 } (menuItems its) prompt
       4 === length a
   where
     chars =

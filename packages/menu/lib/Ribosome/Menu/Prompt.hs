@@ -17,16 +17,20 @@ import Ribosome.Menu.Stream.Util (queueStream)
 
 defaultPrompt ::
   Members [Rpc, Rpc !! RpcError, Time t d, Race, Embed IO, Final IO] r =>
+  Sem r PromptInput
+defaultPrompt =
+  getCharStream (MilliSeconds 33)
+
+defaultPromptConfig ::
+  Members [Rpc, Rpc !! RpcError, Time t d, Race, Embed IO, Final IO] r =>
   [PromptFlag] ->
   Sem r PromptConfig
-defaultPrompt fs = do
-  pIn <- getCharStream (MilliSeconds 33)
-  pure (PromptConfig pIn fs)
+defaultPromptConfig flags = do
+  p <- defaultPrompt
+  pure (PromptConfig (Just p) flags)
 
 queuePrompt ::
   Members [Queue PromptInputEvent, Final IO] r =>
-  [PromptFlag] ->
-  Sem r PromptConfig
-queuePrompt fs = do
-  s <- queueStream
-  pure (PromptConfig (PromptInput (const s)) fs)
+  Sem r PromptInput
+queuePrompt =
+  PromptInput . const <$> queueStream

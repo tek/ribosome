@@ -9,7 +9,7 @@ import Ribosome.Menu.Prompt.Data.PromptConfig (PromptConfig)
 data MenuConfig i =
   MenuConfig {
     items :: SerialT IO (MenuItem i),
-    itemFilter :: MenuItemFilter i,
+    itemFilter :: Maybe (MenuItemFilter i),
     prompt :: PromptConfig
   }
   deriving stock (Generic)

@@ -33,6 +33,8 @@ import qualified Ribosome.Menu.Effect.MenuRenderer as MenuRenderer
 import Ribosome.Menu.Effect.MenuRenderer (MenuRenderer, withMenuRenderer)
 import Ribosome.Menu.Effect.PromptEvents (PromptEvents)
 import Ribosome.Menu.Effect.PromptRenderer (PromptRenderer, withPrompt)
+import Ribosome.Menu.Filters (fuzzy)
+import Ribosome.Menu.Prompt (PromptInput (PromptInput))
 import Ribosome.Menu.Prompt.Data.Prompt (Prompt)
 import Ribosome.Menu.Prompt.Data.PromptConfig (PromptConfig (PromptConfig), PromptListening, startInsert)
 import qualified Ribosome.Menu.Prompt.Data.PromptControlEvent as PromptControlEvent
@@ -118,7 +120,7 @@ menuStream ::
   TMChan PromptControlEvent ->
   AsyncT IO (Prompt, PromptEvent) ->
   Sem r (SerialT IO (MenuResult a))
-menuStream (MenuConfig items itemFilter _) promptControl promptEvents =
+menuStream (MenuConfig items customFilter _) promptControl promptEvents =
   inFinal_ \ lowerMaybe lower_ pur ->
   let
     handleAction action =
@@ -129,6 +131,8 @@ menuStream (MenuConfig items itemFilter _) promptControl promptEvents =
       promptEvent lowerMaybe itemFilter promptEvents
     menuItems =
       updateItems lowerMaybe itemFilter (Stream.fromSerial items)
+    itemFilter =
+      fromMaybe fuzzy customFilter
     consume event = do
       menuAction <- lowerMaybe (menuConsumerEvent event)
       pure (fromMaybe (eventAction event) (join menuAction))
@@ -176,18 +180,20 @@ interpretMenu =
 menuMain ::
   Show a =>
   Members (MenuStack i) r =>
-  Members [PromptEvents, PromptRenderer] r =>
-  Members [MenuConsumer a, MenuRenderer i, Sync PromptListening, Log, Mask res, Race, Resource, Embed IO, Final IO] r =>
+  Members [MenuConsumer a, MenuRenderer i, PromptEvents, PromptRenderer] r =>
+  Members [Sync PromptListening, Log, Mask res, Race, Resource, Embed IO, Final IO] r =>
   MenuConfig i ->
   Sem r (MenuResult a)
-menuMain conf =
+menuMain conf = do
   withPromptStream initialPrompt promptInput \ (promptControl, promptEvents) -> do
     stream <- menuStream conf promptControl (Stream.fromSerial promptEvents)
     menuResult =<< embed (Stream.last stream)
   where
     initialPrompt =
       pristinePrompt (startInsert flags)
-    PromptConfig promptInput flags =
+    promptInput =
+      fromMaybe (PromptInput (const Stream.nil)) customPrompt
+    PromptConfig customPrompt flags =
       conf ^. #prompt
 
 simpleMenu ::

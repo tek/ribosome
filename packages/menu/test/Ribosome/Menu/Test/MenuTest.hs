@@ -4,7 +4,7 @@ import Conc (interpretSync)
 import Control.Lens (use, view, (^.))
 import qualified Control.Monad.Trans.State.Strict as MTL
 import qualified Data.IntMap.Strict as IntMap
-import Hedgehog (property, test, withTests, TestLimit)
+import Hedgehog (TestLimit, property, test, withTests)
 import Polysemy (run)
 import Polysemy.Test (UnitTest, assertJust, runTestAuto, unitTest, (===))
 import qualified Sync
@@ -21,13 +21,13 @@ import Ribosome.Menu.Data.Menu (consMenu)
 import qualified Ribosome.Menu.Data.MenuItem as MenuItem
 import Ribosome.Menu.Data.MenuItem (Items, simpleMenuItem)
 import Ribosome.Menu.Data.MenuState (MenuRead, MenuWidget, menuRead, semState)
-import Ribosome.Menu.Effect.MenuTest (sendChar, sendStaticItems)
+import Ribosome.Menu.Effect.MenuTest (sendCharWait, sendStaticItems)
 import Ribosome.Menu.Interpreter.MenuConsumer (forMappings, withMappings)
 import Ribosome.Menu.ItemLens (cursor, items, selected', selectedOnly, unselected)
 import Ribosome.Menu.Items (deleteSelected, popSelection)
 import Ribosome.Menu.Prompt.Data.Prompt (Prompt (Prompt))
 import Ribosome.Menu.Prompt.Data.PromptMode (PromptMode (Insert, Normal))
-import Ribosome.Menu.Test.Menu (assertItems, assertPrompt, menuTestDef, promptTest, runMenuTestStack)
+import Ribosome.Menu.Test.Menu (assertItems, assertPrompt, menuTestDef, promptTest, runMenuTestStack, staticMenuTestDef)
 
 unitTestTimes ::
   TestLimit ->
@@ -53,16 +53,16 @@ test_pureMenuModeChange =
   runUnitTest $ promptTest @() do
     sendStaticItems (simpleMenuItem () <$> items1)
     assertItems items1
-    sendChar "i"
+    sendCharWait "i"
     assertPrompt (Prompt 1 Insert "i")
     assertItems ["i1", "i2", "i3", "i4"]
-    sendChar "esc"
+    sendCharWait "esc"
     assertPrompt (Prompt 0 Normal "i")
     assertItems ["i1", "i2", "i3", "i4"]
-    sendChar "a"
+    sendCharWait "a"
     assertPrompt (Prompt 1 Insert "i")
     assertItems ["i1", "i2", "i3", "i4"]
-    sendChar "2"
+    sendCharWait "2"
     assertPrompt (Prompt 2 Insert "i2")
     assertItems ["i2"]
 
@@ -80,9 +80,9 @@ test_pureMenuFilter = do
   runUnitTest $ promptTest @() do
     sendStaticItems (simpleMenuItem () <$> items2)
     assertItems items2
-    sendChar "l"
+    sendCharWait "l"
     assertItems ["long", "long-item", "longitem"]
-    sendChar "-"
+    sendCharWait "-"
     assertItems ["long-item"]
 
 chars3 :: [Text]
@@ -112,7 +112,7 @@ test_pureMenuExecute = do
     runMenuTestStack $ forMappings [("cr", exec)] do
       menuTestDef do
         sendStaticItems (simpleMenuItem () <$> items3)
-        sendChar "cr"
+        sendCharWait "cr"
         assertJust items3 =<< Sync.wait (Seconds 5)
 
 charsMulti :: [Text]
@@ -146,7 +146,7 @@ test_menuMultiMark = do
     runMenuTestStack $ withMappings [("cr", execMulti)] do
       menuTestDef do
         sendStaticItems (simpleMenuItem () <$> itemsMulti)
-        traverse_ sendChar charsMulti
+        traverse_ sendCharWait charsMulti
         assertJust ["item5", "item4", "item3"] . join =<< Sync.wait (Seconds 5)
 
 charsToggle :: [Text]
@@ -180,9 +180,8 @@ test_menuToggle :: UnitTest
 test_menuToggle = do
   runUnitTest $ interpretSync do
     runMenuTestStack $ withMappings [("cr", execToggle)] do
-      menuTestDef do
-        sendStaticItems (simpleMenuItem () <$> itemsToggle)
-        traverse_ sendChar charsToggle
+      staticMenuTestDef (simpleMenuItem () <$> itemsToggle) do
+        traverse_ sendCharWait charsToggle
         assertJust ["abc", "a"] =<< Sync.wait @(NonEmpty _) (Seconds 5)
 
 charsExecuteThunk :: [Text]

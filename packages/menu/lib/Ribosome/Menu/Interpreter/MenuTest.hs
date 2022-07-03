@@ -1,23 +1,33 @@
 module Ribosome.Menu.Interpreter.MenuTest where
 
-import Conc (Restoration, interpretQueueTBM, resultToMaybe, withAsync_)
+import Conc (Restoration, interpretQueueTBM, interpretSync, resultToMaybe, withAsync_)
 import Exon (exon)
 import qualified Queue
+import qualified Streamly.Prelude as Stream
 import qualified Sync
 
+import Ribosome.Data.SettingError (SettingError)
+import Ribosome.Effect.Scratch (Scratch)
+import Ribosome.Effect.Settings (Settings)
+import Ribosome.Host.Data.RpcError (RpcError)
+import Ribosome.Host.Effect.Rpc (Rpc)
 import Ribosome.Menu.Data.MenuConfig (MenuConfig (MenuConfig))
-import Ribosome.Menu.Data.MenuEvent (MenuEvent (NewItems))
+import Ribosome.Menu.Data.MenuEvent (MenuEvent (Mapping, NewItems, PromptEdit, PromptNavigation))
 import Ribosome.Menu.Data.MenuItem (MenuItem)
 import Ribosome.Menu.Data.MenuItemFilter (MenuItemFilter)
+import Ribosome.Menu.Data.MenuResult (MenuResult)
 import Ribosome.Menu.Data.MenuState (MenuStack)
+import Ribosome.Menu.Data.NvimMenuConfig (NvimMenuConfig (NvimMenuConfig))
 import Ribosome.Menu.Effect.MenuConsumer (MenuConsumer (MenuConsumerEvent), menuConsumerEvent)
-import Ribosome.Menu.Effect.MenuRenderer (MenuRenderer)
-import Ribosome.Menu.Effect.MenuTest (MenuTest (ItemsDone, SendItem, SendPrompt))
+import Ribosome.Menu.Effect.MenuRenderer (MenuRenderer, withMenuRenderer)
+import Ribosome.Menu.Effect.MenuTest (MenuTest (ItemsDone, Result, SendItem, SendPrompt), sendStaticItems)
 import Ribosome.Menu.Effect.PromptEvents (PromptEvents)
 import Ribosome.Menu.Effect.PromptRenderer (PromptRenderer, withPrompt)
+import Ribosome.Menu.Filters (fuzzyMonotonic)
 import Ribosome.Menu.Interpreter.PromptEvents (interpretPromptEventsDefault)
 import Ribosome.Menu.Main (menuMain)
-import Ribosome.Menu.Prompt (PromptFlag, PromptListening (PromptListening), queuePrompt)
+import Ribosome.Menu.Nvim (interpretNvimMenu)
+import Ribosome.Menu.Prompt (PromptConfig (PromptConfig), PromptFlag, PromptListening (PromptListening), queuePrompt)
 import Ribosome.Menu.Prompt.Data.PromptInputEvent (PromptInputEvent)
 import Ribosome.Menu.Stream.Util (queueStream)
 
@@ -36,23 +46,37 @@ waitEvent timeout failure match =
       unless (match e) spin
 
 interpretMenuTest ::
+  ∀ i u a r .
   Show i =>
+  Show u =>
   TimeUnit u =>
-  Members [Queue PromptInputEvent, Queue (MenuItem i), Queue MenuEvent] r =>
+  Members [Queue PromptInputEvent, Queue (MenuItem i), Queue MenuEvent, Sync (MenuResult a)] r =>
   u ->
   (∀ x . Text -> Sem r x) ->
-  InterpreterFor (MenuTest i) r
+  InterpreterFor (MenuTest i a) r
 interpretMenuTest timeout failure =
   interpret \case
     SendItem item ->
-      maybe (failure [exon|Could not send #{show item}|]) pure . resultToMaybe =<< Queue.writeTimeout timeout item
+      noteFail [exon|Could not send #{show item}|] . resultToMaybe =<< Queue.writeTimeout timeout item
     ItemsDone -> do
       Queue.close @(_ _)
       waitEvent timeout failure \case
         NewItems -> True
         _ -> False
-    SendPrompt e ->
-      maybe (failure [exon|Could not send #{show e}|]) pure . resultToMaybe =<< Queue.writeTimeout timeout e
+    SendPrompt wait e -> do
+      noteFail [exon|Could not send #{show e}|] . resultToMaybe =<< Queue.writeTimeout timeout e
+      when wait do
+        waitEvent timeout failure \case
+          PromptEdit -> True
+          PromptNavigation -> True
+          Mapping _ -> True
+          _ -> False
+    Result ->
+      noteFail [exon|No result was produced within #{show timeout}|] =<< Sync.wait timeout
+  where
+    noteFail :: ∀ x . Text -> Maybe x -> Sem r x
+    noteFail msg =
+      maybe (failure msg) pure
 
 interceptMenuConsumerQueue ::
   TimeUnit u =>
@@ -69,12 +93,14 @@ interceptMenuConsumerQueue timeout failure =
 
 runMenuTest ::
   Show i =>
+  Show u =>
   TimeUnit u =>
   Members [MenuConsumer o, Resource, Race, Embed IO] r =>
   u ->
   (∀ x . Text -> Sem r x) ->
-  InterpretersFor [MenuTest i, Queue MenuEvent, Queue PromptInputEvent, Queue (MenuItem i)] r
+  InterpretersFor [MenuTest i a, Queue MenuEvent, Queue PromptInputEvent, Queue (MenuItem i), Sync (MenuResult a)] r
 runMenuTest timeout failure =
+  interpretSync .
   interpretQueueTBM @(MenuItem _) 64 .
   interpretQueueTBM @PromptInputEvent 64 .
   interpretQueueTBM @MenuEvent 64 .
@@ -85,7 +111,7 @@ withTestMenu ::
   Show result =>
   TimeUnit u =>
   Members (MenuStack i) r =>
-  Members [MenuConsumer result, MenuRenderer i, PromptEvents, PromptRenderer] r =>
+  Members [Sync (MenuResult result), MenuConsumer result, MenuRenderer i, PromptEvents, PromptRenderer] r =>
   Members [Sync PromptListening, Log, Mask Restoration, Race, Resource, Async, Embed IO, Final IO] r =>
   u ->
   (∀ x . Text -> Sem r x) ->
@@ -93,14 +119,26 @@ withTestMenu ::
   Sem r a ->
   Sem r a
 withTestMenu timeout failure conf sem =
-  withAsync_ (void (menuMain conf)) do
+  withAsync_ (Sync.putWait timeout =<< menuMain conf) do
     PromptListening <- maybe (failure "prompt didn't start") pure =<< Sync.wait timeout
     sem
+
+type MenuTestEffects i result =
+  [
+    MenuTest i result,
+    Queue MenuEvent,
+    Queue PromptInputEvent,
+    Queue (MenuItem i),
+    Sync (MenuResult result),
+    PromptEvents,
+    PromptRenderer
+  ] 
 
 menuTest ::
   ∀ i result pres u r .
   Show result =>
   Show i =>
+  Show u =>
   TimeUnit u =>
   Members (MenuStack i) r =>
   Members [MenuConsumer result, MenuRenderer i, Scoped pres PromptRenderer] r =>
@@ -109,9 +147,47 @@ menuTest ::
   MenuItemFilter i ->
   u ->
   (∀ x . Text -> Sem r x) ->
-  InterpretersFor [MenuTest i, Queue MenuEvent, Queue PromptInputEvent, Queue (MenuItem i), PromptEvents, PromptRenderer] r
+  InterpretersFor (MenuTestEffects i result) r
 menuTest flags itemFilter timeout failure sem =
   withPrompt $ interpretPromptEventsDefault flags $ runMenuTest timeout (insertAt @0 . failure) do
-    prompts <- queuePrompt flags
+    prompts <- queuePrompt
     items <- queueStream
-    withTestMenu timeout (insertAt @0 . failure) (MenuConfig items itemFilter prompts) sem
+    withTestMenu timeout (insertAt @0 . failure) (MenuConfig items (Just itemFilter) (PromptConfig (Just prompts) flags)) sem
+
+staticMenuTest ::
+  ∀ i result pres u r .
+  Show result =>
+  Show i =>
+  Show u =>
+  TimeUnit u =>
+  Members (MenuStack i) r =>
+  Members [MenuConsumer result, MenuRenderer i, Scoped pres PromptRenderer] r =>
+  Members [Sync PromptListening, Log, Mask Restoration, Race, Async, Embed IO, Final IO] r =>
+  [PromptFlag] ->
+  MenuItemFilter i ->
+  [MenuItem i] ->
+  u ->
+  (∀ x . Text -> Sem r x) ->
+  InterpretersFor (MenuTestEffects i result) r
+staticMenuTest flags itemFilter items timeout failure sem =
+  menuTest flags itemFilter timeout failure do
+    sendStaticItems items
+    sem
+
+staticNvimMenuTest ::
+  ∀ i result u r .
+  Show result =>
+  Show i =>
+  Show u =>
+  TimeUnit u =>
+  Members (MenuStack i) r =>
+  Members [MenuConsumer result, Rpc, Rpc !! RpcError, Settings !! SettingError, Scratch] r =>
+  Members [Sync PromptListening, Log, Mask Restoration, Race, Async, Embed IO, Final IO] r =>
+  NvimMenuConfig i ->
+  u ->
+  (∀ x . Text -> Sem r x) ->
+  InterpretersFor (MenuTestEffects i result) r
+staticNvimMenuTest conf@(NvimMenuConfig (MenuConfig items itemFilter (PromptConfig _ flags)) _) timeout failure sem = do
+  interpretNvimMenu conf $ withMenuRenderer do
+    staticItems <- embed (Stream.toList items)
+    staticMenuTest flags (fromMaybe fuzzyMonotonic itemFilter) staticItems timeout (insertAt @0 . failure) (insertAt @7 sem)

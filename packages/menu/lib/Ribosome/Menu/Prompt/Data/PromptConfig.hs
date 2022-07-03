@@ -19,7 +19,7 @@ newtype PromptInput =
 
 data PromptConfig =
   PromptConfig {
-    source :: PromptInput,
+    source :: Maybe PromptInput,
     flags :: [PromptFlag]
   }
   deriving stock (Generic)

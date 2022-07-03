@@ -85,6 +85,7 @@ library
       Ribosome.Interpreter.UserError
       Ribosome.Interpreter.VariableWatcher
       Ribosome.IOStack
+      Ribosome.Lens
       Ribosome.Locks
       Ribosome.Mapping
       Ribosome.Path

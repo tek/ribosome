@@ -7,6 +7,11 @@ import Polysemy.Test (Hedgehog, TestError (TestError), assertEq, assertJust, eva
 import qualified Queue
 import Time (Seconds (Seconds))
 
+import Ribosome.Data.SettingError (SettingError)
+import Ribosome.Effect.Scratch (Scratch)
+import Ribosome.Effect.Settings (Settings)
+import Ribosome.Host.Data.RpcError (RpcError)
+import Ribosome.Host.Effect.Rpc (Rpc)
 import Ribosome.Menu.Action (menuIgnore, menuQuit)
 import Ribosome.Menu.Combinators (sortedEntries)
 import qualified Ribosome.Menu.Data.Entry as Entry
@@ -22,20 +27,18 @@ import Ribosome.Menu.Data.MenuState (
   menuRead,
   semState,
   )
+import Ribosome.Menu.Data.NvimMenuConfig (NvimMenuConfig)
 import Ribosome.Menu.Effect.MenuConsumer (MenuConsumer (MenuConsumerEvent))
 import qualified Ribosome.Menu.Effect.MenuRenderer as MenuRenderer
 import Ribosome.Menu.Effect.MenuRenderer (MenuRenderer)
-import Ribosome.Menu.Effect.MenuTest (MenuTest)
-import Ribosome.Menu.Effect.PromptEvents (PromptEvents)
+import Ribosome.Menu.Effect.MenuTest (sendStaticItems)
 import Ribosome.Menu.Effect.PromptRenderer (PromptRenderer)
 import Ribosome.Menu.Filters (fuzzyMonotonic)
-import Ribosome.Menu.Interpreter.MenuTest (menuTest)
+import Ribosome.Menu.Interpreter.MenuTest (MenuTestEffects, menuTest, staticNvimMenuTest)
 import Ribosome.Menu.Interpreter.PromptRenderer (interpretPromptRendererNull)
 import Ribosome.Menu.Main (interpretMenu)
 import Ribosome.Menu.Prompt (PromptFlag (StartInsert), PromptListening)
 import Ribosome.Menu.Prompt.Data.Prompt (Prompt)
-import Ribosome.Menu.Prompt.Data.PromptInputEvent (PromptInputEvent)
-import Ribosome.Menu.Data.MenuEvent (MenuEvent)
 
 enqueueItems ::
   Members [Hedgehog IO, Queue [Entry i]] r =>
@@ -93,15 +96,7 @@ runMenuTestStack =
   interpretPromptRendererNull
 
 type PromptTest i =
-  [
-    MenuTest i,
-    Queue MenuEvent,
-    Queue PromptInputEvent,
-    Queue (MenuItem i),
-    PromptEvents,
-    PromptRenderer,
-    MenuConsumer ()
-  ] ++ MenuTestStack i
+  MenuTestEffects i () ++ MenuConsumer () : MenuTestStack i
 
 promptTest ::
   Show i =>
@@ -133,12 +128,38 @@ assertItems i =
   assertEq i =<< currentItems
 
 menuTestDef ::
-  ∀ i result pres r .
+  ∀ result i pres r .
   Show i =>
   Show result =>
   Members (MenuStack i) r =>
   Members [MenuConsumer result, MenuRenderer i, Scoped pres PromptRenderer] r =>
   Members [Sync PromptListening, Error TestError, Log, Mask Restoration, Race, Resource, Async, Embed IO, Final IO] r =>
-  InterpretersFor [MenuTest i, Queue MenuEvent, Queue PromptInputEvent, Queue (MenuItem i), PromptEvents, PromptRenderer] r
+  InterpretersFor (MenuTestEffects i result) r
 menuTestDef =
   menuTest [StartInsert] fuzzyMonotonic (Seconds 5) (throw . TestError)
+
+staticMenuTestDef ::
+  ∀ result i pres r .
+  Show i =>
+  Show result =>
+  Members (MenuStack i) r =>
+  Members [MenuConsumer result, MenuRenderer i, Scoped pres PromptRenderer] r =>
+  Members [Sync PromptListening, Error TestError, Log, Mask Restoration, Race, Resource, Async, Embed IO, Final IO] r =>
+  [MenuItem i] ->
+  InterpretersFor (MenuTestEffects i result) r
+staticMenuTestDef items test =
+  menuTestDef do
+    sendStaticItems items
+    test
+
+staticNvimMenuTestDef ::
+  ∀ result i r .
+  Show i =>
+  Show result =>
+  Members (MenuStack i) r =>
+  Members [MenuConsumer result, Rpc, Rpc !! RpcError, Settings !! SettingError, Scratch] r =>
+  Members [Sync PromptListening, Error TestError, Log, Mask Restoration, Race, Resource, Async, Embed IO, Final IO] r =>
+  NvimMenuConfig i ->
+  InterpretersFor (MenuTestEffects i result) r
+staticNvimMenuTestDef conf =
+  staticNvimMenuTest conf (Seconds 5) (throw . TestError)
