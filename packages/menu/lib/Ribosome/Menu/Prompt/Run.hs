@@ -19,6 +19,7 @@ import Ribosome.Api.Input (syntheticInput)
 import Ribosome.Final (inFinal)
 import Ribosome.Host.Data.Tuple (dup)
 import Ribosome.Host.Effect.Rpc (Rpc)
+import Ribosome.Menu.Data.PromptQuit (PromptQuit (PromptQuit))
 import Ribosome.Menu.Effect.PromptEvents (PromptEvents, handlePromptEvent)
 import qualified Ribosome.Menu.Effect.PromptRenderer as PromptRenderer
 import Ribosome.Menu.Effect.PromptRenderer (PromptRenderer)
@@ -174,44 +175,35 @@ processPromptEvent = \case
     pure (Just (newPrompt, PromptEvent.Edit))
 
 promptWithControl ::
-  Members [PromptEvents, PromptRenderer, Sync Prompt, Sync PromptListening, Mask res, Log, Resource] r =>
+  Members [PromptEvents, PromptRenderer, Sync Prompt, Sync PromptQuit, Sync PromptListening, Mask res, Log, Resource] r =>
   (∀ x . Sem r x -> IO (Maybe x)) ->
   PromptInput ->
   SerialT IO PromptControlEvent ->
-  MVar () ->
   SerialT IO (Prompt, PromptEvent)
-promptWithControl lower (PromptInput source) control listenQuit =
+promptWithControl lower (PromptInput source) control =
   Stream.tapAsync (Fold.drainBy (lower . PromptRenderer.renderPrompt . fst)) $
   takeUntilNothing $
   Stream.mapM (liftIO . fmap join . lower . processPromptEvent) $
   Stream.parallelMin (Left <$> Stream.before (lower (Sync.putTry PromptListening)) control) (Right <$> sourceWithInit)
   where
     sourceWithInit =
-      Stream.cons PromptInputEvent.Init (source listenQuit)
-
-controlChannel ::
-  Member (Embed IO) r =>
-  Sem r (TMChan a, MVar (), IO (), SerialT IO a)
-controlChannel = do
-  listenQuit <- embed newEmptyMVar
-  chan <- embed (atomically newTMChan)
-  pure (chan, listenQuit, putMVar listenQuit () *> atomically (closeTMChan chan), chanStream chan)
+      Stream.cons PromptInputEvent.Init source
 
 pristinePrompt :: Bool -> Prompt
 pristinePrompt insert =
   Prompt 0 (if insert then PromptMode.Insert else PromptMode.Normal) ""
 
 withPromptStream ::
-  Members [PromptEvents, PromptRenderer, Mask res, Sync PromptListening, Log, Resource, Race, Embed IO, Final IO] r =>
+  Members [PromptEvents, PromptRenderer, Mask res, Sync PromptQuit, Sync PromptListening, Log, Resource, Race, Embed IO, Final IO] r =>
   Prompt ->
   PromptInput ->
   ((TMChan PromptControlEvent, SerialT IO (Prompt, PromptEvent)) -> Sem r a) ->
   Sem r a
 withPromptStream initial promptInput use = do
-  (chan, listenQuit, close, control) <- controlChannel
+  chan <- embed (atomically newTMChan)
   interpretSyncAs initial do
     res <- inFinal \ _ lower pur ex ->
-      pur (chan, Stream.finally close (promptWithControl (fmap ex . lower) promptInput control listenQuit))
+      pur (chan, Stream.finally (lower (Sync.putTry PromptQuit) *> atomically (closeTMChan chan)) (promptWithControl (fmap ex . lower) promptInput (chanStream chan)))
     raise (use res)
 
 withPromptInput ::

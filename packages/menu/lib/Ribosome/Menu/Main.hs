@@ -27,6 +27,7 @@ import Ribosome.Menu.Data.MenuState (
   MenuStateEffects,
   readMenu,
   )
+import Ribosome.Menu.Data.PromptQuit (PromptQuit)
 import qualified Ribosome.Menu.Data.QuitReason as QuitReason
 import Ribosome.Menu.Effect.MenuConsumer (MenuConsumer, menuConsumerEvent)
 import qualified Ribosome.Menu.Effect.MenuRenderer as MenuRenderer
@@ -167,7 +168,7 @@ menuResult = \case
 interpretMenu ::
   ∀ i r .
   Members [Resource, Race, Embed IO] r =>
-  InterpretersFor (Sync PromptListening : MenuStack i) r
+  InterpretersFor (Sync PromptQuit : Sync PromptListening : MenuStack i) r
 interpretMenu =
   interpretSyncAs CursorLock .
   interpretSyncAs ItemsLock .
@@ -175,13 +176,14 @@ interpretMenu =
   interpretAtomic def .
   interpretAtomic def .
   interpretAtomic def .
-  interpretSync @PromptListening
+  interpretSync @PromptListening .
+  interpretSync @PromptQuit
 
 menuMain ::
   Show a =>
   Members (MenuStack i) r =>
   Members [MenuConsumer a, MenuRenderer i, PromptEvents, PromptRenderer] r =>
-  Members [Sync PromptListening, Log, Mask res, Race, Resource, Embed IO, Final IO] r =>
+  Members [Sync PromptQuit, Sync PromptListening, Log, Mask res, Race, Resource, Embed IO, Final IO] r =>
   MenuConfig i ->
   Sem r (MenuResult a)
 menuMain conf = do
@@ -192,15 +194,15 @@ menuMain conf = do
     initialPrompt =
       pristinePrompt (startInsert flags)
     promptInput =
-      fromMaybe (PromptInput (const Stream.nil)) customPrompt
+      fromMaybe (PromptInput Stream.nil) customPrompt
     PromptConfig customPrompt flags =
       conf ^. #prompt
 
 simpleMenu ::
   Show a =>
   Member (MenuRenderer i) r =>
-  Members [PromptEvents, Scoped pres PromptRenderer, Log, Mask mres, Resource, Race, Embed IO, Final IO] r =>
-  InterpreterFor (MenuConsumer a) (Sync PromptListening : MenuStack i ++ PromptRenderer : r) ->
+  Members [Sync PromptQuit, PromptEvents, Scoped pres PromptRenderer, Log, Mask mres, Resource, Race, Embed IO, Final IO] r =>
+  InterpreterFor (MenuConsumer a) (Sync PromptQuit : Sync PromptListening : MenuStack i ++ PromptRenderer : r) ->
   MenuConfig i ->
   Sem r (MenuResult a)
 simpleMenu consumer config =
@@ -211,7 +213,7 @@ menu ::
   ∀ a i pres mrres res r .
   Show a =>
   Members (MenuStack i) r =>
-  Members [PromptEvents, MenuConsumer a, Scoped pres PromptRenderer] r =>
+  Members [Sync PromptQuit, PromptEvents, MenuConsumer a, Scoped pres PromptRenderer] r =>
   Members [Scoped mrres (MenuRenderer i), Sync PromptListening, Log, Mask res, Race, Resource, Embed IO, Final IO] r =>
   MenuConfig i ->
   Sem r (MenuResult a)

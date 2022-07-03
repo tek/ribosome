@@ -17,6 +17,7 @@ import Ribosome.Menu.Data.MenuItem (MenuItem)
 import Ribosome.Menu.Data.MenuResult (MenuResult)
 import Ribosome.Menu.Data.MenuState (MenuStack)
 import Ribosome.Menu.Data.NvimMenuConfig (NvimMenuConfig (NvimMenuConfig))
+import Ribosome.Menu.Data.PromptQuit (PromptQuit)
 import Ribosome.Menu.Effect.MenuConsumer (MenuConsumer)
 import Ribosome.Menu.Effect.MenuRenderer (MenuRenderer)
 import Ribosome.Menu.Effect.PromptEvents (PromptEvents)
@@ -37,6 +38,7 @@ type NvimMenuStack i a res =
     Scratch,
     Rpc,
     Rpc !! RpcError,
+    Sync PromptQuit,
     Sync PromptListening,
     Log,
     Mask res,
@@ -57,7 +59,7 @@ nvimMenuWith options items prompt =
       #size <|>~ Just 1
 
 nvimMenu ::
-  Members [Rpc, Rpc !! RpcError, Time t d, Race, Embed IO, Final IO] r =>
+  Members [Sync PromptQuit, Rpc, Rpc !! RpcError, Time t d, Race, Embed IO, Final IO] r =>
   SerialT IO (MenuItem i) ->
   Sem r (NvimMenuConfig i)
 nvimMenu items = do
@@ -78,7 +80,7 @@ staticNvimMenuWith options items prompt =
       #size <|>~ Just (length items)
 
 staticNvimMenu ::
-  Members [Rpc, Rpc !! RpcError, Time t d, Race, Embed IO, Final IO] r =>
+  Members [Sync PromptQuit, Rpc, Rpc !! RpcError, Time t d, Race, Embed IO, Final IO] r =>
   [MenuItem i] ->
   Sem r (NvimMenuConfig i)
 staticNvimMenu items = do

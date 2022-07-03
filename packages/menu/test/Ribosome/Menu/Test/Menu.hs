@@ -28,6 +28,7 @@ import Ribosome.Menu.Data.MenuState (
   semState,
   )
 import Ribosome.Menu.Data.NvimMenuConfig (NvimMenuConfig)
+import Ribosome.Menu.Data.PromptQuit (PromptQuit)
 import Ribosome.Menu.Effect.MenuConsumer (MenuConsumer (MenuConsumerEvent))
 import qualified Ribosome.Menu.Effect.MenuRenderer as MenuRenderer
 import Ribosome.Menu.Effect.MenuRenderer (MenuRenderer)
@@ -76,6 +77,7 @@ type MenuTestStack i =
   [
     Scoped () PromptRenderer,
     MenuRenderer i,
+    Sync PromptQuit,
     Sync PromptListening
   ] ++ MenuStack i ++ [
     Log,
@@ -133,7 +135,7 @@ menuTestDef ::
   Show result =>
   Members (MenuStack i) r =>
   Members [MenuConsumer result, MenuRenderer i, Scoped pres PromptRenderer] r =>
-  Members [Sync PromptListening, Error TestError, Log, Mask Restoration, Race, Resource, Async, Embed IO, Final IO] r =>
+  Members [Sync PromptQuit, Sync PromptListening, Error TestError, Log, Mask Restoration, Race, Resource, Async, Embed IO, Final IO] r =>
   InterpretersFor (MenuTestEffects i result) r
 menuTestDef =
   menuTest [StartInsert] fuzzyMonotonic (Seconds 5) (throw . TestError)
@@ -144,7 +146,7 @@ staticMenuTestDef ::
   Show result =>
   Members (MenuStack i) r =>
   Members [MenuConsumer result, MenuRenderer i, Scoped pres PromptRenderer] r =>
-  Members [Sync PromptListening, Error TestError, Log, Mask Restoration, Race, Resource, Async, Embed IO, Final IO] r =>
+  Members [Sync PromptQuit, Sync PromptListening, Error TestError, Log, Mask Restoration, Race, Resource, Async, Embed IO, Final IO] r =>
   [MenuItem i] ->
   InterpretersFor (MenuTestEffects i result) r
 staticMenuTestDef items test =
@@ -158,7 +160,7 @@ staticNvimMenuTestDef ::
   Show result =>
   Members (MenuStack i) r =>
   Members [MenuConsumer result, Rpc, Rpc !! RpcError, Settings !! SettingError, Scratch] r =>
-  Members [Sync PromptListening, Error TestError, Log, Mask Restoration, Race, Resource, Async, Embed IO, Final IO] r =>
+  Members [Sync PromptQuit, Sync PromptListening, Error TestError, Log, Mask Restoration, Race, Resource, Async, Embed IO, Final IO] r =>
   NvimMenuConfig i ->
   InterpretersFor (MenuTestEffects i result) r
 staticNvimMenuTestDef conf =

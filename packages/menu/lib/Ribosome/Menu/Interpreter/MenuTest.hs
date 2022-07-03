@@ -30,6 +30,7 @@ import Ribosome.Menu.Nvim (interpretNvimMenu)
 import Ribosome.Menu.Prompt (PromptConfig (PromptConfig), PromptFlag, PromptListening (PromptListening), queuePrompt)
 import Ribosome.Menu.Prompt.Data.PromptInputEvent (PromptInputEvent)
 import Ribosome.Menu.Stream.Util (queueStream)
+import Ribosome.Menu.Data.PromptQuit (PromptQuit)
 
 waitEvent ::
   TimeUnit u =>
@@ -112,7 +113,7 @@ withTestMenu ::
   TimeUnit u =>
   Members (MenuStack i) r =>
   Members [Sync (MenuResult result), MenuConsumer result, MenuRenderer i, PromptEvents, PromptRenderer] r =>
-  Members [Sync PromptListening, Log, Mask Restoration, Race, Resource, Async, Embed IO, Final IO] r =>
+  Members [Sync PromptQuit, Sync PromptListening, Log, Mask Restoration, Race, Resource, Async, Embed IO, Final IO] r =>
   u ->
   (∀ x . Text -> Sem r x) ->
   MenuConfig i ->
@@ -142,7 +143,7 @@ menuTest ::
   TimeUnit u =>
   Members (MenuStack i) r =>
   Members [MenuConsumer result, MenuRenderer i, Scoped pres PromptRenderer] r =>
-  Members [Sync PromptListening, Log, Mask Restoration, Race, Resource, Async, Embed IO, Final IO] r =>
+  Members [Sync PromptQuit, Sync PromptListening, Log, Mask Restoration, Race, Resource, Async, Embed IO, Final IO] r =>
   [PromptFlag] ->
   MenuItemFilter i ->
   u ->
@@ -162,7 +163,7 @@ staticMenuTest ::
   TimeUnit u =>
   Members (MenuStack i) r =>
   Members [MenuConsumer result, MenuRenderer i, Scoped pres PromptRenderer] r =>
-  Members [Sync PromptListening, Log, Mask Restoration, Race, Async, Embed IO, Final IO] r =>
+  Members [Sync PromptQuit, Sync PromptListening, Log, Mask Restoration, Race, Async, Embed IO, Final IO] r =>
   [PromptFlag] ->
   MenuItemFilter i ->
   [MenuItem i] ->
@@ -182,7 +183,7 @@ staticNvimMenuTest ::
   TimeUnit u =>
   Members (MenuStack i) r =>
   Members [MenuConsumer result, Rpc, Rpc !! RpcError, Settings !! SettingError, Scratch] r =>
-  Members [Sync PromptListening, Log, Mask Restoration, Race, Async, Embed IO, Final IO] r =>
+  Members [Sync PromptQuit, Sync PromptListening, Log, Mask Restoration, Race, Async, Embed IO, Final IO] r =>
   NvimMenuConfig i ->
   u ->
   (∀ x . Text -> Sem r x) ->

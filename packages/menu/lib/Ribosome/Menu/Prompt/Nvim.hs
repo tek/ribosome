@@ -5,6 +5,7 @@ import qualified Polysemy.Conc as Conc
 import qualified Polysemy.Time as Time
 import Prelude hiding (consume)
 import qualified Streamly.Prelude as Stream
+import qualified Sync
 
 import Ribosome.Api.Window (redraw)
 import Ribosome.Final (inFinal_)
@@ -15,6 +16,7 @@ import Ribosome.Host.Data.RpcError (RpcError)
 import qualified Ribosome.Host.Effect.Rpc as Rpc
 import Ribosome.Host.Effect.Rpc (Rpc)
 import Ribosome.Host.Modify (silentBang)
+import Ribosome.Menu.Data.PromptQuit (PromptQuit)
 import Ribosome.Menu.Prompt.Data.Codes (decodeInputChar, decodeInputNum)
 import Ribosome.Menu.Prompt.Data.InputEvent (InputEvent)
 import qualified Ribosome.Menu.Prompt.Data.InputEvent as InputEvent (InputEvent (..))
@@ -32,16 +34,15 @@ quitCharOrd =
   ord quitChar
 
 getChar ::
-  Members [Rpc !! RpcError, Rpc, Race, Embed IO] r =>
-  MVar () ->
+  Members [Sync PromptQuit, Rpc !! RpcError, Rpc, Race, Embed IO] r =>
   Sem r InputEvent
-getChar quit =
+getChar =
   resumeAs @RpcError InputEvent.Interrupt consume
   where
     consume =
       either pure event =<< Conc.race waitQuit (getchar [])
     waitQuit =
-      embed (readMVar quit) *> getchar [toMsgpack True] $> InputEvent.Interrupt
+      Sync.block *> getchar [toMsgpack True] $> InputEvent.Interrupt
     getchar =
       vimCallFunction "getchar"
     event (Right c) =
@@ -55,15 +56,15 @@ getChar quit =
 
 getCharStream ::
   TimeUnit u =>
-  Members [Rpc, Rpc !! RpcError, Time t d, Race, Embed IO, Final IO] r =>
+  Members [Sync PromptQuit, Rpc, Rpc !! RpcError, Time t d, Race, Embed IO, Final IO] r =>
   u ->
   Sem r PromptInput
 getCharStream interval =
   inFinal_ \ lowerMaybe lower_ pur ->
-    pur $ PromptInput \ quit -> do
+    pur $ PromptInput do
       let
         run =
-          maybe run check =<< Stream.fromEffect (lowerMaybe (getChar quit))
+          maybe run check =<< Stream.fromEffect (lowerMaybe getChar)
         check = \case
           InputEvent.Character a ->
             Stream.cons (PromptInputEvent.Character a) run

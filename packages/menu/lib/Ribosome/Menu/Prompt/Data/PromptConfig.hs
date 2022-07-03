@@ -15,7 +15,7 @@ data PromptFlag =
   deriving stock (Eq, Show)
 
 newtype PromptInput =
-  PromptInput { unPromptInput :: MVar () -> SerialT IO PromptInputEvent }
+  PromptInput { unPromptInput :: SerialT IO PromptInputEvent }
 
 data PromptConfig =
   PromptConfig {

@@ -19,7 +19,7 @@ promptInputWith ::
   SerialT IO Text ->
   PromptInput
 promptInputWith delay interval chars =
-  PromptInput \ _ -> do
+  PromptInput do
     traverse_ (Stream.fromEffect . sleepIO) delay
     maybe id Stream.delay interval (PromptInputEvent.Character <$> chars)
 

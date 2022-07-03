@@ -14,15 +14,16 @@ import Ribosome.Menu.Prompt.Data.PromptInputEvent (PromptInputEvent)
 import Ribosome.Menu.Prompt.Input (promptInput, promptInputWith)
 import Ribosome.Menu.Prompt.Nvim
 import Ribosome.Menu.Stream.Util (queueStream)
+import Ribosome.Menu.Data.PromptQuit (PromptQuit)
 
 defaultPrompt ::
-  Members [Rpc, Rpc !! RpcError, Time t d, Race, Embed IO, Final IO] r =>
+  Members [Sync PromptQuit, Rpc, Rpc !! RpcError, Time t d, Race, Embed IO, Final IO] r =>
   Sem r PromptInput
 defaultPrompt =
   getCharStream (MilliSeconds 33)
 
 defaultPromptConfig ::
-  Members [Rpc, Rpc !! RpcError, Time t d, Race, Embed IO, Final IO] r =>
+  Members [Sync PromptQuit, Rpc, Rpc !! RpcError, Time t d, Race, Embed IO, Final IO] r =>
   [PromptFlag] ->
   Sem r PromptConfig
 defaultPromptConfig flags = do
@@ -33,4 +34,4 @@ queuePrompt ::
   Members [Queue PromptInputEvent, Final IO] r =>
   Sem r PromptInput
 queuePrompt =
-  PromptInput . const <$> queueStream
+  PromptInput <$> queueStream
