@@ -197,6 +197,7 @@ in {
       "generic-lens"
       "lens"
       "mtl"
+      "polysemy-chronos"
       "polysemy-conc"
       "ribosome"
       "ribosome-host"
@@ -208,6 +209,7 @@ in {
       dependencies = [
         "hedgehog"
         "lens"
+        "polysemy-chronos"
         "polysemy-conc"
         "polysemy-test"
         "ribosome"

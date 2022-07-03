@@ -8,37 +8,41 @@ import Data.Generics.Labels ()
 import qualified Data.Text as Text (drop, dropEnd, isPrefixOf, length, splitAt)
 import Exon (exon)
 import qualified Log
+import qualified Polysemy.Time as Time
 import Prelude hiding (input, modifyMVar, output)
 import qualified Streamly.Data.Fold as Fold
 import qualified Streamly.Internal.Data.Stream.IsStream as Stream
 import Streamly.Prelude (SerialT)
 import qualified Sync
-import Time (MilliSeconds, convert)
+import Time (MilliSeconds (MilliSeconds), convert)
 
 import Ribosome.Api.Input (syntheticInput)
 import Ribosome.Final (inFinal)
 import Ribosome.Host.Data.Tuple (dup)
 import Ribosome.Host.Effect.Rpc (Rpc)
-import Ribosome.Menu.Data.PromptQuit (PromptQuit (PromptQuit))
 import Ribosome.Menu.Effect.PromptEvents (PromptEvents, handlePromptEvent)
+import qualified Ribosome.Menu.Effect.PromptInput as PromptInput
+import Ribosome.Menu.Effect.PromptInput (PromptInput)
 import qualified Ribosome.Menu.Effect.PromptRenderer as PromptRenderer
 import Ribosome.Menu.Effect.PromptRenderer (PromptRenderer)
 import Ribosome.Menu.Prompt.Data.CursorUpdate (CursorUpdate)
 import qualified Ribosome.Menu.Prompt.Data.CursorUpdate as CursorUpdate (CursorUpdate (..))
+import qualified Ribosome.Menu.Prompt.Data.InputEvent as InputEvent
 import Ribosome.Menu.Prompt.Data.Prompt (
   Prompt (Prompt),
   PromptChange (PromptAppend, PromptRandom, PromptUnappend),
   PromptText (PromptText),
   )
-import Ribosome.Menu.Prompt.Data.PromptConfig (PromptInput (PromptInput), PromptListening (PromptListening))
 import qualified Ribosome.Menu.Prompt.Data.PromptControlEvent as PromptControlEvent
 import Ribosome.Menu.Prompt.Data.PromptControlEvent (PromptControlEvent)
 import qualified Ribosome.Menu.Prompt.Data.PromptEvent as PromptEvent
 import Ribosome.Menu.Prompt.Data.PromptEvent (PromptEvent)
 import Ribosome.Menu.Prompt.Data.PromptInputEvent (PromptInputEvent)
 import qualified Ribosome.Menu.Prompt.Data.PromptInputEvent as PromptInputEvent (PromptInputEvent (..))
+import Ribosome.Menu.Prompt.Data.PromptListening (PromptListening (PromptListening))
 import Ribosome.Menu.Prompt.Data.PromptMode (PromptMode)
 import qualified Ribosome.Menu.Prompt.Data.PromptMode as PromptMode (PromptMode (..))
+import Ribosome.Menu.Prompt.Data.PromptQuit (PromptQuit (PromptQuit))
 import qualified Ribosome.Menu.Prompt.Data.PromptUpdate as PromptUpdate
 import Ribosome.Menu.Prompt.Data.TextUpdate (TextUpdate)
 import qualified Ribosome.Menu.Prompt.Data.TextUpdate as TextUpdate (TextUpdate (..))
@@ -174,36 +178,57 @@ processPromptEvent = \case
     newPrompt <- Sync.modify (pure . dup . modifyPrompt state (CursorUpdate.Index cursor) (TextUpdate.Set text))
     pure (Just (newPrompt, PromptEvent.Edit))
 
-promptWithControl ::
-  Members [PromptEvents, PromptRenderer, Sync Prompt, Sync PromptQuit, Sync PromptListening, Mask res, Log, Resource] r =>
+inputEvent ::
+  Members [PromptInput, Time t d] r =>
   (∀ x . Sem r x -> IO (Maybe x)) ->
-  PromptInput ->
+  SerialT IO PromptInputEvent
+inputEvent lower =
+  spin
+  where
+    spin =
+      Stream.fromEffect (lower PromptInput.event) >>= \case
+        Just event -> case event of
+          InputEvent.Character a ->
+            Stream.cons (PromptInputEvent.Character a) spin
+          InputEvent.Interrupt ->
+            Stream.fromPure PromptInputEvent.Interrupt
+          InputEvent.Error e ->
+            Stream.fromPure (PromptInputEvent.Error e)
+          InputEvent.NoInput ->
+            Stream.before (void (lower (Time.sleep (MilliSeconds 33)))) spin
+          InputEvent.Unexpected _ ->
+            spin
+        Nothing ->
+          Stream.nil
+
+promptWithControl ::
+  Members [PromptEvents, PromptInput, PromptRenderer, Sync Prompt, Sync PromptQuit, Sync PromptListening, Mask res, Time t d, Log, Resource] r =>
+  (∀ x . Sem r x -> IO (Maybe x)) ->
   SerialT IO PromptControlEvent ->
   SerialT IO (Prompt, PromptEvent)
-promptWithControl lower (PromptInput source) control =
+promptWithControl lower control =
   Stream.tapAsync (Fold.drainBy (lower . PromptRenderer.renderPrompt . fst)) $
   takeUntilNothing $
   Stream.mapM (liftIO . fmap join . lower . processPromptEvent) $
   Stream.parallelMin (Left <$> Stream.before (lower (Sync.putTry PromptListening)) control) (Right <$> sourceWithInit)
   where
     sourceWithInit =
-      Stream.cons PromptInputEvent.Init source
+      Stream.cons PromptInputEvent.Init (inputEvent lower)
 
 pristinePrompt :: Bool -> Prompt
 pristinePrompt insert =
   Prompt 0 (if insert then PromptMode.Insert else PromptMode.Normal) ""
 
 withPromptStream ::
-  Members [PromptEvents, PromptRenderer, Mask res, Sync PromptQuit, Sync PromptListening, Log, Resource, Race, Embed IO, Final IO] r =>
+  Members [PromptEvents, PromptInput, PromptRenderer, Mask res, Time t d, Sync PromptQuit, Sync PromptListening, Log, Resource, Race, Embed IO, Final IO] r =>
   Prompt ->
-  PromptInput ->
   ((TMChan PromptControlEvent, SerialT IO (Prompt, PromptEvent)) -> Sem r a) ->
   Sem r a
-withPromptStream initial promptInput use = do
+withPromptStream initial use = do
   chan <- embed (atomically newTMChan)
   interpretSyncAs initial do
     res <- inFinal \ _ lower pur ex ->
-      pur (chan, Stream.finally (lower (Sync.putTry PromptQuit) *> atomically (closeTMChan chan)) (promptWithControl (fmap ex . lower) promptInput (chanStream chan)))
+      pur (chan, Stream.finally (lower (Sync.putTry PromptQuit) *> atomically (closeTMChan chan)) (promptWithControl (fmap ex . lower) (chanStream chan)))
     raise (use res)
 
 withPromptInput ::

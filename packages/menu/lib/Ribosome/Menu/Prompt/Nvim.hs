@@ -1,14 +1,9 @@
 module Ribosome.Menu.Prompt.Nvim where
 
 import qualified Data.Text as Text (singleton, splitAt, uncons)
-import qualified Polysemy.Conc as Conc
-import qualified Polysemy.Time as Time
 import Prelude hiding (consume)
-import qualified Streamly.Prelude as Stream
-import qualified Sync
 
 import Ribosome.Api.Window (redraw)
-import Ribosome.Final (inFinal_)
 import qualified Ribosome.Host.Api.Data as ApiData (vimCommand)
 import Ribosome.Host.Api.Effect (nvimInput, vimCallFunction, vimCommand, vimCommandOutput, vimGetOption, vimSetOption)
 import Ribosome.Host.Class.Msgpack.Encode (toMsgpack)
@@ -16,67 +11,8 @@ import Ribosome.Host.Data.RpcError (RpcError)
 import qualified Ribosome.Host.Effect.Rpc as Rpc
 import Ribosome.Host.Effect.Rpc (Rpc)
 import Ribosome.Host.Modify (silentBang)
-import Ribosome.Menu.Data.PromptQuit (PromptQuit)
-import Ribosome.Menu.Prompt.Data.Codes (decodeInputChar, decodeInputNum)
-import Ribosome.Menu.Prompt.Data.InputEvent (InputEvent)
-import qualified Ribosome.Menu.Prompt.Data.InputEvent as InputEvent (InputEvent (..))
 import Ribosome.Menu.Prompt.Data.Prompt (Prompt (Prompt), PromptText (PromptText))
-import Ribosome.Menu.Prompt.Data.PromptConfig (PromptInput (PromptInput))
-import qualified Ribosome.Menu.Prompt.Data.PromptInputEvent as PromptInputEvent (PromptInputEvent (..))
 import Ribosome.Text (escapeQuotes)
-
-quitChar :: Char
-quitChar =
-  '†'
-
-quitCharOrd :: Int
-quitCharOrd =
-  ord quitChar
-
-getChar ::
-  Members [Sync PromptQuit, Rpc !! RpcError, Rpc, Race, Embed IO] r =>
-  Sem r InputEvent
-getChar =
-  resumeAs @RpcError InputEvent.Interrupt consume
-  where
-    consume =
-      either pure event =<< Conc.race waitQuit (getchar [])
-    waitQuit =
-      Sync.block *> getchar [toMsgpack True] $> InputEvent.Interrupt
-    getchar =
-      vimCallFunction "getchar"
-    event (Right c) =
-      pure (InputEvent.Character (fromMaybe c (decodeInputChar c)))
-    event (Left 0) =
-      pure InputEvent.NoInput
-    event (Left num) | num == quitCharOrd =
-      pure InputEvent.Interrupt
-    event (Left num) =
-      maybe (InputEvent.Unexpected num) InputEvent.Character <$> decodeInputNum num
-
-getCharStream ::
-  TimeUnit u =>
-  Members [Sync PromptQuit, Rpc, Rpc !! RpcError, Time t d, Race, Embed IO, Final IO] r =>
-  u ->
-  Sem r PromptInput
-getCharStream interval =
-  inFinal_ \ lowerMaybe lower_ pur ->
-    pur $ PromptInput do
-      let
-        run =
-          maybe run check =<< Stream.fromEffect (lowerMaybe getChar)
-        check = \case
-          InputEvent.Character a ->
-            Stream.cons (PromptInputEvent.Character a) run
-          InputEvent.Interrupt ->
-            Stream.fromPure PromptInputEvent.Interrupt
-          InputEvent.Error e ->
-            Stream.fromPure (PromptInputEvent.Error e)
-          InputEvent.NoInput ->
-            Stream.before (lower_ (Time.sleep interval)) run
-          InputEvent.Unexpected _ ->
-            run
-      run
 
 promptFragment :: Text -> Text -> [Text]
 promptFragment hl text =

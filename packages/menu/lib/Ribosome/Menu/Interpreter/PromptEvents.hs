@@ -5,7 +5,7 @@ import qualified Data.Text as Text (isPrefixOf)
 import Ribosome.Menu.Effect.PromptEvents (PromptEvents (HandlePromptEvent))
 import Ribosome.Menu.Prompt.Data.CursorUpdate (CursorUpdate)
 import qualified Ribosome.Menu.Prompt.Data.CursorUpdate as CursorUpdate (CursorUpdate (..))
-import Ribosome.Menu.Prompt.Data.PromptConfig (PromptFlag, onlyInsert)
+import Ribosome.Menu.Prompt.Data.PromptFlag (PromptFlag, onlyInsert)
 import Ribosome.Menu.Prompt.Data.PromptInputEvent (PromptInputEvent)
 import qualified Ribosome.Menu.Prompt.Data.PromptInputEvent as PromptInputEvent (PromptInputEvent (..))
 import qualified Ribosome.Menu.Prompt.Data.PromptMode as PromptMode

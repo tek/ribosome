@@ -1,4 +1,4 @@
-module Ribosome.Menu.Data.PromptQuit where
+module Ribosome.Menu.Prompt.Data.PromptQuit where
 
 data PromptQuit =
   PromptQuit

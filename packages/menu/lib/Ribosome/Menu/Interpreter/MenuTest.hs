@@ -2,6 +2,7 @@ module Ribosome.Menu.Interpreter.MenuTest where
 
 import Conc (Restoration, interpretQueueTBM, interpretSync, resultToMaybe, withAsync_)
 import Exon (exon)
+import Polysemy.Chronos (ChronosTime)
 import qualified Queue
 import qualified Streamly.Prelude as Stream
 import qualified Sync
@@ -22,15 +23,18 @@ import Ribosome.Menu.Effect.MenuConsumer (MenuConsumer (MenuConsumerEvent), menu
 import Ribosome.Menu.Effect.MenuRenderer (MenuRenderer, withMenuRenderer)
 import Ribosome.Menu.Effect.MenuTest (MenuTest (ItemsDone, Result, SendItem, SendPrompt), sendStaticItems)
 import Ribosome.Menu.Effect.PromptEvents (PromptEvents)
+import Ribosome.Menu.Effect.PromptInput (PromptInput)
 import Ribosome.Menu.Effect.PromptRenderer (PromptRenderer, withPrompt)
 import Ribosome.Menu.Filters (fuzzyMonotonic)
 import Ribosome.Menu.Interpreter.PromptEvents (interpretPromptEventsDefault)
+import Ribosome.Menu.Interpreter.PromptInput (interpretPromptInputQueue)
 import Ribosome.Menu.Main (menuMain)
 import Ribosome.Menu.Nvim (interpretNvimMenu)
-import Ribosome.Menu.Prompt (PromptConfig (PromptConfig), PromptFlag, PromptListening (PromptListening), queuePrompt)
-import Ribosome.Menu.Prompt.Data.PromptInputEvent (PromptInputEvent)
+import Ribosome.Menu.Prompt.Data.InputEvent (InputEvent)
+import Ribosome.Menu.Prompt.Data.PromptFlag (PromptFlag)
+import Ribosome.Menu.Prompt.Data.PromptListening (PromptListening (PromptListening))
+import Ribosome.Menu.Prompt.Data.PromptQuit (PromptQuit)
 import Ribosome.Menu.Stream.Util (queueStream)
-import Ribosome.Menu.Data.PromptQuit (PromptQuit)
 
 waitEvent ::
   TimeUnit u =>
@@ -51,7 +55,7 @@ interpretMenuTest ::
   Show i =>
   Show u =>
   TimeUnit u =>
-  Members [Queue PromptInputEvent, Queue (MenuItem i), Queue MenuEvent, Sync (MenuResult a)] r =>
+  Members [Queue InputEvent, Queue (MenuItem i), Queue MenuEvent, Sync (MenuResult a)] r =>
   u ->
   (∀ x . Text -> Sem r x) ->
   InterpreterFor (MenuTest i a) r
@@ -99,21 +103,22 @@ runMenuTest ::
   Members [MenuConsumer o, Resource, Race, Embed IO] r =>
   u ->
   (∀ x . Text -> Sem r x) ->
-  InterpretersFor [MenuTest i a, Queue MenuEvent, Queue PromptInputEvent, Queue (MenuItem i), Sync (MenuResult a)] r
+  InterpretersFor [PromptInput, MenuTest i a, Queue MenuEvent, Queue InputEvent, Queue (MenuItem i), Sync (MenuResult a)] r
 runMenuTest timeout failure =
   interpretSync .
   interpretQueueTBM @(MenuItem _) 64 .
-  interpretQueueTBM @PromptInputEvent 64 .
+  interpretQueueTBM @InputEvent 64 .
   interpretQueueTBM @MenuEvent 64 .
   interpretMenuTest timeout (insertAt @0 . failure) .
+  interpretPromptInputQueue .
   interceptMenuConsumerQueue timeout (insertAt @0 . failure)
 
 withTestMenu ::
   Show result =>
   TimeUnit u =>
   Members (MenuStack i) r =>
-  Members [Sync (MenuResult result), MenuConsumer result, MenuRenderer i, PromptEvents, PromptRenderer] r =>
-  Members [Sync PromptQuit, Sync PromptListening, Log, Mask Restoration, Race, Resource, Async, Embed IO, Final IO] r =>
+  Members [Sync (MenuResult result), MenuConsumer result, MenuRenderer i, PromptInput, PromptEvents, PromptRenderer] r =>
+  Members [Sync PromptQuit, Sync PromptListening, ChronosTime, Log, Mask Restoration, Race, Resource, Async, Embed IO, Final IO] r =>
   u ->
   (∀ x . Text -> Sem r x) ->
   MenuConfig i ->
@@ -126,9 +131,10 @@ withTestMenu timeout failure conf sem =
 
 type MenuTestEffects i result =
   [
+    PromptInput,
     MenuTest i result,
     Queue MenuEvent,
-    Queue PromptInputEvent,
+    Queue InputEvent,
     Queue (MenuItem i),
     Sync (MenuResult result),
     PromptEvents,
@@ -143,7 +149,7 @@ menuTest ::
   TimeUnit u =>
   Members (MenuStack i) r =>
   Members [MenuConsumer result, MenuRenderer i, Scoped pres PromptRenderer] r =>
-  Members [Sync PromptQuit, Sync PromptListening, Log, Mask Restoration, Race, Resource, Async, Embed IO, Final IO] r =>
+  Members [Sync PromptQuit, Sync PromptListening, ChronosTime, Log, Mask Restoration, Race, Resource, Async, Embed IO, Final IO] r =>
   [PromptFlag] ->
   MenuItemFilter i ->
   u ->
@@ -151,9 +157,8 @@ menuTest ::
   InterpretersFor (MenuTestEffects i result) r
 menuTest flags itemFilter timeout failure sem =
   withPrompt $ interpretPromptEventsDefault flags $ runMenuTest timeout (insertAt @0 . failure) do
-    prompts <- queuePrompt
     items <- queueStream
-    withTestMenu timeout (insertAt @0 . failure) (MenuConfig items (Just itemFilter) (PromptConfig (Just prompts) flags)) sem
+    withTestMenu timeout (insertAt @0 . failure) (MenuConfig items (Just itemFilter) flags) sem
 
 staticMenuTest ::
   ∀ i result pres u r .
@@ -163,7 +168,7 @@ staticMenuTest ::
   TimeUnit u =>
   Members (MenuStack i) r =>
   Members [MenuConsumer result, MenuRenderer i, Scoped pres PromptRenderer] r =>
-  Members [Sync PromptQuit, Sync PromptListening, Log, Mask Restoration, Race, Async, Embed IO, Final IO] r =>
+  Members [Sync PromptQuit, Sync PromptListening, ChronosTime, Log, Mask Restoration, Race, Async, Embed IO, Final IO] r =>
   [PromptFlag] ->
   MenuItemFilter i ->
   [MenuItem i] ->
@@ -183,12 +188,12 @@ staticNvimMenuTest ::
   TimeUnit u =>
   Members (MenuStack i) r =>
   Members [MenuConsumer result, Rpc, Rpc !! RpcError, Settings !! SettingError, Scratch] r =>
-  Members [Sync PromptQuit, Sync PromptListening, Log, Mask Restoration, Race, Async, Embed IO, Final IO] r =>
+  Members [Sync PromptQuit, Sync PromptListening, ChronosTime, Log, Mask Restoration, Race, Async, Embed IO, Final IO] r =>
   NvimMenuConfig i ->
   u ->
   (∀ x . Text -> Sem r x) ->
   InterpretersFor (MenuTestEffects i result) r
-staticNvimMenuTest conf@(NvimMenuConfig (MenuConfig items itemFilter (PromptConfig _ flags)) _) timeout failure sem = do
+staticNvimMenuTest conf@(NvimMenuConfig (MenuConfig items itemFilter flags) _) timeout failure sem = do
   interpretNvimMenu conf $ withMenuRenderer do
     staticItems <- embed (Stream.toList items)
-    staticMenuTest flags (fromMaybe fuzzyMonotonic itemFilter) staticItems timeout (insertAt @0 . failure) (insertAt @7 sem)
+    staticMenuTest flags (fromMaybe fuzzyMonotonic itemFilter) staticItems timeout (insertAt @0 . failure) (insertAt @8 sem)

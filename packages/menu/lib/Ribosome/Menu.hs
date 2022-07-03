@@ -3,6 +3,7 @@ module Ribosome.Menu (
   module Ribosome.Menu.Effect.MenuConsumer,
   module Ribosome.Menu.Effect.MenuRenderer,
   module Ribosome.Menu.Effect.PromptEvents,
+  module Ribosome.Menu.Effect.PromptInput,
   module Ribosome.Menu.Effect.PromptRenderer,
   module Ribosome.Menu.Data.MenuAction,
   module Ribosome.Menu.Data.MenuItem,
@@ -15,10 +16,10 @@ module Ribosome.Menu (
   module Ribosome.Menu.ItemLens,
   module Ribosome.Menu.Items,
   module Ribosome.Menu.Main,
-  module Ribosome.Menu.Prompt,
-  module Ribosome.Menu.Prompt.Data.PromptConfig,
+  module Ribosome.Menu.Prompt.Data.PromptFlag,
+  module Ribosome.Menu.Prompt.Data.PromptListening,
   module Ribosome.Menu.Prompt.Data.PromptMode,
-  module Ribosome.Menu.Prompt.Nvim,
+  module Ribosome.Menu.Prompt.Data.PromptQuit,
   module Ribosome.Menu.Prompt.Run,
   module Ribosome.Menu.Nvim,
 ) where
@@ -64,6 +65,7 @@ import Ribosome.Menu.Data.MenuState (
 import Ribosome.Menu.Effect.MenuConsumer (MenuConsumer (..))
 import Ribosome.Menu.Effect.MenuRenderer (MenuRenderer (..), withMenuRenderer)
 import Ribosome.Menu.Effect.PromptEvents (PromptEvents (..))
+import Ribosome.Menu.Effect.PromptInput (PromptInput)
 import Ribosome.Menu.Effect.PromptRenderer (PromptRenderer (..), withPrompt)
 import Ribosome.Menu.Filters (fuzzy, fuzzyItemFilter, substringItemFilter)
 import Ribosome.Menu.Interpreter.MenuConsumer (Mappings, basic, defaultMappings, forMappings, withMappings)
@@ -93,16 +95,9 @@ import Ribosome.Menu.Items (
   )
 import Ribosome.Menu.Main (interpretMenu, menu, menuMain, simpleMenu)
 import Ribosome.Menu.Nvim (interpretNvimMenu, nvimMenu, nvimMenuWith, runNvimMenu, staticNvimMenu, staticNvimMenuWith)
-import Ribosome.Menu.Prompt (defaultPrompt)
 import Ribosome.Menu.Prompt.Data.Prompt (Prompt (Prompt), PromptText (PromptText))
-import Ribosome.Menu.Prompt.Data.PromptConfig (
-  PromptConfig (PromptConfig),
-  PromptFlag (..),
-  PromptInput (..),
-  PromptListening (PromptListening),
-  onlyInsert,
-  startInsert,
-  )
+import Ribosome.Menu.Prompt.Data.PromptFlag
+import Ribosome.Menu.Prompt.Data.PromptListening
 import Ribosome.Menu.Prompt.Data.PromptMode (PromptMode (..))
-import Ribosome.Menu.Prompt.Nvim (getCharStream)
+import Ribosome.Menu.Prompt.Data.PromptQuit
 import Ribosome.Menu.Prompt.Run (pristinePrompt, withPromptInput, withPromptStream)

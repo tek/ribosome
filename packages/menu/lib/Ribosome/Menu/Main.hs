@@ -27,20 +27,21 @@ import Ribosome.Menu.Data.MenuState (
   MenuStateEffects,
   readMenu,
   )
-import Ribosome.Menu.Data.PromptQuit (PromptQuit)
 import qualified Ribosome.Menu.Data.QuitReason as QuitReason
 import Ribosome.Menu.Effect.MenuConsumer (MenuConsumer, menuConsumerEvent)
 import qualified Ribosome.Menu.Effect.MenuRenderer as MenuRenderer
 import Ribosome.Menu.Effect.MenuRenderer (MenuRenderer, withMenuRenderer)
 import Ribosome.Menu.Effect.PromptEvents (PromptEvents)
+import Ribosome.Menu.Effect.PromptInput (PromptInput)
 import Ribosome.Menu.Effect.PromptRenderer (PromptRenderer, withPrompt)
 import Ribosome.Menu.Filters (fuzzy)
-import Ribosome.Menu.Prompt (PromptInput (PromptInput))
 import Ribosome.Menu.Prompt.Data.Prompt (Prompt)
-import Ribosome.Menu.Prompt.Data.PromptConfig (PromptConfig (PromptConfig), PromptListening, startInsert)
 import qualified Ribosome.Menu.Prompt.Data.PromptControlEvent as PromptControlEvent
 import Ribosome.Menu.Prompt.Data.PromptControlEvent (PromptControlEvent)
 import Ribosome.Menu.Prompt.Data.PromptEvent (PromptEvent)
+import Ribosome.Menu.Prompt.Data.PromptFlag (startInsert)
+import Ribosome.Menu.Prompt.Data.PromptListening (PromptListening)
+import Ribosome.Menu.Prompt.Data.PromptQuit (PromptQuit)
 import Ribosome.Menu.Prompt.Run (pristinePrompt, withPromptStream)
 import Ribosome.Menu.UpdateState (promptEvent, updateItems)
 
@@ -182,26 +183,22 @@ interpretMenu =
 menuMain ::
   Show a =>
   Members (MenuStack i) r =>
-  Members [MenuConsumer a, MenuRenderer i, PromptEvents, PromptRenderer] r =>
-  Members [Sync PromptQuit, Sync PromptListening, Log, Mask res, Race, Resource, Embed IO, Final IO] r =>
+  Members [MenuConsumer a, MenuRenderer i, PromptInput, PromptEvents, PromptRenderer] r =>
+  Members [Sync PromptQuit, Sync PromptListening, Log, Time t d, Mask res, Race, Resource, Embed IO, Final IO] r =>
   MenuConfig i ->
   Sem r (MenuResult a)
 menuMain conf = do
-  withPromptStream initialPrompt promptInput \ (promptControl, promptEvents) -> do
+  withPromptStream initialPrompt \ (promptControl, promptEvents) -> do
     stream <- menuStream conf promptControl (Stream.fromSerial promptEvents)
     menuResult =<< embed (Stream.last stream)
   where
     initialPrompt =
-      pristinePrompt (startInsert flags)
-    promptInput =
-      fromMaybe (PromptInput Stream.nil) customPrompt
-    PromptConfig customPrompt flags =
-      conf ^. #prompt
+      pristinePrompt (startInsert (conf ^. #flags))
 
 simpleMenu ::
   Show a =>
   Member (MenuRenderer i) r =>
-  Members [Sync PromptQuit, PromptEvents, Scoped pres PromptRenderer, Log, Mask mres, Resource, Race, Embed IO, Final IO] r =>
+  Members [Sync PromptQuit, PromptEvents, PromptInput, Scoped pres PromptRenderer, Log, Time t d, Mask mres, Resource, Race, Embed IO, Final IO] r =>
   InterpreterFor (MenuConsumer a) (Sync PromptQuit : Sync PromptListening : MenuStack i ++ PromptRenderer : r) ->
   MenuConfig i ->
   Sem r (MenuResult a)
@@ -210,11 +207,11 @@ simpleMenu consumer config =
     interpretMenu $ consumer $ menuMain config
 
 menu ::
-  ∀ a i pres mrres res r .
+  ∀ a i pres mrres res t d r .
   Show a =>
   Members (MenuStack i) r =>
-  Members [Sync PromptQuit, PromptEvents, MenuConsumer a, Scoped pres PromptRenderer] r =>
-  Members [Scoped mrres (MenuRenderer i), Sync PromptListening, Log, Mask res, Race, Resource, Embed IO, Final IO] r =>
+  Members [Sync PromptQuit, PromptEvents, PromptInput, MenuConsumer a, Scoped pres PromptRenderer] r =>
+  Members [Scoped mrres (MenuRenderer i), Sync PromptListening, Log, Time t d, Mask res, Race, Resource, Embed IO, Final IO] r =>
   MenuConfig i ->
   Sem r (MenuResult a)
 menu conf =
