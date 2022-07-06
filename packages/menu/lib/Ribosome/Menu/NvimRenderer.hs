@@ -1,6 +1,5 @@
 module Ribosome.Menu.NvimRenderer where
 
-import Control.Lens (use, view, views, (%=), (.=), (<.=), (^.))
 import Control.Monad.Trans.Reader (ReaderT, runReaderT)
 import Control.Monad.Trans.State.Strict (StateT (runStateT))
 import Data.Generics.Labels ()
@@ -9,6 +8,7 @@ import qualified Data.Map.Strict as Map
 import Data.Monoid (Sum (Sum, getSum))
 import qualified Data.Sequence as Seq
 import qualified Data.Text as Text (cons, snoc)
+import Lens.Micro.Mtl (use, view, (%=), (.=), (<.=))
 import qualified Polysemy.Log as Log
 
 import Ribosome.Api.Window (redraw, restoreView, setLine)
@@ -152,7 +152,7 @@ updateMenuState ::
 updateMenuState scratchMax = do
   oldIndexes <- use #indexes
   newCursor <- view cursor
-  count <- views entries (getSum . foldMap (Sum . Seq.length))
+  count <- view (entries . to (getSum . foldMap (Sum . Seq.length)))
   #view %= computeView newCursor (min count scratchMax) count
   #cursorIndex .= newCursor
   visible <- newEntrySlice

@@ -1,6 +1,5 @@
 module Ribosome.Internal.Scratch where
 
-import Control.Lens ((^.))
 import Data.Generics.Labels ()
 import qualified Data.Map.Strict as Map
 import Data.MessagePack (Object)

@@ -48,7 +48,7 @@ let
 
   dependencies = [
       { name = "base"; version = ">= 4.12 && < 5"; mixin = "hiding (Prelude)"; }
-      { name = "incipit"; version = ">= 0.3"; mixin = ["(Incipit as Prelude)" "hiding (Incipit)"]; }
+      { name = "prelate"; version = ">= 0.1"; mixin = ["(Prelate as Prelude)" "hiding (Prelate)"]; }
       "polysemy"
       "polysemy-plugin"
     ];
@@ -102,7 +102,6 @@ in {
         "exon"
         "generic-lens"
         "hedgehog"
-        "lens"
         "messagepack"
         "path"
         "polysemy-chronos"
@@ -131,7 +130,6 @@ in {
       "aeson"
       "exon"
       "generic-lens"
-      "lens"
       "messagepack"
       "optparse-applicative"
       "path"
@@ -165,7 +163,6 @@ in {
       "exon"
       "generic-lens"
       "hedgehog"
-      "lens"
       "lens-regex-pcre"
       "messagepack"
       "path"
@@ -195,7 +192,7 @@ in {
       "exon"
       "fuzzyfind"
       "generic-lens"
-      "lens"
+      "microlens-mtl"
       "mtl"
       "polysemy-chronos"
       "polysemy-conc"
@@ -208,7 +205,7 @@ in {
     tests.ribosome-menu-unit = exe "ribosome-menu" "test" {
       dependencies = [
         "hedgehog"
-        "lens"
+        "microlens-mtl"
         "polysemy-chronos"
         "polysemy-conc"
         "polysemy-test"
@@ -227,7 +224,7 @@ in {
       dependencies = [
         "criterion"
         "exon"
-        "lens"
+        "microlens"
         "ribosome"
         "ribosome-menu"
         "path"

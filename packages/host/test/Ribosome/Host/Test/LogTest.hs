@@ -1,6 +1,5 @@
 module Ribosome.Host.Test.LogTest where
 
-import Control.Lens ((?~))
 import Data.Generics.Labels ()
 import qualified Data.Text as Text
 import qualified Data.Text.IO as Text
@@ -29,7 +28,7 @@ handlers =
 fileTarget :: [Text]
 fileTarget =
   [
-    "\ESC[35m[crit] \ESC[0m [R.H.T.LogTest#23] error",
+    "\ESC[35m[crit] \ESC[0m [R.H.T.LogTest#22] error",
     "meltdown",
     ""
   ]

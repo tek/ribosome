@@ -1,9 +1,9 @@
 module Main where
 
 import qualified Control.Exception as Base
-import Control.Lens (view)
 import Criterion.Main (bench, bgroup, defaultConfig, defaultMainWith, env, whnfIO)
 import Exon (exon)
+import Lens.Micro.Extras (view)
 import Path (relfile)
 import Polysemy.Conc (interpretRace)
 import Polysemy.Log (Severity (Warn), interpretLogStderrLevelConc)

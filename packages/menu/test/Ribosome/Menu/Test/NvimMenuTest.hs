@@ -1,7 +1,7 @@
 module Ribosome.Menu.Test.NvimMenuTest where
 
-import Control.Lens (element, use, (.~), (?~), (^?))
 import qualified Data.Map.Strict as Map
+import Lens.Micro.Mtl (use)
 import Polysemy.Test (UnitTest, assertEq, runTestAuto, unitTest, (===))
 import qualified Streamly.Internal.Data.Stream.IsStream as Stream
 import Streamly.Prelude (SerialT)
@@ -75,7 +75,7 @@ exec =
     semState do
       CursorIndex s <- use cursor
       fs <- use sortedEntries
-      SemS (maybe menuOk menuSuccess (fs ^? element s . #item . #text))
+      SemS (maybe menuOk menuSuccess (fs ^? ix s . #item . #text))
 
 mappings ::
   MenuWrite Text r =>

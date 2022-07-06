@@ -1,7 +1,6 @@
 module Ribosome.Menu.Data.MenuState where
 
 import Conc (Lock, lock)
-import Control.Lens ((^.))
 import qualified Control.Monad.State as State
 import Control.Monad.State (MonadState)
 import Data.Generics.Labels ()

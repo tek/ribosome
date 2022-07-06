@@ -2,7 +2,6 @@ module Ribosome.Menu.Main where
 
 import Control.Concurrent.STM (atomically)
 import Control.Concurrent.STM.TMChan (TMChan, writeTMChan)
-import Control.Lens ((^.))
 import Data.Generics.Labels ()
 import Exon (exon)
 import Polysemy.Conc (interpretAtomic, interpretLockReentrant, interpretSync)

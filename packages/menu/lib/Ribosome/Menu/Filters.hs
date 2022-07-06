@@ -1,11 +1,11 @@
 module Ribosome.Menu.Filters where
 
-import Control.Lens (view)
 import Data.Composition ((.:))
 import Data.Generics.Labels ()
 import qualified Data.IntMap.Strict as IntMap
 import qualified Data.Sequence as Seq
 import qualified Data.Text as Text
+import Lens.Micro.Mtl (view)
 import Text.FuzzyFind (Alignment (Alignment), bestMatch)
 
 import qualified Ribosome.Menu.Data.Entry as Entry

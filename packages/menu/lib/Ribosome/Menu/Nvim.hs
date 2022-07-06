@@ -1,6 +1,5 @@
 module Ribosome.Menu.Nvim where
 
-import Control.Lens ((?~), (^.))
 import Polysemy.Chronos (ChronosTime)
 import qualified Streamly.Internal.Data.Stream.IsStream as Stream
 import Streamly.Prelude (SerialT)

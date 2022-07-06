@@ -1,7 +1,7 @@
 module Ribosome.Menu.Test.Menu where
 
 import Conc (Lock, Restoration, interpretQueueTBM, resultToMaybe)
-import Control.Lens (use, (^.))
+import Lens.Micro.Mtl (use)
 import Polysemy.Chronos (ChronosTime, interpretTimeChronos)
 import Polysemy.Log (interpretLogNull)
 import Polysemy.Test (Hedgehog, TestError (TestError), assertEq, assertJust, evalMaybe)

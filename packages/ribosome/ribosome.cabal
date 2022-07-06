@@ -172,8 +172,6 @@ library
     , base >=4.12 && <5
     , exon
     , generic-lens
-    , incipit >=0.3
-    , lens
     , messagepack
     , optparse-applicative
     , path
@@ -181,12 +179,13 @@ library
     , polysemy
     , polysemy-chronos
     , polysemy-plugin
+    , prelate >=0.1
     , prettyprinter
     , ribosome-host
   mixins:
       base hiding (Prelude)
-    , incipit (Incipit as Prelude)
-    , incipit hiding (Incipit)
+    , prelate (Prelate as Prelude)
+    , prelate hiding (Prelate)
   default-language: Haskell2010
 
 test-suite ribosome-unit
@@ -277,19 +276,19 @@ test-suite ribosome-unit
     , base >=4.12 && <5
     , exon
     , hedgehog
-    , incipit >=0.3
     , messagepack
     , path
     , polysemy
     , polysemy-conc
     , polysemy-plugin
     , polysemy-test
+    , prelate >=0.1
     , ribosome
     , ribosome-host
     , ribosome-host-test
     , tasty
   mixins:
       base hiding (Prelude)
-    , incipit (Incipit as Prelude)
-    , incipit hiding (Incipit)
+    , prelate (Prelate as Prelude)
+    , prelate hiding (Prelate)
   default-language: Haskell2010

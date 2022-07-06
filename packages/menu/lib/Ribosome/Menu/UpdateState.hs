@@ -1,10 +1,10 @@
 module Ribosome.Menu.UpdateState where
 
-import Control.Lens (use, uses, (%=), (+=), (.=))
 import qualified Data.IntMap.Strict as IntMap
 import qualified Data.Text as Text
 import qualified Data.Trie as Trie
 import Exon (exon)
+import Lens.Micro.Mtl (use, (%=), (+=), (.=))
 import qualified Polysemy.Log as Log
 import qualified Streamly.Internal.Data.Fold as Fold
 import qualified Streamly.Internal.Data.Stream.IsStream as Stream
@@ -65,7 +65,7 @@ popFiltered ::
   MenuItemFilter i ->
   MenuItemsSemS r i ()
 popFiltered query@(MenuQuery (encodeUtf8 -> queryBs)) itemFilter =
-  maybe (resetFiltered query itemFilter) matching =<< uses #history (`Trie.match` queryBs)
+  maybe (resetFiltered query itemFilter) matching =<< use (#history . to (`Trie.match` queryBs))
   where
     matching = \case
       (_, f, "") -> do
@@ -80,7 +80,7 @@ appendFilter ::
   MenuItemFilter i ->
   MenuItemsSemS r i ()
 appendFilter query filt =
-  ifM (uses #entries null) (resetFiltered query filt) (refineFiltered query filt =<< use #entries)
+  ifM (use (#entries . to null)) (resetFiltered query filt) (refineFiltered query filt =<< use #entries)
 
 promptChange ::
   Member (Embed IO) r =>
@@ -153,7 +153,7 @@ queryUpdate ::
 queryUpdate itemFilter =
   menuItemsState \ prompt _ ->
     semState do
-      change <- uses #currentQuery (diffPrompt prompt)
+      change <- use (#currentQuery . to (diffPrompt prompt))
       promptItemUpdate itemFilter change prompt
       pure MenuEvent.PromptEdit
 

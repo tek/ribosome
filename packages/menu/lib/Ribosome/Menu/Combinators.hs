@@ -1,10 +1,10 @@
 module Ribosome.Menu.Combinators where
 
-import Control.Lens (Getter, to, use, view, (%=), (.=))
 import qualified Data.IntMap.Strict as IntMap
 import qualified Data.Sequence as Seq
 import Data.Sequence ((|>))
 import qualified Data.Trie as Trie
+import Lens.Micro.Mtl (use, view, (%=), (.=))
 
 import Ribosome.Menu.Data.Entry (Entries, Entry)
 import Ribosome.Menu.Data.Menu (Menu)
@@ -33,7 +33,7 @@ sortEntries =
   concatMap (toList . snd) . IntMap.toDescList
 
 sortedEntries ::
-  Getter (Menu i) [Entry i]
+  SimpleGetter (Menu i) [Entry i]
 sortedEntries =
   #items . #entries . to sortEntries
 

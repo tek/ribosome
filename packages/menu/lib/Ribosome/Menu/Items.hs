@@ -3,10 +3,11 @@
 -- 'withFocus' and 'withSelection' will skip processing of the event downstream if the menu is empty.
 module Ribosome.Menu.Items where
 
-import Control.Lens (use, uses, (%=), (.=), (|>))
 import qualified Data.IntMap.Strict as IntMap
 import qualified Data.IntSet as IntSet
 import qualified Data.Sequence as Seq
+import Data.Sequence ((|>))
+import Lens.Micro.Mtl (use, (%=), (.=))
 import Prelude hiding (unify)
 
 import Ribosome.Menu.Data.CursorIndex (CursorIndex (CursorIndex))
@@ -141,7 +142,7 @@ deleteSelected ::
 deleteSelected =
   semState do
     CursorIndex curs <- use cursor
-    ((deletedEntries, deletedItems), kept) <- uses entries (popSelection curs)
+    ((deletedEntries, deletedItems), kept) <- use (entries . to (popSelection curs))
     entries .= kept
     history .= mempty
     items %= flip IntMap.withoutKeys (IntSet.fromList deletedItems)

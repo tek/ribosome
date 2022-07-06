@@ -20,6 +20,7 @@ import GHC.Generics (
   (:+:) (..),
   )
 import Path (Abs, Dir, File, Path, Rel, parseAbsDir, parseAbsFile, parseRelDir, parseRelFile)
+import Prelude hiding (to)
 import Time (MicroSeconds, MilliSeconds, NanoSeconds, Seconds (Seconds))
 
 import qualified Ribosome.Host.Class.Msgpack.Util as Util (illegalType, invalid, lookupObjectMap, missingRecordKey)

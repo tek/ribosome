@@ -1,8 +1,8 @@
 module Ribosome.Menu.Action where
 
 import Conc (Lock)
-import Control.Lens (to, use, (%=), (%~))
 import Data.Generics.Labels ()
+import Lens.Micro.Mtl (use, (%=))
 
 import Ribosome.Menu.Combinators (numVisible, overEntries)
 import Ribosome.Menu.Data.CursorIndex (CursorIndex (CursorIndex))

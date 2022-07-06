@@ -62,7 +62,7 @@ instance MsgpackEncode FloatBorder where
     Rounded -> toMsgpack @Text "rounded"
     Solid -> toMsgpack @Text "solid"
     Shadow -> toMsgpack @Text "shadow"
-    Manual chars -> toMsgpack chars
+    Manual cs -> toMsgpack cs
 
 instance Default FloatBorder where
   def =

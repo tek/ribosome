@@ -1,7 +1,6 @@
 module Ribosome.Menu.Interpreter.MenuRenderer where
 
 import Conc (interpretAtomic)
-import Control.Lens ((<>~), (^.))
 import qualified Data.Text as Text
 import qualified Log
 import Polysemy.Conc.Interpreter.Scoped (interpretScopedWith)

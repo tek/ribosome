@@ -102,8 +102,6 @@ library
     , exon
     , generic-lens
     , hedgehog
-    , incipit >=0.3
-    , lens
     , lens-regex-pcre
     , messagepack
     , path
@@ -112,13 +110,14 @@ library
     , polysemy-chronos
     , polysemy-plugin
     , polysemy-test
+    , prelate >=0.1
     , ribosome
     , ribosome-host
     , ribosome-host-test
   mixins:
       base hiding (Prelude)
-    , incipit (Incipit as Prelude)
-    , incipit hiding (Incipit)
+    , prelate (Prelate as Prelude)
+    , prelate hiding (Prelate)
   default-language: Haskell2010
 
 test-suite ribosome-test-unit
@@ -198,16 +197,16 @@ test-suite ribosome-test-unit
   ghc-options: -Wall -Wredundant-constraints -Wincomplete-uni-patterns -Wmissing-deriving-strategies -Widentities -Wunused-packages -fplugin=Polysemy.Plugin -threaded -rtsopts -with-rtsopts=-N
   build-depends:
       base >=4.12 && <5
-    , incipit >=0.3
     , polysemy
     , polysemy-plugin
     , polysemy-test
+    , prelate >=0.1
     , ribosome
     , ribosome-host
     , ribosome-test
     , tasty
   mixins:
       base hiding (Prelude)
-    , incipit (Incipit as Prelude)
-    , incipit hiding (Incipit)
+    , prelate (Prelate as Prelude)
+    , prelate hiding (Prelate)
   default-language: Haskell2010

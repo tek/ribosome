@@ -6,7 +6,7 @@
 module Ribosome.Menu.Items.Read where
 
 import Conc (Lock)
-import Control.Lens (use)
+import Lens.Micro.Mtl (use)
 
 import qualified Ribosome.Menu.Data.MenuAction as MenuAction
 import qualified Ribosome.Menu.Data.MenuItem as MenuItem

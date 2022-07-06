@@ -1,6 +1,5 @@
 module Ribosome.Test.EmbedTmux where
 
-import Control.Lens ((.~))
 import Polysemy.Test (UnitTest)
 
 import Ribosome.Effect.NvimPlugin (NvimPlugin)

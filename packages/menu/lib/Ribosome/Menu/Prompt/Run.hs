@@ -3,7 +3,6 @@ module Ribosome.Menu.Prompt.Run where
 import Conc (interpretSyncAs, withAsync_)
 import Control.Concurrent.STM (atomically)
 import Control.Concurrent.STM.TMChan (TMChan, closeTMChan, newTMChan)
-import Control.Lens ((^.))
 import Data.Generics.Labels ()
 import qualified Data.Text as Text (drop, dropEnd, isPrefixOf, length, splitAt)
 import Exon (exon)

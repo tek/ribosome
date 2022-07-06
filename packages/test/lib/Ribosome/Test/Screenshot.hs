@@ -6,7 +6,6 @@ import Chiasma.Effect.TmuxClient (NativeTmux)
 import qualified Chiasma.Test.Screenshot as Chiasma
 import Chiasma.Tmux (withTmux)
 import Chiasma.TmuxApi (Tmux)
-import Control.Lens ((.~))
 import Control.Lens.Regex.Text (group, regex)
 import Exon (exon)
 import Hedgehog.Internal.Property (Failure)

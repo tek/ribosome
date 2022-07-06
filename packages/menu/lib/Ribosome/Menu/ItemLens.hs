@@ -1,10 +1,11 @@
-{-# OPTIONS_GHC -Wno-redundant-constraints #-}
+{-# options_ghc -Wno-redundant-constraints #-}
+
 module Ribosome.Menu.ItemLens where
 
-import Control.Lens (Getter, Lens', LensLike', element, to, views, (^.), (^?))
 import Data.Generics.Labels ()
 import qualified Data.IntMap.Strict as IntMap
 import Data.Trie (Trie)
+import Lens.Micro.Mtl (view)
 
 import Ribosome.Menu.Combinators (filterEntries, foldEntries, sortedEntries)
 import Ribosome.Menu.Data.CursorIndex (CursorIndex (CursorIndex))
@@ -83,11 +84,10 @@ getFocus ::
   Menu i ->
   Maybe (MenuItem i)
 getFocus menu =
-  menu ^? sortedEntries . element (fromIntegral (menu ^. cursor)) . #item
+  menu ^? sortedEntries . ix (fromIntegral (menu ^. cursor)) . #item
 
 focus ::
-  Contravariant f =>
-  LensLike' f (Menu i) (Maybe (MenuItem i))
+  SimpleGetter (Menu i) (Maybe (MenuItem i))
 focus =
   to getFocus
 
@@ -95,10 +95,10 @@ selectedItemsOnly ::
   Menu i ->
   Maybe (NonEmpty (MenuItem i))
 selectedItemsOnly =
-  nonEmpty . fmap Entry.item . views (#items . #entries) (filterEntries (const Entry.selected))
+  nonEmpty . fmap Entry.item . view (#items . #entries . to (filterEntries (const Entry.selected)))
 
 selectedOnly ::
-  Getter (Menu i) (Maybe (NonEmpty (MenuItem i)))
+  SimpleGetter (Menu i) (Maybe (NonEmpty (MenuItem i)))
 selectedOnly =
   to selectedItemsOnly
 
@@ -109,12 +109,12 @@ selectedItems m =
   selectedItemsOnly m <|> (pure <$> getFocus m)
 
 selected' ::
-  Getter (Menu i) (Maybe (NonEmpty (MenuItem i)))
+  SimpleGetter (Menu i) (Maybe (NonEmpty (MenuItem i)))
 selected' =
   to selectedItems
 
 selected ::
-  Getter (Menu i) (Maybe (NonEmpty i))
+  SimpleGetter (Menu i) (Maybe (NonEmpty i))
 selected =
   to (fmap (fmap MenuItem.meta) . selectedItems)
 
@@ -132,7 +132,7 @@ unselectedItems ::
   Menu i ->
   [MenuItem i]
 unselectedItems menu =
-  Entry.item <$> views (#items . #entries) filterUnselected menu
+  Entry.item <$> view (#items . #entries . to filterUnselected) menu
   where
     filterUnselected =
       uncurry extract .
@@ -151,6 +151,6 @@ unselectedItems menu =
       menu ^. cursor
 
 unselected ::
-  Getter (Menu i) [MenuItem i]
+  SimpleGetter (Menu i) [MenuItem i]
 unselected =
   to unselectedItems

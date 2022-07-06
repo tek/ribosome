@@ -1,10 +1,10 @@
 module Ribosome.Menu.Test.MenuTest where
 
 import Conc (interpretSync)
-import Control.Lens (use, view, (^.))
 import qualified Control.Monad.Trans.State.Strict as MTL
 import qualified Data.IntMap.Strict as IntMap
 import Hedgehog (TestLimit, property, test, withTests)
+import Lens.Micro.Mtl (use, view)
 import Polysemy (run)
 import Polysemy.Test (UnitTest, assertJust, runTestAuto, unitTest, (===))
 import qualified Sync

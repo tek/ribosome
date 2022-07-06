@@ -130,5 +130,5 @@ restoreView ::
   Member Rpc r =>
   PartialWindowView ->
   Sem r ()
-restoreView view =
-  vimCallFunction "winrestview" [toMsgpack view]
+restoreView v =
+  vimCallFunction "winrestview" [toMsgpack v]

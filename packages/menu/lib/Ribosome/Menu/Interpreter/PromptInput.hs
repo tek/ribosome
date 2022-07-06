@@ -30,8 +30,8 @@ interpretPromptInputCharList ::
   Member (Embed IO) r =>
   [Text] ->
   InterpreterFor PromptInput r
-interpretPromptInputCharList chars =
-  interpretPromptInputList (InputEvent.Character <$> chars)
+interpretPromptInputCharList cs =
+  interpretPromptInputList (InputEvent.Character <$> cs)
 
 quitChar :: Char
 quitChar =

@@ -5,9 +5,10 @@
     hix.url = github:tek/hix;
     chiasma.url = git+https://git.tryp.io/tek/chiasma?ref=main;
     polysemy-conc.url = github:tek/polysemy-conc;
+    prelate.url = git+https://git.tryp.io/tek/prelate;
   };
 
-  outputs = { self, hix, chiasma, polysemy-conc, ... }:
+  outputs = { self, hix, chiasma, polysemy-conc, prelate, ... }:
   let
     RIBOSOME_ROOT = builtins.toPath self;
 
@@ -23,6 +24,7 @@
       integration = inputs;
       polysemy-conc = source.package polysemy-conc "conc";
       polysemy-process = source.package polysemy-conc "process";
+      prelate = source.package prelate "prelate";
       ribosome = inputs;
       ribosome-host = nvimBin inputs;
       ribosome-menu = inputs;
@@ -51,8 +53,8 @@
       env = { inherit RIBOSOME_ROOT; };
     };
     ghci = {
-      preludePackage = "incipit";
-      preludeModule = "Incipit";
+      preludePackage = "prelate";
+      preludeModule = "Prelate";
       args = ["-fplugin=Polysemy.Plugin"];
       extensions = ["StandaloneKindSignatures" "OverloadedLabels"];
     };

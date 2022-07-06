@@ -1,6 +1,5 @@
 module Ribosome.Menu.Data.NvimMenuState where
 
-import Control.Lens (Lens')
 import Data.Generics.Labels ()
 
 import Ribosome.Menu.Data.CursorIndex (CursorIndex)
