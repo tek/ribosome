@@ -152,6 +152,7 @@ userErrorMessage e =
       toErrorMessage e
 
 resumeHoistUserMessage ::
+  ∀ err eff err' r .
   ToErrorMessage err =>
   Members [eff !! err, Stop err'] r =>
   (Text -> err') ->
@@ -160,6 +161,7 @@ resumeHoistUserMessage f =
   resumeHoist (f . userErrorMessage)
 
 mapUserMessage ::
+  ∀ err err' r .
   ToErrorMessage err =>
   Member (Stop err') r =>
   (Text -> err') ->
