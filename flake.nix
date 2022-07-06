@@ -3,7 +3,7 @@
 
   inputs = {
     hix.url = github:tek/hix;
-    chiasma.url = github:tek/chiasma/main;
+    chiasma.url = git+https://git.tryp.io/tek/chiasma?ref=main;
     polysemy-conc.url = github:tek/polysemy-conc;
   };
 
