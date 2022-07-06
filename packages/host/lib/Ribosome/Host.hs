@@ -48,9 +48,12 @@ import Ribosome.Host.Data.HandlerError (
   handlerError,
   handlerTagName,
   mapHandlerError,
+  mapUserMessage,
   resumeHandlerError,
   resumeHandlerErrorFrom,
+  resumeHoistUserMessage,
   toHandlerError,
+  userErrorMessage,
   )
 import Ribosome.Host.Data.HostConfig (HostConfig (..), LogConfig (..), setStderr)
 import Ribosome.Host.Data.HostError (HostError (..))
