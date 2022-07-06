@@ -59,6 +59,20 @@ completeBuiltin ::
 completeBuiltin f =
   complete (CompleteBuiltin f)
 
+completeCustom ::
+  Text ->
+  (Text -> Text -> Int -> Handler r [Text]) ->
+  CompleteStyle ->
+  RpcHandler r
+completeCustom name f = \case
+  CompleteFiltered ->
+    rpcFunction cn Sync f
+  CompleteUnfiltered ->
+    rpcFunction cn Sync \ lead line pos -> Text.unlines <$> f lead line pos
+  where
+    cn =
+      completionName name
+
 completeWith ::
   CompleteStyle ->
   (Text -> Text -> Int -> Handler r [Text]) ->
@@ -67,16 +81,8 @@ completeWith ::
 completeWith style f main@RpcHandler {name} =
   [
     complete (CompleteHandler style name) main,
-    completer style
+    completeCustom name f style
   ]
-  where
-    completer = \case
-      CompleteFiltered ->
-        rpcFunction cn Sync f
-      CompleteUnfiltered ->
-        rpcFunction cn Sync \ lead line pos -> Text.unlines <$> f lead line pos
-    cn =
-      completionName name
 
 rpcAutocmd ::
   ∀ r h .
