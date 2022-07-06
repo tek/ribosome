@@ -1,10 +1,10 @@
 module Ribosome.Menu.Data.MenuState where
 
+import Conc (Lock, lock)
 import Control.Lens ((^.))
 import qualified Control.Monad.State as State
 import Control.Monad.State (MonadState)
 import Data.Generics.Labels ()
-import qualified Polysemy.Conc as Sync
 
 import Ribosome.Menu.Data.Menu (Menu (Menu))
 import Ribosome.Menu.Data.MenuAction (MenuAction)
@@ -16,22 +16,22 @@ data ItemsLock =
   deriving stock (Eq, Show)
 
 itemsLock ::
-  Members [Sync ItemsLock, Resource] r =>
+  Members [Tagged ItemsLock Lock, Resource] r =>
   Sem r a ->
   Sem r a
 itemsLock =
-  Sync.lock ItemsLock
+  tag . lock . raise
 
 data CursorLock =
   CursorLock
   deriving stock (Eq, Show)
 
 cursorLock ::
-  Members [Sync CursorLock, Resource] r =>
+  Members [Tagged CursorLock Lock, Resource] r =>
   Sem r a ->
   Sem r a
 cursorLock =
-  Sync.lock CursorLock
+  tag . lock . raise
 
 type MenuStateEffects i =
   [
@@ -43,15 +43,15 @@ type MenuStateEffects i =
 
 type MenuStack i =
   MenuStateEffects i ++ [
-    Sync ItemsLock,
-    Sync CursorLock
+    Tagged ItemsLock Lock,
+    Tagged CursorLock Lock
   ]
 
 type MenuWrite i r =
   Members (MenuStack i) r
 
 type MenuRead i r =
-  Members (Sync CursorLock : MenuStateEffects i) r
+  Members (Tagged CursorLock Lock : MenuStateEffects i) r
 
 type WithMenu es i r a =
   Sem (es ++ MenuStack i ++ r) a

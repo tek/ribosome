@@ -1,6 +1,6 @@
 module Ribosome.Menu.Test.Menu where
 
-import Conc (Restoration, interpretQueueTBM, resultToMaybe)
+import Conc (Lock, Restoration, interpretQueueTBM, resultToMaybe)
 import Control.Lens (use, (^.))
 import Polysemy.Chronos (ChronosTime, interpretTimeChronos)
 import Polysemy.Log (interpretLogNull)
@@ -50,7 +50,7 @@ enqueueItems =
 enqueuePrompt ::
   ∀ i r .
   Members (MenuStateEffects i) r =>
-  Members [Hedgehog IO, Queue Prompt, Sync CursorLock, Resource, Embed IO] r =>
+  Members [Hedgehog IO, Queue Prompt, Tagged CursorLock Lock, Resource, Embed IO] r =>
   InterpreterFor (MenuConsumer ()) r
 enqueuePrompt =
   interpret \case

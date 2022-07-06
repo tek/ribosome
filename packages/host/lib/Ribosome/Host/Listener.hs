@@ -1,8 +1,7 @@
 module Ribosome.Host.Listener where
 
-import Conc (interpretAtomic, interpretEventsChan, interpretSyncAs)
+import Conc (Lock, Restoration, interpretAtomic, interpretEventsChan, interpretLockReentrant, lock)
 import Exon (exon)
-import qualified Polysemy.Conc as Sync
 import qualified Polysemy.Log as Log
 import qualified Polysemy.Process as Process
 import Polysemy.Process (Process)
@@ -52,12 +51,12 @@ sendResponse i response = do
 -- Returns whether the response was sent for 'sendWhenReady' to decide whether to recurse.
 sendIfReady ::
   Member (Events res ResponseSent) r =>
-  Members [Sync ResponseLock, Process RpcMessage a, AtomicState RequestId, Log, Resource] r =>
+  Members [Tagged ResponseLock Lock, Process RpcMessage a, AtomicState RequestId, Log, Resource] r =>
   RequestId ->
   Response ->
   Sem r Bool
 sendIfReady i response =
-  Sync.lock ResponseLock do
+  tag $ lock do
     ifM (readyToSend i) (True <$ sendResponse i response) (pure False)
 
 -- |Neovim doesn't permit responses to be sent out of order.
@@ -74,7 +73,7 @@ sendIfReady i response =
 -- 'ResponseSent' event is therefore missed, causing this to block indefinitely.
 sendWhenReady ::
   Members [Events res ResponseSent, EventConsumer res ResponseSent] r =>
-  Members [Sync ResponseLock, Process RpcMessage a, AtomicState RequestId, Log, Resource] r =>
+  Members [Tagged ResponseLock Lock, Process RpcMessage a, AtomicState RequestId, Log, Resource] r =>
   RequestId ->
   Response ->
   Sem r ()
@@ -87,7 +86,7 @@ sendWhenReady i response =
         trySend
 
 dispatch ::
-  Members [AtomicState RequestId, Sync ResponseLock, Events res ResponseSent, EventConsumer res ResponseSent] r =>
+  Members [AtomicState RequestId, Tagged ResponseLock Lock, Events res ResponseSent, EventConsumer res ResponseSent] r =>
   Members [Host, Process RpcMessage a, Responses RequestId Response !! RpcError, Log, Resource, Async] r =>
   RpcMessage ->
   Sem r ()
@@ -101,10 +100,10 @@ dispatch = \case
 
 listener ::
   Members [Host, Process RpcMessage (Either Text RpcMessage)] r =>
-  Members [Responses RequestId Response !! RpcError, Log, Resource, Race, Async, Embed IO] r =>
+  Members [Responses RequestId Response !! RpcError, Log, Resource, Mask Restoration, Race, Async, Embed IO] r =>
   Sem r ()
 listener =
-  interpretSyncAs ResponseLock $ interpretEventsChan $ interpretAtomic 0 $ forever do
+  interpretLockReentrant $ untag $ interpretEventsChan $ interpretAtomic 0 $ forever do
     Process.recv >>= \case
       Right msg -> do
         Log.trace [exon|listen: #{ellipsize 500 (formatRpcMsg msg)}|]

@@ -5,6 +5,7 @@
 -- executed while the menu items are updated (useful for menus that get thousands of items).
 module Ribosome.Menu.Items.Read where
 
+import Conc (Lock)
 import Control.Lens (use)
 
 import qualified Ribosome.Menu.Data.MenuAction as MenuAction
@@ -31,7 +32,7 @@ withFocus' f =
 -- If the menu was empty, do nothing (i.e. skip the event).
 withFocus ::
   Members (MenuStateEffects i) r =>
-  Members [Sync CursorLock, Resource, Embed IO] r =>
+  Members [Tagged CursorLock Lock, Resource, Embed IO] r =>
   (i -> MenuSem i r a) ->
   MenuWidget r a
 withFocus f =
@@ -55,7 +56,7 @@ withSelection' f =
 -- If the menu was empty, do nothing (i.e. skip the event).
 withSelection ::
   Members (MenuStateEffects i) r =>
-  Members [Sync CursorLock, Resource, Embed IO] r =>
+  Members [Tagged CursorLock Lock, Resource, Embed IO] r =>
   (NonEmpty i -> MenuSem i r a) ->
   MenuWidget r a
 withSelection f =
@@ -65,7 +66,7 @@ withSelection f =
 -- If the menu was empty, do nothing (i.e. skip the event).
 traverseSelection_ ::
   Members (MenuStateEffects i) r =>
-  Members [Sync CursorLock, Resource, Embed IO] r =>
+  Members [Tagged CursorLock Lock, Resource, Embed IO] r =>
   (i -> MenuSem i r ()) ->
   MenuWidget r ()
 traverseSelection_ f =

@@ -5,7 +5,7 @@ import Control.Concurrent.STM.TMChan (TMChan, writeTMChan)
 import Control.Lens ((^.))
 import Data.Generics.Labels ()
 import Exon (exon)
-import Polysemy.Conc (interpretAtomic, interpretSync, interpretSyncAs)
+import Polysemy.Conc (interpretAtomic, interpretLockReentrant, interpretSync)
 import qualified Polysemy.Log as Log
 import Prelude hiding (consume)
 import qualified Streamly.Internal.Data.Fold as Fold
@@ -21,8 +21,6 @@ import Ribosome.Menu.Data.MenuEvent (MenuEvent)
 import qualified Ribosome.Menu.Data.MenuResult as MenuResult
 import Ribosome.Menu.Data.MenuResult (MenuResult)
 import Ribosome.Menu.Data.MenuState (
-  CursorLock (CursorLock),
-  ItemsLock (ItemsLock),
   MenuStack,
   MenuStateEffects,
   readMenu,
@@ -167,12 +165,12 @@ menuResult = \case
       MenuResult.NoAction -> "no action"
 
 interpretMenu ::
-  ∀ i r .
-  Members [Resource, Race, Embed IO] r =>
+  ∀ i mres r .
+  Members [Resource, Race, Mask mres, Embed IO] r =>
   InterpretersFor (Sync PromptQuit : Sync PromptListening : MenuStack i) r
 interpretMenu =
-  interpretSyncAs CursorLock .
-  interpretSyncAs ItemsLock .
+  interpretLockReentrant . untag .
+  interpretLockReentrant . untag .
   subsume .
   interpretAtomic def .
   interpretAtomic def .

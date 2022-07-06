@@ -1,5 +1,6 @@
 module Ribosome.Menu.Action where
 
+import Conc (Lock)
 import Control.Lens (to, use, (%=), (%~))
 import Data.Generics.Labels ()
 
@@ -72,7 +73,7 @@ menuModify action = do
 
 menuNavigate ::
   Members (MenuStateEffects i) r =>
-  Member (Sync CursorLock) r =>
+  Member (Tagged CursorLock Lock) r =>
   MenuSem i r () ->
   MenuWidget r a
 menuNavigate action = do
@@ -81,7 +82,7 @@ menuNavigate action = do
 
 menuCycle ::
   Members (MenuStateEffects i) r =>
-  Member (Sync CursorLock) r =>
+  Member (Tagged CursorLock Lock) r =>
   Int ->
   MenuWidget r a
 menuCycle offset =
