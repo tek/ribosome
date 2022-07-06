@@ -139,3 +139,30 @@ resumeHandlerError =
 handlerErrorMessage :: HandlerError -> Text
 handlerErrorMessage (HandlerError (ErrorMessage user log _) htag) =
   unlines ([exon|#{handlerTagName htag}:|] : user : log)
+
+userErrorMessage ::
+  ∀ e .
+  ToErrorMessage e =>
+  e ->
+  Text
+userErrorMessage e =
+  user
+  where
+    ErrorMessage {user} =
+      toErrorMessage e
+
+resumeHoistUserMessage ::
+  ToErrorMessage err =>
+  Members [eff !! err, Stop err'] r =>
+  (Text -> err') ->
+  InterpreterFor eff r
+resumeHoistUserMessage f =
+  resumeHoist (f . userErrorMessage)
+
+mapUserMessage ::
+  ToErrorMessage err =>
+  Member (Stop err') r =>
+  (Text -> err') ->
+  InterpreterFor (Stop err) r
+mapUserMessage f =
+  mapStop (f . userErrorMessage)
