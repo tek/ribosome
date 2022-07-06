@@ -108,6 +108,16 @@ handlerErrorFrom ::
 handlerErrorFrom t =
   mapStop (toHandlerError t)
 
+mapHandlerErrorFrom ::
+  ∀ e r a .
+  ToErrorMessage e =>
+  Member (Stop HandlerError) r =>
+  HandlerTag ->
+  Sem (Stop e : r) a ->
+  Sem r a
+mapHandlerErrorFrom t =
+  mapStop (toHandlerError t)
+
 mapHandlerError ::
   ∀ e r a .
   ToErrorMessage e =>
@@ -115,7 +125,7 @@ mapHandlerError ::
   Sem (Stop e : r) a ->
   Sem r a
 mapHandlerError =
-  mapStop (toHandlerError GlobalTag)
+  mapHandlerErrorFrom GlobalTag
 
 resumeHandlerErrorFrom ::
   ∀ eff e r a .

@@ -1,5 +1,6 @@
 module Ribosome.VariableWatcher where
 
+import Conc (Lock, lockOrSkip)
 import qualified Data.Map.Strict as Map
 import Data.MessagePack (Object)
 
@@ -11,7 +12,6 @@ import Ribosome.Host.Api.Effect (nvimGetVar)
 import Ribosome.Host.Data.HandlerError (HandlerError)
 import Ribosome.Host.Data.RpcError (RpcError)
 import Ribosome.Host.Effect.Rpc (Rpc)
-import Ribosome.Locks (lockOrSkip)
 
 compareVar ::
   Members [VariableWatcher, AtomicState (Map WatchedVariable Object)] r =>
@@ -38,8 +38,8 @@ checkVar var = do
 
 variableWatcherHandler ::
   Member (AtomicState (Map WatchedVariable Object)) r =>
-  Members [VariableWatcher, Rpc !! RpcError, Sync WatcherLock, Resource, Stop HandlerError] r =>
+  Members [VariableWatcher, Rpc !! RpcError, Tagged WatcherLock Lock, Resource, Stop HandlerError] r =>
   Sem r ()
 variableWatcherHandler =
-  void $ lockOrSkip @WatcherLock do
+  void $ tag $ lockOrSkip do
     traverse_ checkVar =<< VariableWatcher.watchedVariables

@@ -2,6 +2,7 @@ module Ribosome.Interpreter.Persist where
 
 import Data.Aeson (FromJSON, ToJSON, eitherDecodeFileStrict', encodeFile)
 import Exon (exon)
+import qualified Log
 import Path (Abs, Dir, File, Path, Rel, parent, parseRelDir, parseRelFile, toFilePath, (</>))
 import Path.IO (createDirIfMissing, doesFileExist)
 
@@ -14,7 +15,6 @@ import Ribosome.Effect.PersistPath (PersistPath, persistRoot)
 import Ribosome.Host.Data.BootError (BootError (BootError))
 import Ribosome.Host.Interpret (with)
 import Ribosome.Path (pathText)
-import qualified Log
 
 persistBase ::
   Members [PersistPath !! PersistPathError, Stop PersistError] r =>
