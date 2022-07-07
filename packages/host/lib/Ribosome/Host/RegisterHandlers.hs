@@ -84,7 +84,7 @@ endfunction|]
       argsText =
         [exon|[#{Text.intercalate ", " args}]|]
   RpcType.Autocmd (AutocmdEvent event) AutocmdOptions {..} ->
-    [exon|autocmd! #{fold group} #{event} #{fPattern} call #{rpcCall i method exec Nothing}|]
+    [exon|autocmd #{fold group} #{event} #{fPattern} call #{rpcCall i method exec Nothing}|]
 
 registerHandler ::
   ChannelId ->
