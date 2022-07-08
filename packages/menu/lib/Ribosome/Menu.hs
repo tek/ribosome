@@ -52,6 +52,7 @@ import Ribosome.Menu.Data.MenuState (
   semState,
   )
 import Ribosome.Menu.Effect.MenuConsumer (MenuConsumer (..))
+import Ribosome.Menu.Effect.MenuRenderer (MenuRenderer (..), withMenuRenderer)
 import Ribosome.Menu.Effect.MenuState (
   MenuState,
   putCursor,
@@ -65,8 +66,7 @@ import Ribosome.Menu.Effect.MenuState (
   viewItems,
   viewMenu,
   )
-import Ribosome.Menu.Effect.MenuRenderer (MenuRenderer (..), withMenuRenderer)
-import Ribosome.Menu.Effect.PromptControl (waitPromptListening, waitPromptQuit)
+import Ribosome.Menu.Effect.PromptControl (PromptControl, waitPromptListening, waitPromptQuit)
 import Ribosome.Menu.Effect.PromptEvents (PromptEvents (..))
 import Ribosome.Menu.Effect.PromptInput (PromptInput)
 import Ribosome.Menu.Effect.PromptRenderer (PromptRenderer (..), withPrompt)
