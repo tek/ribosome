@@ -1,6 +1,6 @@
 module Ribosome.Interpreter.Persist where
 
-import Data.Aeson (FromJSON, ToJSON, eitherDecodeFileStrict', encodeFile)
+import Data.Aeson (eitherDecodeFileStrict', encodeFile)
 import Exon (exon)
 import qualified Log
 import Path (Abs, Dir, File, Path, Rel, parent, parseRelDir, parseRelFile, toFilePath, (</>))

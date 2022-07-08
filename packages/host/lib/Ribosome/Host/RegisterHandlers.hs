@@ -47,6 +47,16 @@ registerFailed ::
 registerFailed e =
   Log.error [exon|Registering rpc handlers failed: #{rpcErrorMessage e}|]
 
+wrapAugroup :: Text -> Maybe Text -> Text
+wrapAugroup cmd = \case
+  Just g ->
+    [exon|augroup #{g}
+#{cmd}
+augroup END
+|]
+  Nothing ->
+    cmd
+
 trigger :: Execution -> Text
 trigger = \case
   Sync -> "rpcrequest"
@@ -84,7 +94,7 @@ endfunction|]
       argsText =
         [exon|[#{Text.intercalate ", " args}]|]
   RpcType.Autocmd (AutocmdEvent event) AutocmdOptions {..} ->
-    [exon|autocmd #{fold group} #{event} #{fPattern} call #{rpcCall i method exec Nothing}|]
+    wrapAugroup [exon|autocmd #{event} #{fPattern} call #{rpcCall i method exec Nothing}|] group
 
 registerHandler ::
   ChannelId ->

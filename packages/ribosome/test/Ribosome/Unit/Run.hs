@@ -14,9 +14,12 @@ import Ribosome.Host.Data.HandlerError (HandlerError, handlerErrorMessage)
 import Ribosome.Host.Data.RpcHandler (Handler, RpcHandler)
 import Ribosome.Host.Effect.Rpc (Rpc)
 import Ribosome.Host.Error (resumeBootError)
+import Ribosome.Host.Test.Data.TestConfig (host)
 import qualified Ribosome.Host.Test.Run as Host
 import Ribosome.Host.Test.Run (TestStack)
 import Ribosome.Interpreter.NvimPlugin (interpretNvimPlugin)
+import Ribosome.Host.Data.HostConfig (setStderr)
+import Log (Severity(Trace))
 
 type HandlerTestStack =
   HandlerEffects ++ Reader PluginName : TestStack
@@ -34,10 +37,20 @@ type PluginTestStack =
   EmbedEffects ++ HandlerTestStack
 
 runTest ::
+  HasCallStack =>
   Sem HandlerTestStack () ->
   UnitTest
 runTest =
   Host.runTest .
+  runReader "test" .
+  interpretPluginEmbed
+
+runTestTrace ::
+  HasCallStack =>
+  Sem HandlerTestStack () ->
+  UnitTest
+runTestTrace =
+  Host.runTestConf def { host = setStderr Trace def } .
   runReader "test" .
   interpretPluginEmbed
 
@@ -57,6 +70,7 @@ testHandlers handlers maps vars =
   insertAt @4
 
 runTestHandlers ::
+  HasCallStack =>
   [RpcHandler HandlerTestStack] ->
   Map MappingIdent (Handler HandlerTestStack ()) ->
   Map WatchedVariable (Object -> Handler HandlerTestStack ()) ->
@@ -67,6 +81,7 @@ runTestHandlers handlers maps vars =
   testHandlers handlers maps vars
 
 runTestRibosome ::
+  HasCallStack =>
   Sem PluginTestStack () ->
   UnitTest
 runTestRibosome =
