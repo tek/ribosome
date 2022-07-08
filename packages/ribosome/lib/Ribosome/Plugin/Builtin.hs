@@ -13,6 +13,7 @@ import Ribosome.Host.Data.Execution (Execution (Async))
 import Ribosome.Host.Data.HandlerError (HandlerError, resumeHandlerError)
 import Ribosome.Host.Data.RpcError (RpcError)
 import Ribosome.Host.Data.RpcHandler (Handler, RpcHandler)
+import qualified Ribosome.Host.Data.RpcType as AutocmdOptions
 import Ribosome.Host.Data.RpcType (AutocmdEvent (unAutocmdEvent))
 import Ribosome.Host.Effect.Handlers (Handlers)
 import Ribosome.Host.Effect.Rpc (Rpc)
@@ -35,7 +36,8 @@ watcherRpc ::
   AutocmdEvent ->
   RpcHandler r
 watcherRpc (PluginName name) event =
-  rpcAutocmd method Async event def (restop @_ @_ @(Stop _ : r) BuiltinHandlers.variables)
+  rpcAutocmd method Async event def { AutocmdOptions.group = Just name } do
+    restop @_ @_ @(Stop _ : r) BuiltinHandlers.variables
   where
     method =
       [exon|#{capitalize name}VariableChanged#{unAutocmdEvent event}|]
