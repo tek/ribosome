@@ -1,6 +1,5 @@
 module Ribosome.Test.PersistTest where
 
-import Data.Aeson (FromJSON, ToJSON)
 import Path (reldir)
 import qualified Polysemy.Test as Test
 import Polysemy.Test (UnitTest, assertJust)
