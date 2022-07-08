@@ -22,16 +22,15 @@ import qualified Ribosome.Menu.Data.MenuItem as MenuItem
 import Ribosome.Menu.Data.MenuItem (MenuItem)
 import Ribosome.Menu.Data.NvimMenuConfig (NvimMenuConfig)
 import Ribosome.Menu.Effect.MenuConsumer (MenuConsumer (MenuConsumerEvent))
-import Ribosome.Menu.Effect.MenuState (MenuState, readPrompt)
 import qualified Ribosome.Menu.Effect.MenuRenderer as MenuRenderer
 import Ribosome.Menu.Effect.MenuRenderer (MenuRenderer)
+import Ribosome.Menu.Effect.MenuState (MenuState, readPrompt)
 import Ribosome.Menu.Effect.MenuTest (sendStaticItems)
 import Ribosome.Menu.Effect.PromptControl (PromptControl)
 import Ribosome.Menu.Effect.PromptRenderer (PromptRenderer)
 import Ribosome.Menu.Filters (fuzzyMonotonic)
 import Ribosome.Menu.Interpreter.MenuState (interpretMenu)
 import Ribosome.Menu.Interpreter.MenuTest (MenuTestEffects, menuTest, staticNvimMenuTest)
-import Ribosome.Menu.Interpreter.PromptControl (interpretPromptControl)
 import Ribosome.Menu.Interpreter.PromptRenderer (interpretPromptRendererNull)
 import Ribosome.Menu.Prompt.Data.Prompt (Prompt)
 import Ribosome.Menu.Prompt.Data.PromptFlag (PromptFlag (StartInsert))
@@ -87,7 +86,6 @@ runMenuTestStack =
   interpretQueueTBM @[Entry i] 64 .
   interpretLogNull .
   interpretTimeChronos .
-  interpretPromptControl .
   interpretMenu .
   enqueueItems .
   interpretPromptRendererNull

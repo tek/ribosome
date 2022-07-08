@@ -72,7 +72,7 @@ import Ribosome.Menu.Effect.PromptInput (PromptInput)
 import Ribosome.Menu.Effect.PromptRenderer (PromptRenderer (..), withPrompt)
 import Ribosome.Menu.Filters (fuzzy, fuzzyItemFilter, substringItemFilter)
 import Ribosome.Menu.Interpreter.MenuConsumer (Mappings, basic, defaultMappings, forMappings, withMappings)
-import Ribosome.Menu.Interpreter.MenuState (interpretMenu)
+import Ribosome.Menu.Interpreter.MenuState (interpretMenu, interpretMenuControl)
 import Ribosome.Menu.Interpreter.PromptControl (interpretPromptControl)
 import Ribosome.Menu.Interpreter.PromptInput (
   interpretPromptInputCharList,

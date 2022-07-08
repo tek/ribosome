@@ -27,7 +27,6 @@ import Ribosome.Menu.Effect.PromptInput (PromptInput)
 import Ribosome.Menu.Effect.PromptRenderer (PromptRenderer, withPrompt)
 import Ribosome.Menu.Filters (fuzzy)
 import Ribosome.Menu.Interpreter.MenuState (interpretMenu)
-import Ribosome.Menu.Interpreter.PromptControl (interpretPromptControl)
 import Ribosome.Menu.Prompt.Data.Prompt (Prompt)
 import qualified Ribosome.Menu.Prompt.Data.PromptControlEvent as PromptControlEvent
 import Ribosome.Menu.Prompt.Data.PromptEvent (PromptEvent)
@@ -160,7 +159,7 @@ simpleMenu ::
   Sem r (MenuResult a)
 simpleMenu consumer config =
   withPrompt do
-    interpretPromptControl $ interpretMenu $ consumer $ menuMain config
+    interpretMenu $ consumer $ menuMain config
 
 menu ::
   ∀ a i pres mrres res t d r .

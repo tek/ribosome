@@ -7,6 +7,8 @@ import Ribosome.Host.Interpreter.MState (interpretMState)
 import Ribosome.Menu.Data.CursorIndex (CursorIndex)
 import Ribosome.Menu.Data.MenuData (MenuItems)
 import Ribosome.Menu.Effect.MenuState (MenuState (..))
+import Ribosome.Menu.Effect.PromptControl (PromptControl)
+import Ribosome.Menu.Interpreter.PromptControl (interpretPromptControl)
 import Ribosome.Menu.Prompt.Data.Prompt (Prompt)
 import Ribosome.Menu.Prompt.Data.PromptListening (PromptListening)
 import Ribosome.Menu.Prompt.Data.PromptQuit (PromptQuit)
@@ -57,11 +59,11 @@ mcState f =
     let newS = fromMaybe s (fst <$> ins res)
     pure (newS, snd <$> res)
 
-interpretMenu ::
+interpretMenuControl ::
   ∀ i mres r .
   Members [Resource, Race, Mask mres, Embed IO] r =>
   InterpreterFor (MenuState i) r
-interpretMenu =
+interpretMenuControl =
   interpretMenuStateDeps .
   interpretH \case
     UseCursor f ->
@@ -77,3 +79,11 @@ interpretMenu =
     ReadItems ->
       pureT =<< mread
   . insertAt @1
+
+interpretMenu ::
+  ∀ i mres r .
+  Members [Resource, Race, Mask mres, Embed IO] r =>
+  InterpretersFor [MenuState i, PromptControl] r
+interpretMenu =
+  interpretPromptControl .
+  interpretMenuControl
