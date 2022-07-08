@@ -1,6 +1,6 @@
 module Ribosome.Test.MappingTest where
 
-import Polysemy.Conc (interpretSync)
+import Conc (interpretSync)
 import qualified Polysemy.Conc.Sync as Sync
 import Polysemy.Test (UnitTest, assertJust, (===))
 import Polysemy.Time (Seconds (Seconds))

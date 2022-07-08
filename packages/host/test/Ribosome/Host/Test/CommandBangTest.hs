@@ -1,6 +1,6 @@
 module Ribosome.Host.Test.CommandBangTest where
 
-import Polysemy.Conc (interpretAtomic)
+import Conc (interpretAtomic)
 import Polysemy.Test (UnitTest, assertJust)
 
 import Ribosome.Host.Api.Effect (nvimCommand, nvimGetVar, nvimSetVar)

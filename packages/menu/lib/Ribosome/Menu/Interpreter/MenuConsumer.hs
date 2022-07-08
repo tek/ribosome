@@ -5,14 +5,15 @@ import Data.Map.Strict ((!?))
 
 import Ribosome.Menu.Action (menuCycle, menuToggle, menuToggleAll)
 import qualified Ribosome.Menu.Data.MenuEvent as MenuEvent
-import Ribosome.Menu.Data.MenuState (MenuStack, MenuWidget)
+import Ribosome.Menu.Data.MenuState (MenuWidget)
 import Ribosome.Menu.Effect.MenuConsumer (MenuConsumer (MenuConsumerEvent))
+import Ribosome.Menu.Effect.MenuState (MenuState)
 
 type Mappings r a =
   Map Text (MenuWidget r a)
 
 defaultMappings ::
-  Members (MenuStack i) r =>
+  Member (MenuState i) r =>
   Mappings r a
 defaultMappings =
   Map.fromList [
@@ -37,7 +38,7 @@ forMappings mappings =
 
 withMappings ::
   ∀ i a r .
-  Members (MenuStack i) r =>
+  Member (MenuState i) r =>
   Mappings r a ->
   InterpreterFor (MenuConsumer a) r
 withMappings extraMappings =
@@ -45,7 +46,7 @@ withMappings extraMappings =
 
 basic ::
   ∀ a i r .
-  Members (MenuStack i) r =>
+  Member (MenuState i) r =>
   InterpreterFor (MenuConsumer a) r
 basic =
   withMappings mempty

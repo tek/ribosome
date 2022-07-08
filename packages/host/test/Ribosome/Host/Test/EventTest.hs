@@ -1,6 +1,6 @@
 module Ribosome.Host.Test.EventTest where
 
-import Polysemy.Conc (interpretSync, withAsync_)
+import Conc (interpretSync, withAsync_)
 import qualified Polysemy.Conc.Sync as Sync
 import Polysemy.Test (UnitTest, assertJust)
 import Polysemy.Time (Seconds (Seconds))

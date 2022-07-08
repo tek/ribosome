@@ -11,24 +11,15 @@ import qualified Streamly.Internal.Data.Stream.IsStream as Stream
 import Streamly.Prelude (AsyncT, IsStream, SerialT)
 
 import Ribosome.Menu.Combinators (push)
-import Ribosome.Menu.Data.Entry (Entries, insertFiltered)
-import Ribosome.Menu.Data.MenuData (MenuCursor, MenuQuery (MenuQuery))
+import Ribosome.Menu.Data.Entry (Entries)
+import Ribosome.Menu.Data.MenuData (MenuItems, MenuQuery (MenuQuery))
 import qualified Ribosome.Menu.Data.MenuEvent as MenuEvent
 import Ribosome.Menu.Data.MenuEvent (MenuEvent)
 import Ribosome.Menu.Data.MenuItem (MenuItem)
 import Ribosome.Menu.Data.MenuItemFilter (MenuItemFilter (MenuItemFilter))
-import Ribosome.Menu.Data.MenuState (
-  MenuItemsSem,
-  MenuItemsSemS,
-  MenuStack,
-  MenuStateSem,
-  SemS (SemS),
-  menuItemsState,
-  semState,
-  setPrompt,
-  subsumeMenuStateSem,
-  )
+import Ribosome.Menu.Data.MenuState (SemS (SemS), semState)
 import qualified Ribosome.Menu.Data.QuitReason as QuitReason
+import Ribosome.Menu.Effect.MenuState (MenuState, readPrompt, setPrompt, useItems)
 import Ribosome.Menu.Prompt.Data.Prompt (
   Prompt (Prompt),
   PromptChange (PromptAppend, PromptRandom, PromptUnappend),
@@ -44,7 +35,7 @@ refineFiltered ::
   MenuQuery ->
   MenuItemFilter i ->
   Entries i ->
-  MenuItemsSemS r i ()
+  SemS (MenuItems i) r ()
 refineFiltered query (MenuItemFilter _ _ itemFilter) ents =
   push query =<< SemS (embed (itemFilter query ents))
 
@@ -52,7 +43,7 @@ resetFiltered ::
   Member (Embed IO) r =>
   MenuQuery ->
   MenuItemFilter i ->
-  MenuItemsSemS r i ()
+  SemS (MenuItems i) r ()
 resetFiltered query (MenuItemFilter _ itemFilter _) = do
   its <- use #items
   new <- SemS (embed (itemFilter query its))
@@ -63,7 +54,7 @@ popFiltered ::
   Member (Embed IO) r =>
   MenuQuery ->
   MenuItemFilter i ->
-  MenuItemsSemS r i ()
+  SemS (MenuItems i) r ()
 popFiltered query@(MenuQuery (encodeUtf8 -> queryBs)) itemFilter =
   maybe (resetFiltered query itemFilter) matching =<< use (#history . to (`Trie.match` queryBs))
   where
@@ -78,7 +69,7 @@ appendFilter ::
   Member (Embed IO) r =>
   MenuQuery ->
   MenuItemFilter i ->
-  MenuItemsSemS r i ()
+  SemS (MenuItems i) r ()
 appendFilter query filt =
   ifM (use (#entries . to null)) (resetFiltered query filt) (refineFiltered query filt =<< use #entries)
 
@@ -87,7 +78,7 @@ promptChange ::
   PromptChange ->
   MenuQuery ->
   MenuItemFilter i ->
-  MenuItemsSemS r i ()
+  SemS (MenuItems i) r ()
 promptChange = \case
   PromptAppend ->
     appendFilter
@@ -96,47 +87,28 @@ promptChange = \case
   PromptRandom ->
     resetFiltered
 
-insertItem ::
-  MenuItemFilter i ->
-  MenuItem i ->
-  Prompt ->
-  MenuCursor ->
-  MenuItemsSem r i ()
-insertItem (MenuItemFilter match _ _) item _ _ =
-  semState do
-    index <- use #itemCount
-    #itemCount += 1
-    #items %= IntMap.insert index item
-    MenuQuery query <- use #currentQuery
-    for_ (match query index item) \ (score, fitem) -> do
-      #entries %= insertFiltered score fitem
-      #history .= mempty
-
 insertItems ::
   Member (Embed IO) r =>
   MenuItemFilter i ->
   [MenuItem i] ->
-  Prompt ->
-  MenuCursor ->
-  MenuItemsSem r i ()
-insertItems (MenuItemFilter _ filt _) new _ _ =
-  semState do
-    index <- use #itemCount
-    #itemCount += length new
-    let newI = IntMap.fromList (zip [index..] new)
-    #items %= IntMap.union newI
-    query <- use #currentQuery
-    ents <- SemS (embed (filt query newI))
-    #entries %= IntMap.unionWith (<>) ents
-    unless (null ents) do
-      #history .= mempty
+  SemS (MenuItems i) r ()
+insertItems (MenuItemFilter _ filt _) new = do
+  index <- use #itemCount
+  #itemCount += length new
+  let newI = IntMap.fromList (zip [index..] new)
+  #items %= IntMap.union newI
+  query <- use #currentQuery
+  ents <- SemS (embed (filt query newI))
+  #entries %= IntMap.unionWith (<>) ents
+  unless (null ents) do
+    #history .= mempty
 
 promptItemUpdate ::
   Member (Embed IO) r =>
   MenuItemFilter i ->
   PromptChange ->
   Prompt ->
-  MenuItemsSemS r i ()
+  SemS (MenuItems i) r ()
 promptItemUpdate itemFilter change (Prompt _ _ (PromptText (MenuQuery -> query))) =
   promptChange change query itemFilter
 
@@ -147,12 +119,13 @@ diffPrompt (Prompt _ _ (PromptText new)) (MenuQuery old)
   | otherwise = PromptRandom
 
 queryUpdate ::
-  Members [Resource, Embed IO] r =>
+  Members [MenuState i, Resource, Embed IO] r =>
   MenuItemFilter i ->
-  MenuStateSem i r MenuEvent
-queryUpdate itemFilter =
-  menuItemsState \ prompt _ ->
-    semState do
+  Sem r MenuEvent
+queryUpdate itemFilter = do
+  useItems \ s -> do
+    prompt <- readPrompt
+    runState s $ semState do
       change <- use (#currentQuery . to (diffPrompt prompt))
       promptItemUpdate itemFilter change prompt
       pure MenuEvent.PromptEdit
@@ -173,7 +146,7 @@ classifyEvent = \case
     Just (MenuEvent.Quit (QuitReason.Error e))
 
 setPromptAndClassify ::
-  Members [AtomicState Prompt, Embed IO] r =>
+  Members [MenuState i, Embed IO] r =>
   Member Log r =>
   Prompt ->
   PromptEvent ->
@@ -183,21 +156,19 @@ setPromptAndClassify prompt event = do
   classifyEvent event <$ setPrompt prompt
 
 promptEvent ::
-  Members (MenuStack i) r =>
-  Members [Log, Resource, Embed IO] r =>
+  Members [MenuState i, Log, Resource, Embed IO] r =>
   (∀ x . Sem r x -> IO (Maybe x)) ->
   MenuItemFilter i ->
   AsyncT IO (Prompt, PromptEvent) ->
   SerialT IO MenuEvent
 promptEvent lower itemFilter str =
   Stream.fromAsync $
-  mapMAccMaybe (fmap join . lower . uncurry setPromptAndClassify) (fromMaybe MenuEvent.PromptEdit <$> lower (subsumeMenuStateSem (queryUpdate itemFilter))) $
+  mapMAccMaybe (fmap join . lower . uncurry setPromptAndClassify) (fromMaybe MenuEvent.PromptEdit <$> lower (queryUpdate itemFilter)) $
   Stream.mkAsync str
 
 updateItems ::
   IsStream t =>
-  Members (MenuStack i) r =>
-  Members [Log, Embed IO] r =>
+  Members [MenuState i, Log, Embed IO] r =>
   (∀ x . Sem r x -> IO (Maybe x)) ->
   MenuItemFilter i ->
   t IO (MenuItem i) ->
@@ -208,7 +179,7 @@ updateItems lower itemFilter =
   Stream.foldIterateM chunker (pure [])
   where
     insert new =
-      MenuEvent.NewItems <$ lower (subsumeMenuStateSem (menuItemsState (insertItems itemFilter new)))
+      MenuEvent.NewItems <$ lower (useItems \ items -> runState items (semState (insertItems itemFilter new)))
     chunker = pure . \case
       [] ->
         Fold.take 100 Fold.toList

@@ -1,7 +1,7 @@
 module Ribosome.Host.Test.AtomicTest where
 
 import Data.MessagePack (Object)
-import qualified Polysemy.Conc as Race
+import qualified Conc as Race
 import Polysemy.Test (UnitTest, assert, assertJust, (===))
 import Polysemy.Time (Seconds (Seconds))
 

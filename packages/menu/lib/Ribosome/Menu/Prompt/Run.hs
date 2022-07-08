@@ -1,8 +1,6 @@
 module Ribosome.Menu.Prompt.Run where
 
 import Conc (interpretSyncAs, withAsync_)
-import Control.Concurrent.STM (atomically)
-import Control.Concurrent.STM.TMChan (TMChan, closeTMChan, newTMChan)
 import Data.Generics.Labels ()
 import qualified Data.Text as Text (drop, dropEnd, isPrefixOf, length, splitAt)
 import Exon (exon)
@@ -19,6 +17,7 @@ import Ribosome.Api.Input (syntheticInput)
 import Ribosome.Final (inFinal)
 import Ribosome.Host.Data.Tuple (dup)
 import Ribosome.Host.Effect.Rpc (Rpc)
+import Ribosome.Menu.Effect.PromptControl (PromptControl, controlEvent, quitPrompt, startPrompt, waitPromptListening)
 import Ribosome.Menu.Effect.PromptEvents (PromptEvents, handlePromptEvent)
 import qualified Ribosome.Menu.Effect.PromptInput as PromptInput
 import Ribosome.Menu.Effect.PromptInput (PromptInput)
@@ -38,14 +37,12 @@ import qualified Ribosome.Menu.Prompt.Data.PromptEvent as PromptEvent
 import Ribosome.Menu.Prompt.Data.PromptEvent (PromptEvent)
 import Ribosome.Menu.Prompt.Data.PromptInputEvent (PromptInputEvent)
 import qualified Ribosome.Menu.Prompt.Data.PromptInputEvent as PromptInputEvent (PromptInputEvent (..))
-import Ribosome.Menu.Prompt.Data.PromptListening (PromptListening (PromptListening))
 import Ribosome.Menu.Prompt.Data.PromptMode (PromptMode)
 import qualified Ribosome.Menu.Prompt.Data.PromptMode as PromptMode (PromptMode (..))
-import Ribosome.Menu.Prompt.Data.PromptQuit (PromptQuit (PromptQuit))
 import qualified Ribosome.Menu.Prompt.Data.PromptUpdate as PromptUpdate
 import Ribosome.Menu.Prompt.Data.TextUpdate (TextUpdate)
 import qualified Ribosome.Menu.Prompt.Data.TextUpdate as TextUpdate (TextUpdate (..))
-import Ribosome.Menu.Stream.Util (chanStream, takeUntilNothing)
+import Ribosome.Menu.Stream.Util (takeUntilNothing)
 
 updateCursor :: Int -> Text -> CursorUpdate -> Int
 updateCursor current text =
@@ -201,7 +198,7 @@ inputEvent lower =
           Stream.nil
 
 promptWithControl ::
-  Members [PromptEvents, PromptInput, PromptRenderer, Sync Prompt, Sync PromptQuit, Sync PromptListening, Mask res, Time t d, Log, Resource] r =>
+  Members [PromptControl, PromptEvents, PromptInput, PromptRenderer, Sync Prompt, Mask res, Time t d, Log, Resource] r =>
   (∀ x . Sem r x -> IO (Maybe x)) ->
   SerialT IO PromptControlEvent ->
   SerialT IO (Prompt, PromptEvent)
@@ -209,7 +206,7 @@ promptWithControl lower control =
   Stream.tapAsync (Fold.drainBy (lower . PromptRenderer.renderPrompt . fst)) $
   takeUntilNothing $
   Stream.mapM (liftIO . fmap join . lower . processPromptEvent) $
-  Stream.parallelMin (Left <$> Stream.before (lower (Sync.putTry PromptListening)) control) (Right <$> sourceWithInit)
+  Stream.parallelMin (Left <$> Stream.before (lower startPrompt) control) (Right <$> sourceWithInit)
   where
     sourceWithInit =
       Stream.cons PromptInputEvent.Init (inputEvent lower)
@@ -219,22 +216,26 @@ pristinePrompt insert =
   Prompt 0 (if insert then PromptMode.Insert else PromptMode.Normal) ""
 
 withPromptStream ::
-  Members [PromptEvents, PromptInput, PromptRenderer, Mask res, Time t d, Sync PromptQuit, Sync PromptListening, Log, Resource, Race, Embed IO, Final IO] r =>
+  Members [PromptControl, PromptEvents, PromptInput, PromptRenderer] r =>
+  Members [Mask res, Time t d, Log, Resource, Race, Embed IO, Final IO] r =>
   Prompt ->
-  ((TMChan PromptControlEvent, SerialT IO (Prompt, PromptEvent)) -> Sem r a) ->
+  (SerialT IO (Prompt, PromptEvent) -> Sem r a) ->
   Sem r a
 withPromptStream initial use = do
-  chan <- embed (atomically newTMChan)
+  -- chan <- embed (atomically newTMChan)
   interpretSyncAs initial do
-    res <- inFinal \ _ lower pur ex ->
-      pur (chan, Stream.finally (lower (Sync.putTry PromptQuit) *> atomically (closeTMChan chan)) (promptWithControl (fmap ex . lower) (chanStream chan)))
+    res <- inFinal \ _ lower pur ex -> do
+      let
+        backchannel =
+          takeUntilNothing (Stream.repeatM ((join . ex) <$> lower controlEvent))
+      pur (Stream.finally (lower quitPrompt) (promptWithControl (fmap ex . lower) backchannel))
     raise (use res)
 
 withPromptInput ::
-  Members [Sync PromptListening, Rpc, Resource, Race, Async, Time t d] r =>
+  Members [PromptControl, Rpc, Resource, Race, Async, Time t d] r =>
   Maybe MilliSeconds ->
   [Text] ->
   Sem r a ->
   Sem r a
 withPromptInput interval chrs =
-  withAsync_ (Sync.takeBlock *> syntheticInput (convert <$> interval) chrs)
+  withAsync_ (waitPromptListening *> syntheticInput (convert <$> interval) chrs)

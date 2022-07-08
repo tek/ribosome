@@ -1,7 +1,6 @@
 module Ribosome.Menu.Test.NvimMenuTest where
 
 import qualified Data.Map.Strict as Map
-import Lens.Micro.Mtl (use)
 import Polysemy.Test (UnitTest, assertEq, runTestAuto, unitTest, (===))
 import qualified Streamly.Internal.Data.Stream.IsStream as Stream
 import Streamly.Prelude (SerialT)
@@ -19,23 +18,15 @@ import Ribosome.Menu.Data.Entry (intEntries)
 import Ribosome.Menu.Data.MenuAction (MenuAction)
 import Ribosome.Menu.Data.MenuItem (MenuItem, simpleMenuItem)
 import qualified Ribosome.Menu.Data.MenuResult as MenuResult
-import Ribosome.Menu.Data.MenuState (
-  MenuRead,
-  MenuSem,
-  MenuWidget,
-  MenuWrite,
-  SemS (SemS),
-  menuRead,
-  menuWrite,
-  semState,
-  )
+import Ribosome.Menu.Data.MenuState (MenuWidget)
 import Ribosome.Menu.Data.MenuView (MenuView (MenuView))
+import Ribosome.Menu.Effect.MenuState (MenuState, readCursor, readPrompt, viewMenu)
 import qualified Ribosome.Menu.Effect.MenuTest as MenuTest
 import Ribosome.Menu.Effect.MenuTest (sendChar, sendCharWait)
 import Ribosome.Menu.Interpreter.MenuConsumer (Mappings, basic, withMappings)
+import Ribosome.Menu.Interpreter.MenuState (interpretMenu)
+import Ribosome.Menu.Interpreter.PromptControl (interpretPromptControl)
 import Ribosome.Menu.Interpreter.PromptInput (interpretPromptInputCharList, interpretPromptInputNvim)
-import Ribosome.Menu.ItemLens (cursor)
-import Ribosome.Menu.Main (interpretMenu)
 import Ribosome.Menu.Nvim (nvimMenu, nvimMenuWith, runNvimMenu, staticNvimMenu)
 import Ribosome.Menu.NvimRenderer (computeView, entrySlice)
 import Ribosome.Menu.Prompt.Data.Prompt (Prompt (Prompt), PromptText (PromptText))
@@ -68,24 +59,22 @@ items =
   (mappend "its" . show <$> [(5 :: Int)..9])
 
 exec ::
-  MenuWrite i r =>
+  Member (MenuState i) r =>
   MenuWidget r Text
-exec =
-  menuWrite do
-    semState do
-      CursorIndex s <- use cursor
-      fs <- use sortedEntries
-      SemS (maybe menuOk menuSuccess (fs ^? ix s . #item . #text))
+exec = do
+  CursorIndex s <- readCursor
+  fs <- viewMenu sortedEntries
+  maybe menuOk menuSuccess (fs ^? ix s . #item . #text)
 
 mappings ::
-  MenuWrite Text r =>
+  Member (MenuState i) r =>
   Mappings r Text
 mappings =
   [("cr", exec)]
 
 test_nvimMenuPure :: UnitTest
 test_nvimMenuPure =
-  testEmbed_ $ interpretMenu $ interpretPromptInputCharList pureChars do
+  testEmbed_ $ interpretMenu $ interpretPromptControl $ interpretPromptInputCharList pureChars do
     result <- resumeTestError @Scratch $ withMappings mappings do
       runNvimMenu $ nvimMenuWith def { maxSize = Just 4 } (menuItems items) [StartInsert]
     MenuResult.Success "item4" === result
@@ -96,7 +85,7 @@ nativeChars =
 
 test_nvimMenuNative :: UnitTest
 test_nvimMenuNative =
-  testEmbed_ $ interpretMenu $ interpretPromptInputNvim do
+  testEmbed_ $ interpretMenu $ interpretPromptControl $ interpretPromptInputNvim do
     withPromptInput (Just (MilliSeconds 10)) nativeChars do
       result <- resumeTestError @Scratch $ withMappings mappings do
         runNvimMenu $ nvimMenuWith def { maxSize = Just 4 } (menuItems items) [StartInsert]
@@ -104,16 +93,17 @@ test_nvimMenuNative =
 
 test_nvimMenuInterrupt :: UnitTest
 test_nvimMenuInterrupt =
-  testEmbed_ $ interpretMenu $ interpretPromptInputNvim do
+  testEmbed_ $ interpretMenu $ interpretPromptControl $ interpretPromptInputNvim do
     assertEq MenuResult.Aborted =<< withPromptInput (Just (MilliSeconds 50)) ["<c-c>", "<cr>"] do
       resumeTestError @Scratch $ basic @() do
         runNvimMenu $ nvimMenuWith def (menuItems items) [StartInsert]
     assertEq 1 . length =<< vimGetWindows
 
 returnPrompt ::
-  MenuSem Text r (Maybe (MenuAction Text))
+  Member (MenuState i) r =>
+  Sem r (Maybe (MenuAction Text))
 returnPrompt = do
-  Prompt _ _ (PromptText text) <- semState (use #prompt)
+  Prompt _ _ (PromptText text) <- readPrompt
   menuSuccess text
 
 navChars :: [Text]
@@ -121,10 +111,10 @@ navChars =
   ["i", "i", "t", "e", "m", "1", "bs", "esc", "h", "h", "h", "h", "h", "x", "a", "o", "cr"]
 
 navMappings ::
-  MenuRead Text r =>
+  Member (MenuState Text) r =>
   Mappings r Text
 navMappings =
-  [("cr", menuRead returnPrompt)]
+  [("cr", returnPrompt)]
 
 test_nvimMenuNav :: UnitTest
 test_nvimMenuNav =

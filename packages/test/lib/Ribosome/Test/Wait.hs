@@ -1,8 +1,8 @@
 module Ribosome.Test.Wait where
 
 import Hedgehog.Internal.Property (Failure, failWith, liftTest, mkTest)
-import qualified Polysemy.Conc as Conc
-import Polysemy.Conc (interpretAtomic)
+import qualified Conc
+import Conc (interpretAtomic)
 import Polysemy.Test (Hedgehog, liftH)
 import qualified Polysemy.Time as Time
 import Polysemy.Time (MilliSeconds (MilliSeconds), Seconds (Seconds))

@@ -1,6 +1,6 @@
 module Ribosome.Menu.Interpreter.MenuTest where
 
-import Conc (Restoration, interpretQueueTBM, interpretSync, resultToMaybe, withAsync_)
+import Conc (Restoration, interpretQueueTBM, interpretSync, resultToMaybe, timeout_, withAsync_)
 import Exon (exon)
 import Polysemy.Chronos (ChronosTime)
 import qualified Queue
@@ -17,23 +17,23 @@ import Ribosome.Menu.Data.MenuEvent (MenuEvent (Mapping, NewItems, PromptEdit, P
 import Ribosome.Menu.Data.MenuItem (MenuItem)
 import Ribosome.Menu.Data.MenuItemFilter (MenuItemFilter)
 import Ribosome.Menu.Data.MenuResult (MenuResult)
-import Ribosome.Menu.Data.MenuState (MenuStack)
 import Ribosome.Menu.Data.NvimMenuConfig (NvimMenuConfig (NvimMenuConfig))
 import Ribosome.Menu.Effect.MenuConsumer (MenuConsumer (MenuConsumerEvent), menuConsumerEvent)
+import Ribosome.Menu.Effect.MenuState (MenuState)
 import Ribosome.Menu.Effect.MenuRenderer (MenuRenderer, withMenuRenderer)
 import Ribosome.Menu.Effect.MenuTest (MenuTest (ItemsDone, Result, SendItem, SendPrompt), sendStaticItems)
+import Ribosome.Menu.Effect.PromptControl (PromptControl, waitPromptListening)
 import Ribosome.Menu.Effect.PromptEvents (PromptEvents)
 import Ribosome.Menu.Effect.PromptInput (PromptInput)
 import Ribosome.Menu.Effect.PromptRenderer (PromptRenderer, withPrompt)
 import Ribosome.Menu.Filters (fuzzyMonotonic)
+import Ribosome.Menu.Interpreter.PromptControl (interpretPromptControl)
 import Ribosome.Menu.Interpreter.PromptEvents (interpretPromptEventsDefault)
 import Ribosome.Menu.Interpreter.PromptInput (interpretPromptInputQueue)
 import Ribosome.Menu.Main (menuMain)
 import Ribosome.Menu.Nvim (interpretNvimMenu)
 import Ribosome.Menu.Prompt.Data.InputEvent (InputEvent)
 import Ribosome.Menu.Prompt.Data.PromptFlag (PromptFlag)
-import Ribosome.Menu.Prompt.Data.PromptListening (PromptListening (PromptListening))
-import Ribosome.Menu.Prompt.Data.PromptQuit (PromptQuit)
 import Ribosome.Menu.Stream.Util (queueStream)
 
 waitEvent ::
@@ -116,9 +116,9 @@ runMenuTest timeout failure =
 withTestMenu ::
   Show result =>
   TimeUnit u =>
-  Members (MenuStack i) r =>
-  Members [Sync (MenuResult result), MenuConsumer result, MenuRenderer i, PromptInput, PromptEvents, PromptRenderer] r =>
-  Members [Sync PromptQuit, Sync PromptListening, ChronosTime, Log, Mask Restoration, Race, Resource, Async, Embed IO, Final IO] r =>
+  Members [PromptControl, PromptInput, PromptEvents, PromptRenderer] r =>
+  Members [Sync (MenuResult result), MenuState i, MenuConsumer result, MenuRenderer i] r =>
+  Members [ChronosTime, Log, Mask Restoration, Race, Resource, Async, Embed IO, Final IO] r =>
   u ->
   (∀ x . Text -> Sem r x) ->
   MenuConfig i ->
@@ -126,7 +126,7 @@ withTestMenu ::
   Sem r a
 withTestMenu timeout failure conf sem =
   withAsync_ (Sync.putWait timeout =<< menuMain conf) do
-    PromptListening <- maybe (failure "prompt didn't start") pure =<< Sync.wait timeout
+    timeout_ (failure "prompt didn't start") timeout waitPromptListening
     sem
 
 type MenuTestEffects i result =
@@ -138,8 +138,9 @@ type MenuTestEffects i result =
     Queue (MenuItem i),
     Sync (MenuResult result),
     PromptEvents,
-    PromptRenderer
-  ] 
+    PromptRenderer,
+    PromptControl
+  ]
 
 menuTest ::
   ∀ i result pres u r .
@@ -147,16 +148,15 @@ menuTest ::
   Show i =>
   Show u =>
   TimeUnit u =>
-  Members (MenuStack i) r =>
-  Members [MenuConsumer result, MenuRenderer i, Scoped pres PromptRenderer] r =>
-  Members [Sync PromptQuit, Sync PromptListening, ChronosTime, Log, Mask Restoration, Race, Resource, Async, Embed IO, Final IO] r =>
+  Members [MenuState i, MenuConsumer result, MenuRenderer i, Scoped pres PromptRenderer] r =>
+  Members [ChronosTime, Log, Mask Restoration, Race, Resource, Async, Resource, Embed IO, Final IO] r =>
   [PromptFlag] ->
   MenuItemFilter i ->
   u ->
   (∀ x . Text -> Sem r x) ->
   InterpretersFor (MenuTestEffects i result) r
 menuTest flags itemFilter timeout failure sem =
-  withPrompt $ interpretPromptEventsDefault flags $ runMenuTest timeout (insertAt @0 . failure) do
+  interpretPromptControl $ withPrompt $ interpretPromptEventsDefault flags $ runMenuTest timeout (insertAt @0 . failure) do
     items <- queueStream
     withTestMenu timeout (insertAt @0 . failure) (MenuConfig items (Just itemFilter) flags) sem
 
@@ -166,9 +166,8 @@ staticMenuTest ::
   Show i =>
   Show u =>
   TimeUnit u =>
-  Members (MenuStack i) r =>
-  Members [MenuConsumer result, MenuRenderer i, Scoped pres PromptRenderer] r =>
-  Members [Sync PromptQuit, Sync PromptListening, ChronosTime, Log, Mask Restoration, Race, Async, Embed IO, Final IO] r =>
+  Members [MenuState i, MenuConsumer result, MenuRenderer i, Scoped pres PromptRenderer] r =>
+  Members [ChronosTime, Log, Mask Restoration, Race, Async, Resource, Embed IO, Final IO] r =>
   [PromptFlag] ->
   MenuItemFilter i ->
   [MenuItem i] ->
@@ -186,9 +185,8 @@ staticNvimMenuTest ::
   Show i =>
   Show u =>
   TimeUnit u =>
-  Members (MenuStack i) r =>
-  Members [MenuConsumer result, Rpc, Rpc !! RpcError, Settings !! SettingError, Scratch] r =>
-  Members [Sync PromptQuit, Sync PromptListening, ChronosTime, Log, Mask Restoration, Race, Async, Embed IO, Final IO] r =>
+  Members [MenuState i, MenuConsumer result, Rpc, Rpc !! RpcError, Settings !! SettingError, Scratch] r =>
+  Members [ChronosTime, Log, Mask Restoration, Race, Async, Resource, Embed IO, Final IO] r =>
   NvimMenuConfig i ->
   u ->
   (∀ x . Text -> Sem r x) ->
@@ -196,4 +194,4 @@ staticNvimMenuTest ::
 staticNvimMenuTest conf@(NvimMenuConfig (MenuConfig items itemFilter flags) _) timeout failure sem = do
   interpretNvimMenu conf $ withMenuRenderer do
     staticItems <- embed (Stream.toList items)
-    staticMenuTest flags (fromMaybe fuzzyMonotonic itemFilter) staticItems timeout (insertAt @0 . failure) (insertAt @8 sem)
+    staticMenuTest flags (fromMaybe fuzzyMonotonic itemFilter) staticItems timeout (insertAt @0 . failure) (insertAt @9 sem)

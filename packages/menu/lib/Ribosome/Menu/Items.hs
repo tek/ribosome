@@ -13,63 +13,69 @@ import Prelude hiding (unify)
 import Ribosome.Menu.Data.CursorIndex (CursorIndex (CursorIndex))
 import qualified Ribosome.Menu.Data.Entry as Entry
 import Ribosome.Menu.Data.Entry (Entries, Entry)
+import Ribosome.Menu.Data.Menu (Menu)
 import qualified Ribosome.Menu.Data.MenuAction as MenuAction
 import qualified Ribosome.Menu.Data.MenuItem as MenuItem
 import Ribosome.Menu.Data.MenuItem (MenuItem)
-import Ribosome.Menu.Data.MenuState (MenuSem, MenuStack, MenuWidget, menuWrite, semState, unSemS)
-import Ribosome.Menu.ItemLens (cursor, entries, focus, history, items, selected, selected')
+import Ribosome.Menu.Data.MenuState (MenuWidget, semState)
+import Ribosome.Menu.Effect.MenuState (MenuState, viewMenu)
+import Ribosome.Menu.ItemLens (entries, focus, history, items, selected, selected')
 
 -- |Run an action with the focused entry if the menu is non-empty.
 withFocusItem ::
-  (MenuItem i -> MenuSem i r a) ->
-  MenuSem i r (Maybe a)
+  Member (MenuState i) r =>
+  (MenuItem i -> Sem r a) ->
+  Sem r (Maybe a)
 withFocusItem f =
-  traverse f =<< unSemS (use focus)
+  traverse f =<< viewMenu focus
 
 -- |Run an action with the focused entry if the menu is non-empty, extracting the item payload.
 withFocus' ::
-  (i -> MenuSem i r a) ->
-  MenuSem i r (Maybe a)
+  Member (MenuState i) r =>
+  (i -> Sem r a) ->
+  Sem r (Maybe a)
 withFocus' f =
   withFocusItem (f . MenuItem.meta)
 
 -- |Run an action with the focused entry and quit the menu with the returned value.
 -- If the menu was empty, do nothing (i.e. skip the event).
 withFocus ::
-  Members (MenuStack i) r =>
-  (i -> MenuSem i r a) ->
+  Member (MenuState i) r =>
+  (i -> Sem r a) ->
   MenuWidget r a
 withFocus f =
-  Just . maybe MenuAction.Continue MenuAction.success <$> menuWrite (withFocus' f)
+  Just . maybe MenuAction.Continue MenuAction.success <$> withFocus' f
 
 -- |Run an action with the selection or the focused entry if the menu is non-empty.
 withSelectionItems ::
-  (NonEmpty (MenuItem i) -> MenuSem i r a) ->
-  MenuSem i r (Maybe a)
+  Member (MenuState i) r =>
+  (NonEmpty (MenuItem i) -> Sem r a) ->
+  Sem r (Maybe a)
 withSelectionItems f =
-  traverse f =<< semState (use selected')
+  traverse f =<< viewMenu selected'
 
 -- |Run an action with the selection or the focused entry if the menu is non-empty, extracting the item payloads.
 withSelection' ::
-  (NonEmpty i -> MenuSem i r a) ->
-  MenuSem i r (Maybe a)
+  Member (MenuState i) r =>
+  (NonEmpty i -> Sem r a) ->
+  Sem r (Maybe a)
 withSelection' f =
-  traverse f =<< semState (use selected)
+  traverse f =<< viewMenu selected
 
 -- |Run an action with the selection or the focused entry and quit the menu with the returned value.
 -- If the menu was empty, do nothing (i.e. skip the event).
 withSelection ::
-  Members (MenuStack i) r =>
-  (NonEmpty i -> MenuSem i r a) ->
+  Member (MenuState i) r =>
+  (NonEmpty i -> Sem r a) ->
   MenuWidget r a
 withSelection f =
-  Just . maybe MenuAction.Continue MenuAction.success <$> menuWrite (withSelection' f)
+  Just . maybe MenuAction.Continue MenuAction.success <$> withSelection' f
 
 -- |Run an action with each entry in the selection or the focused entry and quit the menu with '()'.
 -- If the menu was empty, do nothing (i.e. skip the event).
 traverseSelection_ ::
-  Members (MenuStack i) r =>
-  (i -> MenuSem i r ()) ->
+  Member (MenuState i) r =>
+  (i -> Sem r ()) ->
   MenuWidget r ()
 traverseSelection_ f =
   withSelection (traverse_ f)
@@ -138,12 +144,13 @@ popSelection curs initial =
         (([curs], [i]), IntMap.update (Just . Seq.deleteAt si) score initial)
 
 deleteSelected ::
-  MenuSem i r ()
+  Member (State (Menu i)) r =>
+  Sem r ()
 deleteSelected =
   semState do
-    CursorIndex curs <- use cursor
+    CursorIndex curs <- use #cursor
     ((deletedEntries, deletedItems), kept) <- use (entries . to (popSelection curs))
     entries .= kept
     history .= mempty
     items %= flip IntMap.withoutKeys (IntSet.fromList deletedItems)
-    cursor %= adaptCursorAfterDeletion deletedEntries
+    #cursor %= adaptCursorAfterDeletion deletedEntries

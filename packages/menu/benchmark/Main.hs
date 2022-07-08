@@ -5,7 +5,7 @@ import Criterion.Main (bench, bgroup, defaultConfig, defaultMainWith, env, whnfI
 import Exon (exon)
 import Lens.Micro.Extras (view)
 import Path (relfile)
-import Polysemy.Conc (interpretRace)
+import Conc (interpretRace)
 import Polysemy.Log (Severity (Warn), interpretLogStderrLevelConc)
 import qualified Polysemy.Test as Test
 import Polysemy.Test (Test, TestError, interpretTestInSubdir)

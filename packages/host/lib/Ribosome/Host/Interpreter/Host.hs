@@ -2,7 +2,7 @@ module Ribosome.Host.Interpreter.Host where
 
 import Exon (exon)
 import Log (Severity (Error), dataLog)
-import Polysemy.Conc (Restoration, withAsync_)
+import Conc (Restoration, withAsync_)
 import Polysemy.Process (Process)
 import System.IO.Error (IOError)
 

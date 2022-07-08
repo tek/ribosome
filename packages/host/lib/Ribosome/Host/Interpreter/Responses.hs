@@ -2,7 +2,7 @@ module Ribosome.Host.Interpreter.Responses where
 
 import qualified Data.Map.Strict as Map
 import Exon (exon)
-import Polysemy.Conc (interpretAtomic)
+import Conc (interpretAtomic)
 
 import qualified Ribosome.Host.Data.RpcError as RpcError
 import Ribosome.Host.Data.RpcError (RpcError)

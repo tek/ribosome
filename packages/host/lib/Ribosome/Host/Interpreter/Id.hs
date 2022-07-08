@@ -1,6 +1,6 @@
 module Ribosome.Host.Interpreter.Id where
 
-import Polysemy.Conc (interpretAtomic)
+import Conc (interpretAtomic)
 import Polysemy.Input (Input (Input))
 
 -- |Interpret 'Input' by incrementing a numeric type starting from @1@.

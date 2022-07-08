@@ -16,10 +16,6 @@ import Ribosome.Menu.Data.MenuData (MenuQuery)
 import qualified Ribosome.Menu.Data.MenuItem as MenuItem
 import Ribosome.Menu.Data.MenuItem (Items, MenuItem)
 
-cursor :: Lens' (Menu i) CursorIndex
-cursor =
-  #cursor . #cursor
-
 entries :: Lens' (Menu i) (Entries i)
 entries =
   #items . #entries
@@ -84,7 +80,7 @@ getFocus ::
   Menu i ->
   Maybe (MenuItem i)
 getFocus menu =
-  menu ^? sortedEntries . ix (fromIntegral (menu ^. cursor)) . #item
+  menu ^? sortedEntries . ix (fromIntegral (menu ^. #cursor)) . #item
 
 focus ::
   SimpleGetter (Menu i) (Maybe (MenuItem i))
@@ -148,7 +144,7 @@ unselectedItems menu =
     folder (z, _) _ e =
       (Right e : z, True)
     CursorIndex cursorIndex =
-      menu ^. cursor
+      menu ^. #cursor
 
 unselected ::
   SimpleGetter (Menu i) [MenuItem i]

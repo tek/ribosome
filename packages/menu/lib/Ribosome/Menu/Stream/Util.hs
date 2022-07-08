@@ -1,12 +1,11 @@
 module Ribosome.Menu.Stream.Util where
 
-import Control.Concurrent.STM (atomically)
-import Control.Concurrent.STM.TMChan (TMChan, readTMChan)
 import Data.Maybe (fromJust)
-import qualified Streamly.Prelude as Stream
-import Streamly.Prelude (IsStream, MonadAsync)
-import Ribosome.Final (inFinal_)
 import qualified Queue
+import qualified Streamly.Prelude as Stream
+import Streamly.Prelude (IsStream)
+
+import Ribosome.Final (inFinal_)
 
 takeUntilNothing ::
   Monad m =>
@@ -16,15 +15,6 @@ takeUntilNothing ::
   t m a
 takeUntilNothing s =
   fromJust <$> Stream.takeWhile isJust s
-
-chanStream ::
-  IsStream t =>
-  MonadAsync m =>
-  Functor (t m) =>
-  TMChan a ->
-  t m a
-chanStream chan =
-  takeUntilNothing (Stream.repeatM (liftIO (atomically (readTMChan chan))))
 
 queueStream ::
   IsStream t =>

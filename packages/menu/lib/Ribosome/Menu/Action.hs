@@ -1,6 +1,5 @@
 module Ribosome.Menu.Action where
 
-import Conc (Lock)
 import Data.Generics.Labels ()
 import Lens.Micro.Mtl (use, (%=))
 
@@ -8,19 +7,9 @@ import Ribosome.Menu.Combinators (numVisible, overEntries)
 import Ribosome.Menu.Data.CursorIndex (CursorIndex (CursorIndex))
 import qualified Ribosome.Menu.Data.MenuAction as MenuAction
 import Ribosome.Menu.Data.MenuAction (MenuAction)
-import Ribosome.Menu.Data.MenuState (
-  CursorLock,
-  MenuSem,
-  MenuStack,
-  MenuStateEffects,
-  MenuWidget,
-  SemS (SemS),
-  menuRead,
-  menuWrite,
-  semState,
-  unSemS,
-  )
-import Ribosome.Menu.ItemLens (cursor, entries)
+import Ribosome.Menu.Data.MenuState (MenuWidget, ModifyCursor, ModifyMenu, liftCursor, modifyCursor, modifyMenu, semState)
+import Ribosome.Menu.Effect.MenuState (MenuState)
+import Ribosome.Menu.ItemLens (entries)
 import Ribosome.Menu.Prompt.Data.Prompt (Prompt)
 
 act ::
@@ -57,56 +46,53 @@ menuSuccess ma =
 
 cycleMenu ::
   Int ->
-  MenuSem i r ()
+  ModifyCursor i r ()
 cycleMenu offset = do
-  unSemS do
-    count <- use (to numVisible)
-    cursor %= \ currentCount -> fromMaybe 0 ((currentCount + fromIntegral offset) `mod` fromIntegral count)
+  count <- asks numVisible
+  modify' \ currentCount -> fromMaybe 0 ((currentCount + fromIntegral offset) `mod` fromIntegral count)
 
 menuModify ::
-  Members (MenuStack i) r =>
-  MenuSem i r () ->
+  Member (MenuState i) r =>
+  ModifyMenu i r () ->
   MenuWidget r a
 menuModify action = do
-  menuWrite action
+  modifyMenu action
   menuRender
 
 menuNavigate ::
-  Members (MenuStateEffects i) r =>
-  Member (Tagged CursorLock Lock) r =>
-  MenuSem i r () ->
+  Member (MenuState i) r =>
+  ModifyCursor i r () ->
   MenuWidget r a
 menuNavigate action = do
-  menuRead action
+  modifyCursor action
   menuRender
 
 menuCycle ::
-  Members (MenuStateEffects i) r =>
-  Member (Tagged CursorLock Lock) r =>
+  Member (MenuState i) r =>
   Int ->
   MenuWidget r a
 menuCycle offset =
   menuNavigate (cycleMenu offset)
 
 toggleSelected ::
-  MenuSem i r ()
+  ModifyMenu i r ()
 toggleSelected = do
   semState do
-    CursorIndex cur <- use cursor
+    CursorIndex cur <- use #cursor
     entries %= overEntries \ index ->
       if index == cur
       then #selected %~ not
       else id
-    SemS (cycleMenu 1)
+  liftCursor (cycleMenu 1)
 
 menuToggle ::
-  Members (MenuStack i) r =>
+  Member (MenuState i) r =>
   MenuWidget r a
 menuToggle =
   menuModify toggleSelected
 
 menuToggleAll ::
-  Members (MenuStack i) r =>
+  Member (MenuState i) r =>
   MenuWidget r a
 menuToggleAll =
   menuModify $ semState do

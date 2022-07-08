@@ -2,7 +2,7 @@ module Ribosome.Host.Interpreter.Errors where
 
 import qualified Data.Map.Strict as Map
 import Polysemy.Chronos (ChronosTime)
-import Polysemy.Conc (interpretAtomic)
+import Conc (interpretAtomic)
 
 import Ribosome.Host.Data.HandlerError (HandlerTag)
 import qualified Ribosome.Host.Data.StoredError as StoredError

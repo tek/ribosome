@@ -20,10 +20,11 @@ import Ribosome.Menu.Data.Entry (Entries, Entry (Entry), simpleIntEntries)
 import Ribosome.Menu.Data.Menu (consMenu)
 import qualified Ribosome.Menu.Data.MenuItem as MenuItem
 import Ribosome.Menu.Data.MenuItem (Items, simpleMenuItem)
-import Ribosome.Menu.Data.MenuState (MenuRead, MenuWidget, menuRead, semState)
+import Ribosome.Menu.Data.MenuState (MenuWidget)
+import Ribosome.Menu.Effect.MenuState (MenuState, viewMenu)
 import Ribosome.Menu.Effect.MenuTest (sendCharWait, sendStaticItems)
 import Ribosome.Menu.Interpreter.MenuConsumer (forMappings, withMappings)
-import Ribosome.Menu.ItemLens (cursor, items, selected', selectedOnly, unselected)
+import Ribosome.Menu.ItemLens (items, selected', selectedOnly, unselected)
 import Ribosome.Menu.Items (deleteSelected, popSelection)
 import Ribosome.Menu.Prompt.Data.Prompt (Prompt (Prompt))
 import Ribosome.Menu.Prompt.Data.PromptMode (PromptMode (Insert, Normal))
@@ -97,14 +98,13 @@ items3 =
     ]
 
 exec ::
-  MenuRead i r =>
+  Member (MenuState i) r =>
   Member (Sync [Text]) r =>
   MenuWidget r ()
-exec =
-  menuRead do
-    fs <- semState (use sortedEntries)
-    void (Sync.putWait (Seconds 5) (view (#item . #text) <$> fs))
-    menuQuit
+exec = do
+  fs <- viewMenu sortedEntries
+  void (Sync.putWait (Seconds 5) (view (#item . #text) <$> fs))
+  menuQuit
 
 test_pureMenuExecute :: UnitTest
 test_pureMenuExecute = do
@@ -131,14 +131,13 @@ itemsMulti =
   ]
 
 execMulti ::
-  MenuRead i r =>
+  Member (MenuState i) r =>
   Member (Sync (Maybe (NonEmpty Text))) r =>
   MenuWidget r ()
-execMulti =
-  menuRead do
-    selection <- semState (use selected')
-    void (Sync.putWait (Seconds 5) (fmap MenuItem.text <$> selection))
-    menuQuit
+execMulti = do
+  selection <- viewMenu selected'
+  void (Sync.putWait (Seconds 5) (fmap MenuItem.text <$> selection))
+  menuQuit
 
 test_menuMultiMark :: UnitTest
 test_menuMultiMark = do
@@ -167,13 +166,11 @@ itemsToggle =
   ]
 
 execToggle ::
-  MenuRead i r =>
-  Member (Sync (NonEmpty Text)) r =>
+  Members [MenuState i, Sync (NonEmpty Text)] r =>
   MenuWidget r ()
 execToggle = do
-  menuRead do
-    semState (use selectedOnly) >>= traverse_ \ selection ->
-      Sync.putWait (Seconds 5) (MenuItem.text <$> selection)
+  viewMenu selectedOnly >>= traverse_ \ selection ->
+    Sync.putWait (Seconds 5) (MenuItem.text <$> selection)
   menuQuit
 
 test_menuToggle :: UnitTest
@@ -210,7 +207,7 @@ test_menuDeleteSelected :: UnitTest
 test_menuDeleteSelected = do
   runTestAuto do
     targetSel === IntMap.elems (MenuItem.text <$> updatedSel ^. items)
-    2 === updatedSel ^. cursor
+    2 === updatedSel ^. #cursor
     targetFoc === IntMap.elems (MenuItem.text <$> updatedFoc ^. items)
     (([0], [9]), 9) === second (length . sortEntries) (popSelection 0 unselectedEntries)
     75000 === length (sortEntries (snd (popSelection manyCursor manyEntries)))
@@ -226,7 +223,7 @@ test_menuDeleteSelected = do
       targetFoc =
         ["0", "1", "2", "3", "5", "6", "7"]
       menu ent =
-        consMenu its ent mempty 7 mempty 3 def
+        consMenu its ent mempty 7 mempty 3
       its =
         IntMap.fromList [(n, simpleMenuItem () (show n)) | n <- [0..7]]
       entriesSel =
@@ -253,7 +250,7 @@ test_menuUnselectedCursor =
     [2, 4] === (MenuItem.meta <$> MTL.evalState (use unselected) menu)
   where
     menu =
-      consMenu mempty entries mempty 0 mempty 1 def
+      consMenu mempty entries mempty 0 mempty 1
     entries =
       simpleIntEntries [2, 3, 4]
 

@@ -1,7 +1,7 @@
 module Ribosome.Test.WatcherTest where
 
 import Data.MessagePack (Object)
-import Polysemy.Conc (interpretAtomic)
+import Conc (interpretAtomic)
 import Polysemy.Test (UnitTest, (===))
 
 import Ribosome.Api.Autocmd (doautocmd)

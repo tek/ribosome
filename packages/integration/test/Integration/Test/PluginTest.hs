@@ -8,7 +8,7 @@ import Log (Severity (Trace))
 import Path (Abs, Dir, Path, reldir, relfile, toFilePath, (</>))
 import Path.IO (copyDirRecur)
 import Polysemy.Chronos (ChronosTime)
-import qualified Polysemy.Conc as Conc
+import qualified Conc
 import qualified Polysemy.Test as Test
 import Polysemy.Test (UnitTest, assertEq, liftH)
 import qualified Polysemy.Time as Time

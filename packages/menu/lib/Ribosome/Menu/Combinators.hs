@@ -8,13 +8,13 @@ import Lens.Micro.Mtl (use, view, (%=), (.=))
 
 import Ribosome.Menu.Data.Entry (Entries, Entry)
 import Ribosome.Menu.Data.Menu (Menu)
-import Ribosome.Menu.Data.MenuData (MenuQuery (MenuQuery))
-import Ribosome.Menu.Data.MenuState (MenuItemsSemS)
+import Ribosome.Menu.Data.MenuData (MenuItems, MenuQuery (MenuQuery))
+import Ribosome.Menu.Data.MenuState (SemS)
 
 push ::
   MenuQuery ->
-  Entries a ->
-  MenuItemsSemS r a ()
+  Entries i ->
+  SemS (MenuItems i) r ()
 push newQuery new = do
   MenuQuery oldQuery <- use #currentQuery
   old <- use #entries
@@ -23,10 +23,10 @@ push newQuery new = do
   #currentQuery .= newQuery
 
 numVisible ::
-  Menu i ->
+  MenuItems i ->
   Int
 numVisible =
-  sum . fmap length . view (#items . #entries)
+  sum . fmap length . view #entries
 
 sortEntries :: Entries i -> [Entry i]
 sortEntries =

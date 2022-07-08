@@ -15,10 +15,11 @@ import Ribosome.Lens ((<|>~))
 import Ribosome.Menu.Data.MenuConfig (MenuConfig (MenuConfig))
 import Ribosome.Menu.Data.MenuItem (MenuItem)
 import Ribosome.Menu.Data.MenuResult (MenuResult)
-import Ribosome.Menu.Data.MenuState (MenuStack)
 import Ribosome.Menu.Data.NvimMenuConfig (NvimMenuConfig (NvimMenuConfig))
 import Ribosome.Menu.Effect.MenuConsumer (MenuConsumer)
+import Ribosome.Menu.Effect.MenuState (MenuState)
 import Ribosome.Menu.Effect.MenuRenderer (MenuRenderer)
+import Ribosome.Menu.Effect.PromptControl (PromptControl)
 import Ribosome.Menu.Effect.PromptEvents (PromptEvents)
 import Ribosome.Menu.Effect.PromptInput (PromptInput)
 import Ribosome.Menu.Effect.PromptRenderer (PromptRenderer)
@@ -28,24 +29,23 @@ import Ribosome.Menu.Interpreter.PromptEvents (interpretPromptEventsDefault)
 import Ribosome.Menu.Interpreter.PromptRenderer (interpretPromptRendererNvim)
 import Ribosome.Menu.Main (menu)
 import Ribosome.Menu.Prompt.Data.PromptFlag (PromptFlag)
-import Ribosome.Menu.Prompt.Data.PromptListening (PromptListening)
-import Ribosome.Menu.Prompt.Data.PromptQuit (PromptQuit)
 import Ribosome.Menu.Prompt.Nvim (NvimPromptResources)
 
 type NvimMenuStack i a res =
-  MenuStack i ++ [
+  [
+    MenuState i,
+    PromptControl,
     MenuConsumer a,
     PromptInput,
     Settings !! SettingError,
     Scratch,
     Rpc,
     Rpc !! RpcError,
-    Sync PromptQuit,
-    Sync PromptListening,
     Log,
     ChronosTime,
     Mask res,
     Race,
+    Resource,
     Embed IO,
     Final IO
   ]

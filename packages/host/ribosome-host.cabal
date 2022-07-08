@@ -59,6 +59,7 @@ library
       Ribosome.Host.Effect.Handlers
       Ribosome.Host.Effect.Host
       Ribosome.Host.Effect.Log
+      Ribosome.Host.Effect.MState
       Ribosome.Host.Effect.Responses
       Ribosome.Host.Effect.Rpc
       Ribosome.Host.Effect.UserError
@@ -73,6 +74,7 @@ library
       Ribosome.Host.Interpreter.Host
       Ribosome.Host.Interpreter.Id
       Ribosome.Host.Interpreter.Log
+      Ribosome.Host.Interpreter.MState
       Ribosome.Host.Interpreter.Process.Cereal
       Ribosome.Host.Interpreter.Process.Embed
       Ribosome.Host.Interpreter.Process.Socket

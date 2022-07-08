@@ -25,7 +25,7 @@ import Ribosome.Menu.Data.Menu (Menu)
 import Ribosome.Menu.Data.MenuItem (MenuItem (MenuItem))
 import Ribosome.Menu.Data.MenuView (MenuView (MenuView))
 import Ribosome.Menu.Data.NvimMenuState (NvimMenuState, botIndex, cursorLine, topIndex)
-import Ribosome.Menu.ItemLens (cursor, entries)
+import Ribosome.Menu.ItemLens (entries)
 import Ribosome.Syntax (HiLink (..), Syntax (Syntax), SyntaxItem (..), syntaxMatch)
 
 marker :: Char
@@ -151,7 +151,7 @@ updateMenuState ::
   StateT NvimMenuState (ReaderT (Menu i) Identity) ([Entry i], Bool)
 updateMenuState scratchMax = do
   oldIndexes <- use #indexes
-  newCursor <- view cursor
+  newCursor <- view #cursor
   count <- view (entries . to (getSum . foldMap (Sum . Seq.length)))
   #view %= computeView newCursor (min count scratchMax) count
   #cursorIndex .= newCursor

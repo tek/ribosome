@@ -2,17 +2,16 @@ module Ribosome.Menu.Interpreter.PromptInput where
 
 import Conc (interpretAtomic, race, resultToMaybe)
 import qualified Queue
-import qualified Sync
 
 import Ribosome.Host.Api.Effect (vimCallFunction)
 import Ribosome.Host.Class.Msgpack.Encode (toMsgpack)
 import Ribosome.Host.Data.RpcError (RpcError)
 import Ribosome.Host.Effect.Rpc (Rpc)
+import Ribosome.Menu.Effect.PromptControl (PromptControl, waitPromptQuit)
 import Ribosome.Menu.Effect.PromptInput (PromptInput (Event))
 import Ribosome.Menu.Prompt.Data.Codes (decodeInputChar, decodeInputNum)
 import qualified Ribosome.Menu.Prompt.Data.InputEvent as InputEvent
 import Ribosome.Menu.Prompt.Data.InputEvent (InputEvent)
-import Ribosome.Menu.Prompt.Data.PromptQuit (PromptQuit)
 
 interpretPromptInputList ::
   Member (Embed IO) r =>
@@ -42,7 +41,7 @@ quitCharOrd =
   ord quitChar
 
 getChar ::
-  Members [Sync PromptQuit, Rpc !! RpcError, Rpc, Race, Embed IO] r =>
+  Members [PromptControl, Rpc !! RpcError, Rpc, Race, Embed IO] r =>
   Sem r InputEvent
 getChar =
   resumeAs @RpcError InputEvent.Interrupt getOne
@@ -50,7 +49,7 @@ getChar =
     getOne =
       either pure event =<< race waitQuit (getchar [])
     waitQuit =
-      Sync.block *> getchar [toMsgpack True] $> InputEvent.Interrupt
+      waitPromptQuit *> getchar [toMsgpack True] $> InputEvent.Interrupt
     getchar =
       vimCallFunction "getchar"
     event (Right c) =
@@ -64,7 +63,7 @@ getChar =
 
 -- TODO since getchar is called without args, it should be blocking, so is the sleeping pointless?
 interpretPromptInputNvim ::
-  Members [Sync PromptQuit, Rpc !! RpcError, Rpc, Race, Embed IO] r =>
+  Members [PromptControl, Rpc !! RpcError, Rpc, Race, Embed IO] r =>
   InterpreterFor PromptInput r
 interpretPromptInputNvim =
   interpret \case
