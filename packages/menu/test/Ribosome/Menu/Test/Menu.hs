@@ -82,7 +82,7 @@ promptTest ::
   Members [Hedgehog IO, Fail, Log, Resource, Race, Mask Restoration, Async, Embed IO, Final IO] r =>
   InterpretersFor (PromptTest i) r
 promptTest =
-  runTestMenuWith (Seconds 5) Nothing [StartInsert] .
+  runTestMenuWith (Seconds 5) [StartInsert] True .
   runSimpleTestMenu .
   enqueuePrompt .
   testMenuRender

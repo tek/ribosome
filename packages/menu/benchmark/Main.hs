@@ -1,22 +1,18 @@
 module Main where
 
+import Conc (Restoration, interpretMaskFinal, interpretRace)
 import qualified Control.Exception as Base
 import Criterion.Main (bench, bgroup, defaultConfig, defaultMainWith, env, whnfIO)
 import Exon (exon)
 import Lens.Micro.Extras (view)
 import Path (relfile)
-import Conc (interpretRace)
 import Polysemy.Log (Severity (Warn), interpretLogStderrLevelConc)
 import qualified Polysemy.Test as Test
 import Polysemy.Test (Test, TestError, interpretTestInSubdir)
 import Ribosome.Final (inFinal_)
+import Ribosome.Menu (MenuEvent, Prompt (Prompt), fuzzyMonotonic, interpretMenuState, simpleMenuItem)
 import Ribosome.Menu.Combinators (sortedEntries)
-import Ribosome.Menu.Data.MenuEvent (MenuEvent)
-import Ribosome.Menu.Data.MenuItem (simpleMenuItem)
-import Ribosome.Menu.Data.MenuState (readMenu)
-import Ribosome.Menu.Filters (fuzzyMonotonic)
-import Ribosome.Menu.Main (interpretMenu)
-import Ribosome.Menu.Prompt.Data.Prompt (Prompt (Prompt))
+import Ribosome.Menu.Effect.MenuState (readMenu)
 import qualified Ribosome.Menu.Prompt.Data.PromptEvent as PromptEvent
 import Ribosome.Menu.Prompt.Data.PromptEvent (PromptEvent)
 import qualified Ribosome.Menu.Prompt.Data.PromptMode as PromptMode
@@ -66,11 +62,11 @@ fileList =
 
 appendBench ::
   ∀ r .
-  Members [Log, Resource, Race, Embed IO, Final IO] r =>
+  Members [Log, Resource, Race, Mask Restoration, Embed IO, Final IO] r =>
   [Text] ->
   Sem r [MenuEvent]
 appendBench files =
-  interpretMenu $ inFinal_ \ lowerMaybe _ pur -> do
+  interpretMenuState $ inFinal_ \ lowerMaybe _ pur -> do
     let
       filt =
         fuzzyMonotonic
@@ -84,12 +80,13 @@ appendBench files =
     then pur res
     else Base.throw (userError [exon|length is #{show len}|])
 
-runBench :: Sem [Log, Race, Async, Resource, Embed IO, Final IO] a -> IO a
+runBench :: Sem [Log, Race, Mask Restoration, Async, Resource, Embed IO, Final IO] a -> IO a
 runBench =
   runFinal .
   embedToFinal .
   resourceToIOFinal .
   asyncToIOFinal .
+  interpretMaskFinal .
   interpretRace .
   interpretLogStderrLevelConc (Just Warn)
 

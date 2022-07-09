@@ -7,17 +7,21 @@ import Ribosome.Host.Interpreter.MState (interpretMState)
 import Ribosome.Menu.Data.CursorIndex (CursorIndex)
 import Ribosome.Menu.Data.MenuConfig (MenuConfig)
 import Ribosome.Menu.Data.MenuData (MenuItems)
+import Ribosome.Menu.Effect.MenuFilter (MenuFilter)
 import Ribosome.Menu.Effect.MenuState (MenuState (..))
+import Ribosome.Menu.Effect.MenuStream (MenuStream)
 import Ribosome.Menu.Effect.PromptControl (PromptControl)
 import Ribosome.Menu.Effect.PromptEvents (PromptEvents)
 import Ribosome.Menu.Effect.PromptState (PromptState)
+import Ribosome.Menu.Interpreter.MenuFilter (interpretMenuFilterFuzzyWith)
+import Ribosome.Menu.Interpreter.MenuStream (interpretMenuStream)
 import Ribosome.Menu.Interpreter.PromptControl (interpretPromptControl)
 import Ribosome.Menu.Interpreter.PromptEvents (interpretPromptEventsDefault)
 import Ribosome.Menu.Interpreter.PromptState (interpretPromptState)
 import Ribosome.Menu.Prompt.Data.Prompt (Prompt)
+import Ribosome.Menu.Prompt.Data.PromptFlag (PromptFlag)
 import Ribosome.Menu.Prompt.Data.PromptListening (PromptListening)
 import Ribosome.Menu.Prompt.Data.PromptQuit (PromptQuit)
-import Ribosome.Menu.Prompt.Data.PromptFlag (PromptFlag)
 
 type MenuStateDeps i =
   [
@@ -87,17 +91,20 @@ interpretMenuState =
   . insertAt @1
 
 type MenuStack i =
-  [MenuState i, PromptControl, PromptState, PromptEvents, Reader (MenuConfig i)]
+  [MenuState i, MenuStream i, MenuFilter, PromptControl, PromptState, PromptEvents, Reader (MenuConfig i)]
 
 interpretMenu ::
   ∀ i mres r .
-  Members [Log, Resource, Race, Mask mres, Embed IO] r =>
+  Members [Log, Resource, Race, Mask mres, Embed IO, Final IO] r =>
   MenuConfig i ->
   [PromptFlag] ->
+  Bool ->
   InterpretersFor (MenuStack i) r
-interpretMenu conf flags =
+interpretMenu conf flags monotonic =
   runReader conf .
   interpretPromptEventsDefault flags .
   interpretPromptState flags .
   interpretPromptControl .
+  interpretMenuFilterFuzzyWith monotonic .
+  interpretMenuStream .
   interpretMenuState

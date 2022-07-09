@@ -18,9 +18,9 @@ import Ribosome.Menu.Data.MenuResult (MenuResult)
 import Ribosome.Menu.Data.NvimMenuConfig (NvimMenuConfig (NvimMenuConfig))
 import Ribosome.Menu.Effect.MenuConsumer (MenuConsumer)
 import Ribosome.Menu.Effect.MenuRenderer (MenuRenderer)
+import Ribosome.Menu.Effect.MenuStream (MenuStream)
 import Ribosome.Menu.Effect.PromptInput (PromptInput)
 import Ribosome.Menu.Effect.PromptRenderer (PromptRenderer)
-import Ribosome.Menu.Filters (fuzzyMonotonic)
 import Ribosome.Menu.Interpreter.MenuRenderer (interpretMenuRendererNvim)
 import Ribosome.Menu.Interpreter.MenuState (MenuStack)
 import Ribosome.Menu.Interpreter.PromptRenderer (interpretPromptRendererNvim)
@@ -29,6 +29,7 @@ import Ribosome.Menu.Prompt.Nvim (NvimPromptResources)
 
 type NvimMenuStack i a res =
   MenuStack i ++ [
+    MenuStream i,
     MenuConsumer a,
     PromptInput,
     Settings !! SettingError,
@@ -65,7 +66,7 @@ nvimMenuWith ::
   SerialT IO (MenuItem i) ->
   NvimMenuConfig i
 nvimMenuWith options items =
-  NvimMenuConfig (MenuConfig items Nothing) (ensureSize 1 options)
+  NvimMenuConfig (MenuConfig items) (ensureSize 1 options)
 
 nvimMenu ::
   SerialT IO (MenuItem i) ->
@@ -78,10 +79,7 @@ staticNvimMenuWith ::
   [MenuItem i] ->
   NvimMenuConfig i
 staticNvimMenuWith options items =
-  setFilter (nvimMenuWith (ensureSize (length items) options) (Stream.fromList items))
-  where
-    setFilter =
-      #menu . #itemFilter ?~ fuzzyMonotonic
+  nvimMenuWith (ensureSize (length items) options) (Stream.fromList items)
 
 staticNvimMenu ::
   [MenuItem i] ->

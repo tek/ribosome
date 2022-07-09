@@ -30,7 +30,6 @@ library
       Ribosome.Menu.Data.MenuData
       Ribosome.Menu.Data.MenuEvent
       Ribosome.Menu.Data.MenuItem
-      Ribosome.Menu.Data.MenuItemFilter
       Ribosome.Menu.Data.MenuRenderEvent
       Ribosome.Menu.Data.MenuResult
       Ribosome.Menu.Data.MenuState
@@ -39,8 +38,10 @@ library
       Ribosome.Menu.Data.NvimMenuState
       Ribosome.Menu.Data.QuitReason
       Ribosome.Menu.Effect.MenuConsumer
+      Ribosome.Menu.Effect.MenuFilter
       Ribosome.Menu.Effect.MenuRenderer
       Ribosome.Menu.Effect.MenuState
+      Ribosome.Menu.Effect.MenuStream
       Ribosome.Menu.Effect.MenuTest
       Ribosome.Menu.Effect.PromptControl
       Ribosome.Menu.Effect.PromptEvents
@@ -49,8 +50,10 @@ library
       Ribosome.Menu.Effect.PromptState
       Ribosome.Menu.Filters
       Ribosome.Menu.Interpreter.MenuConsumer
+      Ribosome.Menu.Interpreter.MenuFilter
       Ribosome.Menu.Interpreter.MenuRenderer
       Ribosome.Menu.Interpreter.MenuState
+      Ribosome.Menu.Interpreter.MenuStream
       Ribosome.Menu.Interpreter.MenuTest
       Ribosome.Menu.Interpreter.PromptControl
       Ribosome.Menu.Interpreter.PromptEvents

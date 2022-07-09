@@ -1,8 +1,9 @@
 module Ribosome.Menu (
   module Ribosome.Menu.Action,
   module Ribosome.Menu.Data.MenuAction,
+  module Ribosome.Menu.Data.MenuEvent,
   module Ribosome.Menu.Data.MenuItem,
-  module Ribosome.Menu.Data.MenuItemFilter,
+  module Ribosome.Menu.Effect.MenuFilter,
   module Ribosome.Menu.Data.MenuResult,
   module Ribosome.Menu.Data.MenuState,
   module Ribosome.Menu.Effect.MenuConsumer,
@@ -43,15 +44,12 @@ import Ribosome.Menu.Action (
   menuUpdatePrompt,
   )
 import Ribosome.Menu.Data.MenuAction
+import Ribosome.Menu.Data.MenuEvent (MenuEvent)
 import Ribosome.Menu.Data.MenuItem (MenuItem (MenuItem), simpleMenuItem)
-import Ribosome.Menu.Data.MenuItemFilter (MenuItemFilter (MenuItemFilter))
 import Ribosome.Menu.Data.MenuResult (MenuResult (..))
-import Ribosome.Menu.Data.MenuState (
-  MenuWidget,
-  SemS (SemS),
-  semState,
-  )
+import Ribosome.Menu.Data.MenuState (MenuWidget, SemS (SemS), semState)
 import Ribosome.Menu.Effect.MenuConsumer (MenuConsumer (..))
+import Ribosome.Menu.Effect.MenuFilter (MenuFilter (MenuFilter))
 import Ribosome.Menu.Effect.MenuRenderer (MenuRenderer (..), withMenuRenderer)
 import Ribosome.Menu.Effect.MenuState (
   MenuState,
