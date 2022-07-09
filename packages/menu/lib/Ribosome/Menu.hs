@@ -74,7 +74,7 @@ import Ribosome.Menu.Interpreter.MenuFilter (
   interpretMenuFilterFuzzyMonotonic,
   interpretMenuFilterSubstring,
   )
-import Ribosome.Menu.Interpreter.MenuState (interpretMenuFinal, interpretMenuState)
+import Ribosome.Menu.Interpreter.MenuState (interpretMenu, interpretMenuFinal, interpretMenuState)
 import Ribosome.Menu.Interpreter.PromptControl (interpretPromptControl)
 import Ribosome.Menu.Interpreter.PromptInput (
   interpretPromptInputCharList,
