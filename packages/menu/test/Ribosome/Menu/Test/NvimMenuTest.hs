@@ -73,7 +73,7 @@ mappings =
 
 test_nvimMenuPure :: UnitTest
 test_nvimMenuPure =
-  testEmbed_ $ interpretMenuFinal (MenuConfig (menuItems items)) [StartInsert] True $ interpretPromptInputCharList pureChars do
+  testEmbed_ $ interpretMenuFinal @'True (MenuConfig (menuItems items)) [StartInsert] $ interpretPromptInputCharList pureChars do
     result <- resumeTestError @Scratch $ withMappings mappings do
       interpretNvimMenu (menuScratchSized 4) menu
     MenuResult.Success "item4" === result
@@ -84,7 +84,7 @@ nativeChars =
 
 test_nvimMenuNative :: UnitTest
 test_nvimMenuNative =
-  testEmbed_ $ interpretMenuFinal (MenuConfig (menuItems items)) [StartInsert] True $ interpretPromptInputNvim do
+  testEmbed_ $ interpretMenuFinal @'True (MenuConfig (menuItems items)) [StartInsert] $ interpretPromptInputNvim do
     withPromptInput (Just (MilliSeconds 10)) nativeChars do
       result <- resumeTestError @Scratch $ withMappings mappings do
         interpretNvimMenu (menuScratchSized 4) menu
@@ -92,7 +92,7 @@ test_nvimMenuNative =
 
 test_nvimMenuInterrupt :: UnitTest
 test_nvimMenuInterrupt =
-  testEmbed_ $ interpretMenuFinal (MenuConfig (menuItems items)) [StartInsert] True $ interpretPromptInputNvim do
+  testEmbed_ $ interpretMenuFinal @'True (MenuConfig (menuItems items)) [StartInsert] $ interpretPromptInputNvim do
     assertEq MenuResult.Aborted =<< withPromptInput (Just (MilliSeconds 50)) ["<c-c>", "<cr>"] do
       resumeTestError @Scratch $ basic @() do
         interpretNvimMenu def menu

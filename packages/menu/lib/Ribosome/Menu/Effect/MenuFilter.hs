@@ -10,3 +10,7 @@ data MenuFilter :: Effect where
   Refine :: MenuQuery -> Entries i -> MenuFilter m (Entries i)
 
 makeSem ''MenuFilter
+
+data Fuzzy (mono :: Bool)
+
+data Substring

@@ -1,7 +1,6 @@
 module Ribosome.Menu.Interpreter.PromptControl where
 
-import Conc (interpretQueueTBM, interpretSync)
-import Polysemy.Internal.Tactics (liftT)
+import Conc (interpretQueueTBM, interpretScopedWith_, interpretSync)
 import qualified Queue
 import qualified Sync
 
@@ -10,22 +9,23 @@ import Ribosome.Menu.Prompt.Data.PromptControlEvent (PromptControlEvent)
 import Ribosome.Menu.Prompt.Data.PromptListening (PromptListening (PromptListening))
 import Ribosome.Menu.Prompt.Data.PromptQuit (PromptQuit (PromptQuit))
 
-liftT_ ::
-  Functor f =>
-  Sem r a ->
-  Sem (WithTactics e f m r) (f ())
-liftT_ =
-  liftT . void
+type ScopeEffects =
+  [Sync PromptQuit, Sync PromptListening, Queue PromptControlEvent]
 
-interpretPromptControl ::
-  ∀ mres r .
-  Members [Resource, Race, Mask mres, Embed IO] r =>
-  InterpreterFor PromptControl r
-interpretPromptControl =
+scope ::
+  Members [Resource, Race, Embed IO] r =>
+  InterpretersFor ScopeEffects r
+scope =
   interpretQueueTBM @PromptControlEvent 64 .
   interpretSync @PromptListening .
-  interpretSync @PromptQuit .
-  reinterpret3 \case
+  interpretSync @PromptQuit
+
+interpretPromptControl ::
+  ∀ r .
+  Members [Resource, Race, Embed IO] r =>
+  InterpreterFor (Scoped () PromptControl) r
+interpretPromptControl =
+  interpretScopedWith_ @ScopeEffects scope \case
     QuitPrompt ->
       void (Sync.putTry PromptQuit)
     WaitPromptQuit ->

@@ -72,3 +72,12 @@ viewMenu ::
   Sem r a
 viewMenu g =
   view g <$> readMenu
+
+type ScopedMenuState i =
+  Scoped () (MenuState i)
+
+withMenuState ::
+  Member (ScopedMenuState i) r =>
+  InterpreterFor (MenuState i) r
+withMenuState =
+  scoped

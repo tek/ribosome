@@ -1,6 +1,6 @@
 module Ribosome.Host.Interpreter.MState where
 
-import Conc (Lock, PScoped, interpretAtomic, interpretLockReentrant, interpretPScopedWithH, lock)
+import Conc (Lock, interpretAtomic, interpretLockReentrant, interpretPScopedWithH, lock)
 import Polysemy.Internal.Tactics (liftT)
 
 import qualified Ribosome.Host.Effect.MState as MState

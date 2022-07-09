@@ -27,6 +27,7 @@ import Ribosome.Menu.Effect.PromptControl (PromptControl, sendControlEvent)
 import Ribosome.Menu.Effect.PromptInput (PromptInput)
 import Ribosome.Menu.Effect.PromptRenderer (PromptRenderer, withPrompt)
 import Ribosome.Menu.Effect.PromptStream (PromptStream)
+import Ribosome.Menu.Interpreter.MenuFilter (BoolVal)
 import Ribosome.Menu.Interpreter.MenuState (MenuIOStack, MenuStack, interpretMenuFinal)
 import Ribosome.Menu.Prompt.Data.Prompt (Prompt)
 import qualified Ribosome.Menu.Prompt.Data.PromptControlEvent as PromptControlEvent
@@ -137,17 +138,18 @@ menuMain = do
   menuResult =<< menuStream items promptEvents
 
 simpleMenu ::
+  ∀ mono mres pres i a r .
   Show a =>
+  BoolVal mono =>
   Members [Log, Mask mres, Resource, Race, Embed IO, Final IO] r =>
   Members [Scoped pres PromptRenderer, PromptInput, MenuRenderer i] r =>
   InterpreterFor (MenuConsumer a) (MenuIOStack i ++ PromptRenderer : r) ->
   MenuConfig i ->
   [PromptFlag] ->
-  Bool ->
   Sem r (MenuResult a)
-simpleMenu consumer config flags monotonic =
+simpleMenu consumer config flags =
   withPrompt do
-    interpretMenuFinal config flags monotonic $ consumer $ menuMain
+    interpretMenuFinal @mono config flags $ consumer $ menuMain
 
 menu ::
   ∀ a i pres mrres r .

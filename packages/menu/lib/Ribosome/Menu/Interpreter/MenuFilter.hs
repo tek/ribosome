@@ -6,6 +6,17 @@ import Ribosome.Menu.Data.MenuData (MenuQuery (MenuQuery))
 import Ribosome.Menu.Effect.MenuFilter (MenuFilter (Initial, Match, Refine))
 import Ribosome.Menu.Filters (filterFuzzy, initialSubstring, matchFuzzy, matchSubstring, refineFuzzy, refineSubstring)
 
+class BoolVal (flag :: Bool) where
+  boolVal :: Bool
+
+instance BoolVal 'True where
+  boolVal =
+    True
+
+instance BoolVal 'False where
+  boolVal =
+    False
+
 interpretMenuFilterSubstring :: InterpreterFor MenuFilter r
 interpretMenuFilterSubstring =
   interpret \case
@@ -30,13 +41,9 @@ interpretMenuFilterFuzzyWith monotonic =
       embed (refineFuzzy query (concatMap toList (IntMap.elems items)))
 
 interpretMenuFilterFuzzy ::
+  ∀ (mono :: Bool) r .
+  BoolVal mono =>
   Member (Embed IO) r =>
   InterpreterFor MenuFilter r
 interpretMenuFilterFuzzy =
-  interpretMenuFilterFuzzyWith False
-
-interpretMenuFilterFuzzyMonotonic ::
-  Member (Embed IO) r =>
-  InterpreterFor MenuFilter r
-interpretMenuFilterFuzzyMonotonic =
-  interpretMenuFilterFuzzyWith True
+  interpretMenuFilterFuzzyWith (boolVal @mono)

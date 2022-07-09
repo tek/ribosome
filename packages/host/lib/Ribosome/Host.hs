@@ -20,9 +20,11 @@ module Ribosome.Host (
   module Ribosome.Host.Data.RpcType,
   module Ribosome.Host.Data.StoredError,
   module Ribosome.Host.Effect.Errors,
+  module Ribosome.Host.Effect.MState,
   module Ribosome.Host.Effect.Rpc,
   module Ribosome.Host.Embed,
   module Ribosome.Host.Error,
+  module Ribosome.Host.Interpreter.MState,
   module Ribosome.Host.Handler,
   module Ribosome.Host.Modify,
   module Ribosome.Host.Remote,
@@ -63,9 +65,22 @@ import Ribosome.Host.Data.RpcHandler (Handler, RpcHandler (RpcHandler), simpleHa
 import Ribosome.Host.Data.RpcType (CompleteStyle (..))
 import Ribosome.Host.Data.StoredError (StoredError (StoredError))
 import Ribosome.Host.Effect.Errors (Errors)
+import Ribosome.Host.Effect.MState (
+  MState,
+  ScopedMState,
+  mmodify,
+  mread,
+  mreads,
+  mstate,
+  mtrans,
+  muse,
+  stateToMState,
+  withMState,
+  )
 import Ribosome.Host.Effect.Rpc (Rpc, async, notify, sync)
 import Ribosome.Host.Embed (embedNvim, embedNvim_, interpretHostEmbed, testHostEmbed, withHostEmbed)
 import Ribosome.Host.Error (ignoreRpcError)
 import Ribosome.Host.Handler (completeBuiltin, completeWith, rpc, rpcAutocmd, rpcCommand, rpcFunction)
+import Ribosome.Host.Interpreter.MState (evalMState, interpretMState, interpretMStates)
 import Ribosome.Host.Modify (bufdo, modifyCmd, noautocmd, silent, silentBang, windo)
 import Ribosome.Host.Remote (interpretHostRemote, runHostRemote, runHostRemoteIO)

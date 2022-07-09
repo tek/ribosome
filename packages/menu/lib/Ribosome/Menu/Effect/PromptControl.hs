@@ -11,3 +11,9 @@ data PromptControl :: Effect where
   SendControlEvent :: PromptControlEvent -> PromptControl m ()
 
 makeSem ''PromptControl
+
+withPromptControl ::
+  Member (Scoped res PromptControl) r =>
+  InterpreterFor PromptControl r
+withPromptControl =
+  scoped

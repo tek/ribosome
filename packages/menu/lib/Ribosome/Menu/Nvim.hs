@@ -1,6 +1,5 @@
 module Ribosome.Menu.Nvim where
 
-import Polysemy.Chronos (ChronosTime)
 import qualified Streamly.Internal.Data.Stream.IsStream as Stream
 import Streamly.Prelude (SerialT)
 
@@ -14,38 +13,12 @@ import Ribosome.Host.Effect.Rpc (Rpc)
 import Ribosome.Lens ((<|>~))
 import Ribosome.Menu.Data.MenuConfig (MenuConfig (MenuConfig))
 import Ribosome.Menu.Data.MenuItem (MenuItem)
-import Ribosome.Menu.Data.MenuResult (MenuResult)
 import Ribosome.Menu.Data.NvimMenuConfig (NvimMenuConfig (NvimMenuConfig))
-import Ribosome.Menu.Effect.MenuConsumer (MenuConsumer)
 import Ribosome.Menu.Effect.MenuRenderer (MenuRenderer)
-import Ribosome.Menu.Effect.MenuStream (MenuStream)
-import Ribosome.Menu.Effect.PromptInput (PromptInput)
 import Ribosome.Menu.Effect.PromptRenderer (PromptRenderer)
-import Ribosome.Menu.Effect.PromptStream (PromptStream)
 import Ribosome.Menu.Interpreter.MenuRenderer (interpretMenuRendererNvim)
-import Ribosome.Menu.Interpreter.MenuState (MenuStack)
 import Ribosome.Menu.Interpreter.PromptRenderer (interpretPromptRendererNvim)
-import Ribosome.Menu.Main (menu)
 import Ribosome.Menu.Prompt.Nvim (NvimPromptResources)
-
-type NvimMenuStack i a res =
-  MenuStack i ++ [
-    MenuStream i,
-    PromptStream,
-    MenuConsumer a,
-    PromptInput,
-    Settings !! SettingError,
-    Scratch,
-    Rpc,
-    Rpc !! RpcError,
-    Log,
-    ChronosTime,
-    Mask res,
-    Race,
-    Resource,
-    Embed IO,
-    Final IO
-  ]
 
 menuScratch :: ScratchOptions
 menuScratch =
@@ -73,7 +46,7 @@ nvimMenuWith options items =
 nvimMenu ::
   SerialT IO (MenuItem i) ->
   NvimMenuConfig i
-nvimMenu items = do
+nvimMenu items =
   nvimMenuWith menuScratch items
 
 staticNvimMenuWith ::
@@ -90,19 +63,9 @@ staticNvimMenu items =
   staticNvimMenuWith menuScratch items
 
 interpretNvimMenu ::
-  Members [Rpc, Rpc !! RpcError, Settings !! SettingError, Scratch, Log, Resource, Embed IO, Final IO] r =>
+  Members [Rpc, Rpc !! RpcError, Settings !! SettingError, Scratch, Log, Resource, Embed IO] r =>
   ScratchOptions ->
   InterpretersFor [Scoped ScratchId (MenuRenderer i), Scoped NvimPromptResources PromptRenderer] r
 interpretNvimMenu scratchOptions =
   interpretPromptRendererNvim .
   interpretMenuRendererNvim scratchOptions
-
-runNvimMenu ::
-  ∀ a i res r .
-  Show a =>
-  Members (NvimMenuStack i a res) r =>
-  NvimMenuConfig i ->
-  Sem r (MenuResult a)
-runNvimMenu conf =
-  interpretNvimMenu (conf ^. #scratch) do
-    menu

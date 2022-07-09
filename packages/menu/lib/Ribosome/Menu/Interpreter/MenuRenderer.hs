@@ -63,7 +63,7 @@ withScratch options use = do
 
 -- TODO remove Quit/kill since it is done in the bracket release function
 interpretMenuRendererNvim ::
-  Members [Settings !! SettingError, Scratch, Rpc, Rpc !! RpcError, Log, Resource, Embed IO, Final IO] r =>
+  Members [Settings !! SettingError, Scratch, Rpc, Rpc !! RpcError, Log, Resource, Embed IO] r =>
   ScratchOptions ->
   InterpreterFor (Scoped ScratchId (MenuRenderer i)) r
 interpretMenuRendererNvim options =
