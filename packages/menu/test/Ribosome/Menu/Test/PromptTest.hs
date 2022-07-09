@@ -8,12 +8,12 @@ import qualified Streamly.Internal.Data.Stream.IsStream as Stream
 import Ribosome.Final (inFinal)
 import Ribosome.Host.Test.Run (runTest)
 import Ribosome.Menu.Interpreter.PromptEvents (interpretPromptEventsDefault)
+import Ribosome.Menu.Interpreter.PromptState (processPromptEvent)
 import Ribosome.Menu.Prompt.Data.Prompt (Prompt (Prompt))
 import qualified Ribosome.Menu.Prompt.Data.PromptControlEvent as PromptControlEvent
 import qualified Ribosome.Menu.Prompt.Data.PromptEvent as PromptEvent
 import Ribosome.Menu.Prompt.Data.PromptFlag (PromptFlag (StartInsert))
 import qualified Ribosome.Menu.Prompt.Data.PromptMode as PromptMode (PromptMode (..))
-import Ribosome.Menu.Prompt.Run (processPromptEvent)
 
 test_promptSet :: UnitTest
 test_promptSet =

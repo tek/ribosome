@@ -25,13 +25,14 @@ import Ribosome.Menu.Effect.PromptControl (PromptControl, sendControlEvent)
 import Ribosome.Menu.Effect.PromptEvents (PromptEvents)
 import Ribosome.Menu.Effect.PromptInput (PromptInput)
 import Ribosome.Menu.Effect.PromptRenderer (PromptRenderer, withPrompt)
-import Ribosome.Menu.Filters (fuzzy)
-import Ribosome.Menu.Interpreter.MenuState (interpretMenu)
+import Ribosome.Menu.Effect.PromptState (PromptState)
+import Ribosome.Menu.Filters (fuzzyMonotonic)
+import Ribosome.Menu.Interpreter.MenuState (MenuStack, interpretMenu)
 import Ribosome.Menu.Prompt.Data.Prompt (Prompt)
 import qualified Ribosome.Menu.Prompt.Data.PromptControlEvent as PromptControlEvent
 import Ribosome.Menu.Prompt.Data.PromptEvent (PromptEvent)
-import Ribosome.Menu.Prompt.Data.PromptFlag (startInsert)
-import Ribosome.Menu.Prompt.Run (pristinePrompt, withPromptStream)
+import Ribosome.Menu.Prompt.Data.PromptFlag (PromptFlag)
+import Ribosome.Menu.Prompt.Run (PromptStack, withPromptStream)
 import Ribosome.Menu.UpdateState (promptEvent, updateItems)
 
 eventAction ::
@@ -76,45 +77,43 @@ renderAction ::
 renderAction = \case
   MenuAction.Render ->
     MenuRenderer.menuRender =<< readMenu
-  MenuAction.Quit _ ->
-    MenuRenderer.menuRenderQuit
   _ ->
     unit
 
 menuStream ::
   ∀ i r a .
   Show a =>
+  Member (Reader (MenuConfig i)) r =>
   Members [MenuState i, PromptControl, MenuRenderer i, MenuConsumer a, Resource, Log, Embed IO, Final IO] r =>
-  MenuConfig i ->
   AsyncT IO (Prompt, PromptEvent) ->
   Sem r (SerialT IO (MenuResult a))
-menuStream (MenuConfig items customFilter _) promptEvents =
+menuStream promptEvents = do
+  (MenuConfig items customFilter) <- ask
   inFinal_ \ lowerMaybe lower_ pur ->
-  let
-    handleAction action =
-      lower_ do
-        Log.debug [exon|menu consumer: #{show action}|]
-        renderAction action
-    prompt =
-      promptEvent lowerMaybe itemFilter promptEvents
-    menuItems =
-      updateItems lowerMaybe itemFilter (Stream.fromSerial items)
-    itemFilter =
-      fromMaybe fuzzy customFilter
-    consume event = do
-      menuAction <- lowerMaybe (menuConsumerEvent event)
-      pure (fromMaybe (eventAction event) (join menuAction))
-    quit =
-      lower_ do
-      sendControlEvent PromptControlEvent.Quit
-      MenuRenderer.menuRenderQuit
-    in
-      pur $
-      Stream.finally quit $
-      Stream.mapMaybeM (fmap join . lowerMaybe . outputAction) $
-      Stream.tapAsync (Fold.drainBy handleAction) $
-      Stream.mapM consume $
-      Stream.parallelFst prompt menuItems
+    let
+      handleAction action =
+        lower_ do
+          Log.debug [exon|menu consumer: #{show action}|]
+          renderAction action
+      prompt =
+        promptEvent lowerMaybe itemFilter promptEvents
+      menuItems =
+        updateItems lowerMaybe itemFilter (Stream.fromSerial items)
+      itemFilter =
+        fromMaybe fuzzyMonotonic customFilter
+      consume event = do
+        menuAction <- lowerMaybe (menuConsumerEvent event)
+        pure (fromMaybe (eventAction event) (join menuAction))
+      quit =
+        lower_ do
+        sendControlEvent PromptControlEvent.Quit
+      in
+        pur $
+        Stream.finally quit $
+        Stream.mapMaybeM (fmap join . lowerMaybe . outputAction) $
+        Stream.tapAsync (Fold.drainBy handleAction) $
+        Stream.mapM consume $
+        Stream.parallelFst prompt menuItems
 
 menuResult ::
   Members [Log, Embed IO] r =>
@@ -133,41 +132,36 @@ menuResult = \case
       MenuResult.Aborted -> "user interrupt"
       MenuResult.NoAction -> "no action"
 
-type MenuStack i =
-  [MenuState i, PromptControl]
-
 menuMain ::
   Show a =>
-  Members [MenuState i, PromptControl, MenuConsumer a, MenuRenderer i, PromptInput, PromptEvents, PromptRenderer] r =>
+  Members PromptStack r =>
+  Members [MenuState i, MenuConsumer a, MenuRenderer i, Reader (MenuConfig i)] r =>
   Members [Log, Time t d, Mask res, Race, Resource, Embed IO, Final IO] r =>
-  MenuConfig i ->
   Sem r (MenuResult a)
-menuMain conf = do
-  withPromptStream initialPrompt \ promptEvents -> do
-    stream <- menuStream conf (Stream.fromSerial promptEvents)
+menuMain =
+  withPromptStream \ promptEvents -> do
+    stream <- menuStream (Stream.fromSerial promptEvents)
     menuResult =<< embed (Stream.last stream)
-  where
-    initialPrompt =
-      pristinePrompt (startInsert (conf ^. #flags))
 
 simpleMenu ::
   Show a =>
-  Members [Scoped pres PromptRenderer, PromptEvents, PromptInput, MenuRenderer i] r =>
+  Members [Scoped pres PromptRenderer, PromptEvents, PromptInput, PromptState, MenuRenderer i] r =>
   Members [Log, Time t d, Mask mres, Resource, Race, Embed IO, Final IO] r =>
   InterpreterFor (MenuConsumer a) (MenuStack i ++ PromptRenderer : r) ->
   MenuConfig i ->
+  [PromptFlag] ->
   Sem r (MenuResult a)
-simpleMenu consumer config =
+simpleMenu consumer config flags =
   withPrompt do
-    interpretMenu $ consumer $ menuMain config
+    interpretMenu config flags $ consumer $ menuMain
 
 menu ::
   ∀ a i pres mrres res t d r .
   Show a =>
-  Members [MenuState i, PromptControl, PromptEvents, PromptInput, MenuConsumer a, Scoped pres PromptRenderer] r =>
+  Members (MenuStack i) r =>
+  Members [MenuConsumer a, PromptInput, Scoped pres PromptRenderer] r =>
   Members [Scoped mrres (MenuRenderer i), Log, Time t d, Mask res, Race, Resource, Embed IO, Final IO] r =>
-  MenuConfig i ->
   Sem r (MenuResult a)
-menu conf =
+menu =
   withMenuRenderer $ withPrompt do
-    menuMain conf
+    menuMain

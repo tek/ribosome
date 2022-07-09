@@ -5,7 +5,6 @@ import Ribosome.Menu.Data.Menu (Menu)
 
 data MenuRenderer item :: Effect where
   MenuRender :: Menu item -> MenuRenderer item m ()
-  MenuRenderQuit :: MenuRenderer item m ()
 
 makeSem ''MenuRenderer
 

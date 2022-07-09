@@ -8,6 +8,7 @@ import Ribosome.Menu.Prompt.Data.InputEvent (InputEvent)
 data MenuTest i a :: Effect where
   SendItem :: MenuItem i -> MenuTest i a m ()
   ItemsDone :: MenuTest i a m ()
+  WaitItemsDone :: MenuTest i a m ()
   SendPrompt :: Bool -> InputEvent -> MenuTest i a m ()
   Result :: MenuTest i a m (MenuResult a)
 

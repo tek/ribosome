@@ -160,7 +160,8 @@ updateMenuState scratchMax = do
   pure (visible, newIndexes /= oldIndexes)
 
 windowLine ::
-  StateT NvimMenuState (ReaderT (Menu i) Identity) Int
+  Monad m =>
+  StateT NvimMenuState m Int
 windowLine = do
   top <- use topIndex
   bot <- use botIndex
@@ -178,10 +179,6 @@ runSR ma = do
   atomicPut s'
   pure a
 
--- TODO looks like the only thing needed from `Menu` here is `cursor`.
--- this obviates most of what `readMenuForRender` does, in particular `dirty` appears not to be used.
--- check whether `dirty` was just not implemented yet and might be useful. probably its function is now fulfilled by the
--- stream not producing menu events if nothing was changed
 updateMenu ::
   Members [Scratch, AtomicState NvimMenuState, Reader (Menu i), Rpc, Rpc !! RpcError, Log] r =>
   ScratchState ->

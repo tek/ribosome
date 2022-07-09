@@ -19,9 +19,15 @@ import Ribosome.Host.Api.Effect (nvimWinGetConfig, vimGetWindows, windowSetOptio
 import Ribosome.Host.Data.RpcError (RpcError)
 import Ribosome.Host.Effect.Rpc (Rpc)
 import Ribosome.Menu.Data.NvimMenuState (NvimMenuState)
-import Ribosome.Menu.Effect.MenuRenderer (MenuRenderer (MenuRender, MenuRenderQuit))
+import Ribosome.Menu.Effect.MenuRenderer (MenuRenderer (MenuRender))
 import Ribosome.Menu.NvimRenderer (menuSyntax, renderNvimMenu)
 import qualified Ribosome.Menu.Settings as Settings
+
+interpretMenuRendererNull :: InterpreterFor (MenuRenderer i) r
+interpretMenuRendererNull =
+  interpret \case
+    MenuRender _ ->
+      unit
 
 isFloat ::
   Member (Rpc !! RpcError) r =>
@@ -62,7 +68,5 @@ interpretMenuRendererNvim ::
   InterpreterFor (Scoped ScratchId (MenuRenderer i)) r
 interpretMenuRendererNvim options =
   interpretScopedWith @'[AtomicState NvimMenuState] (withScratch options) \ scratchId -> \case
-    MenuRender menu -> do
+    MenuRender menu ->
       Scratch.find scratchId >>= traverse_ (runReader menu . renderNvimMenu)
-    MenuRenderQuit ->
-      Scratch.kill scratchId

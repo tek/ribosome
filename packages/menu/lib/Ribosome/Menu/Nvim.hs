@@ -17,24 +17,18 @@ import Ribosome.Menu.Data.MenuItem (MenuItem)
 import Ribosome.Menu.Data.MenuResult (MenuResult)
 import Ribosome.Menu.Data.NvimMenuConfig (NvimMenuConfig (NvimMenuConfig))
 import Ribosome.Menu.Effect.MenuConsumer (MenuConsumer)
-import Ribosome.Menu.Effect.MenuState (MenuState)
 import Ribosome.Menu.Effect.MenuRenderer (MenuRenderer)
-import Ribosome.Menu.Effect.PromptControl (PromptControl)
-import Ribosome.Menu.Effect.PromptEvents (PromptEvents)
 import Ribosome.Menu.Effect.PromptInput (PromptInput)
 import Ribosome.Menu.Effect.PromptRenderer (PromptRenderer)
 import Ribosome.Menu.Filters (fuzzyMonotonic)
 import Ribosome.Menu.Interpreter.MenuRenderer (interpretMenuRendererNvim)
-import Ribosome.Menu.Interpreter.PromptEvents (interpretPromptEventsDefault)
+import Ribosome.Menu.Interpreter.MenuState (MenuStack)
 import Ribosome.Menu.Interpreter.PromptRenderer (interpretPromptRendererNvim)
 import Ribosome.Menu.Main (menu)
-import Ribosome.Menu.Prompt.Data.PromptFlag (PromptFlag)
 import Ribosome.Menu.Prompt.Nvim (NvimPromptResources)
 
 type NvimMenuStack i a res =
-  [
-    MenuState i,
-    PromptControl,
+  MenuStack i ++ [
     MenuConsumer a,
     PromptInput,
     Settings !! SettingError,
@@ -54,50 +48,54 @@ menuScratch :: ScratchOptions
 menuScratch =
   scratch "ribosome-menu"
 
+menuScratchSized :: Int -> ScratchOptions
+menuScratchSized n =
+  menuScratch & #size ?~ n
+
+streamMenuScratch :: ScratchOptions
+streamMenuScratch =
+  menuScratchSized 1
+
+ensureSize :: Int -> ScratchOptions -> ScratchOptions
+ensureSize n =
+  #size <|>~ Just n
+
 nvimMenuWith ::
   ScratchOptions ->
   SerialT IO (MenuItem i) ->
-  [PromptFlag] ->
   NvimMenuConfig i
-nvimMenuWith options items flags =
-  NvimMenuConfig (MenuConfig items Nothing flags) (ensureSize options)
-  where
-    ensureSize =
-      #size <|>~ Just 1
+nvimMenuWith options items =
+  NvimMenuConfig (MenuConfig items Nothing) (ensureSize 1 options)
 
 nvimMenu ::
   SerialT IO (MenuItem i) ->
   NvimMenuConfig i
 nvimMenu items = do
-  nvimMenuWith menuScratch items []
+  nvimMenuWith menuScratch items
 
 staticNvimMenuWith ::
   ScratchOptions ->
   [MenuItem i] ->
-  [PromptFlag] ->
   NvimMenuConfig i
-staticNvimMenuWith options items flags =
-  setFilter (nvimMenuWith (ensureSize options) (Stream.fromList items) flags)
+staticNvimMenuWith options items =
+  setFilter (nvimMenuWith (ensureSize (length items) options) (Stream.fromList items))
   where
     setFilter =
       #menu . #itemFilter ?~ fuzzyMonotonic
-    ensureSize =
-      #size <|>~ Just (length items)
 
 staticNvimMenu ::
   [MenuItem i] ->
   NvimMenuConfig i
 staticNvimMenu items =
-  staticNvimMenuWith menuScratch items []
+  staticNvimMenuWith menuScratch items
 
 interpretNvimMenu ::
   Members [Rpc, Rpc !! RpcError, Settings !! SettingError, Scratch, Log, Resource, Embed IO, Final IO] r =>
-  NvimMenuConfig i ->
-  InterpretersFor [PromptEvents, Scoped ScratchId (MenuRenderer i), Scoped NvimPromptResources PromptRenderer] r
-interpretNvimMenu (NvimMenuConfig config scratchOptions) =
+  ScratchOptions ->
+  InterpretersFor [Scoped ScratchId (MenuRenderer i), Scoped NvimPromptResources PromptRenderer] r
+interpretNvimMenu scratchOptions =
   interpretPromptRendererNvim .
-  interpretMenuRendererNvim scratchOptions .
-  interpretPromptEventsDefault (config ^. #flags)
+  interpretMenuRendererNvim scratchOptions
 
 runNvimMenu ::
   ∀ a i res r .
@@ -106,5 +104,5 @@ runNvimMenu ::
   NvimMenuConfig i ->
   Sem r (MenuResult a)
 runNvimMenu conf =
-  interpretNvimMenu conf do
-    menu (conf ^. #menu)
+  interpretNvimMenu (conf ^. #scratch) do
+    menu

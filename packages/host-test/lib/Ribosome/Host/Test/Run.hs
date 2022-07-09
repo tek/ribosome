@@ -3,7 +3,7 @@ module Ribosome.Host.Test.Run where
 import qualified Chronos
 import Conc (Restoration, interpretMaskFinal, interpretRace, interpretUninterruptibleMaskFinal)
 import Hedgehog.Internal.Property (Failure)
-import Log (Severity (Trace), interpretLogStderrConc)
+import Log (Severity (Trace, Warn), interpretLogStderrLevelConc)
 import Polysemy.Chronos (ChronosTime, interpretTimeChronos, interpretTimeChronosConstant)
 import Polysemy.Test (Hedgehog, Test, TestError (TestError), UnitTest, runTestAuto)
 import Time (mkDatetime)
@@ -58,7 +58,7 @@ runUnitTest =
   interpretRace .
   interpretUninterruptibleMaskFinal .
   interpretMaskFinal .
-  interpretLogStderrConc
+  interpretLogStderrLevelConc (Just Warn)
 
 runTestLogConf ::
   Members [Error BootError, Resource, Race, Async, Embed IO] r =>

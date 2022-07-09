@@ -5,13 +5,19 @@ import Conc (Lock, interpretAtomic, interpretSync, lock)
 import Ribosome.Host.Effect.MState (MState, mread, muse)
 import Ribosome.Host.Interpreter.MState (interpretMState)
 import Ribosome.Menu.Data.CursorIndex (CursorIndex)
+import Ribosome.Menu.Data.MenuConfig (MenuConfig)
 import Ribosome.Menu.Data.MenuData (MenuItems)
 import Ribosome.Menu.Effect.MenuState (MenuState (..))
 import Ribosome.Menu.Effect.PromptControl (PromptControl)
+import Ribosome.Menu.Effect.PromptEvents (PromptEvents)
+import Ribosome.Menu.Effect.PromptState (PromptState)
 import Ribosome.Menu.Interpreter.PromptControl (interpretPromptControl)
+import Ribosome.Menu.Interpreter.PromptEvents (interpretPromptEventsDefault)
+import Ribosome.Menu.Interpreter.PromptState (interpretPromptState)
 import Ribosome.Menu.Prompt.Data.Prompt (Prompt)
 import Ribosome.Menu.Prompt.Data.PromptListening (PromptListening)
 import Ribosome.Menu.Prompt.Data.PromptQuit (PromptQuit)
+import Ribosome.Menu.Prompt.Data.PromptFlag (PromptFlag)
 
 type MenuStateDeps i =
   [
@@ -59,11 +65,11 @@ mcState f =
     let newS = fromMaybe s (fst <$> ins res)
     pure (newS, snd <$> res)
 
-interpretMenuControl ::
+interpretMenuState ::
   ∀ i mres r .
   Members [Resource, Race, Mask mres, Embed IO] r =>
   InterpreterFor (MenuState i) r
-interpretMenuControl =
+interpretMenuState =
   interpretMenuStateDeps .
   interpretH \case
     UseCursor f ->
@@ -80,10 +86,18 @@ interpretMenuControl =
       pureT =<< mread
   . insertAt @1
 
+type MenuStack i =
+  [MenuState i, PromptControl, PromptState, PromptEvents, Reader (MenuConfig i)]
+
 interpretMenu ::
   ∀ i mres r .
-  Members [Resource, Race, Mask mres, Embed IO] r =>
-  InterpretersFor [MenuState i, PromptControl] r
-interpretMenu =
+  Members [Log, Resource, Race, Mask mres, Embed IO] r =>
+  MenuConfig i ->
+  [PromptFlag] ->
+  InterpretersFor (MenuStack i) r
+interpretMenu conf flags =
+  runReader conf .
+  interpretPromptEventsDefault flags .
+  interpretPromptState flags .
   interpretPromptControl .
-  interpretMenuControl
+  interpretMenuState

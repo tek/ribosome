@@ -1,34 +1,33 @@
 module Ribosome.Menu.Test.MenuTest where
 
-import Conc (interpretSync)
 import qualified Control.Monad.Trans.State.Strict as MTL
 import qualified Data.IntMap.Strict as IntMap
 import Hedgehog (TestLimit, property, test, withTests)
 import Lens.Micro.Mtl (use, view)
 import Polysemy (run)
-import Polysemy.Test (UnitTest, assertJust, runTestAuto, unitTest, (===))
-import qualified Sync
+import Polysemy.Test (UnitTest, runTestAuto, unitTest, (===))
 import Test.Tasty (TestName, TestTree, testGroup)
 import Test.Tasty.Hedgehog (testProperty)
-import Time (Seconds (Seconds))
 
 import Ribosome.Host.Test.Run (runUnitTest)
-import Ribosome.Menu.Action (menuQuit)
+import Ribosome.Menu.Action (menuQuit, menuSuccess)
 import Ribosome.Menu.Combinators (sortEntries, sortedEntries)
 import qualified Ribosome.Menu.Data.Entry as Entry
 import Ribosome.Menu.Data.Entry (Entries, Entry (Entry), simpleIntEntries)
 import Ribosome.Menu.Data.Menu (consMenu)
 import qualified Ribosome.Menu.Data.MenuItem as MenuItem
 import Ribosome.Menu.Data.MenuItem (Items, simpleMenuItem)
+import Ribosome.Menu.Data.MenuResult (MenuResult (Success))
 import Ribosome.Menu.Data.MenuState (MenuWidget)
 import Ribosome.Menu.Effect.MenuState (MenuState, viewMenu)
-import Ribosome.Menu.Effect.MenuTest (sendCharWait, sendStaticItems)
-import Ribosome.Menu.Interpreter.MenuConsumer (forMappings, withMappings)
+import Ribosome.Menu.Effect.MenuTest (result, sendCharWait, sendStaticItems)
 import Ribosome.Menu.ItemLens (items, selected', selectedOnly, unselected)
 import Ribosome.Menu.Items (deleteSelected, popSelection)
+import Ribosome.Menu.MenuTest (runStaticTestMenu, runTestMenu, testMenu, testStaticMenu)
 import Ribosome.Menu.Prompt.Data.Prompt (Prompt (Prompt))
+import Ribosome.Menu.Prompt.Data.PromptFlag (PromptFlag (StartInsert))
 import Ribosome.Menu.Prompt.Data.PromptMode (PromptMode (Insert, Normal))
-import Ribosome.Menu.Test.Menu (assertItems, assertPrompt, menuTestDef, promptTest, runMenuTestStack, staticMenuTestDef)
+import Ribosome.Menu.Test.Menu (assertItems, assertPrompt, promptTest)
 
 unitTestTimes ::
   TestLimit ->
@@ -47,7 +46,7 @@ items1 =
     "i3",
     "j2",
     "i4"
-    ]
+  ]
 
 test_pureMenuModeChange :: UnitTest
 test_pureMenuModeChange =
@@ -99,21 +98,20 @@ items3 =
 
 exec ::
   Member (MenuState i) r =>
-  Member (Sync [Text]) r =>
-  MenuWidget r ()
+  MenuWidget r [Text]
 exec = do
   fs <- viewMenu sortedEntries
-  void (Sync.putWait (Seconds 5) (view (#item . #text) <$> fs))
-  menuQuit
+  menuSuccess (view (#item . #text) <$> fs)
 
 test_pureMenuExecute :: UnitTest
 test_pureMenuExecute = do
-  runUnitTest $ interpretSync do
-    runMenuTestStack $ forMappings [("cr", exec)] do
-      menuTestDef do
+  runUnitTest do
+    runTestMenu [] [("cr", exec)] do
+      r <- testMenu do
         sendStaticItems (simpleMenuItem () <$> items3)
         sendCharWait "cr"
-        assertJust items3 =<< Sync.wait (Seconds 5)
+        result
+      Success items3 === r
 
 charsMulti :: [Text]
 charsMulti =
@@ -132,21 +130,20 @@ itemsMulti =
 
 execMulti ::
   Member (MenuState i) r =>
-  Member (Sync (Maybe (NonEmpty Text))) r =>
-  MenuWidget r ()
+  MenuWidget r (Maybe (NonEmpty Text))
 execMulti = do
   selection <- viewMenu selected'
-  void (Sync.putWait (Seconds 5) (fmap MenuItem.text <$> selection))
-  menuQuit
+  menuSuccess (fmap MenuItem.text <$> selection)
 
 test_menuMultiMark :: UnitTest
 test_menuMultiMark = do
-  runUnitTest $ interpretSync do
-    runMenuTestStack $ withMappings [("cr", execMulti)] do
-      menuTestDef do
+  runUnitTest do
+    runTestMenu [StartInsert] [("cr", execMulti)] do
+      r <- testMenu do
         sendStaticItems (simpleMenuItem () <$> itemsMulti)
         traverse_ sendCharWait charsMulti
-        assertJust ["item5", "item4", "item3"] . join =<< Sync.wait (Seconds 5)
+        result
+      Success (Just ["item5", "item4", "item3"]) === r
 
 charsToggle :: [Text]
 charsToggle =
@@ -166,20 +163,20 @@ itemsToggle =
   ]
 
 execToggle ::
-  Members [MenuState i, Sync (NonEmpty Text)] r =>
-  MenuWidget r ()
+  Member (MenuState i) r =>
+  MenuWidget r (NonEmpty Text)
 execToggle = do
-  viewMenu selectedOnly >>= traverse_ \ selection ->
-    Sync.putWait (Seconds 5) (MenuItem.text <$> selection)
-  menuQuit
+  viewMenu selectedOnly >>= maybe menuQuit \ selection ->
+    menuSuccess (MenuItem.text <$> selection)
 
 test_menuToggle :: UnitTest
 test_menuToggle = do
-  runUnitTest $ interpretSync do
-    runMenuTestStack $ withMappings [("cr", execToggle)] do
-      staticMenuTestDef (simpleMenuItem () <$> itemsToggle) do
+  runUnitTest do
+    runStaticTestMenu (simpleMenuItem () <$> itemsToggle) [StartInsert] [("cr", execToggle)] do
+      r <- testStaticMenu do
         traverse_ sendCharWait charsToggle
-        assertJust ["abc", "a"] =<< Sync.wait @(NonEmpty _) (Seconds 5)
+        result
+      Success ["abc", "a"] === r
 
 charsExecuteThunk :: [Text]
 charsExecuteThunk =
