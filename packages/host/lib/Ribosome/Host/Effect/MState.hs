@@ -1,4 +1,5 @@
 module Ribosome.Host.Effect.MState where
+import Conc (PScoped, pscoped)
 
 data MState s :: Effect where
   Use :: (s -> m (s, a)) -> MState s m a
@@ -45,9 +46,19 @@ mreads ::
 mreads f =
   f <$> mread
 
-withMState ::
+stateToMState ::
   Member (MState s) r =>
   InterpreterFor (State s) r
-withMState sem =
+stateToMState sem =
   muse \ s ->
     runState s sem
+
+type ScopedMState s =
+  PScoped s () (MState s)
+
+withMState ::
+  Member (ScopedMState s) r =>
+  s ->
+  InterpreterFor (MState s) r
+withMState =
+  pscoped
