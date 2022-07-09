@@ -13,11 +13,13 @@ import Ribosome.Menu.Effect.MenuStream (MenuStream)
 import Ribosome.Menu.Effect.PromptControl (PromptControl)
 import Ribosome.Menu.Effect.PromptEvents (PromptEvents)
 import Ribosome.Menu.Effect.PromptState (PromptState)
+import Ribosome.Menu.Effect.PromptStream (PromptStream)
 import Ribosome.Menu.Interpreter.MenuFilter (interpretMenuFilterFuzzyWith)
 import Ribosome.Menu.Interpreter.MenuStream (interpretMenuStream)
 import Ribosome.Menu.Interpreter.PromptControl (interpretPromptControl)
 import Ribosome.Menu.Interpreter.PromptEvents (interpretPromptEventsDefault)
 import Ribosome.Menu.Interpreter.PromptState (interpretPromptState)
+import Ribosome.Menu.Interpreter.PromptStream (interpretPromptStream)
 import Ribosome.Menu.Prompt.Data.Prompt (Prompt)
 import Ribosome.Menu.Prompt.Data.PromptFlag (PromptFlag)
 import Ribosome.Menu.Prompt.Data.PromptListening (PromptListening)
@@ -91,11 +93,14 @@ interpretMenuState =
   . insertAt @1
 
 type MenuStack i =
-  [MenuState i, MenuStream i, MenuFilter, PromptControl, PromptState, PromptEvents, Reader (MenuConfig i)]
+  [MenuState i, MenuFilter, PromptControl, PromptState, PromptEvents, Reader (MenuConfig i)]
+
+type MenuIOStack i =
+  [MenuStream i, PromptStream] ++ MenuStack i
 
 interpretMenu ::
   ∀ i mres r .
-  Members [Log, Resource, Race, Mask mres, Embed IO, Final IO] r =>
+  Members [Log, Resource, Race, Mask mres, Embed IO] r =>
   MenuConfig i ->
   [PromptFlag] ->
   Bool ->
@@ -106,5 +111,16 @@ interpretMenu conf flags monotonic =
   interpretPromptState flags .
   interpretPromptControl .
   interpretMenuFilterFuzzyWith monotonic .
-  interpretMenuStream .
   interpretMenuState
+
+interpretMenuFinal ::
+  ∀ i mres r .
+  Members [Log, Resource, Race, Mask mres, Embed IO, Final IO] r =>
+  MenuConfig i ->
+  [PromptFlag] ->
+  Bool ->
+  InterpretersFor (MenuIOStack i) r
+interpretMenuFinal conf flags monotonic =
+  interpretMenu conf flags monotonic .
+  interpretPromptStream .
+  interpretMenuStream

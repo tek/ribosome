@@ -1,6 +1,6 @@
 module Ribosome.Menu.Effect.MenuStream where
 
-import Streamly.Prelude (AsyncT, SerialT)
+import Streamly.Prelude (SerialT)
 
 import Ribosome.Menu.Data.MenuAction (MenuAction)
 import Ribosome.Menu.Data.MenuEvent (MenuEvent)
@@ -11,7 +11,8 @@ import Ribosome.Menu.Prompt.Data.PromptEvent (PromptEvent)
 
 data MenuStream i :: Effect where
   MenuStream ::
-    AsyncT IO (Prompt, PromptEvent) ->
+    SerialT IO (MenuItem i) ->
+    SerialT IO (Prompt, PromptEvent) ->
     (MenuAction result -> m ()) ->
     (Prompt -> PromptEvent -> m (Maybe MenuEvent)) ->
     m MenuEvent ->
@@ -19,6 +20,6 @@ data MenuStream i :: Effect where
     m () ->
     (MenuEvent -> m (MenuAction result)) ->
     (MenuAction result -> m (Maybe (MenuResult result))) ->
-    MenuStream i m (SerialT IO (MenuResult result))
+    MenuStream i m (Maybe (MenuResult result))
 
 makeSem ''MenuStream

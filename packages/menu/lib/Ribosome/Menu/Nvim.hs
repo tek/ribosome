@@ -21,6 +21,7 @@ import Ribosome.Menu.Effect.MenuRenderer (MenuRenderer)
 import Ribosome.Menu.Effect.MenuStream (MenuStream)
 import Ribosome.Menu.Effect.PromptInput (PromptInput)
 import Ribosome.Menu.Effect.PromptRenderer (PromptRenderer)
+import Ribosome.Menu.Effect.PromptStream (PromptStream)
 import Ribosome.Menu.Interpreter.MenuRenderer (interpretMenuRendererNvim)
 import Ribosome.Menu.Interpreter.MenuState (MenuStack)
 import Ribosome.Menu.Interpreter.PromptRenderer (interpretPromptRendererNvim)
@@ -30,6 +31,7 @@ import Ribosome.Menu.Prompt.Nvim (NvimPromptResources)
 type NvimMenuStack i a res =
   MenuStack i ++ [
     MenuStream i,
+    PromptStream,
     MenuConsumer a,
     PromptInput,
     Settings !! SettingError,

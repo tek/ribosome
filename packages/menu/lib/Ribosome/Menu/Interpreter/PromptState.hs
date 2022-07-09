@@ -1,14 +1,14 @@
 module Ribosome.Menu.Interpreter.PromptState where
 
-import Conc (interpretSyncAs)
 import Data.Generics.Labels ()
 import qualified Data.Text as Text (drop, dropEnd, isPrefixOf, length, splitAt)
 import Exon (exon)
 import qualified Log
 import Prelude hiding (input, modifyMVar, output)
-import qualified Sync
 
 import Ribosome.Host.Data.Tuple (dup)
+import Ribosome.Host.Effect.MState (MState, mstate, muse)
+import Ribosome.Host.Interpreter.MState (interpretMState)
 import Ribosome.Menu.Effect.PromptEvents (PromptEvents, handlePromptEvent)
 import Ribosome.Menu.Effect.PromptState (PromptState (Event, Set))
 import Ribosome.Menu.Prompt.Data.CursorUpdate (CursorUpdate)
@@ -145,24 +145,28 @@ updatePromptState input old = do
   res <$ logPromptUpdate input res
 
 processPromptEvent ::
-  Members [PromptEvents, Sync Prompt, Mask res, Log, Resource] r =>
+  Members [PromptEvents, MState Prompt, Mask res, Log, Resource] r =>
   Either PromptControlEvent PromptInputEvent ->
   Sem r (Maybe (Prompt, PromptEvent))
 processPromptEvent = \case
   Right event ->
-    Sync.modify (updatePromptState event)
+    muse (updatePromptState event)
   Left PromptControlEvent.Quit ->
     pure Nothing
   Left (PromptControlEvent.Set (Prompt cursor state (PromptText text))) -> do
-    newPrompt <- Sync.modify (pure . dup . modifyPrompt state (CursorUpdate.Index cursor) (TextUpdate.Set text))
+    newPrompt <- mstate (dup . modifyPrompt state (CursorUpdate.Index cursor) (TextUpdate.Set text))
     pure (Just (newPrompt, PromptEvent.Edit))
 
+-- TODO no good plan for Set yet. since prompt rendering is triggered by the stream that calls Event, based on its
+-- return value, calling Set would cause rendering to be delayed until the next Event.
 interpretPromptState ::
   Members [PromptEvents, Mask res, Log, Resource, Race, Embed IO] r =>
   [PromptFlag] ->
   InterpreterFor PromptState r
 interpretPromptState flags =
-  interpretSyncAs (pristinePrompt (startInsert flags)) .
+  interpretMState (pristinePrompt (startInsert flags)) .
   reinterpret \case
-    Event e -> processPromptEvent e
-    Set _ -> undefined
+    Event e ->
+      processPromptEvent e
+    Set _ ->
+      undefined

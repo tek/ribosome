@@ -48,6 +48,7 @@ library
       Ribosome.Menu.Effect.PromptInput
       Ribosome.Menu.Effect.PromptRenderer
       Ribosome.Menu.Effect.PromptState
+      Ribosome.Menu.Effect.PromptStream
       Ribosome.Menu.Filters
       Ribosome.Menu.Interpreter.MenuConsumer
       Ribosome.Menu.Interpreter.MenuFilter
@@ -60,6 +61,7 @@ library
       Ribosome.Menu.Interpreter.PromptInput
       Ribosome.Menu.Interpreter.PromptRenderer
       Ribosome.Menu.Interpreter.PromptState
+      Ribosome.Menu.Interpreter.PromptStream
       Ribosome.Menu.ItemLens
       Ribosome.Menu.Items
       Ribosome.Menu.Main

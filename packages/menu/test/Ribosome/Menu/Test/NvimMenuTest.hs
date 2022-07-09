@@ -23,7 +23,7 @@ import Ribosome.Menu.Effect.MenuState (MenuState, readCursor, readPrompt, viewMe
 import qualified Ribosome.Menu.Effect.MenuTest as MenuTest
 import Ribosome.Menu.Effect.MenuTest (sendChar, sendCharWait)
 import Ribosome.Menu.Interpreter.MenuConsumer (Mappings, basic, withMappings)
-import Ribosome.Menu.Interpreter.MenuState (interpretMenu)
+import Ribosome.Menu.Interpreter.MenuState (interpretMenuFinal)
 import Ribosome.Menu.Interpreter.PromptInput (interpretPromptInputCharList, interpretPromptInputNvim)
 import Ribosome.Menu.Main (menu)
 import Ribosome.Menu.MenuTest (runStaticTestMenu, testStaticNvimMenu)
@@ -73,7 +73,7 @@ mappings =
 
 test_nvimMenuPure :: UnitTest
 test_nvimMenuPure =
-  testEmbed_ $ interpretMenu (MenuConfig (menuItems items)) [StartInsert] True $ interpretPromptInputCharList pureChars do
+  testEmbed_ $ interpretMenuFinal (MenuConfig (menuItems items)) [StartInsert] True $ interpretPromptInputCharList pureChars do
     result <- resumeTestError @Scratch $ withMappings mappings do
       interpretNvimMenu (menuScratchSized 4) menu
     MenuResult.Success "item4" === result
@@ -84,7 +84,7 @@ nativeChars =
 
 test_nvimMenuNative :: UnitTest
 test_nvimMenuNative =
-  testEmbed_ $ interpretMenu (MenuConfig (menuItems items)) [StartInsert] True $ interpretPromptInputNvim do
+  testEmbed_ $ interpretMenuFinal (MenuConfig (menuItems items)) [StartInsert] True $ interpretPromptInputNvim do
     withPromptInput (Just (MilliSeconds 10)) nativeChars do
       result <- resumeTestError @Scratch $ withMappings mappings do
         interpretNvimMenu (menuScratchSized 4) menu
@@ -92,7 +92,7 @@ test_nvimMenuNative =
 
 test_nvimMenuInterrupt :: UnitTest
 test_nvimMenuInterrupt =
-  testEmbed_ $ interpretMenu (MenuConfig (menuItems items)) [StartInsert] True $ interpretPromptInputNvim do
+  testEmbed_ $ interpretMenuFinal (MenuConfig (menuItems items)) [StartInsert] True $ interpretPromptInputNvim do
     assertEq MenuResult.Aborted =<< withPromptInput (Just (MilliSeconds 50)) ["<c-c>", "<cr>"] do
       resumeTestError @Scratch $ basic @() do
         interpretNvimMenu def menu

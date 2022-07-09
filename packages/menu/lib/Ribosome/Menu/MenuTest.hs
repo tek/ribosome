@@ -24,9 +24,10 @@ import Ribosome.Menu.Effect.PromptEvents (PromptEvents)
 import Ribosome.Menu.Effect.PromptInput (PromptInput)
 import Ribosome.Menu.Effect.PromptRenderer (PromptRenderer)
 import Ribosome.Menu.Effect.PromptState (PromptState)
+import Ribosome.Menu.Effect.PromptStream (PromptStream)
 import Ribosome.Menu.Interpreter.MenuConsumer (Mappings, withMappings)
 import Ribosome.Menu.Interpreter.MenuRenderer (interpretMenuRendererNull)
-import Ribosome.Menu.Interpreter.MenuState (MenuStack, interpretMenu)
+import Ribosome.Menu.Interpreter.MenuState (MenuIOStack, interpretMenuFinal)
 import Ribosome.Menu.Interpreter.MenuTest (
   MenuTestResources,
   TestTimeout (TestTimeout),
@@ -46,6 +47,7 @@ type MenuTestDeps i result =
     MenuState i,
     MenuStream i,
     MenuFilter,
+    PromptStream,
     PromptState,
     PromptEvents,
     PromptControl
@@ -71,11 +73,11 @@ type MenuTestEffects i result =
   ]
 
 type MenuTestStack i result =
-  MenuStack i ++ MenuTestResources i result
+  MenuIOStack i ++ MenuTestResources i result
 
 runTestMenuWith ::
   TimeUnit u =>
-  Members [Log, Resource, Race, Mask mres, Embed IO, Final IO] r =>
+  Members MenuTestIOStack r =>
   u ->
   [PromptFlag] ->
   Bool ->
@@ -83,10 +85,10 @@ runTestMenuWith ::
 runTestMenuWith timeout flags monotonic sem =
   interpretMenuTestResources timeout do
     items <- queueStream
-    interpretMenu (MenuConfig items) flags monotonic sem
+    interpretMenuFinal (MenuConfig items) flags monotonic sem
 
 runTestMenu ::
-  Members [Log, Resource, Race, Mask mres, Embed IO, Final IO] r =>
+  Members MenuTestIOStack r =>
   [PromptFlag] ->
   Mappings (MenuTestStack i a ++ r) a ->
   InterpretersFor (MenuConsumer a : MenuTestStack i a) r
@@ -95,7 +97,7 @@ runTestMenu flags maps =
 
 runStaticTestMenuWith ::
   TimeUnit u =>
-  Members [Log, Resource, Race, Mask mres, Embed IO, Final IO] r =>
+  Members MenuTestIOStack r =>
   u ->
   [MenuItem i] ->
   [PromptFlag] ->
@@ -103,10 +105,10 @@ runStaticTestMenuWith ::
   InterpretersFor (MenuTestStack i a) r
 runStaticTestMenuWith timeout items flags monotonic sem =
   interpretMenuTestResources timeout do
-    interpretMenu (MenuConfig (Stream.fromList items)) flags monotonic sem
+    interpretMenuFinal (MenuConfig (Stream.fromList items)) flags monotonic sem
 
 runStaticTestMenu ::
-  Members [Log, Resource, Race, Mask mres, Embed IO, Final IO] r =>
+  Members MenuTestIOStack r =>
   [MenuItem i] ->
   [PromptFlag] ->
   Mappings (MenuTestStack i a ++ r) a ->

@@ -4,14 +4,14 @@ import Data.Generics.Labels ()
 import Exon (exon)
 import qualified Polysemy.Log as Log
 import Prelude hiding (consume)
-import qualified Streamly.Internal.Data.Stream.IsStream as Stream
-import Streamly.Prelude (AsyncT, SerialT)
+import Streamly.Prelude (SerialT)
 
 import Ribosome.Menu.Data.MenuAction (MenuAction)
 import qualified Ribosome.Menu.Data.MenuAction as MenuAction (MenuAction (..))
-import Ribosome.Menu.Data.MenuConfig (MenuConfig)
+import Ribosome.Menu.Data.MenuConfig (MenuConfig (MenuConfig))
 import qualified Ribosome.Menu.Data.MenuEvent as MenuEvent
 import Ribosome.Menu.Data.MenuEvent (MenuEvent)
+import Ribosome.Menu.Data.MenuItem (MenuItem)
 import qualified Ribosome.Menu.Data.MenuResult as MenuResult
 import Ribosome.Menu.Data.MenuResult (MenuResult)
 import Ribosome.Menu.Data.MenuState (semState)
@@ -24,16 +24,15 @@ import Ribosome.Menu.Effect.MenuState (MenuState, readMenu, useItems)
 import qualified Ribosome.Menu.Effect.MenuStream as MenuStream
 import Ribosome.Menu.Effect.MenuStream (MenuStream)
 import Ribosome.Menu.Effect.PromptControl (PromptControl, sendControlEvent)
-import Ribosome.Menu.Effect.PromptEvents (PromptEvents)
 import Ribosome.Menu.Effect.PromptInput (PromptInput)
 import Ribosome.Menu.Effect.PromptRenderer (PromptRenderer, withPrompt)
-import Ribosome.Menu.Effect.PromptState (PromptState)
-import Ribosome.Menu.Interpreter.MenuState (MenuStack, interpretMenu)
+import Ribosome.Menu.Effect.PromptStream (PromptStream)
+import Ribosome.Menu.Interpreter.MenuState (MenuIOStack, MenuStack, interpretMenuFinal)
 import Ribosome.Menu.Prompt.Data.Prompt (Prompt)
 import qualified Ribosome.Menu.Prompt.Data.PromptControlEvent as PromptControlEvent
 import Ribosome.Menu.Prompt.Data.PromptEvent (PromptEvent)
 import Ribosome.Menu.Prompt.Data.PromptFlag (PromptFlag)
-import Ribosome.Menu.Prompt.Run (PromptStack, withPromptStream)
+import Ribosome.Menu.Prompt.Run (PromptStack, promptEventStream)
 import Ribosome.Menu.UpdateState (insertItems, queryUpdate, setPromptAndClassify)
 
 eventAction ::
@@ -81,22 +80,29 @@ renderAction = \case
   _ ->
     unit
 
-menuStream' ::
+sendQuit ::
+  Member PromptControl r =>
+  Sem r ()
+sendQuit =
+  sendControlEvent PromptControlEvent.Quit
+
+menuStream ::
   ∀ i r a .
   Show a =>
   Member (MenuStream i) r =>
   Members [MenuState i, PromptControl, MenuRenderer i, MenuConsumer a, MenuFilter, Log] r =>
-  AsyncT IO (Prompt, PromptEvent) ->
-  Sem r (SerialT IO (MenuResult a))
-menuStream' promptEvents =
-  MenuStream.menuStream promptEvents handleAction setPromptAndClassify queryUpdate insert
-  (sendControlEvent PromptControlEvent.Quit) consume outputAction
+  SerialT IO (MenuItem i) ->
+  SerialT IO (Prompt, PromptEvent) ->
+  Sem r (Maybe (MenuResult a))
+menuStream items promptEvents =
+  MenuStream.menuStream items promptEvents handleAction setPromptAndClassify queryUpdate insert
+  sendQuit consume outputAction
   where
     handleAction action = do
       Log.debug [exon|menu consumer: #{show action}|]
       renderAction action
     insert new =
-      MenuEvent.NewItems <$ (useItems \ items -> runState items (semState (insertItems new)))
+      MenuEvent.NewItems <$ useItems \ its -> runState its (semState (insertItems new))
     consume event = do
       menuAction <- menuConsumerEvent event
       pure (fromMaybe (eventAction event) menuAction)
@@ -121,33 +127,34 @@ menuResult = \case
 menuMain ::
   Show a =>
   Members PromptStack r =>
-  Members [MenuStream i, MenuState i, MenuConsumer a, MenuRenderer i, MenuFilter, Reader (MenuConfig i)] r =>
-  Members [Log, Time t d, Mask res, Race, Resource, Embed IO, Final IO] r =>
+  Member (Reader (MenuConfig i)) r =>
+  Members [MenuStream i, PromptStream, MenuState i, MenuConsumer a, MenuRenderer i, MenuFilter] r =>
+  Member Log r =>
   Sem r (MenuResult a)
-menuMain =
-  withPromptStream \ promptEvents -> do
-    stream <- menuStream' (Stream.fromSerial promptEvents)
-    menuResult =<< embed (Stream.last stream)
+menuMain = do
+  MenuConfig items <- ask
+  promptEvents <- promptEventStream
+  menuResult =<< menuStream items promptEvents
 
 simpleMenu ::
   Show a =>
-  Members [MenuStream i, Scoped pres PromptRenderer, PromptEvents, PromptInput, PromptState, MenuRenderer i] r =>
-  Members [Log, Time t d, Mask mres, Resource, Race, Embed IO, Final IO] r =>
-  InterpreterFor (MenuConsumer a) (MenuStack i ++ PromptRenderer : r) ->
+  Members [Log, Mask mres, Resource, Race, Embed IO, Final IO] r =>
+  Members [Scoped pres PromptRenderer, PromptInput, MenuRenderer i] r =>
+  InterpreterFor (MenuConsumer a) (MenuIOStack i ++ PromptRenderer : r) ->
   MenuConfig i ->
   [PromptFlag] ->
   Bool ->
   Sem r (MenuResult a)
 simpleMenu consumer config flags monotonic =
   withPrompt do
-    interpretMenu config flags monotonic $ consumer $ menuMain
+    interpretMenuFinal config flags monotonic $ consumer $ menuMain
 
 menu ::
-  ∀ a i pres mrres res t d r .
+  ∀ a i pres mrres r .
   Show a =>
   Members (MenuStack i) r =>
-  Members [MenuStream i, MenuConsumer a, PromptInput, Scoped pres PromptRenderer] r =>
-  Members [Scoped mrres (MenuRenderer i), Log, Time t d, Mask res, Race, Resource, Embed IO, Final IO] r =>
+  Members [MenuStream i, PromptStream, MenuConsumer a, PromptInput, Scoped pres PromptRenderer] r =>
+  Members [Scoped mrres (MenuRenderer i), Log] r =>
   Sem r (MenuResult a)
 menu =
   withMenuRenderer $ withPrompt do

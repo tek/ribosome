@@ -1,7 +1,10 @@
 module Ribosome.Menu.Interpreter.PromptInput where
 
 import Conc (interpretAtomic, race, resultToMaybe)
+import Polysemy.Chronos (ChronosTime)
+import qualified Polysemy.Time as Time
 import qualified Queue
+import Time (MilliSeconds (MilliSeconds))
 
 import Ribosome.Host.Api.Effect (vimCallFunction)
 import Ribosome.Host.Class.Msgpack.Encode (toMsgpack)
@@ -14,19 +17,19 @@ import qualified Ribosome.Menu.Prompt.Data.InputEvent as InputEvent
 import Ribosome.Menu.Prompt.Data.InputEvent (InputEvent)
 
 interpretPromptInputList ::
-  Member (Embed IO) r =>
+  Members [ChronosTime, Embed IO] r =>
   [InputEvent] ->
   InterpreterFor PromptInput r
 interpretPromptInputList events =
   interpretAtomic events .
   reinterpret \case
     Event -> do
-      atomicState' \case
-        [] -> ([], InputEvent.NoInput)
-        (h : t) -> (t, h)
+      maybe (InputEvent.NoInput <$ Time.sleep (MilliSeconds 100)) pure =<< atomicState' \case
+        [] -> ([], Nothing)
+        (h : t) -> (t, Just h)
 
 interpretPromptInputCharList ::
-  Member (Embed IO) r =>
+  Members [ChronosTime, Embed IO] r =>
   [Text] ->
   InterpreterFor PromptInput r
 interpretPromptInputCharList cs =
@@ -61,7 +64,6 @@ getChar =
     event (Left num) =
       maybe (InputEvent.Unexpected num) InputEvent.Character <$> decodeInputNum num
 
--- TODO since getchar is called without args, it should be blocking, so is the sleeping pointless?
 interpretPromptInputNvim ::
   Members [PromptControl, Rpc !! RpcError, Rpc, Race, Embed IO] r =>
   InterpreterFor PromptInput r

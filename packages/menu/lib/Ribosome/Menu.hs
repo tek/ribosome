@@ -13,8 +13,8 @@ module Ribosome.Menu (
   module Ribosome.Menu.Effect.PromptEvents,
   module Ribosome.Menu.Effect.PromptInput,
   module Ribosome.Menu.Effect.PromptRenderer,
-  module Ribosome.Menu.Filters,
   module Ribosome.Menu.Interpreter.MenuConsumer,
+  module Ribosome.Menu.Interpreter.MenuFilter,
   module Ribosome.Menu.Interpreter.MenuState,
   module Ribosome.Menu.Interpreter.PromptControl,
   module Ribosome.Menu.Interpreter.PromptInput,
@@ -49,7 +49,7 @@ import Ribosome.Menu.Data.MenuItem (MenuItem (MenuItem), simpleMenuItem)
 import Ribosome.Menu.Data.MenuResult (MenuResult (..))
 import Ribosome.Menu.Data.MenuState (MenuWidget, SemS (SemS), semState)
 import Ribosome.Menu.Effect.MenuConsumer (MenuConsumer (..))
-import Ribosome.Menu.Effect.MenuFilter (MenuFilter (MenuFilter))
+import Ribosome.Menu.Effect.MenuFilter (MenuFilter (..))
 import Ribosome.Menu.Effect.MenuRenderer (MenuRenderer (..), withMenuRenderer)
 import Ribosome.Menu.Effect.MenuState (
   MenuState,
@@ -68,9 +68,13 @@ import Ribosome.Menu.Effect.PromptControl (PromptControl, waitPromptListening, w
 import Ribosome.Menu.Effect.PromptEvents (PromptEvents (..))
 import Ribosome.Menu.Effect.PromptInput (PromptInput)
 import Ribosome.Menu.Effect.PromptRenderer (PromptRenderer (..), withPrompt)
-import Ribosome.Menu.Filters (fuzzy, fuzzyMonotonic, substringItemFilter)
 import Ribosome.Menu.Interpreter.MenuConsumer (Mappings, basic, defaultMappings, forMappings, withMappings)
-import Ribosome.Menu.Interpreter.MenuState (interpretMenu, interpretMenuState)
+import Ribosome.Menu.Interpreter.MenuFilter (
+  interpretMenuFilterFuzzy,
+  interpretMenuFilterFuzzyMonotonic,
+  interpretMenuFilterSubstring,
+  )
+import Ribosome.Menu.Interpreter.MenuState (interpretMenuFinal, interpretMenuState)
 import Ribosome.Menu.Interpreter.PromptControl (interpretPromptControl)
 import Ribosome.Menu.Interpreter.PromptInput (
   interpretPromptInputCharList,
@@ -109,4 +113,4 @@ import Ribosome.Menu.Prompt.Data.PromptFlag
 import Ribosome.Menu.Prompt.Data.PromptListening
 import Ribosome.Menu.Prompt.Data.PromptMode (PromptMode (..))
 import Ribosome.Menu.Prompt.Data.PromptQuit
-import Ribosome.Menu.Prompt.Run (pristinePrompt, withPromptInput, withPromptStream)
+import Ribosome.Menu.Prompt.Run (pristinePrompt, promptEventStream, withPromptInput)
