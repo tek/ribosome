@@ -151,7 +151,7 @@ testNvimMenu ::
   ScratchOptions ->
   InterpretersFor (MenuTestEffects i result) r
 testNvimMenu scratch sem = do
-  interpretNvimMenu scratch $ withMenuRenderer do
+  interpretNvimMenu $ withMenuRenderer scratch do
     testMenuRender (insertAt @3 sem)
 
 testStaticMenuRender ::
@@ -188,5 +188,5 @@ testStaticNvimMenu ::
   ScratchOptions ->
   InterpretersFor (MenuTestEffects i result) r
 testStaticNvimMenu scratch sem = do
-  interpretNvimMenu scratch $ withMenuRenderer do
+  interpretNvimMenu $ withMenuRenderer scratch do
     testStaticMenuRender (insertAt @3 sem)

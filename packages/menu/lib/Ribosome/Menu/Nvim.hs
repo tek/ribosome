@@ -1,5 +1,6 @@
 module Ribosome.Menu.Nvim where
 
+import Conc (PScoped)
 import qualified Streamly.Internal.Data.Stream.IsStream as Stream
 import Streamly.Prelude (SerialT)
 
@@ -64,8 +65,7 @@ staticNvimMenu items =
 
 interpretNvimMenu ::
   Members [Rpc, Rpc !! RpcError, Settings !! SettingError, Scratch, Log, Resource, Embed IO] r =>
-  ScratchOptions ->
-  InterpretersFor [Scoped ScratchId (MenuRenderer i), Scoped NvimPromptResources PromptRenderer] r
-interpretNvimMenu scratchOptions =
+  InterpretersFor [PScoped ScratchOptions ScratchId (MenuRenderer i), Scoped NvimPromptResources PromptRenderer] r
+interpretNvimMenu =
   interpretPromptRendererNvim .
-  interpretMenuRendererNvim scratchOptions
+  interpretMenuRendererNvim

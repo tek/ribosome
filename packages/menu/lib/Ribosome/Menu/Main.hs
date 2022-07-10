@@ -1,5 +1,6 @@
 module Ribosome.Menu.Main where
 
+import Conc (PScoped)
 import Data.Generics.Labels ()
 import Exon (exon)
 import qualified Polysemy.Log as Log
@@ -152,12 +153,13 @@ simpleMenu consumer config flags =
     interpretMenuFinal @mono config flags $ consumer $ menuMain
 
 menu ::
-  ∀ a i pres mrres r .
+  ∀ a i par pres mrres r .
   Show a =>
   Members (MenuStack i) r =>
   Members [MenuStream i, PromptStream, MenuConsumer a, PromptInput, Scoped pres PromptRenderer] r =>
-  Members [Scoped mrres (MenuRenderer i), Log] r =>
+  Members [PScoped par mrres (MenuRenderer i), Log] r =>
+  par ->
   Sem r (MenuResult a)
-menu =
-  withMenuRenderer $ withPrompt do
+menu renderParam =
+  withMenuRenderer renderParam $ withPrompt do
     menuMain

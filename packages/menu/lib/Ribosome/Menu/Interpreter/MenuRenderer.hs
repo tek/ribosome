@@ -1,9 +1,8 @@
 module Ribosome.Menu.Interpreter.MenuRenderer where
 
-import Conc (interpretAtomic)
+import Conc (PScoped, interpretAtomic, interpretPScopedWith)
 import qualified Data.Text as Text
 import qualified Log
-import Polysemy.Conc.Interpreter.Scoped (interpretScopedWith)
 
 import Ribosome.Api.Window (closeWindow)
 import Ribosome.Data.ScratchId (ScratchId)
@@ -64,9 +63,8 @@ withScratch options use = do
 -- TODO remove Quit/kill since it is done in the bracket release function
 interpretMenuRendererNvim ::
   Members [Settings !! SettingError, Scratch, Rpc, Rpc !! RpcError, Log, Resource, Embed IO] r =>
-  ScratchOptions ->
-  InterpreterFor (Scoped ScratchId (MenuRenderer i)) r
-interpretMenuRendererNvim options =
-  interpretScopedWith @'[AtomicState NvimMenuState] (withScratch options) \ scratchId -> \case
+  InterpreterFor (PScoped ScratchOptions ScratchId (MenuRenderer i)) r
+interpretMenuRendererNvim =
+  interpretPScopedWith @'[AtomicState NvimMenuState] withScratch \ scratchId -> \case
     MenuRender menu ->
       Scratch.find scratchId >>= traverse_ (runReader menu . renderNvimMenu)
