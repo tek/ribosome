@@ -69,11 +69,7 @@ type ScopedNvimRenderers i =
   ]
 
 type NvimMenuDeps i =
-  ScopedNvimRenderers i ++ [
-    NvimPromptInput,
-    Stop RpcError
-  ] ++
-  MenuDeps i
+  ScopedNvimRenderers i ++ NvimPromptInput : MenuDeps i
 
 type MenusIOEffects =
   [
@@ -130,6 +126,7 @@ interpretNvimRenderers options =
 
 runNvimMenu ::
   ∀ i r .
+  Member (Stop RpcError) r =>
   Members (NvimMenuDeps i) r =>
   SerialT IO (MenuItem i) ->
   [PromptFlag] ->
@@ -142,6 +139,7 @@ runNvimMenu items flags options =
 
 runStaticNvimMenu ::
   ∀ i r .
+  Member (Stop RpcError) r =>
   Members (NvimMenuDeps i) r =>
   [MenuItem i] ->
   [PromptFlag] ->
