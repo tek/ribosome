@@ -17,6 +17,7 @@ module Ribosome.Menu (
   module Ribosome.Menu.Effect.PromptInput,
   module Ribosome.Menu.Effect.PromptRenderer,
   module Ribosome.Menu.Effect.PromptStream,
+  module Ribosome.Menu.Interpreter.Menu,
   module Ribosome.Menu.Interpreter.MenuConsumer,
   module Ribosome.Menu.Interpreter.MenuFilter,
   module Ribosome.Menu.Interpreter.MenuState,
@@ -80,6 +81,7 @@ import Ribosome.Menu.Effect.PromptEvents (PromptEvents (..))
 import Ribosome.Menu.Effect.PromptInput (PromptInput)
 import Ribosome.Menu.Effect.PromptRenderer (PromptRenderer (..), withPrompt)
 import Ribosome.Menu.Effect.PromptStream (PromptStream)
+import Ribosome.Menu.Interpreter.Menu
 import Ribosome.Menu.Interpreter.MenuConsumer (Mappings, basic, defaultMappings, forMappings, withMappings)
 import Ribosome.Menu.Interpreter.MenuFilter (
   BoolVal,

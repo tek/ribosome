@@ -25,9 +25,9 @@ import Ribosome.Menu.Effect.PromptInput (PromptInput)
 import Ribosome.Menu.Effect.PromptRenderer (PromptRenderer)
 import Ribosome.Menu.Effect.PromptState (PromptState)
 import Ribosome.Menu.Effect.PromptStream (PromptStream)
+import Ribosome.Menu.Interpreter.Menu (MenuIOStack, runMenuFinal)
 import Ribosome.Menu.Interpreter.MenuConsumer (Mappings, withMappings)
 import Ribosome.Menu.Interpreter.MenuRenderer (interpretMenuRendererNull)
-import Ribosome.Menu.Interpreter.MenuState (MenuIOStack, runMenuFinal)
 import Ribosome.Menu.Interpreter.MenuTest (
   MenuTestResources,
   TestTimeout (TestTimeout),

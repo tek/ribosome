@@ -51,6 +51,7 @@ library
       Ribosome.Menu.Effect.PromptState
       Ribosome.Menu.Effect.PromptStream
       Ribosome.Menu.Filters
+      Ribosome.Menu.Interpreter.Menu
       Ribosome.Menu.Interpreter.MenuConsumer
       Ribosome.Menu.Interpreter.MenuFilter
       Ribosome.Menu.Interpreter.MenuRenderer
