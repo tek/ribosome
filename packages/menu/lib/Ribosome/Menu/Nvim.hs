@@ -64,8 +64,11 @@ staticNvimMenu items =
   staticNvimMenuWith menuScratch items
 
 interpretNvimMenu ::
-  Members [Rpc, Rpc !! RpcError, Settings !! SettingError, Scratch, Log, Resource, Embed IO] r =>
-  InterpretersFor [PScoped ScratchOptions ScratchId (MenuRenderer i), Scoped NvimPromptResources PromptRenderer] r
+  Members [Rpc !! RpcError, Settings !! SettingError, Scratch !! RpcError, Log, Resource, Embed IO] r =>
+  InterpretersFor [
+    PScoped ScratchOptions ScratchId (MenuRenderer i) !! RpcError,
+    Scoped NvimPromptResources PromptRenderer !! RpcError
+  ] r
 interpretNvimMenu =
   interpretPromptRendererNvim .
   interpretMenuRendererNvim

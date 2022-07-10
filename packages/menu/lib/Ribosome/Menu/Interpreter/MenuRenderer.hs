@@ -1,6 +1,6 @@
 module Ribosome.Menu.Interpreter.MenuRenderer where
 
-import Conc (PScoped, interpretAtomic, interpretPScopedWith)
+import Conc (PScoped, interpretAtomic, interpretPScopedResumableWith)
 import qualified Data.Text as Text
 import qualified Log
 
@@ -45,16 +45,16 @@ closeFloats = do
   traverse_ closeWindow =<< filterM isFloat =<< vimGetWindows
 
 withScratch ::
-  Members [Settings !! SettingError, Scratch, Rpc, Rpc !! RpcError, Log, Resource, Embed IO] r =>
+  Members [Settings !! SettingError, Rpc !! RpcError, Scratch !! RpcError, Log, Resource, Embed IO] r =>
   ScratchOptions ->
-  (ScratchId -> Sem (AtomicState NvimMenuState : r) a) ->
-  Sem r a
+  (ScratchId -> Sem (AtomicState NvimMenuState : Stop RpcError : r) a) ->
+  Sem (Stop RpcError : r) a
 withScratch options use = do
-  whenM (Settings.or True Settings.menuCloseFloats) closeFloats
-  bracket acquire Scratch.kill (interpretAtomic def . use)
+  whenM (Settings.or True Settings.menuCloseFloats) (restop @_ @Rpc closeFloats)
+  bracket acquire (resume_ . Scratch.kill) (interpretAtomic def . use)
   where
     acquire = do
-      scratch <- Scratch.open (withSyntax options)
+      scratch <- restop (Scratch.open (withSyntax options))
       windowSetOption (scratch ^. #window) "cursorline" True !>> Log.debug "Failed to set cursorline"
       pure (scratch ^. #id)
     withSyntax =
@@ -62,9 +62,9 @@ withScratch options use = do
 
 -- TODO remove Quit/kill since it is done in the bracket release function
 interpretMenuRendererNvim ::
-  Members [Settings !! SettingError, Scratch, Rpc, Rpc !! RpcError, Log, Resource, Embed IO] r =>
-  InterpreterFor (PScoped ScratchOptions ScratchId (MenuRenderer i)) r
+  Members [Settings !! SettingError, Scratch !! RpcError, Rpc !! RpcError, Log, Resource, Embed IO] r =>
+  InterpreterFor (PScoped ScratchOptions ScratchId (MenuRenderer i) !! RpcError) r
 interpretMenuRendererNvim =
-  interpretPScopedWith @'[AtomicState NvimMenuState] withScratch \ scratchId -> \case
+  interpretPScopedResumableWith @'[AtomicState NvimMenuState] withScratch \ scratchId -> \case
     MenuRender menu ->
-      Scratch.find scratchId >>= traverse_ (runReader menu . renderNvimMenu)
+      restop (Scratch.find scratchId) >>= traverse_ (runReader menu . renderNvimMenu)

@@ -3,6 +3,7 @@ module Ribosome.Menu.Effect.MenuRenderer where
 import Conc (PScoped, pscoped)
 
 import Ribosome.Data.ScratchId (ScratchId)
+import Ribosome.Data.ScratchOptions (ScratchOptions)
 import Ribosome.Menu.Data.Menu (Menu)
 
 data MenuRenderer item :: Effect where
@@ -18,4 +19,4 @@ withMenuRenderer =
   pscoped
 
 type NvimRenderer item =
-  Scoped ScratchId (MenuRenderer item)
+  PScoped ScratchOptions ScratchId (MenuRenderer item)

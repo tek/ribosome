@@ -1,6 +1,6 @@
 module Ribosome.Menu.Interpreter.PromptRenderer where
 
-import Conc (interpretScoped, interpretScopedAs)
+import Conc (interpretScopedAs, interpretScopedResumable)
 
 import Ribosome.Host.Data.RpcError (RpcError)
 import Ribosome.Host.Effect.Rpc (Rpc)
@@ -13,15 +13,16 @@ interpretPromptRendererNull =
     RenderPrompt _ -> unit
 
 withNvimResources ::
-  Members [Rpc, Rpc !! RpcError, Resource] r =>
-  (NvimPromptResources ->  Sem r a) ->
-  Sem r a
+  Members [Rpc !! RpcError, Resource] r =>
+  (NvimPromptResources ->  Sem (Stop RpcError : r) a) ->
+  Sem (Stop RpcError : r) a
 withNvimResources =
-  bracket nvimAcquire nvimRelease
+  bracket (restop @_ @Rpc nvimAcquire) (restop . nvimRelease)
 
 interpretPromptRendererNvim ::
-  Members [Rpc, Rpc !! RpcError, Resource] r =>
-  InterpreterFor (Scoped NvimPromptResources PromptRenderer) r
+  Members [Rpc !! RpcError, Resource] r =>
+  InterpreterFor (Scoped NvimPromptResources PromptRenderer !! RpcError) r
 interpretPromptRendererNvim =
-  interpretScoped withNvimResources \ _ -> \case
-    RenderPrompt prompt -> nvimRenderPrompt prompt
+  interpretScopedResumable withNvimResources \ _ -> \case
+    RenderPrompt prompt ->
+      restop (nvimRenderPrompt prompt)

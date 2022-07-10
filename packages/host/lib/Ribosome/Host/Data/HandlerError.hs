@@ -178,3 +178,21 @@ mapUserMessage ::
   InterpreterFor (Stop err) r
 mapUserMessage f =
   mapStop (f . userErrorMessage)
+
+stopHandlerToFail ::
+  ∀ e r .
+  Member Fail r =>
+  ToErrorMessage e =>
+  InterpreterFor (Stop e) r
+stopHandlerToFail =
+  either (fail . toString . userErrorMessage) pure <=< runStop
+{-# inline stopHandlerToFail #-}
+
+resumeHandlerFail ::
+  ∀ eff err r .
+  Members [Fail, eff !! err] r =>
+  ToErrorMessage err =>
+  InterpreterFor eff r
+resumeHandlerFail =
+  resuming (fail . toString . userErrorMessage)
+{-# inline resumeHandlerFail #-}

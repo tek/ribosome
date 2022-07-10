@@ -60,7 +60,7 @@ import Ribosome.Menu.Data.MenuState (MenuWidget, SemS (SemS), semState)
 import Ribosome.Menu.Data.NvimMenuConfig (NvimMenuConfig (NvimMenuConfig))
 import Ribosome.Menu.Effect.MenuConsumer (MenuConsumer (..))
 import Ribosome.Menu.Effect.MenuFilter (Fuzzy, MenuFilter (..), Substring)
-import Ribosome.Menu.Effect.MenuRenderer (MenuRenderer (..), withMenuRenderer)
+import Ribosome.Menu.Effect.MenuRenderer (MenuRenderer (..), NvimRenderer, withMenuRenderer)
 import Ribosome.Menu.Effect.MenuState (
   MenuState,
   putCursor,
@@ -79,7 +79,7 @@ import Ribosome.Menu.Effect.NvimPromptInput (NvimPromptInput, getChar)
 import Ribosome.Menu.Effect.PromptControl (PromptControl, waitPromptListening, waitPromptQuit)
 import Ribosome.Menu.Effect.PromptEvents (PromptEvents (..))
 import Ribosome.Menu.Effect.PromptInput (PromptInput)
-import Ribosome.Menu.Effect.PromptRenderer (PromptRenderer (..), withPrompt)
+import Ribosome.Menu.Effect.PromptRenderer (NvimPrompt, PromptRenderer (..), withPrompt)
 import Ribosome.Menu.Effect.PromptStream (PromptStream)
 import Ribosome.Menu.Interpreter.Menu
 import Ribosome.Menu.Interpreter.MenuConsumer (Mappings, basic, defaultMappings, forMappings, withMappings)

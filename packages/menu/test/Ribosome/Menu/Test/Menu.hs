@@ -3,10 +3,11 @@ module Ribosome.Menu.Test.Menu where
 import Conc (Restoration, interpretQueueTBM, resultToMaybe)
 import Polysemy.Chronos (ChronosTime, interpretTimeChronos)
 import Polysemy.Log (interpretLogNull)
-import Polysemy.Test (Hedgehog, assertEq, assertJust, evalMaybe)
+import Polysemy.Test (Hedgehog, TestError, assertEq, assertJust, evalMaybe)
 import qualified Queue
 import Time (Seconds (Seconds))
 
+import Ribosome.Host.Data.RpcError (RpcError)
 import Ribosome.Menu.Action (menuIgnore, menuQuit)
 import Ribosome.Menu.Combinators (sortedEntries)
 import qualified Ribosome.Menu.Data.Entry as Entry
@@ -23,6 +24,7 @@ import Ribosome.Menu.Interpreter.PromptRenderer (interpretPromptRendererNull)
 import Ribosome.Menu.MenuTest (MenuTestEffects, MenuTestStack, runTestMenuWith, testMenuRender)
 import Ribosome.Menu.Prompt.Data.Prompt (Prompt)
 import Ribosome.Menu.Prompt.Data.PromptFlag (PromptFlag (StartInsert))
+import Ribosome.Test.Error (testError)
 
 enqueueItems ::
   Members [Hedgehog IO, Queue [Entry i]] r =>
@@ -54,7 +56,7 @@ enqueuePrompt =
 
 type SimpleTestMenu i =
   [
-    Scoped () PromptRenderer,
+    Scoped () PromptRenderer !! RpcError,
     MenuRenderer i,
     ChronosTime,
     Log,
@@ -72,19 +74,20 @@ runSimpleTestMenu =
   interpretLogNull .
   interpretTimeChronos .
   enqueueItems .
-  interpretPromptRendererNull
+  raiseResumable interpretPromptRendererNull
 
 type PromptTest i =
-  MenuTestEffects i () ++ MenuConsumer () : SimpleTestMenu i ++ MenuTestStack i ()
+  MenuTestEffects i () ++ Stop RpcError : MenuConsumer () : SimpleTestMenu i ++ MenuTestStack i ()
 
 promptTest ::
   Show i =>
-  Members [Hedgehog IO, Fail, Log, Resource, Race, Mask Restoration, Async, Embed IO, Final IO] r =>
+  Members [Hedgehog IO, Error TestError, Fail, Log, Resource, Race, Mask Restoration, Async, Embed IO, Final IO] r =>
   InterpretersFor (PromptTest i) r
 promptTest =
   runTestMenuWith (Seconds 5) [StartInsert] .
   runSimpleTestMenu .
   enqueuePrompt .
+  testError .
   testMenuRender
 
 assertPrompt ::

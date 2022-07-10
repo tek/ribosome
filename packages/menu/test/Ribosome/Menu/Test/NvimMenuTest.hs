@@ -9,6 +9,7 @@ import Time (MilliSeconds (MilliSeconds))
 import Ribosome.Api.Buffer (bufferContent, buflisted)
 import Ribosome.Effect.Scratch (Scratch)
 import Ribosome.Host.Api.Effect (bufferGetName, vimGetBuffers, vimGetWindows)
+import Ribosome.Host.Data.HandlerError (resumeHandlerFail)
 import Ribosome.Menu.Action (menuOk, menuSuccess)
 import Ribosome.Menu.Combinators (sortedEntries)
 import Ribosome.Menu.Data.CursorIndex (CursorIndex (CursorIndex))
@@ -19,9 +20,11 @@ import Ribosome.Menu.Data.MenuItem (MenuItem, simpleMenuItem)
 import qualified Ribosome.Menu.Data.MenuResult as MenuResult
 import Ribosome.Menu.Data.MenuState (MenuWidget)
 import Ribosome.Menu.Data.MenuView (MenuView (MenuView))
+import Ribosome.Menu.Effect.MenuRenderer (NvimRenderer)
 import Ribosome.Menu.Effect.MenuState (MenuState, readCursor, readPrompt, viewMenu)
 import qualified Ribosome.Menu.Effect.MenuTest as MenuTest
 import Ribosome.Menu.Effect.MenuTest (sendChar, sendCharWait)
+import Ribosome.Menu.Effect.PromptRenderer (NvimPrompt)
 import Ribosome.Menu.Interpreter.Menu (interpretNvimMenuFinal, runMenu, runNvimMenuFinal)
 import Ribosome.Menu.Interpreter.MenuConsumer (Mappings, basic, withMappings)
 import Ribosome.Menu.Interpreter.PromptInput (interpretPromptInputCharList)
@@ -75,7 +78,8 @@ test_nvimMenuPure :: UnitTest
 test_nvimMenuPure =
   testEmbed_ $ interpretNvimMenuFinal $ interpretPromptInputCharList pureChars do
     result <- resumeTestError @Scratch do
-      runMenu conf flags $ withMappings mappings $ menu (menuScratchSized 4)
+      runMenu conf flags $ withMappings mappings $ resumeTestError @(NvimRenderer _) $ resumeHandlerFail @NvimPrompt do
+        menu (menuScratchSized 4)
     MenuResult.Success "item4" === result
   where
     conf =
@@ -92,7 +96,8 @@ test_nvimMenuNative =
   testEmbed_ $ resumeTestError @Scratch do
       result <- runNvimMenuFinal conf flags $ withMappings mappings do
         withPromptInput (Just (MilliSeconds 10)) nativeChars do
-          menu (menuScratchSized 4)
+          resumeHandlerFail @(NvimRenderer _) $ resumeHandlerFail @NvimPrompt do
+            menu (menuScratchSized 4)
       MenuResult.Success "item4" === result
   where
     conf =
@@ -105,7 +110,8 @@ test_nvimMenuInterrupt =
   testEmbed_ $ resumeTestError @Scratch do
     result <- runNvimMenuFinal conf flags $ basic @() do
       withPromptInput (Just (MilliSeconds 10)) ["i", "<c-c>", "<cr>"] do
-        menu def
+        resumeHandlerFail @(NvimRenderer _) $ resumeHandlerFail @NvimPrompt do
+          menu def
     MenuResult.Aborted === result
     assertEq 1 . length =<< vimGetWindows
   where

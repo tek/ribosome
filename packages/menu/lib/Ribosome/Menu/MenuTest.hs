@@ -9,6 +9,7 @@ import Ribosome.Data.ScratchOptions (ScratchOptions)
 import Ribosome.Data.SettingError (SettingError)
 import Ribosome.Effect.Scratch (Scratch)
 import Ribosome.Effect.Settings (Settings)
+import Ribosome.Host.Data.HandlerError (resumeHandlerFail)
 import Ribosome.Host.Data.RpcError (RpcError)
 import Ribosome.Host.Effect.Rpc (Rpc)
 import Ribosome.Menu.Data.MenuConfig (MenuConfig (MenuConfig))
@@ -121,13 +122,13 @@ testMenuRender ::
   Show result =>
   Members MenuTestIOStack r =>
   Members (MenuTestDeps i result) r =>
-  Members [MenuRenderer i, Scoped pres PromptRenderer] r =>
+  Members [MenuRenderer i, Scoped pres PromptRenderer !! RpcError] r =>
   InterpretersFor (MenuTestEffects i result) r
 testMenuRender sem = do
   TestTimeout timeout <- ask
-  interpretMenuTest $ withAsync_ (Sync.putWait timeout =<< menuMain) do
+  resumeHandlerFail $ interpretMenuTest $ withAsync_ (Sync.putWait timeout =<< menuMain) do
     timeout_ (fail "prompt didn't start") timeout waitPromptListening
-    sem
+    insertAt @3 sem
 
 testMenu ::
   Show i =>
@@ -136,7 +137,7 @@ testMenu ::
   Members (MenuTestDeps i result) r =>
   InterpretersFor (MenuTestEffects i result) r
 testMenu =
-  interpretMenuRendererNull . interpretPromptRendererNull . testMenuRender . insertAt @3
+  interpretMenuRendererNull . raiseResumable interpretPromptRendererNull . testMenuRender . insertAt @3
 
 testNvimMenu ::
   ∀ i result r .
@@ -144,11 +145,11 @@ testNvimMenu ::
   Show result =>
   Members MenuTestIOStack r =>
   Members (MenuTestDeps i result) r =>
-  Members [Rpc, Rpc !! RpcError, Settings !! SettingError, Scratch] r =>
+  Members [Rpc, Rpc !! RpcError, Settings !! SettingError, Scratch !! RpcError] r =>
   ScratchOptions ->
   InterpretersFor (MenuTestEffects i result) r
 testNvimMenu scratch sem = do
-  interpretNvimMenu $ withMenuRenderer scratch do
+  interpretNvimMenu $ resumeHandlerFail $ withMenuRenderer scratch do
     testMenuRender (insertAt @3 sem)
 
 testStaticMenuRender ::
@@ -157,7 +158,7 @@ testStaticMenuRender ::
   Show result =>
   Members MenuTestIOStack r =>
   Members (MenuTestDeps i result) r =>
-  Members [MenuRenderer i, Scoped pres PromptRenderer] r =>
+  Members [MenuRenderer i, Scoped pres PromptRenderer !! RpcError] r =>
   InterpretersFor (MenuTestEffects i result) r
 testStaticMenuRender sem =
   testMenuRender do
@@ -173,7 +174,7 @@ testStaticMenu ::
   Members (MenuTestDeps i result) r =>
   InterpretersFor (MenuTestEffects i result) r
 testStaticMenu =
-  interpretMenuRendererNull . interpretPromptRendererNull . testStaticMenuRender . insertAt @3
+  interpretMenuRendererNull . raiseResumable interpretPromptRendererNull . testStaticMenuRender . insertAt @3
 
 testStaticNvimMenu ::
   ∀ i result r .
@@ -181,9 +182,9 @@ testStaticNvimMenu ::
   Show result =>
   Members MenuTestIOStack r =>
   Members (MenuTestDeps i result) r =>
-  Members [Rpc, Rpc !! RpcError, Settings !! SettingError, Scratch] r =>
+  Members [Rpc, Rpc !! RpcError, Settings !! SettingError, Scratch !! RpcError] r =>
   ScratchOptions ->
   InterpretersFor (MenuTestEffects i result) r
 testStaticNvimMenu scratch sem = do
-  interpretNvimMenu $ withMenuRenderer scratch do
+  interpretNvimMenu $ resumeHandlerFail $ withMenuRenderer scratch do
     testStaticMenuRender (insertAt @3 sem)

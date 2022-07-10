@@ -72,12 +72,12 @@ type MenuIOStack i =
 
 type NvimMenusIOEffects =
   [
-    Scoped NvimPromptResources PromptRenderer,
+    Scoped NvimPromptResources PromptRenderer !! RpcError,
     NvimPromptInput
   ]
 
 type NvimMenuIOEffects i =
-  PScoped ScratchOptions ScratchId (MenuRenderer i) : NvimMenusIOEffects
+  PScoped ScratchOptions ScratchId (MenuRenderer i) !! RpcError : NvimMenusIOEffects
 
 type NvimMenuIOStack i =
   PromptInput : MenuIOStack i ++ NvimMenuIOEffects i
@@ -136,8 +136,8 @@ runMenuFinal conf flags =
 
 interpretNvimMenuIOEffects ::
   ∀ i mres r .
-  Members [Settings !! SettingError, Scratch] r =>
-  Members [Rpc, Rpc !! RpcError, Log, Resource, Race, Mask mres, Embed IO, Final IO] r =>
+  Members [Settings !! SettingError, Scratch !! RpcError] r =>
+  Members [Rpc !! RpcError, Log, Resource, Race, Mask mres, Embed IO, Final IO] r =>
   InterpretersFor (NvimMenuIOEffects i) r
 interpretNvimMenuIOEffects =
   interpretNvimPromptInput .
@@ -146,8 +146,7 @@ interpretNvimMenuIOEffects =
 
 interpretNvimMenusFinal ::
   ∀ mres r .
-  Members [Settings !! SettingError, Scratch] r =>
-  Members [Rpc, Rpc !! RpcError, Log, Resource, Race, Mask mres, Embed IO, Final IO] r =>
+  Members [Rpc !! RpcError, Log, Resource, Race, Mask mres, Embed IO, Final IO] r =>
   InterpretersFor (MenusIOEffects ++ NvimMenusIOEffects) r
 interpretNvimMenusFinal =
   interpretNvimPromptInput .
@@ -156,8 +155,8 @@ interpretNvimMenusFinal =
 
 interpretNvimMenuFinal ::
   ∀ i mres r .
-  Members [Settings !! SettingError, Scratch] r =>
-  Members [Rpc, Rpc !! RpcError, Log, Resource, Race, Mask mres, Embed IO, Final IO] r =>
+  Members [Rpc !! RpcError, Settings !! SettingError, Scratch !! RpcError] r =>
+  Members [Log, Resource, Race, Mask mres, Embed IO, Final IO] r =>
   InterpretersFor (MenuIOEffects i ++ NvimMenuIOEffects i) r
 interpretNvimMenuFinal =
   interpretNvimMenuIOEffects .
@@ -165,8 +164,8 @@ interpretNvimMenuFinal =
 
 runNvimMenuFinal ::
   ∀ i mres r .
-  Members [Settings !! SettingError, Scratch] r =>
-  Members [Rpc, Rpc !! RpcError, Log, Resource, Race, Mask mres, Embed IO, Final IO] r =>
+  Members [Rpc !! RpcError, Settings !! SettingError, Scratch !! RpcError] r =>
+  Members [Log, Resource, Race, Mask mres, Embed IO, Final IO] r =>
   MenuConfig i ->
   [PromptFlag] ->
   InterpretersFor (NvimMenuIOStack i) r

@@ -197,10 +197,12 @@ updateMenu scratch = do
 
 renderNvimMenu ::
   ∀ i r .
-  Members [Scratch, AtomicState NvimMenuState, Reader (Menu i), Rpc, Rpc !! RpcError, Log, Embed IO] r =>
+  Member (AtomicState NvimMenuState) r =>
+  Members [Reader (Menu i), Rpc !! RpcError, Scratch !! RpcError, Log, Stop RpcError, Embed IO] r =>
   ScratchState ->
   Sem r ()
 renderNvimMenu scratch =
-  whenM (nvimBufIsLoaded (buffer scratch)) do
-    updateMenu scratch
-    redraw
+  restop @_ @Rpc $ restop @_ @Scratch do
+    whenM (nvimBufIsLoaded (buffer scratch)) do
+      updateMenu scratch
+      redraw
