@@ -1,6 +1,6 @@
 module Ribosome.Menu.MenuTest where
 
-import Conc (Restoration, timeout_, withAsync_)
+import Conc (ChanEvents, Restoration, timeout_, withAsync_)
 import qualified Streamly.Prelude as Stream
 import qualified Sync
 import Time (Seconds (Seconds))
@@ -13,6 +13,7 @@ import Ribosome.Host.Data.HandlerError (resumeHandlerFail)
 import Ribosome.Host.Data.RpcError (RpcError)
 import Ribosome.Host.Effect.Rpc (Rpc)
 import Ribosome.Menu.Data.MenuConfig (MenuConfig)
+import Ribosome.Menu.Data.MenuEvent (MenuEvent)
 import Ribosome.Menu.Data.MenuItem (MenuItem)
 import Ribosome.Menu.Effect.MenuConsumer (MenuConsumer)
 import Ribosome.Menu.Effect.MenuFilter (MenuFilter)
@@ -51,7 +52,8 @@ type MenuTestDeps i result =
     PromptStream,
     PromptState,
     PromptEvents,
-    PromptControl
+    PromptControl,
+    ChanEvents MenuEvent
   ] ++ MenuTestResources i result
 
 type MenuTestIOStack =
@@ -152,7 +154,7 @@ testNvimMenu scratch sem = do
   interpretNvimMenu $ resumeHandlerFail $ withMenuRenderer scratch do
     testMenuRender (insertAt @3 sem)
 
-testStaticMenuRender ::
+testMenuWaitItemsRender ::
   ∀ i result pres r .
   Show i =>
   Show result =>
@@ -160,21 +162,21 @@ testStaticMenuRender ::
   Members (MenuTestDeps i result) r =>
   Members [MenuRenderer i, Scoped pres PromptRenderer !! RpcError] r =>
   InterpretersFor (MenuTestEffects i result) r
-testStaticMenuRender sem =
+testMenuWaitItemsRender sem =
   testMenuRender do
     TestTimeout timeout <- ask
     timeout_ (fail "items didn't terminate") timeout waitItemsDone
     sem
 
-testStaticMenu ::
+testMenuWaitItems ::
   ∀ i result r .
   Show i =>
   Show result =>
   Members MenuTestIOStack r =>
   Members (MenuTestDeps i result) r =>
   InterpretersFor (MenuTestEffects i result) r
-testStaticMenu =
-  interpretMenuRendererNull . raiseResumable interpretPromptRendererNull . testStaticMenuRender . insertAt @3
+testMenuWaitItems =
+  interpretMenuRendererNull . raiseResumable interpretPromptRendererNull . testMenuWaitItemsRender . insertAt @3
 
 testStaticNvimMenu ::
   ∀ i result r .
@@ -187,4 +189,4 @@ testStaticNvimMenu ::
   InterpretersFor (MenuTestEffects i result) r
 testStaticNvimMenu scratch sem = do
   interpretNvimMenu $ resumeHandlerFail $ withMenuRenderer scratch do
-    testStaticMenuRender (insertAt @3 sem)
+    testMenuWaitItemsRender (insertAt @3 sem)

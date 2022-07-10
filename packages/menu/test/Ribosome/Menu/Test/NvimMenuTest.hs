@@ -70,9 +70,9 @@ mappings =
 
 test_nvimMenuPureInput :: UnitTest
 test_nvimMenuPureInput =
-  testEmbed_ $ interpretNvimMenuFinal $ interpretNvimPromptInputCharList pureChars do
+  testEmbed_ $ interpretNvimMenuFinal $ interpretNvimPromptInputCharList True pureChars do
     result <- runNvimMenu (menuItems items) [StartInsert] (menuScratchSized 4) $ withMappings mappings do
-        menu
+      menu
     MenuResult.Success "item4" === result
 
 nativeChars :: [Text]

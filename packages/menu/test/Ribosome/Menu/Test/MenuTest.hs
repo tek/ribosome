@@ -23,7 +23,7 @@ import Ribosome.Menu.Effect.MenuState (MenuState, viewMenu)
 import Ribosome.Menu.Effect.MenuTest (result, sendCharWait, sendStaticItems)
 import Ribosome.Menu.ItemLens (items, selected', selectedOnly, unselected)
 import Ribosome.Menu.Items (deleteSelected, popSelection)
-import Ribosome.Menu.MenuTest (runStaticTestMenu, runTestMenu, testMenu, testStaticMenu)
+import Ribosome.Menu.MenuTest (runStaticTestMenu, runTestMenu, testMenu, testMenuWaitItems)
 import Ribosome.Menu.Prompt.Data.Prompt (Prompt (Prompt))
 import Ribosome.Menu.Prompt.Data.PromptFlag (PromptFlag (StartInsert))
 import Ribosome.Menu.Prompt.Data.PromptMode (PromptMode (Insert, Normal))
@@ -173,7 +173,7 @@ test_menuToggle :: UnitTest
 test_menuToggle = do
   runUnitTest do
     runStaticTestMenu (simpleMenuItem () <$> itemsToggle) [StartInsert] [("cr", execToggle)] do
-      r <- testStaticMenu do
+      r <- testMenuWaitItems do
         traverse_ sendCharWait charsToggle
         result
       Success ["abc", "a"] === r

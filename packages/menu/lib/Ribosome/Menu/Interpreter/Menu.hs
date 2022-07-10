@@ -1,6 +1,6 @@
 module Ribosome.Menu.Interpreter.Menu where
 
-import Conc (PScoped)
+import Conc (ChanConsumer, ChanEvents, PScoped, interpretEventsChan)
 import qualified Streamly.Prelude as Stream
 import Streamly.Prelude (SerialT)
 
@@ -14,6 +14,7 @@ import Ribosome.Host.Effect.MState (ScopedMState)
 import Ribosome.Host.Effect.Rpc (Rpc)
 import Ribosome.Host.Interpreter.MState (interpretMStates)
 import Ribosome.Menu.Data.MenuConfig (MenuConfig (MenuConfig))
+import Ribosome.Menu.Data.MenuEvent (MenuEvent)
 import Ribosome.Menu.Data.MenuItem (MenuItem)
 import Ribosome.Menu.Effect.MenuFilter (MenuFilter)
 import Ribosome.Menu.Effect.MenuRenderer (MenuRenderer, withMenuRenderer)
@@ -77,7 +78,9 @@ type MenusIOEffects =
     PromptStream,
     MenuFilter,
     Scoped () PromptControl,
-    ScopedMState Prompt
+    ScopedMState Prompt,
+    ChanEvents MenuEvent,
+    ChanConsumer MenuEvent
   ]
 
 type MenuIOEffects i =
@@ -150,9 +153,10 @@ runStaticNvimMenu items flags options =
 
 interpretMenusFinal ::
   ∀ mres r .
-  Members [Log, Resource, Race, Mask mres, Embed IO, Final IO] r =>
+  Members [Log, Resource, Race, Mask mres, Async, Embed IO, Final IO] r =>
   InterpretersFor (MenusIOEffects) r
 interpretMenusFinal =
+  interpretEventsChan .
   interpretMStates .
   interpretPromptControl .
   interpretMenuFilterFuzzy @'True .
@@ -161,7 +165,7 @@ interpretMenusFinal =
 
 interpretMenuFinal ::
   ∀ i mres r .
-  Members [Log, Resource, Race, Mask mres, Embed IO, Final IO] r =>
+  Members [Log, Resource, Race, Mask mres, Async, Embed IO, Final IO] r =>
   InterpretersFor (MenuIOEffects i) r
 interpretMenuFinal =
   interpretMenusFinal .
@@ -169,7 +173,7 @@ interpretMenuFinal =
 
 runMenuFinal ::
   ∀ i mres r .
-  Members [Log, Resource, Race, Mask mres, Embed IO, Final IO] r =>
+  Members [Log, Resource, Race, Mask mres, Async, Embed IO, Final IO] r =>
   SerialT IO (MenuItem i) ->
   [PromptFlag] ->
   InterpretersFor (MenuIOStack i) r
@@ -188,7 +192,7 @@ interpretNvimMenuIOEffects =
 
 interpretNvimMenusFinal ::
   ∀ mres r .
-  Members [Rpc !! RpcError, Log, Resource, Race, Mask mres, Embed IO, Final IO] r =>
+  Members [Rpc !! RpcError, Log, Resource, Race, Mask mres, Async, Embed IO, Final IO] r =>
   InterpretersFor (MenusIOEffects ++ NvimMenusIOEffects) r
 interpretNvimMenusFinal =
   interpretNvimPromptInput .
@@ -198,7 +202,7 @@ interpretNvimMenusFinal =
 interpretNvimMenuFinal ::
   ∀ i mres r .
   Members [Rpc !! RpcError, Settings !! SettingError, Scratch !! RpcError] r =>
-  Members [Log, Resource, Race, Mask mres, Embed IO, Final IO] r =>
+  Members [Log, Resource, Race, Mask mres, Async, Embed IO, Final IO] r =>
   InterpretersFor (MenuIOEffects i ++ NvimMenuIOEffects i) r
 interpretNvimMenuFinal =
   interpretNvimMenuIOEffects .
@@ -207,7 +211,7 @@ interpretNvimMenuFinal =
 runNvimMenuFinal ::
   ∀ i mres r .
   Members [Rpc !! RpcError, Settings !! SettingError, Scratch !! RpcError, Stop RpcError] r =>
-  Members [Log, Resource, Race, Mask mres, Embed IO, Final IO] r =>
+  Members [Log, Resource, Race, Mask mres, Async, Embed IO, Final IO] r =>
   SerialT IO (MenuItem i) ->
   [PromptFlag] ->
   ScratchOptions ->

@@ -90,9 +90,9 @@ sendQuit =
   sendControlEvent PromptControlEvent.Quit
 
 menuStream ::
-  ∀ i r a .
+  ∀ i eres r a .
   Show a =>
-  Member (MenuStream) r =>
+  Members [MenuStream, Events eres MenuEvent] r =>
   Members [MenuState i, PromptControl, PromptState, MenuRenderer i, MenuConsumer a, MenuFilter, Log] r =>
   SerialT IO (MenuItem i) ->
   SerialT IO (Prompt, PromptEvent) ->
@@ -107,6 +107,8 @@ menuStream items promptEvents =
     insert new =
       MenuEvent.NewItems <$ useItems \ its -> runState its (semState (insertItems new))
     consume event = do
+      Log.debug [exon|menu event: #{show event}|]
+      publish event
       menuAction <- menuConsumerEvent event
       pure (fromMaybe (eventAction event) menuAction)
 
@@ -130,7 +132,7 @@ menuResult = \case
 menu ::
   Show a =>
   Members PromptStack r =>
-  Member (Reader (MenuConfig i)) r =>
+  Members [Reader (MenuConfig i), Events eres MenuEvent] r =>
   Members [MenuStream, PromptStream, MenuState i, MenuConsumer a, MenuRenderer i, MenuFilter] r =>
   Member Log r =>
   Sem r (MenuResult a)
@@ -140,10 +142,10 @@ menu = do
   menuResult =<< menuStream items promptEvents
 
 simpleMenu ::
-  ∀ mres pres i a r .
+  ∀ mres pres eres i a r .
   Show a =>
-  Members [Log, Mask mres, Resource, Race, Embed IO, Final IO] r =>
-  Members [Scoped pres PromptRenderer, PromptInput, MenuRenderer i] r =>
+  Members [Log, Mask mres, Resource, Race, Async, Embed IO, Final IO] r =>
+  Members [Scoped pres PromptRenderer, PromptInput, MenuRenderer i, Events eres MenuEvent] r =>
   InterpreterFor (MenuConsumer a) (PromptRenderer : MenuIOStack i ++ r) ->
   SerialT IO (MenuItem i) ->
   [PromptFlag] ->

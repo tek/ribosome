@@ -39,6 +39,8 @@ module Ribosome.Menu (
   module Ribosome.Menu.Prompt.Run,
 ) where
 
+import Conc (ChanEvents)
+
 import Ribosome.Menu.Action (
   menuCycle,
   menuIgnore,
@@ -140,5 +142,6 @@ type NvimMenu i =
   [
     PromptStream,
     MenuFilter,
-    MenuStream
+    MenuStream,
+    ChanEvents MenuEvent
   ] ++ NvimMenuDeps i
