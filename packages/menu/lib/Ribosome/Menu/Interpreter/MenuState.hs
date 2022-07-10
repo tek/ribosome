@@ -117,7 +117,7 @@ type MenuStack i =
   [MenuState i, MenuFilter, PromptControl, PromptState, PromptEvents, Reader (MenuConfig i)]
 
 type MenuIOStack i =
-  [MenuStream i, PromptStream] ++ MenuStack i ++ [
+  [MenuStream, PromptStream] ++ MenuStack i ++ [
     Scoped () PromptControl,
     Scoped () (MenuState i),
     ScopedMState Prompt

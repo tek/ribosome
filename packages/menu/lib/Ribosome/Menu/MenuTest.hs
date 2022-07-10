@@ -46,7 +46,7 @@ type MenuTestDeps i result =
     MenuConsumer result,
     Reader (MenuConfig i),
     MenuState i,
-    MenuStream i,
+    MenuStream,
     MenuFilter,
     PromptStream,
     PromptState,

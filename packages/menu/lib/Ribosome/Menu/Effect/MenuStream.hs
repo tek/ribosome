@@ -9,7 +9,7 @@ import Ribosome.Menu.Data.MenuResult (MenuResult)
 import Ribosome.Menu.Prompt.Data.Prompt (Prompt)
 import Ribosome.Menu.Prompt.Data.PromptEvent (PromptEvent)
 
-data MenuStream i :: Effect where
+data MenuStream :: Effect where
   MenuStream ::
     SerialT IO (MenuItem i) ->
     SerialT IO (Prompt, PromptEvent) ->
@@ -20,6 +20,6 @@ data MenuStream i :: Effect where
     m () ->
     (MenuEvent -> m (MenuAction result)) ->
     (MenuAction result -> m (Maybe (MenuResult result))) ->
-    MenuStream i m (Maybe (MenuResult result))
+    MenuStream m (Maybe (MenuResult result))
 
 makeSem ''MenuStream

@@ -91,7 +91,7 @@ sendQuit =
 menuStream ::
   ∀ i r a .
   Show a =>
-  Member (MenuStream i) r =>
+  Member (MenuStream) r =>
   Members [MenuState i, PromptControl, MenuRenderer i, MenuConsumer a, MenuFilter, Log] r =>
   SerialT IO (MenuItem i) ->
   SerialT IO (Prompt, PromptEvent) ->
@@ -130,7 +130,7 @@ menuMain ::
   Show a =>
   Members PromptStack r =>
   Member (Reader (MenuConfig i)) r =>
-  Members [MenuStream i, PromptStream, MenuState i, MenuConsumer a, MenuRenderer i, MenuFilter] r =>
+  Members [MenuStream, PromptStream, MenuState i, MenuConsumer a, MenuRenderer i, MenuFilter] r =>
   Member Log r =>
   Sem r (MenuResult a)
 menuMain = do
@@ -156,7 +156,7 @@ menu ::
   ∀ a i par pres mrres r .
   Show a =>
   Members (MenuStack i) r =>
-  Members [MenuStream i, PromptStream, MenuConsumer a, PromptInput, Scoped pres PromptRenderer] r =>
+  Members [MenuStream, PromptStream, MenuConsumer a, PromptInput, Scoped pres PromptRenderer] r =>
   Members [PScoped par mrres (MenuRenderer i), Log] r =>
   par ->
   Sem r (MenuResult a)

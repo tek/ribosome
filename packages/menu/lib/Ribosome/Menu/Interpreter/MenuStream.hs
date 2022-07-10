@@ -10,9 +10,8 @@ import Ribosome.Menu.Effect.MenuStream (MenuStream (MenuStream))
 import Ribosome.Menu.Stream.Accumulate (mapMAccMaybe)
 
 interpretMenuStream ::
-  ∀ i r .
   Member (Final IO) r =>
-  InterpreterFor (MenuStream i) r
+  InterpreterFor MenuStream r
 interpretMenuStream =
   interpretFinal \case
     MenuStream items promptEvents handleActionM classifyM queryUpdateM insertM quitM consumeM outputActionM ->
