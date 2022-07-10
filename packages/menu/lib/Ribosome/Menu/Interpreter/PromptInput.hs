@@ -12,6 +12,14 @@ import Ribosome.Menu.Effect.PromptInput (PromptInput (Event))
 import qualified Ribosome.Menu.Prompt.Data.InputEvent as InputEvent
 import Ribosome.Menu.Prompt.Data.InputEvent (InputEvent)
 
+takePromptInputAtomic ::
+  Members [ChronosTime, AtomicState [InputEvent]] r =>
+  Sem r InputEvent
+takePromptInputAtomic =
+  maybe (InputEvent.NoInput <$ Time.sleep (MilliSeconds 100)) pure =<< atomicState' \case
+    [] -> ([], Nothing)
+    (h : t) -> (t, Just h)
+
 interpretPromptInputList ::
   Members [ChronosTime, Embed IO] r =>
   [InputEvent] ->
@@ -20,9 +28,7 @@ interpretPromptInputList events =
   interpretAtomic events .
   reinterpret \case
     Event ->
-      maybe (InputEvent.NoInput <$ Time.sleep (MilliSeconds 100)) pure =<< atomicState' \case
-        [] -> ([], Nothing)
-        (h : t) -> (t, Just h)
+      takePromptInputAtomic
 
 interpretPromptInputCharList ::
   Members [ChronosTime, Embed IO] r =>

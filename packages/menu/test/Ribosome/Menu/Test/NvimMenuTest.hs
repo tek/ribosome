@@ -20,9 +20,9 @@ import Ribosome.Menu.Data.MenuView (MenuView (MenuView))
 import Ribosome.Menu.Effect.MenuState (MenuState, readCursor, readPrompt, viewMenu)
 import qualified Ribosome.Menu.Effect.MenuTest as MenuTest
 import Ribosome.Menu.Effect.MenuTest (sendChar, sendCharWait)
-import Ribosome.Menu.Interpreter.Menu (interpretNvimMenuFinal, interpretNvimRenderers, runMenu, runNvimMenuFinal)
+import Ribosome.Menu.Interpreter.Menu (interpretNvimMenuFinal, runNvimMenu, runNvimMenuFinal)
 import Ribosome.Menu.Interpreter.MenuConsumer (Mappings, basic, withMappings)
-import Ribosome.Menu.Interpreter.PromptInput (interpretPromptInputCharList)
+import Ribosome.Menu.Interpreter.NvimPromptInput (interpretNvimPromptInputCharList)
 import Ribosome.Menu.Main (menu)
 import Ribosome.Menu.MenuTest (runStaticTestMenu, testStaticNvimMenu)
 import Ribosome.Menu.Nvim (menuScratch, menuScratchSized)
@@ -70,8 +70,8 @@ mappings =
 
 test_nvimMenuPureInput :: UnitTest
 test_nvimMenuPureInput =
-  testEmbed_ $ interpretNvimMenuFinal $ interpretPromptInputCharList pureChars do
-    result <- runMenu (menuItems items) [StartInsert] $ interpretNvimRenderers (menuScratchSized 4) $ withMappings mappings do
+  testEmbed_ $ interpretNvimMenuFinal $ interpretNvimPromptInputCharList pureChars do
+    result <- runNvimMenu (menuItems items) [StartInsert] (menuScratchSized 4) $ withMappings mappings do
         menu
     MenuResult.Success "item4" === result
 

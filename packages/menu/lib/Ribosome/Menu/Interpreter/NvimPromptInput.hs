@@ -1,17 +1,36 @@
 module Ribosome.Menu.Interpreter.NvimPromptInput where
 
-import Conc (race)
+import Conc (interpretAtomic, race)
+import Exon (exon)
 import qualified Log
+import Polysemy.Chronos (ChronosTime)
 
 import Ribosome.Host.Api.Effect (vimCallFunction)
 import Ribosome.Host.Class.Msgpack.Encode (toMsgpack)
 import Ribosome.Host.Data.RpcError (RpcError)
 import Ribosome.Host.Effect.Rpc (Rpc)
 import Ribosome.Menu.Effect.NvimPromptInput (NvimPromptInput (GetChar))
+import Ribosome.Menu.Interpreter.PromptInput (takePromptInputAtomic)
 import Ribosome.Menu.Prompt.Data.Codes (decodeInputChar, decodeInputNum)
 import qualified Ribosome.Menu.Prompt.Data.InputEvent as InputEvent
 import Ribosome.Menu.Prompt.Data.InputEvent (InputEvent)
-import Exon (exon)
+
+interpretNvimPromptInputList ::
+  Members [ChronosTime, Race, Embed IO] r =>
+  [InputEvent] ->
+  InterpreterFor NvimPromptInput r
+interpretNvimPromptInputList events =
+  interpretAtomic events .
+  reinterpretH \case
+    GetChar waitQuit ->
+      pureT . unify =<< race (InputEvent.Interrupt <$ runTSimple waitQuit) (takePromptInputAtomic)
+
+interpretNvimPromptInputCharList ::
+  Members [ChronosTime, Race, Embed IO] r =>
+  [Text] ->
+  InterpreterFor NvimPromptInput r
+interpretNvimPromptInputCharList cs =
+  interpretNvimPromptInputList (InputEvent.Character <$> cs)
 
 quitChar :: Char
 quitChar =
