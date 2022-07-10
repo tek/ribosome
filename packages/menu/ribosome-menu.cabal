@@ -34,7 +34,6 @@ library
       Ribosome.Menu.Data.MenuResult
       Ribosome.Menu.Data.MenuState
       Ribosome.Menu.Data.MenuView
-      Ribosome.Menu.Data.NvimMenuConfig
       Ribosome.Menu.Data.NvimMenuState
       Ribosome.Menu.Data.QuitReason
       Ribosome.Menu.Effect.MenuConsumer

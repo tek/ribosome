@@ -37,7 +37,7 @@ import Ribosome.Menu.Interpreter.PromptInput (nvimPromptInput)
 import Ribosome.Menu.Interpreter.PromptRenderer (interpretPromptRendererNvim)
 import Ribosome.Menu.Interpreter.PromptState (interpretPromptState)
 import Ribosome.Menu.Interpreter.PromptStream (interpretPromptStream)
-import Ribosome.Menu.Nvim (ensureSize)
+import Ribosome.Menu.Nvim (ensureSize, interpretNvimMenu)
 import Ribosome.Menu.Prompt.Data.Prompt (Prompt)
 import Ribosome.Menu.Prompt.Data.PromptFlag (PromptFlag)
 import Ribosome.Menu.Prompt.Nvim (NvimPromptResources)
@@ -186,8 +186,7 @@ interpretNvimMenuIOEffects ::
   InterpretersFor (NvimMenuIOEffects i) r
 interpretNvimMenuIOEffects =
   interpretNvimPromptInput .
-  interpretPromptRendererNvim .
-  interpretMenuRendererNvim
+  interpretNvimMenu
 
 interpretNvimMenusFinal ::
   ∀ mres r .
