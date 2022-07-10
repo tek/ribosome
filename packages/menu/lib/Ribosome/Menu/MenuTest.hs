@@ -26,9 +26,8 @@ import Ribosome.Menu.Effect.PromptRenderer (PromptRenderer)
 import Ribosome.Menu.Effect.PromptState (PromptState)
 import Ribosome.Menu.Effect.PromptStream (PromptStream)
 import Ribosome.Menu.Interpreter.MenuConsumer (Mappings, withMappings)
-import Ribosome.Menu.Interpreter.MenuFilter (BoolVal)
 import Ribosome.Menu.Interpreter.MenuRenderer (interpretMenuRendererNull)
-import Ribosome.Menu.Interpreter.MenuState (MenuIOStack, interpretMenuFinal)
+import Ribosome.Menu.Interpreter.MenuState (MenuIOStack, runMenuFinal)
 import Ribosome.Menu.Interpreter.MenuTest (
   MenuTestResources,
   TestTimeout (TestTimeout),
@@ -77,9 +76,8 @@ type MenuTestStack i result =
   MenuIOStack i ++ MenuTestResources i result
 
 runTestMenuWith ::
-  ∀ mono u i a r .
+  ∀ u i a r .
   TimeUnit u =>
-  BoolVal mono =>
   Members MenuTestIOStack r =>
   u ->
   [PromptFlag] ->
@@ -87,7 +85,7 @@ runTestMenuWith ::
 runTestMenuWith timeout flags sem =
   interpretMenuTestResources timeout do
     items <- queueStream
-    interpretMenuFinal @mono (MenuConfig items) flags sem
+    runMenuFinal (MenuConfig items) flags sem
 
 runTestMenu ::
   Members MenuTestIOStack r =>
@@ -95,12 +93,11 @@ runTestMenu ::
   Mappings (MenuTestStack i a ++ r) a ->
   InterpretersFor (MenuConsumer a : MenuTestStack i a) r
 runTestMenu flags maps =
-  runTestMenuWith @'True (Seconds 5) flags . withMappings maps
+  runTestMenuWith (Seconds 5) flags . withMappings maps
 
 runStaticTestMenuWith ::
-  ∀ mono u i a r .
+  ∀ u i a r .
   TimeUnit u =>
-  BoolVal mono =>
   Members MenuTestIOStack r =>
   u ->
   [MenuItem i] ->
@@ -108,7 +105,7 @@ runStaticTestMenuWith ::
   InterpretersFor (MenuTestStack i a) r
 runStaticTestMenuWith timeout items flags sem =
   interpretMenuTestResources timeout do
-    interpretMenuFinal @mono (MenuConfig (Stream.fromList items)) flags sem
+    runMenuFinal (MenuConfig (Stream.fromList items)) flags sem
 
 runStaticTestMenu ::
   Members MenuTestIOStack r =>
@@ -117,7 +114,7 @@ runStaticTestMenu ::
   Mappings (MenuTestStack i a ++ r) a ->
   InterpretersFor (MenuConsumer a : MenuTestStack i a) r
 runStaticTestMenu items flags maps =
-  runStaticTestMenuWith @'True (Seconds 5) items flags . withMappings maps
+  runStaticTestMenuWith (Seconds 5) items flags . withMappings maps
 
 testMenuRender ::
   Show i =>

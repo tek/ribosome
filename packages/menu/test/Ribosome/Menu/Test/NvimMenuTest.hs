@@ -23,11 +23,11 @@ import Ribosome.Menu.Effect.MenuState (MenuState, readCursor, readPrompt, viewMe
 import qualified Ribosome.Menu.Effect.MenuTest as MenuTest
 import Ribosome.Menu.Effect.MenuTest (sendChar, sendCharWait)
 import Ribosome.Menu.Interpreter.MenuConsumer (Mappings, basic, withMappings)
-import Ribosome.Menu.Interpreter.MenuState (interpretMenuFinal)
-import Ribosome.Menu.Interpreter.PromptInput (interpretPromptInputCharList, interpretPromptInputNvim)
+import Ribosome.Menu.Interpreter.MenuState (interpretNvimMenuFinal, runMenu, runNvimMenuFinal)
+import Ribosome.Menu.Interpreter.PromptInput (interpretPromptInputCharList)
 import Ribosome.Menu.Main (menu)
 import Ribosome.Menu.MenuTest (runStaticTestMenu, testStaticNvimMenu)
-import Ribosome.Menu.Nvim (interpretNvimMenu, menuScratch, menuScratchSized)
+import Ribosome.Menu.Nvim (menuScratch, menuScratchSized)
 import Ribosome.Menu.NvimRenderer (computeView, entrySlice)
 import Ribosome.Menu.Prompt.Data.Prompt (Prompt (Prompt), PromptText (PromptText))
 import Ribosome.Menu.Prompt.Data.PromptFlag (PromptFlag (StartInsert))
@@ -73,10 +73,15 @@ mappings =
 
 test_nvimMenuPure :: UnitTest
 test_nvimMenuPure =
-  testEmbed_ $ interpretMenuFinal @'True (MenuConfig (menuItems items)) [StartInsert] $ interpretPromptInputCharList pureChars do
-    result <- resumeTestError @Scratch $ withMappings mappings do
-      interpretNvimMenu $ menu (menuScratchSized 4)
+  testEmbed_ $ interpretNvimMenuFinal $ interpretPromptInputCharList pureChars do
+    result <- resumeTestError @Scratch do
+      runMenu conf flags $ withMappings mappings $ menu (menuScratchSized 4)
     MenuResult.Success "item4" === result
+  where
+    conf =
+      MenuConfig (menuItems items)
+    flags =
+      [StartInsert]
 
 nativeChars :: [Text]
 nativeChars =
@@ -84,19 +89,30 @@ nativeChars =
 
 test_nvimMenuNative :: UnitTest
 test_nvimMenuNative =
-  testEmbed_ $ interpretMenuFinal @'True (MenuConfig (menuItems items)) [StartInsert] $ interpretPromptInputNvim do
-    withPromptInput (Just (MilliSeconds 10)) nativeChars do
-      result <- resumeTestError @Scratch $ withMappings mappings do
-        interpretNvimMenu $ menu (menuScratchSized 4)
+  testEmbed_ $ resumeTestError @Scratch do
+      result <- runNvimMenuFinal conf flags $ withMappings mappings do
+        withPromptInput (Just (MilliSeconds 10)) nativeChars do
+          menu (menuScratchSized 4)
       MenuResult.Success "item4" === result
+  where
+    conf =
+      MenuConfig (menuItems items)
+    flags =
+      [StartInsert]
 
 test_nvimMenuInterrupt :: UnitTest
 test_nvimMenuInterrupt =
-  testEmbed_ $ interpretMenuFinal @'True (MenuConfig (menuItems items)) [StartInsert] $ interpretPromptInputNvim do
-    assertEq MenuResult.Aborted =<< withPromptInput (Just (MilliSeconds 50)) ["<c-c>", "<cr>"] do
-      resumeTestError @Scratch $ basic @() do
-        interpretNvimMenu $ menu def
+  testEmbed_ $ resumeTestError @Scratch do
+    result <- runNvimMenuFinal conf flags $ basic @() do
+      withPromptInput (Just (MilliSeconds 10)) ["i", "<c-c>", "<cr>"] do
+        menu def
+    MenuResult.Aborted === result
     assertEq 1 . length =<< vimGetWindows
+  where
+    conf =
+      MenuConfig (menuItems items)
+    flags =
+      [StartInsert]
 
 returnPrompt ::
   Member (MenuState i) r =>

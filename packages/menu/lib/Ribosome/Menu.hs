@@ -11,6 +11,7 @@ module Ribosome.Menu (
   module Ribosome.Menu.Effect.MenuState,
   module Ribosome.Menu.Effect.MenuStream,
   module Ribosome.Menu.Effect.MenuRenderer,
+  module Ribosome.Menu.Effect.NvimPromptInput,
   module Ribosome.Menu.Effect.PromptControl,
   module Ribosome.Menu.Effect.PromptEvents,
   module Ribosome.Menu.Effect.PromptInput,
@@ -20,6 +21,7 @@ module Ribosome.Menu (
   module Ribosome.Menu.Interpreter.MenuFilter,
   module Ribosome.Menu.Interpreter.MenuState,
   module Ribosome.Menu.Interpreter.MenuStream,
+  module Ribosome.Menu.Interpreter.NvimPromptInput,
   module Ribosome.Menu.Interpreter.PromptControl,
   module Ribosome.Menu.Interpreter.PromptInput,
   module Ribosome.Menu.Interpreter.PromptRenderer,
@@ -72,6 +74,7 @@ import Ribosome.Menu.Effect.MenuState (
   viewMenu,
   )
 import Ribosome.Menu.Effect.MenuStream (MenuStream)
+import Ribosome.Menu.Effect.NvimPromptInput (NvimPromptInput, getChar)
 import Ribosome.Menu.Effect.PromptControl (PromptControl, waitPromptListening, waitPromptQuit)
 import Ribosome.Menu.Effect.PromptEvents (PromptEvents (..))
 import Ribosome.Menu.Effect.PromptInput (PromptInput)
@@ -85,12 +88,13 @@ import Ribosome.Menu.Interpreter.MenuFilter (
   )
 import Ribosome.Menu.Interpreter.MenuState (interpretMenuFinal, interpretMenuState, runMenu)
 import Ribosome.Menu.Interpreter.MenuStream (interpretMenuStream)
+import Ribosome.Menu.Interpreter.NvimPromptInput (interpretNvimPromptInput)
 import Ribosome.Menu.Interpreter.PromptControl (interpretPromptControl)
 import Ribosome.Menu.Interpreter.PromptInput (
   interpretPromptInputCharList,
   interpretPromptInputList,
-  interpretPromptInputNvim,
   interpretPromptInputQueue,
+  nvimPromptInput,
   )
 import Ribosome.Menu.Interpreter.PromptRenderer (interpretPromptRendererNull, interpretPromptRendererNvim)
 import Ribosome.Menu.Interpreter.PromptStream (interpretPromptStream)

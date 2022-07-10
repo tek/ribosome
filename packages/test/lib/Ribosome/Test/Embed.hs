@@ -2,6 +2,7 @@ module Ribosome.Test.Embed where
 
 import Data.Generics.Labels ()
 import Data.MessagePack (Object)
+import Log (Severity (Trace))
 import Polysemy.Test (TestError, UnitTest)
 
 import Ribosome.Data.Mapping (MappingIdent)
@@ -14,6 +15,7 @@ import Ribosome.Effect.Settings (Settings)
 import Ribosome.Embed (HandlerEffects, interpretPluginEmbed, withPluginEmbed)
 import Ribosome.Host.Data.BootError (BootError)
 import Ribosome.Host.Data.HandlerError (HandlerError)
+import Ribosome.Host.Data.HostConfig (setStderr)
 import Ribosome.Host.Data.RpcHandler (Handler, RpcHandler)
 import Ribosome.Host.Effect.Rpc (Rpc)
 import Ribosome.Host.Error (resumeBootError)
@@ -193,9 +195,45 @@ testEmbed ::
 testEmbed =
   testEmbedConf @r def
 
+testEmbedLevel ::
+  ∀ r .
+  HasCallStack =>
+  HigherOrder r EmbedHandlerStack =>
+  Severity ->
+  InterpretersFor r EmbedHandlerStack ->
+  Sem (EmbedStackWith r) () ->
+  UnitTest
+testEmbedLevel level =
+  testEmbedConf @r (def & #plugin . #host %~ setStderr level)
+
+testEmbedTrace ::
+  ∀ r .
+  HasCallStack =>
+  HigherOrder r EmbedHandlerStack =>
+  InterpretersFor r EmbedHandlerStack ->
+  Sem (EmbedStackWith r) () ->
+  UnitTest
+testEmbedTrace =
+  testEmbedLevel @r Trace
+
 testEmbed_ ::
   HasCallStack =>
   Sem EmbedStack () ->
   UnitTest
 testEmbed_ =
   testHandlers_ mempty
+
+testEmbedLevel_ ::
+  HasCallStack =>
+  Severity ->
+  Sem EmbedStack () ->
+  UnitTest
+testEmbedLevel_ level =
+  testEmbedConf @'[] (def & #plugin . #host %~ setStderr level) id
+
+testEmbedTrace_ ::
+  HasCallStack =>
+  Sem EmbedStack () ->
+  UnitTest
+testEmbedTrace_ =
+  testEmbedLevel_ Trace
