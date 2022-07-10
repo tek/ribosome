@@ -7,7 +7,7 @@ import qualified Log
 import Prelude hiding (input, modifyMVar, output)
 
 import Ribosome.Host.Data.Tuple (dup)
-import Ribosome.Host.Effect.MState (MState, ScopedMState, mstate, muse, withMState)
+import Ribosome.Host.Effect.MState (MState, ScopedMState, mmodify, mstate, muse, withMState, mread)
 import Ribosome.Menu.Effect.PromptEvents (PromptEvents, handlePromptEvent)
 import Ribosome.Menu.Effect.PromptState (PromptState (Event, Set))
 import Ribosome.Menu.Prompt.Data.CursorUpdate (CursorUpdate)
@@ -155,9 +155,10 @@ processPromptEvent = \case
   Left (PromptControlEvent.Set (Prompt cursor state (PromptText text))) -> do
     newPrompt <- mstate (dup . modifyPrompt state (CursorUpdate.Index cursor) (TextUpdate.Set text))
     pure (Just (newPrompt, PromptEvent.Edit))
+  Left PromptControlEvent.Render -> do
+    cur <- mread
+    pure (Just (cur, PromptEvent.Edit))
 
--- TODO no good plan for Set yet. since prompt rendering is triggered by the stream that calls Event, based on its
--- return value, calling Set would cause rendering to be delayed until the next Event.
 interpretPromptState ::
   Members [PromptEvents, ScopedMState Prompt, Log] r =>
   [PromptFlag] ->
@@ -167,5 +168,5 @@ interpretPromptState flags =
   reinterpret \case
     Event e ->
       processPromptEvent e
-    Set _ ->
-      undefined
+    Set (Prompt cursor state (PromptText text)) -> do
+      mmodify (modifyPrompt state (CursorUpdate.Index cursor) (TextUpdate.Set text))

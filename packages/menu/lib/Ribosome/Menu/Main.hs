@@ -26,6 +26,8 @@ import Ribosome.Menu.Effect.MenuStream (MenuStream)
 import Ribosome.Menu.Effect.PromptControl (PromptControl, sendControlEvent)
 import Ribosome.Menu.Effect.PromptInput (PromptInput)
 import Ribosome.Menu.Effect.PromptRenderer (PromptRenderer, withPrompt)
+import qualified Ribosome.Menu.Effect.PromptState as PromptState
+import Ribosome.Menu.Effect.PromptState (PromptState)
 import Ribosome.Menu.Effect.PromptStream (PromptStream)
 import Ribosome.Menu.Interpreter.Menu (MenuIOStack, runMenuFinal)
 import Ribosome.Menu.Prompt.Data.Prompt (Prompt)
@@ -57,7 +59,7 @@ eventAction = \case
     MenuAction.Quit (MenuResult.Error msg)
 
 outputAction ::
-  Member PromptControl r =>
+  Members [PromptControl, PromptState] r =>
   MenuAction a ->
   Sem r (Maybe (MenuResult a))
 outputAction = \case
@@ -65,8 +67,9 @@ outputAction = \case
     pure Nothing
   MenuAction.Render ->
     pure Nothing
-  MenuAction.UpdatePrompt prompt ->
-    Nothing <$ sendControlEvent (PromptControlEvent.Set prompt)
+  MenuAction.UpdatePrompt prompt -> do
+    PromptState.set prompt
+    Nothing <$ sendControlEvent PromptControlEvent.Render
   MenuAction.Quit result ->
     Just result <$ sendControlEvent PromptControlEvent.Quit
 
@@ -90,7 +93,7 @@ menuStream ::
   ∀ i r a .
   Show a =>
   Member (MenuStream) r =>
-  Members [MenuState i, PromptControl, MenuRenderer i, MenuConsumer a, MenuFilter, Log] r =>
+  Members [MenuState i, PromptControl, PromptState, MenuRenderer i, MenuConsumer a, MenuFilter, Log] r =>
   SerialT IO (MenuItem i) ->
   SerialT IO (Prompt, PromptEvent) ->
   Sem r (Maybe (MenuResult a))
