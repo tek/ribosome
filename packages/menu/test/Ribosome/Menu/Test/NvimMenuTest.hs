@@ -7,25 +7,20 @@ import Test.Tasty (TestTree, testGroup)
 import Time (MilliSeconds (MilliSeconds))
 
 import Ribosome.Api.Buffer (bufferContent, buflisted)
-import Ribosome.Effect.Scratch (Scratch)
 import Ribosome.Host.Api.Effect (bufferGetName, vimGetBuffers, vimGetWindows)
-import Ribosome.Host.Data.HandlerError (resumeHandlerFail)
 import Ribosome.Menu.Action (menuOk, menuSuccess)
 import Ribosome.Menu.Combinators (sortedEntries)
 import Ribosome.Menu.Data.CursorIndex (CursorIndex (CursorIndex))
 import Ribosome.Menu.Data.Entry (intEntries)
 import Ribosome.Menu.Data.MenuAction (MenuAction)
-import Ribosome.Menu.Data.MenuConfig (MenuConfig (MenuConfig))
 import Ribosome.Menu.Data.MenuItem (MenuItem, simpleMenuItem)
 import qualified Ribosome.Menu.Data.MenuResult as MenuResult
 import Ribosome.Menu.Data.MenuState (MenuWidget)
 import Ribosome.Menu.Data.MenuView (MenuView (MenuView))
-import Ribosome.Menu.Effect.MenuRenderer (NvimRenderer)
 import Ribosome.Menu.Effect.MenuState (MenuState, readCursor, readPrompt, viewMenu)
 import qualified Ribosome.Menu.Effect.MenuTest as MenuTest
 import Ribosome.Menu.Effect.MenuTest (sendChar, sendCharWait)
-import Ribosome.Menu.Effect.PromptRenderer (NvimPrompt)
-import Ribosome.Menu.Interpreter.Menu (interpretNvimMenuFinal, runMenu, runNvimMenuFinal)
+import Ribosome.Menu.Interpreter.Menu (interpretNvimMenuFinal, interpretNvimRenderers, runMenu, runNvimMenuFinal)
 import Ribosome.Menu.Interpreter.MenuConsumer (Mappings, basic, withMappings)
 import Ribosome.Menu.Interpreter.PromptInput (interpretPromptInputCharList)
 import Ribosome.Menu.Main (menu)
@@ -36,7 +31,6 @@ import Ribosome.Menu.Prompt.Data.Prompt (Prompt (Prompt), PromptText (PromptText
 import Ribosome.Menu.Prompt.Data.PromptFlag (PromptFlag (StartInsert))
 import Ribosome.Menu.Prompt.Run (withPromptInput)
 import Ribosome.Test.Embed (testEmbed_)
-import Ribosome.Test.Error (resumeTestError)
 
 staticMenuItems ::
   [Text] ->
@@ -74,51 +68,33 @@ mappings ::
 mappings =
   [("cr", exec)]
 
-test_nvimMenuPure :: UnitTest
-test_nvimMenuPure =
+test_nvimMenuPureInput :: UnitTest
+test_nvimMenuPureInput =
   testEmbed_ $ interpretNvimMenuFinal $ interpretPromptInputCharList pureChars do
-    result <- resumeTestError @Scratch do
-      runMenu conf flags $ withMappings mappings $ resumeTestError @(NvimRenderer _) $ resumeHandlerFail @NvimPrompt do
-        menu (menuScratchSized 4)
+    result <- runMenu (menuItems items) [StartInsert] $ interpretNvimRenderers (menuScratchSized 4) $ withMappings mappings do
+        menu
     MenuResult.Success "item4" === result
-  where
-    conf =
-      MenuConfig (menuItems items)
-    flags =
-      [StartInsert]
 
 nativeChars :: [Text]
 nativeChars =
   ["i", "t", "e", "<esc>", "k", "<c-k>", "k", "<cr>"]
 
-test_nvimMenuNative :: UnitTest
-test_nvimMenuNative =
-  testEmbed_ $ resumeTestError @Scratch do
-      result <- runNvimMenuFinal conf flags $ withMappings mappings do
-        withPromptInput (Just (MilliSeconds 10)) nativeChars do
-          resumeHandlerFail @(NvimRenderer _) $ resumeHandlerFail @NvimPrompt do
-            menu (menuScratchSized 4)
-      MenuResult.Success "item4" === result
-  where
-    conf =
-      MenuConfig (menuItems items)
-    flags =
-      [StartInsert]
+test_nvimMenuNativeInput :: UnitTest
+test_nvimMenuNativeInput =
+  testEmbed_ do
+    result <- runNvimMenuFinal (menuItems items) [StartInsert] (menuScratchSized 4) $ withMappings mappings do
+      withPromptInput (Just (MilliSeconds 10)) nativeChars do
+        menu
+    MenuResult.Success "item4" === result
 
 test_nvimMenuInterrupt :: UnitTest
 test_nvimMenuInterrupt =
-  testEmbed_ $ resumeTestError @Scratch do
-    result <- runNvimMenuFinal conf flags $ basic @() do
+  testEmbed_ do
+    result <- runNvimMenuFinal (menuItems items) [StartInsert] def $ basic @() do
       withPromptInput (Just (MilliSeconds 10)) ["i", "<c-c>", "<cr>"] do
-        resumeHandlerFail @(NvimRenderer _) $ resumeHandlerFail @NvimPrompt do
-          menu def
+        menu
     MenuResult.Aborted === result
     assertEq 1 . length =<< vimGetWindows
-  where
-    conf =
-      MenuConfig (menuItems items)
-    flags =
-      [StartInsert]
 
 returnPrompt ::
   Member (MenuState i) r =>
@@ -211,8 +187,8 @@ test_entrySlice =
 test_nvimMenu :: TestTree
 test_nvimMenu =
   testGroup "nvim menu" [
-    unitTest "pure" test_nvimMenuPure,
-    unitTest "native" test_nvimMenuNative,
+    unitTest "pure" test_nvimMenuPureInput,
+    unitTest "native" test_nvimMenuNativeInput,
     unitTest "interrupt" test_nvimMenuInterrupt,
     unitTest "navigation" test_nvimMenuNav,
     unitTest "close scratch when quitting" test_nvimMenuQuit,

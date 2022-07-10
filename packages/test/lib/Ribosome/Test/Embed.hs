@@ -14,12 +14,12 @@ import Ribosome.Effect.Scratch (Scratch)
 import Ribosome.Effect.Settings (Settings)
 import Ribosome.Embed (HandlerEffects, interpretPluginEmbed, withPluginEmbed)
 import Ribosome.Host.Data.BootError (BootError)
-import Ribosome.Host.Data.HandlerError (HandlerError)
+import Ribosome.Host.Data.HandlerError (HandlerError, mapHandlerError)
 import Ribosome.Host.Data.HostConfig (setStderr)
 import Ribosome.Host.Data.RpcHandler (Handler, RpcHandler)
 import Ribosome.Host.Effect.Rpc (Rpc)
 import Ribosome.Host.Error (resumeBootError)
-import Ribosome.Host.Interpret (HigherOrder)
+import Ribosome.Host.Interpret (HigherOrder, type (|>))
 import qualified Ribosome.Host.Test.Data.TestConfig as Host
 import qualified Ribosome.Host.Test.Run as Host
 import Ribosome.Host.Test.Run (TestConfStack, TestStack, runUnitTest)
@@ -27,9 +27,11 @@ import Ribosome.IOStack (BasicPluginStack)
 import Ribosome.Interpreter.NvimPlugin (interpretNvimPlugin, rpcHandlers)
 import Ribosome.Test.Data.TestConfig (TestConfig (TestConfig))
 import Ribosome.Test.Error (testHandler)
+import Ribosome.Host.Data.RpcError (RpcError)
 
 type TestEffects =
   [
+    Stop RpcError,
     Stop HandlerError,
     Scratch,
     Settings,
@@ -37,13 +39,7 @@ type TestEffects =
   ]
 
 type EmbedEffects =
-  [
-    Stop HandlerError,
-    Scratch,
-    Settings,
-    Rpc,
-    NvimPlugin
-  ]
+  TestEffects |> NvimPlugin
 
 type EmbedHandlerStack =
   HandlerEffects ++ Reader PluginName : TestStack
@@ -98,6 +94,7 @@ testPluginEmbed =
   resumeBootError @Settings .
   resumeBootError @Scratch .
   testHandler .
+  mapHandlerError .
   insertAt @4
 
 testPluginHandlers ::

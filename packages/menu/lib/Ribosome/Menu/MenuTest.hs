@@ -12,7 +12,7 @@ import Ribosome.Effect.Settings (Settings)
 import Ribosome.Host.Data.HandlerError (resumeHandlerFail)
 import Ribosome.Host.Data.RpcError (RpcError)
 import Ribosome.Host.Effect.Rpc (Rpc)
-import Ribosome.Menu.Data.MenuConfig (MenuConfig (MenuConfig))
+import Ribosome.Menu.Data.MenuConfig (MenuConfig)
 import Ribosome.Menu.Data.MenuItem (MenuItem)
 import Ribosome.Menu.Effect.MenuConsumer (MenuConsumer)
 import Ribosome.Menu.Effect.MenuFilter (MenuFilter)
@@ -36,7 +36,7 @@ import Ribosome.Menu.Interpreter.MenuTest (
   interpretMenuTestResources,
   )
 import Ribosome.Menu.Interpreter.PromptRenderer (interpretPromptRendererNull)
-import Ribosome.Menu.Main (menuMain)
+import Ribosome.Menu.Main (menu)
 import Ribosome.Menu.Nvim (interpretNvimMenu)
 import Ribosome.Menu.Prompt.Data.PromptFlag (PromptFlag)
 import Ribosome.Menu.Stream.Util (queueStream)
@@ -86,7 +86,7 @@ runTestMenuWith ::
 runTestMenuWith timeout flags sem =
   interpretMenuTestResources timeout do
     items <- queueStream
-    runMenuFinal (MenuConfig items) flags sem
+    runMenuFinal items flags sem
 
 runTestMenu ::
   Members MenuTestIOStack r =>
@@ -106,7 +106,7 @@ runStaticTestMenuWith ::
   InterpretersFor (MenuTestStack i a) r
 runStaticTestMenuWith timeout items flags sem =
   interpretMenuTestResources timeout do
-    runMenuFinal (MenuConfig (Stream.fromList items)) flags sem
+    runMenuFinal (Stream.fromList items) flags sem
 
 runStaticTestMenu ::
   Members MenuTestIOStack r =>
@@ -126,7 +126,7 @@ testMenuRender ::
   InterpretersFor (MenuTestEffects i result) r
 testMenuRender sem = do
   TestTimeout timeout <- ask
-  resumeHandlerFail $ interpretMenuTest $ withAsync_ (Sync.putWait timeout =<< menuMain) do
+  resumeHandlerFail $ interpretMenuTest $ withAsync_ (Sync.putWait timeout =<< menu) do
     timeout_ (fail "prompt didn't start") timeout waitPromptListening
     insertAt @3 sem
 

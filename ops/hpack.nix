@@ -188,17 +188,14 @@ in {
     synopsis = "Menu widget for Ribosome";
     library.dependencies = [
       "bytestring-trie"
-      "composition"
       "exon"
       "fuzzyfind"
       "generic-lens"
       "microlens-mtl"
       "mtl"
       "polysemy-chronos"
-      "polysemy-conc"
       "ribosome"
       "ribosome-host"
-      "stm-chans"
       "streamly"
       "transformers"
     ];

@@ -18,6 +18,7 @@ import Polysemy.Test (Hedgehog, Test, TestError, UnitTest, assert)
 import Ribosome.Effect.NvimPlugin (NvimPlugin)
 import Ribosome.Effect.Scratch (Scratch)
 import Ribosome.Effect.Settings (Settings)
+import Ribosome.Host.Data.HandlerError (mapHandlerError)
 import Ribosome.Host.Data.NvimSocket (NvimSocket (NvimSocket))
 import Ribosome.Host.Data.RpcHandler (RpcHandler)
 import Ribosome.Host.Effect.Rpc (Rpc)
@@ -92,6 +93,7 @@ testPluginSocket =
   resumeBootError @Settings .
   resumeBootError @Scratch .
   testHandler .
+  mapHandlerError .
   insertAt @4
 
 testPluginSocketTmuxConf ::

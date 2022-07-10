@@ -1,6 +1,8 @@
 module Ribosome.Menu.Interpreter.Menu where
 
 import Conc (PScoped)
+import qualified Streamly.Prelude as Stream
+import Streamly.Prelude (SerialT)
 
 import Ribosome.Data.ScratchId (ScratchId)
 import Ribosome.Data.ScratchOptions (ScratchOptions)
@@ -11,16 +13,17 @@ import Ribosome.Host.Data.RpcError (RpcError)
 import Ribosome.Host.Effect.MState (ScopedMState)
 import Ribosome.Host.Effect.Rpc (Rpc)
 import Ribosome.Host.Interpreter.MState (interpretMStates)
-import Ribosome.Menu.Data.MenuConfig (MenuConfig)
+import Ribosome.Menu.Data.MenuConfig (MenuConfig (MenuConfig))
+import Ribosome.Menu.Data.MenuItem (MenuItem)
 import Ribosome.Menu.Effect.MenuFilter (MenuFilter)
-import Ribosome.Menu.Effect.MenuRenderer (MenuRenderer)
+import Ribosome.Menu.Effect.MenuRenderer (MenuRenderer, withMenuRenderer)
 import Ribosome.Menu.Effect.MenuState (MenuState (..), withMenuState)
 import Ribosome.Menu.Effect.MenuStream (MenuStream)
 import Ribosome.Menu.Effect.NvimPromptInput (NvimPromptInput)
 import Ribosome.Menu.Effect.PromptControl (PromptControl, withPromptControl)
 import Ribosome.Menu.Effect.PromptEvents (PromptEvents)
 import Ribosome.Menu.Effect.PromptInput (PromptInput)
-import Ribosome.Menu.Effect.PromptRenderer (PromptRenderer)
+import Ribosome.Menu.Effect.PromptRenderer (PromptRenderer, withPrompt)
 import Ribosome.Menu.Effect.PromptState (PromptState)
 import Ribosome.Menu.Effect.PromptStream (PromptStream)
 import Ribosome.Menu.Interpreter.MenuFilter (interpretMenuFilterFuzzy)
@@ -34,6 +37,7 @@ import Ribosome.Menu.Interpreter.PromptInput (nvimPromptInput)
 import Ribosome.Menu.Interpreter.PromptRenderer (interpretPromptRendererNvim)
 import Ribosome.Menu.Interpreter.PromptState (interpretPromptState)
 import Ribosome.Menu.Interpreter.PromptStream (interpretPromptStream)
+import Ribosome.Menu.Nvim (ensureSize)
 import Ribosome.Menu.Prompt.Data.Prompt (Prompt)
 import Ribosome.Menu.Prompt.Data.PromptFlag (PromptFlag)
 import Ribosome.Menu.Prompt.Nvim (NvimPromptResources)
@@ -41,8 +45,14 @@ import Ribosome.Menu.Prompt.Nvim (NvimPromptResources)
 type MenuStack i =
   [MenuState i, PromptControl, PromptState, PromptEvents, Reader (MenuConfig i)]
 
+type NvimRenderers i =
+  [
+    PromptRenderer,
+    MenuRenderer i
+  ]
+
 type NvimMenuStack i =
-  PromptInput : MenuStack i
+  NvimRenderers i ++ PromptInput : MenuStack i
 
 type MenuDeps i =
   [
@@ -52,8 +62,18 @@ type MenuDeps i =
     Log
   ]
 
+type ScopedNvimRenderers i =
+  [
+    Scoped NvimPromptResources PromptRenderer !! RpcError,
+    PScoped ScratchOptions ScratchId (MenuRenderer i) !! RpcError
+  ]
+
 type NvimMenuDeps i =
-  NvimPromptInput : MenuDeps i
+  ScopedNvimRenderers i ++ [
+    NvimPromptInput,
+    Stop RpcError
+  ] ++
+  MenuDeps i
 
 type MenusIOEffects =
   [
@@ -80,30 +100,55 @@ type NvimMenuIOEffects i =
   PScoped ScratchOptions ScratchId (MenuRenderer i) !! RpcError : NvimMenusIOEffects
 
 type NvimMenuIOStack i =
-  PromptInput : MenuIOStack i ++ NvimMenuIOEffects i
+  PromptRenderer : MenuRenderer i : PromptInput : MenuIOStack i ++ NvimMenuIOEffects i
 
 runMenu ::
   ∀ i r .
   Members (MenuDeps i) r =>
-  MenuConfig i ->
+  SerialT IO (MenuItem i) ->
   [PromptFlag] ->
   InterpretersFor (MenuStack i) r
 runMenu conf flags =
-  runReader conf .
+  runReader (MenuConfig conf) .
   interpretPromptEventsDefault flags .
   interpretPromptState flags .
   withPromptControl .
   withMenuState
 
+interpretNvimRenderers ::
+  Member (Stop RpcError) r =>
+  Members (ScopedNvimRenderers i) r =>
+  ScratchOptions ->
+  InterpretersFor (NvimRenderers i) r
+interpretNvimRenderers options =
+  restop .
+  withMenuRenderer (ensureSize 1 options) .
+  raiseUnder .
+  restop .
+  withPrompt .
+  raiseUnder
+
 runNvimMenu ::
   ∀ i r .
   Members (NvimMenuDeps i) r =>
-  MenuConfig i ->
+  SerialT IO (MenuItem i) ->
   [PromptFlag] ->
+  ScratchOptions ->
   InterpretersFor (NvimMenuStack i) r
-runNvimMenu conf flags =
-  runMenu conf flags .
-  nvimPromptInput
+runNvimMenu items flags options =
+  runMenu items flags .
+  nvimPromptInput .
+  interpretNvimRenderers options
+
+runStaticNvimMenu ::
+  ∀ i r .
+  Members (NvimMenuDeps i) r =>
+  [MenuItem i] ->
+  [PromptFlag] ->
+  ScratchOptions ->
+  InterpretersFor (NvimMenuStack i) r
+runStaticNvimMenu items flags options =
+  runNvimMenu (Stream.fromList items) flags (ensureSize (length items) options)
 
 interpretMenusFinal ::
   ∀ mres r .
@@ -127,7 +172,7 @@ interpretMenuFinal =
 runMenuFinal ::
   ∀ i mres r .
   Members [Log, Resource, Race, Mask mres, Embed IO, Final IO] r =>
-  MenuConfig i ->
+  SerialT IO (MenuItem i) ->
   [PromptFlag] ->
   InterpretersFor (MenuIOStack i) r
 runMenuFinal conf flags =
@@ -164,15 +209,15 @@ interpretNvimMenuFinal =
 
 runNvimMenuFinal ::
   ∀ i mres r .
-  Members [Rpc !! RpcError, Settings !! SettingError, Scratch !! RpcError] r =>
+  Members [Rpc !! RpcError, Settings !! SettingError, Scratch !! RpcError, Stop RpcError] r =>
   Members [Log, Resource, Race, Mask mres, Embed IO, Final IO] r =>
-  MenuConfig i ->
+  SerialT IO (MenuItem i) ->
   [PromptFlag] ->
+  ScratchOptions ->
   InterpretersFor (NvimMenuIOStack i) r
-runNvimMenuFinal conf flags =
+runNvimMenuFinal conf flags options =
   interpretNvimPromptInput .
   interpretPromptRendererNvim .
   interpretMenuRendererNvim .
   interpretMenuFinal .
-  runMenu conf flags .
-  nvimPromptInput
+  runNvimMenu conf flags options

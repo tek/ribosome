@@ -1,14 +1,11 @@
 module Ribosome.Menu.Main where
 
-import Conc (PScoped)
 import Data.Generics.Labels ()
 import Exon (exon)
 import qualified Polysemy.Log as Log
 import Prelude hiding (consume)
 import Streamly.Prelude (SerialT)
 
-import Ribosome.Data.ScratchOptions (ScratchOptions)
-import Ribosome.Host.Data.RpcError (RpcError)
 import Ribosome.Menu.Data.MenuAction (MenuAction)
 import qualified Ribosome.Menu.Data.MenuAction as MenuAction (MenuAction (..))
 import Ribosome.Menu.Data.MenuConfig (MenuConfig (MenuConfig))
@@ -22,15 +19,15 @@ import qualified Ribosome.Menu.Data.QuitReason as QuitReason
 import Ribosome.Menu.Effect.MenuConsumer (MenuConsumer, menuConsumerEvent)
 import Ribosome.Menu.Effect.MenuFilter (MenuFilter)
 import qualified Ribosome.Menu.Effect.MenuRenderer as MenuRenderer
-import Ribosome.Menu.Effect.MenuRenderer (MenuRenderer, NvimRenderer, withMenuRenderer)
+import Ribosome.Menu.Effect.MenuRenderer (MenuRenderer)
 import Ribosome.Menu.Effect.MenuState (MenuState, readMenu, useItems)
 import qualified Ribosome.Menu.Effect.MenuStream as MenuStream
 import Ribosome.Menu.Effect.MenuStream (MenuStream)
 import Ribosome.Menu.Effect.PromptControl (PromptControl, sendControlEvent)
 import Ribosome.Menu.Effect.PromptInput (PromptInput)
-import Ribosome.Menu.Effect.PromptRenderer (NvimPrompt, PromptRenderer, withPrompt)
+import Ribosome.Menu.Effect.PromptRenderer (PromptRenderer, withPrompt)
 import Ribosome.Menu.Effect.PromptStream (PromptStream)
-import Ribosome.Menu.Interpreter.Menu (MenuIOStack, MenuStack, runMenuFinal)
+import Ribosome.Menu.Interpreter.Menu (MenuIOStack, runMenuFinal)
 import Ribosome.Menu.Prompt.Data.Prompt (Prompt)
 import qualified Ribosome.Menu.Prompt.Data.PromptControlEvent as PromptControlEvent
 import Ribosome.Menu.Prompt.Data.PromptEvent (PromptEvent)
@@ -127,14 +124,14 @@ menuResult = \case
       MenuResult.Aborted -> "user interrupt"
       MenuResult.NoAction -> "no action"
 
-menuMain ::
+menu ::
   Show a =>
   Members PromptStack r =>
   Member (Reader (MenuConfig i)) r =>
   Members [MenuStream, PromptStream, MenuState i, MenuConsumer a, MenuRenderer i, MenuFilter] r =>
   Member Log r =>
   Sem r (MenuResult a)
-menuMain = do
+menu = do
   MenuConfig items <- ask
   promptEvents <- promptEventStream
   menuResult =<< menuStream items promptEvents
@@ -145,32 +142,8 @@ simpleMenu ::
   Members [Log, Mask mres, Resource, Race, Embed IO, Final IO] r =>
   Members [Scoped pres PromptRenderer, PromptInput, MenuRenderer i] r =>
   InterpreterFor (MenuConsumer a) (PromptRenderer : MenuIOStack i ++ r) ->
-  MenuConfig i ->
+  SerialT IO (MenuItem i) ->
   [PromptFlag] ->
   Sem r (MenuResult a)
 simpleMenu consumer config flags =
-  runMenuFinal config flags $ withPrompt $ consumer $ menuMain
-
-menu ::
-  ∀ a i par pres mrres r .
-  Show a =>
-  Members (MenuStack i) r =>
-  Members [MenuStream, PromptStream, MenuFilter, MenuConsumer a, PromptInput, Scoped pres PromptRenderer] r =>
-  Members [PScoped par mrres (MenuRenderer i), Log] r =>
-  par ->
-  Sem r (MenuResult a)
-menu renderParam =
-  withMenuRenderer renderParam $ withPrompt do
-    menuMain
-
-nvimMenu ::
-  ∀ a i r .
-  Show a =>
-  Members (MenuStack i) r =>
-  Members [MenuStream, PromptStream, MenuFilter, MenuConsumer a, PromptInput, Log, Stop RpcError] r =>
-  Members [NvimRenderer i !! RpcError, NvimPrompt !! RpcError] r =>
-  ScratchOptions ->
-  Sem r (MenuResult a)
-nvimMenu renderParam =
-  restop @_ @(NvimRenderer i) $ restop @_ @NvimPrompt do
-    menu renderParam
+  runMenuFinal config flags $ withPrompt $ consumer menu
