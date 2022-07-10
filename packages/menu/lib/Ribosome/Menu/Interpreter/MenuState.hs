@@ -147,12 +147,14 @@ type MenuIOEffects i =
 type MenuIOStack i =
   MenuStack i ++ MenuIOEffects i
 
-type NvimMenuIOEffects i =
+type NvimMenusIOEffects =
   [
-    PScoped ScratchOptions ScratchId (MenuRenderer i),
     Scoped NvimPromptResources PromptRenderer,
     NvimPromptInput
   ]
+
+type NvimMenuIOEffects i =
+  PScoped ScratchOptions ScratchId (MenuRenderer i) : NvimMenusIOEffects
 
 type NvimMenuIOStack i =
   PromptInput : MenuIOStack i ++ NvimMenuIOEffects i
@@ -218,6 +220,16 @@ interpretNvimMenuIOEffects =
   interpretNvimPromptInput .
   interpretPromptRendererNvim .
   interpretMenuRendererNvim
+
+interpretNvimMenusFinal ::
+  ∀ mres r .
+  Members [Settings !! SettingError, Scratch] r =>
+  Members [Rpc, Rpc !! RpcError, Log, Resource, Race, Mask mres, Embed IO, Final IO] r =>
+  InterpretersFor (MenusIOEffects ++ NvimMenusIOEffects) r
+interpretNvimMenusFinal =
+  interpretNvimPromptInput .
+  interpretPromptRendererNvim .
+  interpretMenusFinal
 
 interpretNvimMenuFinal ::
   ∀ i mres r .
