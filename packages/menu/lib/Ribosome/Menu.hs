@@ -88,7 +88,7 @@ import Ribosome.Menu.Interpreter.MenuFilter (
   interpretMenuFilterFuzzy,
   interpretMenuFilterSubstring,
   )
-import Ribosome.Menu.Interpreter.MenuState (interpretMenuFinal, interpretMenuState, runMenu)
+import Ribosome.Menu.Interpreter.MenuState (interpretMenuState, interpretMenuStateDeps, interpretMenuStates)
 import Ribosome.Menu.Interpreter.MenuStream (interpretMenuStream)
 import Ribosome.Menu.Interpreter.NvimPromptInput (interpretNvimPromptInput)
 import Ribosome.Menu.Interpreter.PromptControl (interpretPromptControl)
