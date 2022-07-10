@@ -132,15 +132,17 @@ interpretMenuStates =
 type MenuStack i =
   [MenuState i, PromptControl, PromptState, PromptEvents, Reader (MenuConfig i)]
 
-type MenuIOEffects i =
+type MenusIOEffects =
   [
     MenuStream,
     PromptStream,
     MenuFilter,
     Scoped () PromptControl,
-    Scoped () (MenuState i),
     ScopedMState Prompt
   ]
+
+type MenuIOEffects i =
+  Scoped () (MenuState i) : MenusIOEffects
 
 type MenuIOStack i =
   MenuStack i ++ MenuIOEffects i
@@ -178,17 +180,24 @@ runNvimMenu conf flags =
   runMenu conf flags .
   nvimPromptInput
 
+interpretMenusFinal ::
+  ∀ mres r .
+  Members [Log, Resource, Race, Mask mres, Embed IO, Final IO] r =>
+  InterpretersFor (MenusIOEffects) r
+interpretMenusFinal =
+  interpretMStates .
+  interpretPromptControl .
+  interpretMenuFilterFuzzy @'True .
+  interpretPromptStream .
+  interpretMenuStream
+
 interpretMenuFinal ::
   ∀ i mres r .
   Members [Log, Resource, Race, Mask mres, Embed IO, Final IO] r =>
   InterpretersFor (MenuIOEffects i) r
 interpretMenuFinal =
-  interpretMStates .
-  interpretMenuStates .
-  interpretPromptControl .
-  interpretMenuFilterFuzzy @'True .
-  interpretPromptStream .
-  interpretMenuStream
+  interpretMenusFinal .
+  interpretMenuStates
 
 runMenuFinal ::
   ∀ i mres r .
