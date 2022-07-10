@@ -204,7 +204,6 @@ in {
         "hedgehog"
         "microlens-mtl"
         "polysemy-chronos"
-        "polysemy-conc"
         "polysemy-test"
         "ribosome"
         "ribosome-host"

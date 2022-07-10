@@ -1,4 +1,5 @@
 module Ribosome.Menu (
+  NvimMenu,
   module Ribosome.Menu.Action,
   module Ribosome.Menu.Data.MenuAction,
   module Ribosome.Menu.Data.MenuEvent,
@@ -132,3 +133,10 @@ import Ribosome.Menu.Prompt.Data.PromptListening
 import Ribosome.Menu.Prompt.Data.PromptMode (PromptMode (..))
 import Ribosome.Menu.Prompt.Data.PromptQuit
 import Ribosome.Menu.Prompt.Run (pristinePrompt, promptEventStream, withPromptInput)
+
+type NvimMenu i =
+  [
+    PromptStream,
+    MenuFilter,
+    MenuStream
+  ] ++ NvimMenuDeps i

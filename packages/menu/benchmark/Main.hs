@@ -24,7 +24,8 @@ import Ribosome.Menu.Data.MenuResult (MenuResult)
 import Ribosome.Menu.Data.MenuState (semState)
 import Ribosome.Menu.Effect.MenuState (readMenu, useItems)
 import qualified Ribosome.Menu.Effect.MenuStream as MenuStream
-import Ribosome.Menu.Interpreter.MenuFilter (interpretMenuFilterFuzzyMonotonic)
+import Ribosome.Menu.Effect.PromptControl (withPromptControl)
+import Ribosome.Menu.Interpreter.MenuFilter (interpretMenuFilterFuzzy)
 import Ribosome.Menu.Interpreter.MenuState (interpretMenuState)
 import Ribosome.Menu.Interpreter.MenuStream (interpretMenuStream)
 import Ribosome.Menu.Interpreter.PromptControl (interpretPromptControl)
@@ -122,7 +123,8 @@ appendBench files =
   runInputListAtomic events $
   interpretQueueTBM 64 $
   interpretPromptControl $
-  interpretMenuFilterFuzzyMonotonic $
+  withPromptControl $
+  interpretMenuFilterFuzzy @'True $
   interpretMenuState $
   interpretMenuStream do
     pe <- promptEvents

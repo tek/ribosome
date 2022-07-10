@@ -265,7 +265,6 @@ test-suite ribosome-menu-unit
     , microlens-mtl
     , polysemy
     , polysemy-chronos
-    , polysemy-conc
     , polysemy-plugin
     , polysemy-test
     , prelate >=0.1
