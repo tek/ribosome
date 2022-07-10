@@ -124,7 +124,7 @@ import Ribosome.Menu.Items (
   withSelection',
   withSelectionItems,
   )
-import Ribosome.Menu.Main (menu, menuMain, simpleMenu)
+import Ribosome.Menu.Main (menu, menuMain, nvimMenu, simpleMenu)
 import Ribosome.Menu.Nvim (interpretNvimMenu, nvimMenu, nvimMenuWith, staticNvimMenu, staticNvimMenuWith)
 import Ribosome.Menu.Prompt.Data.Prompt (Prompt (Prompt), PromptText (PromptText))
 import Ribosome.Menu.Prompt.Data.PromptFlag

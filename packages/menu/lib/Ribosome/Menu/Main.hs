@@ -7,6 +7,8 @@ import qualified Polysemy.Log as Log
 import Prelude hiding (consume)
 import Streamly.Prelude (SerialT)
 
+import Ribosome.Data.ScratchOptions (ScratchOptions)
+import Ribosome.Host.Data.RpcError (RpcError)
 import Ribosome.Menu.Data.MenuAction (MenuAction)
 import qualified Ribosome.Menu.Data.MenuAction as MenuAction (MenuAction (..))
 import Ribosome.Menu.Data.MenuConfig (MenuConfig (MenuConfig))
@@ -20,13 +22,13 @@ import qualified Ribosome.Menu.Data.QuitReason as QuitReason
 import Ribosome.Menu.Effect.MenuConsumer (MenuConsumer, menuConsumerEvent)
 import Ribosome.Menu.Effect.MenuFilter (MenuFilter)
 import qualified Ribosome.Menu.Effect.MenuRenderer as MenuRenderer
-import Ribosome.Menu.Effect.MenuRenderer (MenuRenderer, withMenuRenderer)
+import Ribosome.Menu.Effect.MenuRenderer (MenuRenderer, NvimRenderer, withMenuRenderer)
 import Ribosome.Menu.Effect.MenuState (MenuState, readMenu, useItems)
 import qualified Ribosome.Menu.Effect.MenuStream as MenuStream
 import Ribosome.Menu.Effect.MenuStream (MenuStream)
 import Ribosome.Menu.Effect.PromptControl (PromptControl, sendControlEvent)
 import Ribosome.Menu.Effect.PromptInput (PromptInput)
-import Ribosome.Menu.Effect.PromptRenderer (PromptRenderer, withPrompt)
+import Ribosome.Menu.Effect.PromptRenderer (NvimPrompt, PromptRenderer, withPrompt)
 import Ribosome.Menu.Effect.PromptStream (PromptStream)
 import Ribosome.Menu.Interpreter.Menu (MenuIOStack, MenuStack, runMenuFinal)
 import Ribosome.Menu.Prompt.Data.Prompt (Prompt)
@@ -160,3 +162,15 @@ menu ::
 menu renderParam =
   withMenuRenderer renderParam $ withPrompt do
     menuMain
+
+nvimMenu ::
+  ∀ a i r .
+  Show a =>
+  Members (MenuStack i) r =>
+  Members [MenuStream, PromptStream, MenuFilter, MenuConsumer a, PromptInput, Log, Stop RpcError] r =>
+  Members [NvimRenderer i !! RpcError, NvimPrompt !! RpcError] r =>
+  ScratchOptions ->
+  Sem r (MenuResult a)
+nvimMenu renderParam =
+  restop @_ @(NvimRenderer i) $ restop @_ @NvimPrompt do
+    menu renderParam
