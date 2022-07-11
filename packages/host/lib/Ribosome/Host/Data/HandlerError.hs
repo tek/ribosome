@@ -1,6 +1,8 @@
 module Ribosome.Host.Data.HandlerError where
 
 import Exon (exon)
+import Fcf (Pure1, type (@@))
+import Fcf.Class.Functor (FMap)
 import Polysemy.Log (Severity (Error))
 import Prelude hiding (tag)
 import Text.Show (showParen, showsPrec)
@@ -127,6 +129,24 @@ mapHandlerError ::
 mapHandlerError =
   mapHandlerErrorFrom GlobalTag
 
+type Stops errs =
+  FMap (Pure1 Stop) Fcf.@@ errs
+
+class MapHandlerErrors (errs :: [Type]) (r :: EffectRow) where
+  mapHandlerErrors :: InterpretersFor (Stops errs) r
+
+instance MapHandlerErrors '[] r where
+  mapHandlerErrors =
+    id
+
+instance (
+    ToErrorMessage err,
+    MapHandlerErrors errs r,
+    Member (Stop HandlerError) (Stops errs ++ r)
+  ) => MapHandlerErrors (err : errs) r where
+    mapHandlerErrors =
+      mapHandlerErrors @errs . mapHandlerError @err
+
 resumeHandlerErrorFrom ::
   ∀ eff e r a .
   ToErrorMessage e =>
@@ -145,6 +165,21 @@ resumeHandlerError ::
   Sem r a
 resumeHandlerError =
   resumeHandlerErrorFrom GlobalTag
+
+class ResumeHandlerErrors (effs :: EffectRow) (errs :: [Type]) (r :: EffectRow) where
+  resumeHandlerErrors :: InterpretersFor effs r
+
+instance ResumeHandlerErrors '[] '[] r where
+  resumeHandlerErrors =
+    id
+
+instance (
+    ToErrorMessage err,
+    ResumeHandlerErrors effs errs r,
+    Members [eff !! err, Stop HandlerError] (effs ++ r)
+  ) => ResumeHandlerErrors (eff : effs) (err : errs) r where
+    resumeHandlerErrors =
+      resumeHandlerErrors @effs @errs . resumeHandlerError @eff @err
 
 handlerErrorMessage :: HandlerError -> Text
 handlerErrorMessage (HandlerError (ErrorMessage user log _) htag) =

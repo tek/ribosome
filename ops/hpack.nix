@@ -82,6 +82,7 @@ in {
       "cereal"
       "chronos"
       "exon"
+      "first-class-families"
       "flatparse"
       "generics-sop"
       "messagepack"
