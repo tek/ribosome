@@ -46,6 +46,13 @@ interpretNvimPromptInputList waitExhausted events =
       void Sync.block
       pureT . unify =<< race (InputEvent.Interrupt <$ runTSimple waitQuit) takePromptInputAtomic
 
+promptInputEvents ::
+  Members [EventConsumer res MenuEvent, ChronosTime, Resource, Race, Async, Embed IO] r =>
+  [InputEvent] ->
+  InterpreterFor NvimPromptInput r
+promptInputEvents =
+  interpretNvimPromptInputList True
+
 interpretNvimPromptInputCharList ::
   Members [EventConsumer res MenuEvent, ChronosTime, Resource, Race, Async, Embed IO] r =>
   Bool ->
@@ -53,6 +60,13 @@ interpretNvimPromptInputCharList ::
   InterpreterFor NvimPromptInput r
 interpretNvimPromptInputCharList waitExhausted cs =
   interpretNvimPromptInputList waitExhausted (InputEvent.Character <$> cs)
+
+promptInput ::
+  Members [EventConsumer res MenuEvent, ChronosTime, Resource, Race, Async, Embed IO] r =>
+  [Text] ->
+  InterpreterFor NvimPromptInput r
+promptInput =
+  interpretNvimPromptInputCharList True
 
 quitChar :: Char
 quitChar =

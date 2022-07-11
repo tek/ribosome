@@ -95,6 +95,8 @@ import Ribosome.Menu.Interpreter.NvimPromptInput (
   interpretNvimPromptInput,
   interpretNvimPromptInputCharList,
   interpretNvimPromptInputList,
+  promptInputEvents,
+  promptInput,
   )
 import Ribosome.Menu.Interpreter.PromptControl (interpretPromptControl)
 import Ribosome.Menu.Interpreter.PromptInput (

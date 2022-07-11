@@ -22,7 +22,7 @@ import qualified Ribosome.Menu.Effect.MenuTest as MenuTest
 import Ribosome.Menu.Effect.MenuTest (sendChar, sendCharWait)
 import Ribosome.Menu.Interpreter.Menu (interpretNvimMenuFinal, runNvimMenu, runNvimMenuFinal)
 import Ribosome.Menu.Interpreter.MenuConsumer (Mappings, basic, withMappings)
-import Ribosome.Menu.Interpreter.NvimPromptInput (interpretNvimPromptInputCharList)
+import Ribosome.Menu.Interpreter.NvimPromptInput (promptInput)
 import Ribosome.Menu.Main (menu)
 import Ribosome.Menu.MenuTest (runStaticTestMenu, testStaticNvimMenu)
 import Ribosome.Menu.Nvim (menuScratch, menuScratchSized)
@@ -70,7 +70,7 @@ mappings =
 
 test_nvimMenuPureInput :: UnitTest
 test_nvimMenuPureInput =
-  testEmbed_ $ interpretNvimMenuFinal $ interpretNvimPromptInputCharList True pureChars do
+  testEmbed_ $ interpretNvimMenuFinal $ promptInput pureChars do
     result <- runNvimMenu (menuItems items) [StartInsert] (menuScratchSized 4) $ withMappings mappings do
       menu
     MenuResult.Success "item4" === result
