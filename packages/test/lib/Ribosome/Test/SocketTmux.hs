@@ -18,7 +18,6 @@ import Polysemy.Test (Hedgehog, Test, TestError, UnitTest, assert)
 import Ribosome.Effect.NvimPlugin (NvimPlugin)
 import Ribosome.Effect.Scratch (Scratch)
 import Ribosome.Effect.Settings (Settings)
-import Ribosome.Host.Data.HandlerError (mapHandlerError)
 import Ribosome.Host.Data.NvimSocket (NvimSocket (NvimSocket))
 import Ribosome.Host.Data.RpcHandler (RpcHandler)
 import Ribosome.Host.Effect.Rpc (Rpc)
@@ -29,7 +28,7 @@ import Ribosome.Path (pathText)
 import Ribosome.Socket (SocketHandlerEffects, interpretPluginSocket, withPluginSocket)
 import Ribosome.Test.Data.TestConfig (TmuxTestConfig)
 import Ribosome.Test.Embed (EmbedEffects, TestEffects)
-import Ribosome.Test.Error (testHandler)
+import Ribosome.Test.Error (testError, testHandler)
 import Ribosome.Test.TmuxCommon (TmuxStack, runTmuxNvim)
 import Ribosome.Test.Wait (assertWait)
 
@@ -92,8 +91,8 @@ testPluginSocket =
   resumeBootError @Rpc .
   resumeBootError @Settings .
   resumeBootError @Scratch .
+  testError .
   testHandler .
-  mapHandlerError .
   insertAt @4
 
 testPluginSocketTmuxConf ::
