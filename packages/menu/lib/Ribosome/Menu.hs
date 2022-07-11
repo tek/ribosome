@@ -20,6 +20,7 @@ module Ribosome.Menu (
   module Ribosome.Menu.Interpreter.Menu,
   module Ribosome.Menu.Interpreter.MenuConsumer,
   module Ribosome.Menu.Interpreter.MenuFilter,
+  module Ribosome.Menu.Interpreter.MenuRenderer,
   module Ribosome.Menu.Interpreter.MenuState,
   module Ribosome.Menu.Interpreter.MenuStream,
   module Ribosome.Menu.Interpreter.NvimPromptInput,
@@ -89,14 +90,15 @@ import Ribosome.Menu.Interpreter.MenuFilter (
   interpretMenuFilterFuzzy,
   interpretMenuFilterSubstring,
   )
+import Ribosome.Menu.Interpreter.MenuRenderer (interpretMenuRendererNull, interpretMenuRendererNvim)
 import Ribosome.Menu.Interpreter.MenuState (interpretMenuState, interpretMenuStateDeps, interpretMenuStates)
 import Ribosome.Menu.Interpreter.MenuStream (interpretMenuStream)
 import Ribosome.Menu.Interpreter.NvimPromptInput (
   interpretNvimPromptInput,
   interpretNvimPromptInputCharList,
   interpretNvimPromptInputList,
-  promptInputEvents,
   promptInput,
+  promptInputEvents,
   )
 import Ribosome.Menu.Interpreter.PromptControl (interpretPromptControl)
 import Ribosome.Menu.Interpreter.PromptInput (
