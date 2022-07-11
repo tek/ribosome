@@ -195,3 +195,20 @@ currentBufferPath ::
   Sem r (Maybe (Path Abs File))
 currentBufferPath =
   bufferPath =<< nvimGetCurrentBuf
+
+filterListed ::
+  Member Rpc r =>
+  [Buffer] ->
+  Sem r [Buffer]
+filterListed bufs = do
+  nums <- Rpc.sync (traverse Data.bufferGetNumber bufs)
+  listedFlags <- Rpc.sync (traverse (Data.nvimCallFunction "buflisted" . pure . toMsgpack) nums)
+  let listed = mapMaybe chooseListed (zip bufs listedFlags)
+  buftypes :: [Text] <- Rpc.sync (traverse (\ buf -> Data.bufferGetOption buf "buftype") listed)
+  pure (mapMaybe chooseEmptyTypes (zip bufs buftypes))
+  where
+    chooseListed (b, l) =
+      if l then Just b else Nothing
+    chooseEmptyTypes = \case
+      (b, "") -> Just b
+      (_, _) -> Nothing
