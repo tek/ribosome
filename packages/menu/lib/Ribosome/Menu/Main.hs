@@ -24,16 +24,12 @@ import Ribosome.Menu.Effect.MenuState (MenuState, readMenu, useItems)
 import qualified Ribosome.Menu.Effect.MenuStream as MenuStream
 import Ribosome.Menu.Effect.MenuStream (MenuStream)
 import Ribosome.Menu.Effect.PromptControl (PromptControl, sendControlEvent)
-import Ribosome.Menu.Effect.PromptInput (PromptInput)
-import Ribosome.Menu.Effect.PromptRenderer (PromptRenderer, withPrompt)
 import qualified Ribosome.Menu.Effect.PromptState as PromptState
 import Ribosome.Menu.Effect.PromptState (PromptState)
 import Ribosome.Menu.Effect.PromptStream (PromptStream)
-import Ribosome.Menu.Interpreter.Menu (MenuIOStack, runMenuFinal)
 import Ribosome.Menu.Prompt.Data.Prompt (Prompt)
 import qualified Ribosome.Menu.Prompt.Data.PromptControlEvent as PromptControlEvent
 import Ribosome.Menu.Prompt.Data.PromptEvent (PromptEvent)
-import Ribosome.Menu.Prompt.Data.PromptFlag (PromptFlag)
 import Ribosome.Menu.Prompt.Run (PromptStack, promptEventStream)
 import Ribosome.Menu.UpdateState (insertItems, queryUpdate, setPromptAndClassify)
 
@@ -140,15 +136,3 @@ menu = do
   MenuConfig items <- ask
   promptEvents <- promptEventStream
   menuResult =<< menuStream items promptEvents
-
-simpleMenu ::
-  ∀ mres pres eres i a r .
-  Show a =>
-  Members [Log, Mask mres, Resource, Race, Async, Embed IO, Final IO] r =>
-  Members [Scoped pres PromptRenderer, PromptInput, MenuRenderer i, Events eres MenuEvent] r =>
-  InterpreterFor (MenuConsumer a) (PromptRenderer : MenuIOStack i ++ r) ->
-  SerialT IO (MenuItem i) ->
-  [PromptFlag] ->
-  Sem r (MenuResult a)
-simpleMenu consumer config flags =
-  runMenuFinal config flags $ withPrompt $ consumer menu

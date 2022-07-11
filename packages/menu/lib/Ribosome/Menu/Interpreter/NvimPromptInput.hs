@@ -44,7 +44,7 @@ interpretNvimPromptInputList waitExhausted events =
   reinterpret2H \case
     GetChar waitQuit -> do
       void Sync.block
-      pureT . unify =<< race (InputEvent.Interrupt <$ runTSimple waitQuit) (takePromptInputAtomic)
+      pureT . unify =<< race (InputEvent.Interrupt <$ runTSimple waitQuit) takePromptInputAtomic
 
 interpretNvimPromptInputCharList ::
   Members [EventConsumer res MenuEvent, ChronosTime, Resource, Race, Async, Embed IO] r =>
