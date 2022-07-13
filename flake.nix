@@ -67,5 +67,9 @@
         description = "A Neovim plugin built with Ribosome";
       };
     };
+
+    lib = hix.lib.extend (_: super: {
+      modules = ms: super.modules (hix.inputs.nixpkgs.lib.toList ms ++ [./ops/hix.nix]);
+    });
   };
 }
