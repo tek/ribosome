@@ -1,38 +1,27 @@
 module Ribosome.Cli where
 
 import Exon (exon)
-import Log (Severity, parseSeverity)
-import Options.Applicative (Parser, ReadM, option, readerError, customExecParser, info, helper, prefs, showHelpOnEmpty, showHelpOnError, fullDesc, header, long)
-import Options.Applicative.Types (readerAsk)
-import Path (Abs, Dir, File, Path, SomeBase (Abs, Rel), parseSomeFile, (</>))
+import Options.Applicative (
+  Parser,
+  customExecParser,
+  fullDesc,
+  header,
+  helper,
+  info,
+  long,
+  option,
+  prefs,
+  showHelpOnEmpty,
+  showHelpOnError,
+  )
+import Path (Abs, Dir, Path)
 import Path.IO (getCurrentDir)
 
+import Ribosome.CliParser (filePathOption, severityOption)
 import Ribosome.Data.CliConfig (CliConfig (CliConfig), CliLogConfig (CliLogConfig))
 import Ribosome.Data.PluginConfig (PluginConfig (PluginConfig, name))
 import Ribosome.Data.PluginName (PluginName (PluginName))
-import Ribosome.Host.Data.HostConfig (LogConfig(LogConfig), HostConfig (HostConfig))
-
-somePath ::
-  Path Abs Dir ->
-  SomeBase t ->
-  Path Abs t
-somePath cwd = \case
-  Abs p ->
-    p
-  Rel p ->
-    cwd </> p
-
-severityOption :: ReadM Severity
-severityOption = do
-  raw <- readerAsk
-  maybe (readerError [exon|invalid log level: #{raw}|]) pure (parseSeverity (toText raw))
-
-filePathOption ::
-  Path Abs Dir ->
-  ReadM (Path Abs File)
-filePathOption cwd = do
-  raw <- readerAsk
-  either (const (readerError [exon|not a valid file path: #{show raw}|])) (pure . somePath cwd) (parseSomeFile raw)
+import Ribosome.Host.Data.HostConfig (HostConfig (HostConfig), LogConfig (LogConfig))
 
 logParser ::
   Path Abs Dir ->

@@ -1,7 +1,7 @@
 module Ribosome.Text where
 
 import Data.Char (toUpper)
-import qualified Data.Text as Text (concatMap, cons, singleton, uncons)
+import qualified Data.Text as Text
 
 escapeQuote :: Char -> Text
 escapeQuote = \case

@@ -63,10 +63,10 @@ let
     default-extensions = config.ghci.extensions;
   };
 
-  exe = name: dir: merge (paths name // {
+  exe = pkg: dir: merge (paths pkg // {
     main = "Main.hs";
     source-dirs = dir;
-    inherit dependencies;
+    dependencies = dependencies ++ [pkg];
     ghc-options = [
       "-threaded"
       "-rtsopts"
@@ -79,6 +79,7 @@ in {
   ribosome-host = merge (project "ribosome-host" "Ribosome-Host") {
     synopsis = "Neovim plugin host for Polysemy";
     library.dependencies = [
+      "casing"
       "cereal"
       "chronos"
       "exon"
@@ -108,7 +109,6 @@ in {
         "polysemy-chronos"
         "polysemy-conc"
         "polysemy-test"
-        "ribosome-host"
         "tasty"
       ];
     };
@@ -137,21 +137,27 @@ in {
       "path-io"
       "polysemy-chronos"
       "prettyprinter"
+      "rainbow"
       "ribosome-host"
     ];
     tests.ribosome-unit = exe "ribosome" "test" {
       dependencies = [
         "aeson"
+        "chronos"
         "exon"
         "hedgehog"
         "messagepack"
         "path"
-        "ribosome"
         "ribosome-host"
         "ribosome-host-test"
         "polysemy-conc"
         "polysemy-test"
         "tasty"
+      ];
+    };
+    executables.ribosome = exe "ribosome" "app" {
+      dependencies = [
+        "optparse-applicative"
       ];
     };
   };
@@ -179,7 +185,6 @@ in {
         "polysemy-test"
         "ribosome"
         "ribosome-host"
-        "ribosome-test"
         "tasty"
       ];
     };
@@ -209,7 +214,6 @@ in {
         "ribosome"
         "ribosome-host"
         "ribosome-host-test"
-        "ribosome-menu"
         "ribosome-test"
         "streamly"
         "tasty"
@@ -223,7 +227,6 @@ in {
         "exon"
         "microlens"
         "ribosome"
-        "ribosome-menu"
         "path"
         "polysemy-conc"
         "polysemy-test"
@@ -244,7 +247,6 @@ in {
       dependencies = [
         "exon"
         "hedgehog"
-        "integration"
         "ribosome"
         "ribosome-host"
         "ribosome-host-test"

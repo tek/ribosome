@@ -59,6 +59,7 @@
       extensions = ["StandaloneKindSignatures" "OverloadedLabels"];
     };
     compat.enable = false;
+    outputs.apps = import ./ops/template-apps.nix { inherit self config lib; };
   }) // {
     templates = rec {
       default = plugin;
@@ -69,7 +70,7 @@
     };
 
     lib = hix.lib.extend (_: super: {
-      modules = ms: super.modules (hix.inputs.nixpkgs.lib.toList ms ++ [./ops/hix.nix]);
+      modules = ms: super.modules (hix.inputs.nixpkgs.lib.toList ms ++ [./ops/api.nix]);
     });
   };
 }
