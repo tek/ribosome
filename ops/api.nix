@@ -13,6 +13,12 @@ in {
       description = "The name of the package building the Neovim plugin's executable.";
     };
 
+    branch = mkOption {
+      type = str;
+      description = "The name of the main branch.";
+      default = "master";
+    };
+
     githubOrg = mkOption {
       type = nullOr str;
       description = ''

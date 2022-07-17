@@ -21,9 +21,11 @@ let
     then ""
     else "--cachix-key ${config.cachixKey}";
 
+  branch = "--branch ${config.branch}";
+
   script = config.pkgs.writeScript "ribosome-regen-boot" ''
     #!${config.pkgs.zsh}/bin/zsh
-    nix run path:${self}#ribosome -- boot ${config.exe} ${githubOrg} ${githubRepo} ${cachixName} ${cachixKey} "$@"
+    nix run path:${self}#ribosome -- boot ${config.exe} ${githubOrg} ${githubRepo} ${cachixName} ${cachixKey} ${branch} "$@"
   '';
 
 in script
