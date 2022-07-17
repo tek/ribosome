@@ -1,4 +1,4 @@
-{ config, lib, ... }:
+self: { config, lib, ... }:
 with lib;
 let
   overrides = { self, hsLib, ... }: {
@@ -18,6 +18,7 @@ in {
       description = ''
         The Github organization, used for generating the download link for the binary.
       '';
+      default = null;
     };
 
     githubRepo = mkOption {
@@ -26,6 +27,23 @@ in {
         The Github repository name, used for generating the download link for the binary.
         Defaults to the main executable name.
       '';
+    };
+
+    cachixName = mkOption {
+      type = nullOr str;
+      description = ''
+        The name of a Cachix cache to use, for minimizing build times in Github Actions as well as for users building
+        with Nix.
+      '';
+      default = null;
+    };
+
+    cachixKey = mkOption {
+      type = nullOr str;
+      description = ''
+        The public key for the Cachix cache, if used.
+      '';
+      default = null;
     };
 
   };
@@ -41,6 +59,11 @@ in {
     };
 
     output.extraPackages = ["static"];
+
+    outputs.apps.boot = {
+      type = "app";
+      program = "${import ./boot.nix {inherit self config; }}";
+    };
 
   };
 }

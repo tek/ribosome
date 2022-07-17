@@ -43,10 +43,11 @@ newProjectTemplates ::
   Maintainer ->
   Year ->
   Maybe Github ->
+  Maybe Cachix ->
   TemplateTree
-newProjectTemplates ProjectNames {..} flakeUrl author maintainer year github =
+newProjectTemplates ProjectNames {..} flakeUrl author maintainer year github cachix =
   TDir [reldir|.|] [
-    TFile [relfile|flake.nix|] (flakeNix flakeUrl name),
+    TFile [relfile|flake.nix|] (flakeNix flakeUrl name github cachix),
     TFile [relfile|readme.md|] (readmeMd name github),
     TDir [reldir|packages|] [
       TDir nameDir [

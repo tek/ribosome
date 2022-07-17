@@ -41,4 +41,7 @@ test_newProject =
       }
     targetAction <- Test.fixtureLines [relfile|new-project/action.yml|]
     generatedAction <- Test.tempFileContent [relfile|new-project/.github/workflows/latest.yml|]
-    targetAction === (Text.lines generatedAction)
+    targetAction === Text.lines generatedAction
+    targetFlake <- Test.fixtureLines [relfile|new-project/flake.nix|]
+    generatedFlake <- Test.tempFileContent [relfile|new-project/flake.nix|]
+    targetFlake === Text.lines generatedFlake

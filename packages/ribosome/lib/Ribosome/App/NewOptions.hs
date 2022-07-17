@@ -12,7 +12,7 @@ import Ribosome.App.UserInput (askRequired)
 
 defaultFlakeUrl :: FlakeUrl
 defaultFlakeUrl =
-  "git+https://git.tryp.io/tek/ribosome?ref=polysemy"
+  "git+https://git.tryp.io/tek/ribosome"
 
 parseDir ::
   ToText a =>

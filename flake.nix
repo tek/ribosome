@@ -4,7 +4,7 @@
   inputs = {
     hix.url = git+https://git.tryp.io/tek/hix;
     chiasma.url = git+https://git.tryp.io/tek/chiasma?ref=main;
-    polysemy-conc.url = github:tek/polysemy-conc;
+    polysemy-conc.url = git+https://git.tryp.io/tek/polysemy-conc;
     prelate.url = git+https://git.tryp.io/tek/prelate;
   };
 
@@ -70,7 +70,7 @@
     };
 
     lib = hix.lib.extend (_: super: {
-      modules = ms: super.modules (hix.inputs.nixpkgs.lib.toList ms ++ [./ops/api.nix]);
+      modules = ms: super.modules (hix.inputs.nixpkgs.lib.toList ms ++ [(import ./ops/api.nix self)]);
     });
   };
 }

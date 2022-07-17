@@ -4686,15 +4686,15 @@
       "locked": {
         "lastModified": 1657409800,
         "narHash": "sha256-urbNgYNGjos5uombGhJT5OwWu0j/RYd8eBn/mXrXF6I=",
-        "owner": "tek",
-        "repo": "polysemy-conc",
+        "ref": "refs/heads/main",
         "rev": "0509aeae73faa08d139fd9369797e04d971d0f6c",
-        "type": "github"
+        "revCount": 203,
+        "type": "git",
+        "url": "https://git.tryp.io/tek/polysemy-conc"
       },
       "original": {
-        "owner": "tek",
-        "repo": "polysemy-conc",
-        "type": "github"
+        "type": "git",
+        "url": "https://git.tryp.io/tek/polysemy-conc"
       }
     },
     "polysemy-conc_5": {

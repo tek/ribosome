@@ -57,7 +57,7 @@ withCachixName ::
   CachixName ->
   Sem r Cachix
 withCachixName key name =
-  Cachix name <$> maybe (askRequired "Cachix signing key?") pure key
+  Cachix name <$> maybe (askRequired "Cachix public key?") pure key
 
 askCachix ::
   Members [Stop RainbowError, Embed IO] r =>

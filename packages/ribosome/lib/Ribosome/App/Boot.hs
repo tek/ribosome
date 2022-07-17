@@ -12,9 +12,9 @@ import Ribosome.App.UserInput (infoMessage, linkChunk, neovimChunk, pathColor, p
 githubMessage :: [Chunk]
 githubMessage =
   [
-    "Wrote Github Actions to ",
+    "Github Actions files are in ",
     pathColor ".github/workflows",
-    " that will release static binaries for each commit and tag."
+    ". These will release static binaries for each commit and tag."
   ]
 
 githubBootMessage :: Github -> [Chunk]
@@ -40,9 +40,9 @@ generateBoot global Project {..} = do
   writeTemplateTree global directory (bootTemplates (names ^. #name) branch github cachix)
   unless (global ^. #quiet) do
     infoMessage [
-      "Wrote ",
+      "The ",
       neovimChunk,
-      " boot files to ",
+      " boot file is at ",
       pathColor "plugin/boot.vim",
       "."
       ]
