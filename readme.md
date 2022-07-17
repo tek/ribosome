@@ -15,3 +15,12 @@ Its components are:
   `ribosome`
 * [ribosome-menu](https://hackage.haskell.org/package/ribosome-host/docs/Ribosome-Menu.html) A fuzzy-finder menu tool
 
+# Quickstart
+
+Install the [Nix package manager](https://nixos.org/learn.html) and generate a skeleton project by running:
+
+```bash
+$ nix run 'github:tek/ribosome#new'
+```
+
+The new project will contain configuration for Github Actions that release binary executables on each push that will be downloaded automatically when a user starts the plugin for the first time.

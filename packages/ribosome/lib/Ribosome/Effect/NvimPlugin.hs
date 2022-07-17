@@ -15,7 +15,8 @@ import Ribosome.Host.Effect.Handlers (Handlers)
 -- user-defined set of Neovim variables for changes. When a variable's value has been observed to have changed from the
 -- previously recorded state, the associated handler is executed.
 --
--- - 'MappingHandler' is a slight variation of 'Handlers' that makes defining dynamic mappings a bit more ergonomic.
+-- - 'MappingHandler' is a slight variation of 'Handlers' that uses a declarative 'Ribosome.Mapping' to allow scratch
+-- buffers to defined Neovim mappings in an ergonomic way.
 type NvimPluginEffects =
   [Handlers !! HandlerError, VariableWatcher !! HandlerError, MappingHandler !! HandlerError]
 

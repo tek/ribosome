@@ -1,3 +1,4 @@
+-- |Interpreters for 'PersistPath'
 module Ribosome.Interpreter.PersistPath where
 
 import Path (Abs, Dir, Path, Rel, parseRelDir, (</>))
@@ -13,6 +14,7 @@ import Ribosome.Effect.Settings (Settings)
 import Ribosome.Host.Data.BootError (BootError)
 import Ribosome.PluginName (pluginName)
 
+-- |Append an optional subdir to a dir.
 maybeSubdir :: Path b Dir -> Maybe (Path Rel Dir) -> Path b Dir
 maybeSubdir root = \case
   Just sub ->
@@ -20,6 +22,7 @@ maybeSubdir root = \case
   Nothing ->
     root
 
+-- |Append an optional subdir to a dir and ensure existence of the resulting directory if 'True' is given.
 persistPath ::
   Members [Stop PersistPathError, Embed IO] r =>
   Bool ->
@@ -33,6 +36,7 @@ persistPath create base sub = do
     path =
       maybeSubdir base sub
 
+-- |Interpret 'PersistPath' by using the specified root directory.
 interpretPersistPathAt ::
   Member (Embed IO) r =>
   Bool ->
@@ -43,12 +47,17 @@ interpretPersistPathAt create base =
     PersistPath sub ->
       persistPath create base sub
 
+-- |Look up the XDG cache directory, returning 'Nothing' if it is unavailable.
 xdgCache ::
   Member (Embed IO) r =>
   Sem r (Maybe (Path Abs Dir))
 xdgCache =
   rightToMaybe <$> tryAny (getXdgDir XdgCache Nothing)
 
+-- |Interpret 'PersistPath' by reading the global setting for the root directory, or using the given directory if the
+-- variable is unset.
+--
+-- The given @name@ is appended to the root, which usually identifies the plugin.
 interpretPersistPathSetting ::
   Members [Settings !! SettingError, Embed IO] r =>
   Bool ->
@@ -61,6 +70,12 @@ interpretPersistPathSetting create fallback name =
       base <- stopNote Undefined . (<|> fallback) =<< Settings.maybe PersistPath.setting
       persistPath create (base </> name) sub
 
+-- |Interpret 'PersistPath' by reading the global setting for the root directory, or using the XDG cache directory if
+-- the variable is unset.
+--
+-- The plugin name is used as a subdir of the root.
+--
+-- This uses 'Resumable', see [Errors]("Ribosome#errors").
 interpretPersistPath ::
   Members [Settings !! SettingError, Reader PluginName, Error BootError, Embed IO] r =>
   Bool ->

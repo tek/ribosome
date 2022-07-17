@@ -1,3 +1,4 @@
+-- |Interpreters for 'Persist'
 module Ribosome.Interpreter.Persist where
 
 import Data.Aeson (eitherDecodeFileStrict', encodeFile)
@@ -16,12 +17,14 @@ import Ribosome.Host.Data.BootError (BootError (BootError))
 import Ribosome.Host.Interpret (with)
 import Ribosome.Path (pathText)
 
+-- |Obtain the root directory or stop.
 persistBase ::
   Members [PersistPath !! PersistPathError, Stop PersistError] r =>
   Sem r (Path Abs Dir)
 persistBase =
   resumeHoist PersistError.Path persistRoot
 
+-- |Load a file and JSON-decode it.
 loadFile ::
   FromJSON a =>
   Members [Stop PersistError, Log, Embed IO] r =>
@@ -36,6 +39,9 @@ loadFile file = do
     decodeFailed =
       PersistError.Decode (pathText file) . toText
 
+-- |Determine the path to use for a 'Persist' action.
+-- If a @subpath@ is given, append it to @dir@, otherwise use @singleFile@.
+-- Append the result of the first step to the root dir given by 'PersistPath'.
 filepath ::
   Members [PersistPath !! PersistPathError, Stop PersistError] r =>
   Path Rel File ->
@@ -46,6 +52,20 @@ filepath singleFile dir subpath = do
   base <- persistBase
   pure (base </> maybe singleFile (dir </>) subpath)
 
+-- |Interpret 'Persist' by writing to the file system.
+--
+-- Paths are determined as follows:
+--
+-- - 'PersistPath' defines the root directory for all 'Persist' effects, which might be specific to a plugin, or
+-- additionally to entities like the currently edited project (e.g. by directory).
+--
+-- - The value in the @name@ argument is appended to the root depending on the arguments to the effect constructors.
+--
+-- - When 'store' or 'load' are invoked with 'Nothing' for the @subpath@ argument, a file named @<name>.json@ is used.
+--
+-- - When invoked with 'Just' a subpath, a file named @<name>/<subpath>.json@ is used.
+--
+-- This uses 'Resumable', see [Errors]("Ribosome#errors").
 interpretPersist ::
   ToJSON a =>
   FromJSON a =>
@@ -70,6 +90,7 @@ interpretPersist name =
     namePaths =
       (,) <$> parseRelFile (toString [exon|#{name}.json|]) <*> parseRelDir (toString name)
 
+-- |Interpret 'Persist' by storing nothing.
 interpretPersistNull ::
   ∀ a err r .
   InterpreterFor (Persist a !! err) r

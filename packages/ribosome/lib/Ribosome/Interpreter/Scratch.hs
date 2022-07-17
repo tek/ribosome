@@ -1,3 +1,4 @@
+-- |Interpreters for 'Scratch'
 module Ribosome.Interpreter.Scratch where
 
 import Conc (interpretAtomic)
@@ -13,7 +14,8 @@ import Ribosome.Host.Data.RpcError (RpcError)
 import Ribosome.Host.Effect.Rpc (Rpc)
 import Ribosome.Internal.Scratch (killScratch, lookupScratch, setScratchContent, showInScratch)
 
--- TODO add ScratchError
+-- |Interpret 'Scratch' by storing the Neovim UI handles in 'AtomicState'.
+-- This uses 'Resumable', see [Errors]("Ribosome#errors").
 interpretScratchAtomic ::
   Members [Rpc !! RpcError, AtomicState (Map ScratchId ScratchState), Reader PluginName, Log, Resource] r =>
   InterpreterFor (Scratch !! RpcError) r
@@ -31,6 +33,8 @@ interpretScratchAtomic =
     Find i ->
       atomicGets (Map.lookup i)
 
+-- |Interpret 'Scratch' by storing the Neovim UI handles in 'AtomicState'.
+-- This uses 'Resumable', see [Errors]("Ribosome#errors").
 interpretScratch ::
   Members [Rpc !! RpcError, Reader PluginName, Log, Resource, Embed IO] r =>
   InterpreterFor (Scratch !! RpcError) r
