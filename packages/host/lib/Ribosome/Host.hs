@@ -47,6 +47,7 @@ import Ribosome.Host.Data.HandlerError (
   HandlerError (HandlerError),
   HandlerTag (..),
   ToErrorMessage (toErrorMessage),
+  basicHandlerError,
   handlerError,
   handlerTagName,
   mapHandlerError,

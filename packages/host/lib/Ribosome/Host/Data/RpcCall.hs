@@ -5,6 +5,21 @@ import Ribosome.Host.Data.Request (Request)
 
 type RpcCall :: Type -> Type
 
+-- |A wrapper for 'Request' that allows applicative sequencing of calls for batch processing.
+--
+-- Neovim has an API function named @nvim_call_atomic@ that makes it possible to send multiple RPC requests at once,
+-- reducing the communcation overhead.
+-- Applicative sequences of 'RpcCall's are automatically batched into a single call by 'Ribosome.Rpc'.
+--
+-- This can be combined neatly with @ApplicativeDo@:
+--
+-- > import Ribosome
+-- > import qualified Ribosome.Api.Data as Api
+-- >
+-- > sync do
+-- >   a :: Int <- Api.nvimGetVar "number1"
+-- >   b :: Int <- Api.nvimGetVar "number2"
+-- >   pure (a + b)
 data RpcCall a where
   RpcCallRequest :: MsgpackDecode a => Request -> RpcCall a
   RpcPure :: a -> RpcCall a

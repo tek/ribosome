@@ -796,17 +796,17 @@
         "thax": "thax_10"
       },
       "locked": {
-        "lastModified": 1657931173,
-        "narHash": "sha256-JWYQgf2RRAR0vJZeDLJVMOzFI6fK2+JptoPPhPBxwlM=",
-        "owner": "tek",
-        "repo": "hix",
-        "rev": "fcf52beb13016339ce18a5b1a8435f58e2e789e0",
-        "type": "github"
+        "lastModified": 1658019491,
+        "narHash": "sha256-gZ4LTmZ7Pyw/84l/2hAqViPjKrivEXO2jv4vhtNKgQ0=",
+        "ref": "refs/heads/master",
+        "rev": "c140c6334d27ff49748e45d314c03dbbc716f82c",
+        "revCount": 203,
+        "type": "git",
+        "url": "https://git.tryp.io/tek/hix"
       },
       "original": {
-        "owner": "tek",
-        "repo": "hix",
-        "type": "github"
+        "type": "git",
+        "url": "https://git.tryp.io/tek/hix"
       }
     },
     "hix_11": {
@@ -4674,11 +4674,11 @@
         "incipit": "incipit_2"
       },
       "locked": {
-        "lastModified": 1657150311,
-        "narHash": "sha256-GWVM8k/T7dc2AaZUQHqrGvp/zLwvKN+i5J4Y51HAsQM=",
+        "lastModified": 1657990036,
+        "narHash": "sha256-ZwHHAsyi9DfcxV0XkBZcTzB/BU1QSI1wmcCg4F7rrfI=",
         "ref": "refs/heads/main",
-        "rev": "09ac9bfb4186ca457d08c63ddd4af8a929a8bc0e",
-        "revCount": 3,
+        "rev": "c0552668346b2a6f6ac4395b1461166f18a56b57",
+        "revCount": 4,
         "type": "git",
         "url": "https://git.tryp.io/tek/prelate"
       },

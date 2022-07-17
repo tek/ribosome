@@ -41,9 +41,9 @@ withOption ::
   Sem r b ->
   Sem r b
 withOption name value =
-  bracket set reset . const
+  bracket setOpt reset . const
   where
-    set =
+    setOpt =
       vimGetOption @Object name <* vimSetOption name value
     reset =
       vimSetOption name

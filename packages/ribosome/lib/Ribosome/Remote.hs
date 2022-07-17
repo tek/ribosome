@@ -21,6 +21,7 @@ import Ribosome.Run (PluginEffects)
 type HandlerStack =
   PluginEffects ++ RpcStack ++ RpcDeps
 
+-- |The complete stack of a Neovim plugin.
 type RemoteStack =
   HandlerStack ++ BasicPluginStack
 
@@ -81,6 +82,10 @@ runNvimHandlers_ ::
 runNvimHandlers_ =
   runNvimHandlers @'[] id
 
+-- |Run a neovim plugin using a chain of interpreters that eliminate both 'NvimPlugin' and an arbitrary stack of custom
+-- effects.
+-- This provides more functionality than 'runNvimHandlersIO', since 'NvimPlugin' not only interprets basic request
+-- handlers, but also mappings and watched variables. See its docs for more information.
 runNvimPluginIO ::
   ∀ r .
   HigherOrder (NvimPlugin : r) RemoteStack =>
@@ -97,6 +102,44 @@ runNvimPluginIO_ ::
 runNvimPluginIO_ =
   runNvimPluginIO @'[]
 
+-- |Run a Neovim plugin using a set of handlers and configuration, with an arbitrary stack of custom effects placed
+-- between the handlers and the Ribosome stack.
+-- This is important, because the custom effects may want to use the Neovim API, while the handlers want to use both
+-- Neovim and the custom effects.
+-- Example:
+--
+-- > data Numbers :: Effect where
+-- >   Number :: Int -> Sem r Int
+-- >
+-- > makeSem ''Numbers
+-- >
+-- > runNumbers :: Member (Rpc !! RpcError) r => InterpreterFor Numbers r
+-- > runNumbers = \case
+-- >   Number i -> (-1) <! nvimGetVar ("number_" <> show i)
+-- >
+-- > type CustomStack = [AtomicState Int, Numbers]
+-- >
+-- > currentNumber :: Handler r Int
+-- > currentNumber = number =<< atomicGet
+-- >
+-- > setNumber :: Int -> Handler r ()
+-- > setNumber = atomicPut
+-- >
+-- > main :: IO ()
+-- > main = runNvimHandlersIO @CustomStack "numbers" (interpretAtomic . runNumbers) [
+-- >   rpcFunction "CurrentNumber" Sync currentNumber,
+-- >   rpcFunction "SetNumber" Async setNumber
+-- >   ]
+--
+-- /Note/:
+--
+-- - 'PluginConfig' is being constructed via @OverloadedStrings@
+--
+-- - @CustomStack@ has to be specified as a type application, because GHC cannot figure it out on its own.
+--
+-- - For an explanation of @Rpc !! RpcError@, see [Errors]("Ribosome#errors")
+--
+-- This runs the entire stack to completion, so it can be used in the app's @main@ function.
 runNvimHandlersIO ::
   ∀ r .
   HigherOrder r RemoteStack =>
@@ -107,6 +150,10 @@ runNvimHandlersIO ::
 runNvimHandlersIO conf effs handlers =
   runCli conf (runNvimHandlers @r effs handlers)
 
+-- |Run a Neovim plugin using a set of handlers and configuration.
+-- This function does not allow additional effects to be used. See 'runNvimHandlersIO' for that purpose.
+--
+-- This runs the entire stack to completion, so it can be used in the app's @main@ function.
 runNvimHandlersIO_ ::
   PluginConfig ->
   [RpcHandler RemoteStack] ->

@@ -17,6 +17,7 @@ import Ribosome.Host.Interpreter.Handlers (interpretHandlers, interpretHandlersN
 import Ribosome.Interpreter.MappingHandler (interpretMappingHandler, interpretMappingHandlerNull)
 import Ribosome.Interpreter.VariableWatcher (interpretVariableWatcher, interpretVariableWatcherNull)
 
+-- |Run 'NvimPluginEffects' by specifying a set of request handlers, mapping handlers and watched variables.
 pluginHandlers ::
   Members [Rpc !! RpcError, Log, Error BootError, Embed IO] r =>
   [RpcHandler r] ->
@@ -28,6 +29,8 @@ pluginHandlers handlers maps vars =
   interpretVariableWatcher ((raiseUnder .) <$> vars) .
   interpretHandlers (hoistRpcHandlers raiseUnder2 handlers)
 
+-- |Run the effect bundle 'NvimPlugin' by specifying a set of request handlers, mapping handlers and watched variables.
+-- This should be used in combination with 'runNvimPluginIO'.
 interpretNvimPlugin ::
   Members [Rpc !! RpcError, Log, Error BootError, Embed IO] r =>
   [RpcHandler r] ->
@@ -39,6 +42,7 @@ interpretNvimPlugin handlers maps vars =
   runBundle @NvimPluginEffects .
   rewrite unNvimPlugin
 
+-- |Run the effect bundle 'NvimPlugin' by specifying only a set of request handlers.
 rpcHandlers ::
   Members [Rpc !! RpcError, Log, Error BootError] r =>
   [RpcHandler r] ->
@@ -50,6 +54,7 @@ rpcHandlers handlers =
   runBundle @NvimPluginEffects .
   rewrite unNvimPlugin
 
+-- |Run the effect bundle 'NvimPlugin' without any handlers.
 noHandlers ::
   InterpreterFor NvimPlugin r
 noHandlers =
@@ -59,6 +64,7 @@ noHandlers =
   runBundle @NvimPluginEffects .
   rewrite unNvimPlugin
 
+-- |Interpret 'NvimPluginEffects' by converting them into an 'NvimPlugin' bundle.
 sendNvimPlugin ::
   Member NvimPlugin r =>
   InterpretersFor NvimPluginEffects r
