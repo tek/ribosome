@@ -88,7 +88,7 @@ function! s:built(code) abort "{{{
   if a:code == 0
     call s:run(s:exe)
   else
-    call s:error('Failed to build #{name})
+    call s:error('Failed to build #{name}')
   endif
 endfunction "}}}
 
