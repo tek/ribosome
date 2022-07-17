@@ -29,7 +29,7 @@ let s:fetch_cmd = [
   \ '--create-dirs',
   \ '--output',
   \ s:gh_exe,
-  \ 'https://github.com/#{org}/#{repo}/releases/download/latest/#{name}
+  \ 'https://github.com/#{org}/#{repo}/releases/download/latest/#{name}'
   \ ]
 |]
 
@@ -65,11 +65,11 @@ endif
 
 vimBoot :: ProjectName -> Maybe Github -> Maybe Cachix -> Text
 vimBoot pn@(ProjectName name) gh cachix =
-  [exon|let s:repo = fnamemodify(expand('<sfile>'), ":p:h:h")
-let s:exe = s:repo . '/result/bin/#{name}
+  [exon|let s:repo = fnamemodify(expand('<sfile>'), ':p:h:h')
+let s:exe = s:repo . '/result/bin/#{name}'
 let s:build_cmd = [
   \ 'nix',#{cachixOpts cachixTek}#{foldMap cachixOpts cachix}
-  \ 'build', '.##{name},
+  \ 'build', '.##{name}',
   \ ]
 let s:errors = []
 
