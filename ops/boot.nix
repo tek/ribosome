@@ -23,7 +23,7 @@ let
 
   script = config.pkgs.writeScript "ribosome-regen-boot" ''
     #!${config.pkgs.zsh}/bin/zsh
-    nix run path:${self}#ribosome -- boot ${config.exe} ${githubOrg} ${githubRepo} ${cachixName} ${cachixKey}
+    nix run path:${self}#ribosome -- boot ${config.exe} ${githubOrg} ${githubRepo} ${cachixName} ${cachixKey} "$@"
   '';
 
 in script
