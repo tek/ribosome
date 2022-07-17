@@ -1,0 +1,26 @@
+---
+name: 'push'
+
+on:
+  push:
+    branches:
+      - 'main'
+
+jobs:
+  release:
+    name: 'Push to Cachix'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2.4.0
+      - uses: cachix/install-nix-action@v15
+        with:
+          extra_nix_config: |
+            access-tokens = github.com=${{ secrets.GITHUB_TOKEN }}
+            extra-substituters = https://tek.cachix.org
+            extra-trusted-public-keys = tek.cachix.org-1:+sdc73WFq8aEKnrVv5j/kuhmnW2hQJuqdPJF5SnaCBk=
+      - uses: cachix/cachix-action@v10
+        with:
+          name: tek
+          signingKey: '${{ secrets.CACHIX_SIGNING_KEY }}'
+      - name: 'build'
+        run: nix build .#ribosome-menu
