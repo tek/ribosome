@@ -49,7 +49,7 @@
     hpack.packages = import ./ops/hpack.nix { inherit config lib; };
     hackage.versionFile = "ops/version.nix";
     ghcid.shellConfig = {
-      buildInputs = with config.devGhc.pkgs; [pkgs.neovim pkgs.tmux pkgs.xterm];
+      buildInputs = with config.pkgs; [pkgs.neovim pkgs.tmux pkgs.xterm];
       env = { inherit RIBOSOME_ROOT; };
     };
     ghci = {
