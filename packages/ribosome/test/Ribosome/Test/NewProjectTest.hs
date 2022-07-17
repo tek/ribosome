@@ -45,3 +45,6 @@ test_newProject =
     targetFlake <- Test.fixtureLines [relfile|new-project/flake.nix|]
     generatedFlake <- Test.tempFileContent [relfile|new-project/flake.nix|]
     targetFlake === Text.lines generatedFlake
+    targetBoot <- Test.fixtureLines [relfile|new-project/boot.vim|]
+    generatedBoot <- Test.tempFileContent [relfile|new-project/plugin/boot.vim|]
+    targetBoot === Text.lines generatedBoot

@@ -68,7 +68,7 @@ vimBoot pn@(ProjectName name) gh cachix =
   [exon|let s:repo = fnamemodify(expand('<sfile>'), ':p:h:h')
 let s:exe = s:repo . '/result/bin/#{name}'
 let s:build_cmd = [
-  \ 'nix',#{cachixOpts cachixTek}#{foldMap cachixOpts cachix}
+  \ 'nix',#{cachixOpts (fromMaybe cachixTek cachix)}
   \ 'build', '.##{name}',
   \ ]
 let s:errors = []
