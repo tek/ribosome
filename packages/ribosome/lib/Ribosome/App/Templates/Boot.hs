@@ -16,7 +16,7 @@ import Ribosome.App.Data (
 cachixOpts :: Cachix -> Text
 cachixOpts (Cachix (CachixName name) (CachixKey key)) =
   [exon|
-  \ '--option', 'extra-substituters', '#{name}',
+  \ '--option', 'extra-substituters', 'https://#{name}.cachix.org',
   \ '--option', 'extra-trusted-public-keys', '#{key}',|]
 
 github :: ProjectName -> Github -> Text
