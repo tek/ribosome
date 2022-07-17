@@ -3,6 +3,7 @@ module Ribosome.App.Templates.Flake where
 import Exon (exon)
 
 import Ribosome.App.Data (
+  Branch (Branch),
   Cachix (Cachix),
   CachixKey (CachixKey),
   CachixName (CachixName),
@@ -28,10 +29,11 @@ cachixAttrs (Cachix (CachixName name) (CachixKey key)) =
 flakeNix ::
   FlakeUrl ->
   ProjectName ->
+  Branch ->
   Maybe Github ->
   Maybe Cachix ->
   Text
-flakeNix (FlakeUrl flakeUrl) (ProjectName name) github cachix =
+flakeNix (FlakeUrl flakeUrl) (ProjectName name) (Branch branch) github cachix =
   [exon|{
   description = "A Neovim Plugin";
 
@@ -43,7 +45,8 @@ flakeNix (FlakeUrl flakeUrl) (ProjectName name) github cachix =
     base = ./.;
     packages.#{name} = ./packages/#{name};
     main = "#{name}";
-    exe = "#{name}";#{foldMap githubAttrs github}#{foldMap cachixAttrs cachix}
+    exe = "#{name}";
+    branch = "#{branch}";#{foldMap githubAttrs github}#{foldMap cachixAttrs cachix}
     depsFull = [ribosome];
     overrides = { buildInputs, pkgs, ... }: {
       #{name} = buildInputs [pkgs.neovim pkgs.tmux pkgs.xterm];

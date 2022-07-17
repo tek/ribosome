@@ -19,7 +19,7 @@ newProject ::
   Sem r ()
 newProject global NewProject {project = pro@Project {..}, ..} = do
   year <- fromIntegral . Time.year <$> Time.today
-  writeTemplateTree global directory (newProjectTemplates names flakeUrl author maintainer year github cachix)
+  writeTemplateTree global directory (newProjectTemplates names flakeUrl author maintainer branch github cachix year)
   unless (global ^. #quiet) do
     infoMessage [
       "🌝 Initialized a ",

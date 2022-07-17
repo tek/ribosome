@@ -10,6 +10,7 @@
     packages.test-project = ./packages/test-project;
     main = "test-project";
     exe = "test-project";
+    branch = "main";
     githubOrg = "org";
     githubRepo = "rep";
     cachixName = "cach";
