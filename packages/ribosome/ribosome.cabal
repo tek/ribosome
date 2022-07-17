@@ -58,6 +58,7 @@ library
       Ribosome.App.Templates.MainHs
       Ribosome.App.Templates.PingTestHs
       Ribosome.App.Templates.PluginHs
+      Ribosome.App.Templates.ReadmeMd
       Ribosome.App.Templates.TestMainHs
       Ribosome.App.TemplateTree
       Ribosome.App.UserInput

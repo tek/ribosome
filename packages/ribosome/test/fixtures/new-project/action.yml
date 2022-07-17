@@ -1,0 +1,34 @@
+---
+name: 'latest-release'
+
+on:
+  push:
+    branches:
+      - 'main'
+
+jobs:
+  release:
+    name: 'Release'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2.4.0
+      - uses: cachix/install-nix-action@v15
+        with:
+          extra_nix_config: |
+            access-tokens = github.com=${{ secrets.GITHUB_TOKEN }}
+            extra-substituters = https://cach.cachix.org
+            extra-trusted-public-keys = 12345
+      - uses: cachix/cachix-action@v10
+        with:
+          name: cach
+          signingKey: '${{ secrets.CACHIX_SIGNING_KEY }}'
+      - name: 'build'
+        run: nix build .#static
+      - uses: 'marvinpinto/action-automatic-releases@latest'
+        name: 'create release'
+        with:
+          repo_token: "${{ secrets.GITHUB_TOKEN }}"
+          automatic_release_tag: 'latest'
+          prerelease: true
+          files: |
+            result/bin/test-project

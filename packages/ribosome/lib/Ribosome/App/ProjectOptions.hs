@@ -1,6 +1,9 @@
 module Ribosome.App.ProjectOptions where
 
 import Ribosome.App.Data (
+  Cachix (Cachix),
+  CachixKey,
+  CachixName,
   Github (Github),
   GithubOrg,
   GithubRepo (GithubRepo),
@@ -48,18 +51,37 @@ askGithub ::
 askGithub name repo =
   traverse (withOrg name repo) =<< askUser "Github organization? (Empty skips Github)"
 
+withCachixName ::
+  Members [Stop RainbowError, Embed IO] r =>
+  Maybe CachixKey ->
+  CachixName ->
+  Sem r Cachix
+withCachixName key name =
+  Cachix name <$> maybe (askRequired "Cachix signing key?") pure key
+
+askCachix ::
+  Members [Stop RainbowError, Embed IO] r =>
+  Maybe CachixKey ->
+  Sem r (Maybe Cachix)
+askCachix key =
+  traverse (withCachixName key) =<< askUser "Cachix name? (Empty skips Cachix, ignore if unclear)"
+
 projectOptions ::
   Members [Stop RainbowError, Embed IO] r =>
+  Bool ->
   ProjectOptions ->
   Sem r Project
-projectOptions opts = do
+projectOptions appendNameToCwd opts = do
   names <- maybe resolveName pure (opts ^. #names)
-  directory <- maybe (cwdProjectPath (names ^. #nameDir)) pure (opts ^. #directory)
+  directory <- maybe (cwdProjectPath appendNameToCwd (names ^. #nameDir)) pure (opts ^. #directory)
   let name = names ^. #name
   github <- maybe (askGithub name repo) (fmap Just . withOrg name repo) (opts ^. #githubOrg)
+  cachix <- maybe (askCachix cachixKey) (fmap Just . withCachixName cachixKey) (opts ^. #cachixName)
   pure Project {..}
   where
     repo =
       opts ^. #githubRepo
     branch =
       fromMaybe "master" (opts ^. #branch)
+    cachixKey =
+      opts ^. #cachixKey

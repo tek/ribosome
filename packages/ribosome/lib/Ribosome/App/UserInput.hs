@@ -47,6 +47,10 @@ neovimChunk :: Chunk
 neovimChunk =
   fbColor green 76 "Neovim"
 
+linkChunk :: Text -> Chunk
+linkChunk =
+  fbColor blue 33 . chunk
+
 putStderr ::
   Member (Embed IO) r =>
   Text ->

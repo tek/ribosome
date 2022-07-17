@@ -31,7 +31,7 @@ newOptions ::
   NewOptions ->
   Sem r NewProject
 newOptions opts = do
-  project <- projectOptions (opts ^. #project)
+  project <- projectOptions True (opts ^. #project)
   author <- maybe (askRequired "Author name for Cabal file?") pure (opts ^. #author)
   maintainer <- maybe (askRequired "Maintainer email for Cabal file?") pure (opts ^. #maintainer)
   let

@@ -6,10 +6,11 @@ import Path (reldir, relfile)
 import Ribosome.App.Data (
   Author,
   Branch,
+  Cachix,
   FlakeUrl,
   Github,
   Maintainer,
-  ProjectName (unProjectName),
+  ProjectName,
   ProjectNames (..),
   Year,
   )
@@ -22,15 +23,17 @@ import Ribosome.App.Templates.License (license)
 import Ribosome.App.Templates.MainHs (mainHs)
 import Ribosome.App.Templates.PingTestHs (pingTestHs)
 import Ribosome.App.Templates.PluginHs (pluginHs)
+import Ribosome.App.Templates.ReadmeMd (readmeMd)
 import Ribosome.App.Templates.TestMainHs (testMainHs)
 
 pluginDir ::
   ProjectName ->
   Maybe Github ->
+  Maybe Cachix ->
   TemplateTree
-pluginDir name github =
+pluginDir name github cachix =
   TDir [reldir|plugin|] [
-    TFile [relfile|boot.vim|] (vimBoot name github)
+    TFile [relfile|boot.vim|] (vimBoot name github cachix)
   ]
 
 newProjectTemplates ::
@@ -44,10 +47,11 @@ newProjectTemplates ::
 newProjectTemplates ProjectNames {..} flakeUrl author maintainer year github =
   TDir [reldir|.|] [
     TFile [relfile|flake.nix|] (flakeNix flakeUrl name),
+    TFile [relfile|readme.md|] (readmeMd name github),
     TDir [reldir|packages|] [
       TDir nameDir [
         TFile [relfile|LICENSE|] (license author),
-        TFile [relfile|readme.md|] [exon|# #{unProjectName name}|],
+        TFile [relfile|readme.md|] (readmeMd name github),
         TFile [relfile|changelog.md|] "# Unreleased",
         TFile [relfile|app/Main.hs|] (mainHs moduleName),
         TDir [reldir|lib|] [
@@ -75,12 +79,13 @@ bootTemplates ::
   ProjectName ->
   Branch ->
   Maybe Github ->
+  Maybe Cachix ->
   TemplateTree
-bootTemplates name branch github =
+bootTemplates name branch github cachix =
   TDir [reldir|.|] [
-    pluginDir name github,
+    pluginDir name github cachix,
     TDir [reldir|.github/workflows|] [
-      TFile [relfile|latest.yml|] (gaLatest name branch),
-      TFile [relfile|tags.yml|] (gaTags name)
+      TFile [relfile|latest.yml|] (gaLatest name branch cachix),
+      TFile [relfile|tags.yml|] (gaTags name cachix)
     ]
   ]

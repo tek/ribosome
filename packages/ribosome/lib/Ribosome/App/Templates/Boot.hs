@@ -2,7 +2,22 @@ module Ribosome.App.Templates.Boot where
 
 import Exon (exon)
 
-import Ribosome.App.Data (Github (Github), GithubOrg (GithubOrg), GithubRepo (GithubRepo), ProjectName (ProjectName))
+import Ribosome.App.Data (
+  Cachix (Cachix),
+  CachixKey (CachixKey),
+  CachixName (CachixName),
+  Github (Github),
+  GithubOrg (GithubOrg),
+  GithubRepo (GithubRepo),
+  ProjectName (ProjectName),
+  cachixTek,
+  )
+
+cachixOpts :: Cachix -> Text
+cachixOpts (Cachix (CachixName name) (CachixKey key)) =
+  [exon|
+  \ '--option', 'extra-substituters', '#{name}',
+  \ '--option', 'extra-trusted-public-keys', '#{key}',|]
 
 github :: ProjectName -> Github -> Text
 github (ProjectName name) (Github (GithubOrg org) (GithubRepo repo)) =
@@ -48,14 +63,12 @@ else
 endif
 |]
 
-vimBoot :: ProjectName -> Maybe Github -> Text
-vimBoot pn@(ProjectName name) gh =
+vimBoot :: ProjectName -> Maybe Github -> Maybe Cachix -> Text
+vimBoot pn@(ProjectName name) gh cachix =
   [exon|let s:repo = fnamemodify(expand('<sfile>'), ":p:h:h")
 let s:exe = s:repo . '/result/bin/#{name}
 let s:build_cmd = [
-  \ 'nix',
-  \ '--option', 'extra-substituters', 'https://tek.cachix.org',
-  \ '--option', 'extra-trusted-public-keys', 'tek.cachix.org-1:+sdc73WFq8aEKnrVv5j/kuhmnW2hQJuqdPJF5SnaCBk=',
+  \ 'nix',#{cachixOpts cachixTek}#{foldMap cachixOpts cachix}
   \ 'build', '.##{name},
   \ ]
 let s:errors = []

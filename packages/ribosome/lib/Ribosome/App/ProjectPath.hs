@@ -7,11 +7,12 @@ import Ribosome.App.Error (RainbowError, ioError)
 
 cwdProjectPath ::
   Members [Stop RainbowError, Embed IO] r =>
+  Bool ->
   Path Rel Dir ->
   Sem r (Path Abs Dir)
-cwdProjectPath name = do
+cwdProjectPath append name = do
   cwd <- stopTryIOError err getCurrentDir
-  pure (cwd </> name)
+  pure (if append then cwd </> name else cwd)
   where
     err =
       ioError ["Could not determine current directory"]

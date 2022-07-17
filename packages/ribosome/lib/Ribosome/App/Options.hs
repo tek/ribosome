@@ -34,12 +34,15 @@ import Prelude hiding (Mod)
 import Ribosome.App.Data (
   Author,
   Branch,
+  CachixKey,
+  CachixName,
   FlakeUrl,
   GithubOrg,
   GithubRepo,
   Maintainer,
   PrintDir (PrintDir),
   ProjectNames (..),
+  SkipCachix (SkipCachix),
   )
 import qualified Ribosome.App.ProjectNames as ProjectNames
 import Ribosome.CliParser (dirPathOption)
@@ -50,7 +53,10 @@ data ProjectOptions =
     directory :: Maybe (Path Abs Dir),
     branch :: Maybe Branch,
     githubOrg :: Maybe GithubOrg,
-    githubRepo :: Maybe GithubRepo
+    githubRepo :: Maybe GithubRepo,
+    skipCachix :: SkipCachix,
+    cachixName :: Maybe CachixName,
+    cachixKey :: Maybe CachixKey
   }
   deriving stock (Eq, Show, Generic)
   deriving anyclass (Default)
@@ -117,6 +123,12 @@ projectParser cwd =
   optional (option str (long "github-org" <> short 'o' <> help orgHelp))
   <*>
   optional (option str (long "github-repo" <> short 'r' <> help repoHelp))
+  <*>
+  (SkipCachix <$> switch (long "skip-cachix" <> help "Don't ask for cachix credentials"))
+  <*>
+  optional (option str (long "cachix" <> short 'c' <> help cachixHelp))
+  <*>
+  optional (option str (long "cachix-key" <> short 'k' <> help cachixKeyHelp))
   where
     orgHelp =
       "Name of the Github org, for generating vim boot files that download binaries built by Actions"
@@ -124,6 +136,10 @@ projectParser cwd =
       "Name of the Github repo, in case it differs from the project name"
     branchHelp =
       "Main branch for creating binaries via Github Actions, defaults to 'master'"
+    cachixHelp =
+      "Name of the cachix cache to push to from Github Actions, and pull from in the Neovim boot file"
+    cachixKeyHelp =
+      "The public key for the cachix cache, found at https://app.cachix.org/cache/<name>"
 
 newParser ::
   Path Abs Dir ->

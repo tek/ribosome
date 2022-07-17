@@ -22,7 +22,7 @@ runCommand global = \case
     conf <- newOptions opts
     newProject global conf
   Boot opts -> do
-    conf <- projectOptions opts
+    conf <- projectOptions False opts
     generateBoot global conf
 
 runOptions ::

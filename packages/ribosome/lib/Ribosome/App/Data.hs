@@ -31,6 +31,24 @@ newtype GithubRepo =
   deriving stock (Eq, Show)
   deriving newtype (IsString, Ord)
 
+newtype CachixName =
+  CachixName { unCachixName :: Text }
+  deriving stock (Eq, Show)
+  deriving newtype (IsString, Ord)
+
+newtype CachixKey =
+  CachixKey { unCachixKey :: Text }
+  deriving stock (Eq, Show)
+  deriving newtype (IsString, Ord)
+
+newtype SkipCachix =
+  SkipCachix { unSkipCachix :: Bool }
+  deriving stock (Eq, Show)
+
+instance Default SkipCachix where
+  def =
+    SkipCachix False
+
 newtype FlakeUrl =
   FlakeUrl { unFlakeUrl :: Text }
   deriving stock (Eq, Show)
@@ -71,10 +89,22 @@ data Github =
   }
   deriving stock (Eq, Show, Generic)
 
+data Cachix =
+  Cachix {
+    cachixName :: CachixName,
+    cachixKey :: CachixKey
+  }
+  deriving stock (Eq, Show, Generic)
+
+cachixTek :: Cachix
+cachixTek =
+  Cachix "tek" "tek.cachix.org-1:+sdc73WFq8aEKnrVv5j/kuhmnW2hQJuqdPJF5SnaCBk="
+
 data Project =
   Project {
     names :: ProjectNames,
     github :: Maybe Github,
+    cachix :: Maybe Cachix,
     directory :: Path Abs Dir,
     branch :: Branch
   }
