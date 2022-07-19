@@ -11,7 +11,7 @@ import Ribosome.Host.Interpreter.Host (withHost)
 import Ribosome.Host.Interpreter.Process.Embed (interpretProcessCerealNvimEmbed)
 import Ribosome.Host.Run (RpcDeps, RpcStack, interpretRpcStack)
 import Ribosome.IOStack (BasicPluginStack)
-import Ribosome.Interpreter.NvimPlugin (rpcHandlers, sendNvimPlugin)
+import Ribosome.Interpreter.NvimPlugin (rpcHandlers)
 import Ribosome.Interpreter.Scratch (interpretScratch)
 import Ribosome.Interpreter.Settings (interpretSettingsRpc)
 import Ribosome.Interpreter.UserError (interpretUserErrorPrefixed)
@@ -22,7 +22,7 @@ type HandlerEffects =
   PluginEffects ++ RpcStack ++ EmbedExtra ++ RpcDeps
 
 type PluginEmbedStack =
-  NvimPlugin : HandlerEffects
+  NvimPlugin ++ HandlerEffects
 
 interpretRpcDeps ::
   Members [Reader PluginName, Error BootError, Log, Resource, Race, Async, Embed IO] r =>
@@ -45,18 +45,17 @@ interpretPluginEmbed =
 withPluginEmbed ::
   Members BasicPluginStack r =>
   Members HandlerEffects r =>
-  Member NvimPlugin r =>
+  Members NvimPlugin r =>
   Sem r a ->
   Sem r a
 withPluginEmbed =
-  sendNvimPlugin .
   interceptHandlersBuiltin .
   withHost .
   insertAt @0
 
 embedNvimPluginWith ::
   Members BasicPluginStack r =>
-  InterpreterFor NvimPlugin (HandlerEffects ++ r) ->
+  InterpretersFor NvimPlugin (HandlerEffects ++ r) ->
   InterpretersFor PluginEmbedStack r
 embedNvimPluginWith handlers =
   interpretPluginEmbed .

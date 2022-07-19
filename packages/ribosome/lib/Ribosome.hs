@@ -36,8 +36,7 @@ module Ribosome (
   runNvimPluginIO,
   runNvimPluginIO_,
   NvimPlugin,
-  NvimPluginEffects,
-  interpretNvimPlugin,
+  pluginHandlers,
 
   -- * Interacting with Neovim
   -- $api
@@ -214,7 +213,7 @@ import Ribosome.Data.ScratchState (ScratchState (ScratchState))
 import Ribosome.Data.Setting (Setting (Setting))
 import Ribosome.Data.SettingError (SettingError)
 import Ribosome.Data.WatchedVariable (WatchedVariable (..))
-import Ribosome.Effect.NvimPlugin (NvimPlugin, NvimPluginEffects)
+import Ribosome.Effect.NvimPlugin (NvimPlugin)
 import Ribosome.Effect.Persist (Persist)
 import Ribosome.Effect.PersistPath (PersistPath, persistPath)
 import Ribosome.Effect.Scratch (Scratch)
@@ -283,7 +282,7 @@ import Ribosome.Host.Modify (bufdo, modifyCmd, noautocmd, silent, silentBang, wi
 import Ribosome.IOStack (BasicPluginStack, runBasicPluginStack)
 import Ribosome.Interpreter.BuiltinHandlers
 import Ribosome.Interpreter.NvimPlugin (
-  interpretNvimPlugin,
+  pluginHandlers,
   noHandlers,
   rpcHandlers,
   )

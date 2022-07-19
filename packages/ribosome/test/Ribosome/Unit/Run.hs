@@ -18,7 +18,7 @@ import Ribosome.Host.Error (resumeBootError)
 import Ribosome.Host.Test.Data.TestConfig (host)
 import qualified Ribosome.Host.Test.Run as Host
 import Ribosome.Host.Test.Run (TestStack)
-import Ribosome.Interpreter.NvimPlugin (interpretNvimPlugin)
+import Ribosome.Interpreter.NvimPlugin (pluginHandlers)
 
 type HandlerTestStack =
   HandlerEffects ++ Reader PluginName : TestStack
@@ -28,9 +28,8 @@ type EmbedEffects =
     Stop HandlerError,
     Scratch,
     Settings,
-    Rpc,
-    NvimPlugin
-  ]
+    Rpc
+  ] ++ NvimPlugin
 
 type PluginTestStack =
   EmbedEffects ++ HandlerTestStack
@@ -59,7 +58,7 @@ testHandlers ::
   Map WatchedVariable (Object -> Handler r ()) ->
   InterpretersFor EmbedEffects r
 testHandlers handlers vars =
-  interpretNvimPlugin handlers vars .
+  pluginHandlers handlers vars .
   withPluginEmbed .
   resumeBootError @Rpc .
   resumeBootError @Settings .

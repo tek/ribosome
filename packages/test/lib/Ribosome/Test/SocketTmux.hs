@@ -84,7 +84,8 @@ runSocketTmuxGuiTest =
 testPluginSocket ::
   Members BasicPluginStack r =>
   Members SocketHandlerEffects r =>
-  Members [NvimPlugin, Error TestError] r =>
+  Members NvimPlugin r =>
+  Member (Error TestError) r =>
   InterpretersFor TestEffects r
 testPluginSocket =
   withPluginSocket .
@@ -100,7 +101,7 @@ testPluginSocketTmuxConf ::
   HasCallStack =>
   Members TmuxHandlerStack (r ++ TmuxHandlerStack) =>
   TmuxTestConfig ->
-  InterpretersFor (NvimPlugin : r) TmuxHandlerStack ->
+  InterpretersFor (NvimPlugin ++ r) TmuxHandlerStack ->
   Sem (SocketTmuxWith r) () ->
   UnitTest
 testPluginSocketTmuxConf conf handlers =
@@ -112,7 +113,7 @@ testPluginSocketTmux ::
   ∀ r .
   HasCallStack =>
   Members TmuxHandlerStack (r ++ TmuxHandlerStack) =>
-  InterpretersFor (NvimPlugin : r) TmuxHandlerStack ->
+  InterpretersFor (NvimPlugin ++ r) TmuxHandlerStack ->
   Sem (SocketTmuxWith r) () ->
   UnitTest
 testPluginSocketTmux =
@@ -120,7 +121,7 @@ testPluginSocketTmux =
 
 testPluginSocketTmux_ ::
   HasCallStack =>
-  InterpreterFor NvimPlugin TmuxHandlerStack ->
+  InterpretersFor NvimPlugin TmuxHandlerStack ->
   Sem SocketTmux () ->
   UnitTest
 testPluginSocketTmux_ =

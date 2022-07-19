@@ -9,7 +9,7 @@ import Ribosome.Host.Interpreter.Host (withHost)
 import Ribosome.Host.Interpreter.Process.Socket (interpretProcessCerealSocket)
 import Ribosome.Host.Run (RpcDeps, RpcStack, interpretRpcStack)
 import Ribosome.IOStack (BasicPluginStack)
-import Ribosome.Interpreter.NvimPlugin (rpcHandlers, sendNvimPlugin)
+import Ribosome.Interpreter.NvimPlugin (rpcHandlers)
 import Ribosome.Interpreter.Scratch (interpretScratch)
 import Ribosome.Interpreter.Settings (interpretSettingsRpc)
 import Ribosome.Interpreter.UserError (interpretUserErrorPrefixed)
@@ -20,7 +20,7 @@ type SocketHandlerEffects =
   PluginEffects ++ RpcStack ++ RpcDeps
 
 type PluginSocketStack =
-  NvimPlugin : SocketHandlerEffects
+  NvimPlugin ++ SocketHandlerEffects
 
 interpretRpcDeps ::
   Members [Reader NvimSocket, Reader PluginName, Error BootError, Log, Resource, Race, Async, Embed IO] r =>
@@ -44,11 +44,10 @@ interpretPluginSocket =
 withPluginSocket ::
   Members BasicPluginStack r =>
   Members SocketHandlerEffects r =>
-  Member NvimPlugin r =>
+  Members NvimPlugin r =>
   Sem r a ->
   Sem r a
 withPluginSocket =
-  sendNvimPlugin .
   interceptHandlersBuiltin .
   withHost .
   insertAt @0
@@ -56,7 +55,7 @@ withPluginSocket =
 socketNvimPluginWith ::
   Members BasicPluginStack r =>
   Member (Reader NvimSocket) r =>
-  InterpreterFor NvimPlugin (SocketHandlerEffects ++ r) ->
+  InterpretersFor NvimPlugin (SocketHandlerEffects ++ r) ->
   InterpretersFor PluginSocketStack r
 socketNvimPluginWith handlers =
   interpretPluginSocket .

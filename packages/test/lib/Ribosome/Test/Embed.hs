@@ -19,12 +19,12 @@ import Ribosome.Host.Data.RpcError (RpcError)
 import Ribosome.Host.Data.RpcHandler (Handler, RpcHandler)
 import Ribosome.Host.Effect.Rpc (Rpc)
 import Ribosome.Host.Error (resumeBootError)
-import Ribosome.Host.Interpret (HigherOrder, type (|>))
+import Ribosome.Host.Interpret (HigherOrder)
 import qualified Ribosome.Host.Test.Data.TestConfig as Host
 import qualified Ribosome.Host.Test.Run as Host
 import Ribosome.Host.Test.Run (TestConfStack, TestStack, runUnitTest)
 import Ribosome.IOStack (BasicPluginStack)
-import Ribosome.Interpreter.NvimPlugin (interpretNvimPlugin, rpcHandlers)
+import Ribosome.Interpreter.NvimPlugin (pluginHandlers, rpcHandlers)
 import Ribosome.Test.Data.TestConfig (TestConfig (TestConfig))
 import Ribosome.Test.Error (testError, testHandler)
 
@@ -38,7 +38,7 @@ type TestEffects =
   ]
 
 type EmbedEffects =
-  TestEffects |> NvimPlugin
+  TestEffects ++ NvimPlugin
 
 type EmbedHandlerStack =
   HandlerEffects ++ Reader PluginName : TestStack
@@ -85,7 +85,8 @@ runTest =
 testPluginEmbed ::
   Members HandlerEffects r =>
   Members BasicPluginStack r =>
-  Members [NvimPlugin, Error TestError] r =>
+  Members NvimPlugin r =>
+  Member (Error TestError) r =>
   InterpretersFor TestEffects r
 testPluginEmbed =
   withPluginEmbed .
@@ -104,7 +105,7 @@ testPluginHandlers ::
   Map WatchedVariable (Object -> Handler r ()) ->
   InterpretersFor EmbedEffects r
 testPluginHandlers handlers vars =
-  interpretNvimPlugin handlers vars .
+  pluginHandlers handlers vars .
   testPluginEmbed
 
 testPluginConf ::
@@ -112,7 +113,7 @@ testPluginConf ::
   HasCallStack =>
   HigherOrder r EmbedHandlerStack =>
   TestConfig ->
-  InterpretersFor (NvimPlugin : r) EmbedHandlerStack ->
+  InterpretersFor (NvimPlugin ++ r) EmbedHandlerStack ->
   Sem (EmbedStackWith r) () ->
   UnitTest
 testPluginConf conf handlers =
@@ -124,7 +125,7 @@ testPlugin ::
   ∀ r .
   HasCallStack =>
   HigherOrder r EmbedHandlerStack =>
-  InterpretersFor (NvimPlugin : r) EmbedHandlerStack ->
+  InterpretersFor (NvimPlugin ++ r) EmbedHandlerStack ->
   Sem (EmbedStackWith r) () ->
   UnitTest
 testPlugin =
@@ -132,7 +133,7 @@ testPlugin =
 
 testPlugin_ ::
   HasCallStack =>
-  InterpreterFor NvimPlugin EmbedHandlerStack ->
+  InterpretersFor NvimPlugin EmbedHandlerStack ->
   Sem EmbedStack () ->
   UnitTest
 testPlugin_ =

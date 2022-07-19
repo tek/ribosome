@@ -10,8 +10,7 @@ import Ribosome.Host.Interpreter.Host (runHost)
 import Ribosome.Host.Interpreter.Process.Stdio (interpretProcessCerealStdio)
 import Ribosome.Host.Run (RpcDeps, RpcStack, interpretRpcStack)
 import Ribosome.IOStack (BasicPluginStack, runCli)
-import Ribosome.Interpreter.BuiltinHandlers (interpretBuiltinHandlers)
-import Ribosome.Interpreter.NvimPlugin (rpcHandlers, sendNvimPlugin)
+import Ribosome.Interpreter.NvimPlugin (rpcHandlers)
 import Ribosome.Interpreter.Scratch (interpretScratch)
 import Ribosome.Interpreter.Settings (interpretSettingsRpc)
 import Ribosome.Interpreter.UserError (interpretUserErrorPrefixed)
@@ -44,25 +43,23 @@ interpretPluginRemote =
 
 runPluginHostRemote ::
   ∀ r .
-  Member NvimPlugin r =>
+  Members NvimPlugin r =>
   Members HandlerStack r =>
   Members BasicPluginStack r =>
   Sem r ()
 runPluginHostRemote =
-  sendNvimPlugin $
-  interpretBuiltinHandlers $
   interceptHandlersBuiltin runHost
 
 runNvimPlugin ::
   ∀ r .
-  HigherOrder (NvimPlugin : r) RemoteStack =>
-  InterpretersFor (NvimPlugin : r) RemoteStack ->
+  HigherOrder (NvimPlugin ++ r) RemoteStack =>
+  InterpretersFor (NvimPlugin ++ r) RemoteStack ->
   Sem BasicPluginStack ()
 runNvimPlugin handlers =
   interpretPluginRemote (handlers runPluginHostRemote)
 
 runNvimPlugin_ ::
-  InterpreterFor NvimPlugin RemoteStack ->
+  InterpretersFor NvimPlugin RemoteStack ->
   Sem BasicPluginStack ()
 runNvimPlugin_ =
   runNvimPlugin @'[]
@@ -88,16 +85,16 @@ runNvimHandlers_ =
 -- handlers, but also mappings and watched variables.
 runNvimPluginIO ::
   ∀ r .
-  HigherOrder (NvimPlugin : r) RemoteStack =>
+  HigherOrder (NvimPlugin ++ r) RemoteStack =>
   PluginConfig ->
-  InterpretersFor (NvimPlugin : r) RemoteStack ->
+  InterpretersFor (NvimPlugin ++ r) RemoteStack ->
   IO ()
 runNvimPluginIO conf handlers =
   runCli conf (runNvimPlugin @r handlers)
 
 runNvimPluginIO_ ::
   PluginConfig ->
-  InterpreterFor NvimPlugin RemoteStack ->
+  InterpretersFor NvimPlugin RemoteStack ->
   IO ()
 runNvimPluginIO_ =
   runNvimPluginIO @'[]

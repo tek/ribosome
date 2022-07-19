@@ -47,7 +47,7 @@ testPluginEmbedTmuxConf ::
   HasCallStack =>
   Members HandlerStack (r ++ HandlerStack) =>
   TmuxTestConfig ->
-  InterpretersFor (NvimPlugin : r) HandlerStack ->
+  InterpretersFor (NvimPlugin ++ r) HandlerStack ->
   Sem (EmbedTmuxWith r) () ->
   UnitTest
 testPluginEmbedTmuxConf conf handlers =
@@ -59,7 +59,7 @@ testPluginEmbedTmux ::
   ∀ r .
   HasCallStack =>
   Members HandlerStack (r ++ HandlerStack) =>
-  InterpretersFor (NvimPlugin : r) HandlerStack ->
+  InterpretersFor (NvimPlugin ++ r) HandlerStack ->
   Sem (EmbedTmuxWith r) () ->
   UnitTest
 testPluginEmbedTmux =
@@ -67,7 +67,7 @@ testPluginEmbedTmux =
 
 testPluginEmbedTmux_ ::
   HasCallStack =>
-  InterpreterFor NvimPlugin HandlerStack ->
+  InterpretersFor NvimPlugin HandlerStack ->
   Sem EmbedTmux () ->
   UnitTest
 testPluginEmbedTmux_ =
