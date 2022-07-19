@@ -79,6 +79,7 @@ in {
   ribosome-host = merge (project "ribosome-host" "Ribosome-Host") {
     synopsis = "Neovim plugin host for Polysemy";
     library.dependencies = [
+      "aeson >= 2"
       "casing"
       "cereal"
       "chronos"

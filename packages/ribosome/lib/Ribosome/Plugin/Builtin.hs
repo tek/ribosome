@@ -4,15 +4,16 @@ import Exon (exon)
 
 import Ribosome.Data.PluginName (PluginName (PluginName))
 import Ribosome.Data.ScratchId (ScratchId)
-import qualified Ribosome.Effect.BuiltinHandlers as BuiltinHandlers
-import Ribosome.Effect.BuiltinHandlers (BuiltinHandlers)
 import qualified Ribosome.Effect.Scratch as Scratch
 import Ribosome.Effect.Scratch (Scratch)
+import qualified Ribosome.Effect.VariableWatcher as VariableWatcher
+import Ribosome.Effect.VariableWatcher (VariableWatcher)
 import Ribosome.Host.Data.BootError (BootError)
 import Ribosome.Host.Data.Execution (Execution (Async))
 import Ribosome.Host.Data.HandlerError (HandlerError, resumeHandlerError)
 import Ribosome.Host.Data.RpcError (RpcError)
 import Ribosome.Host.Data.RpcHandler (Handler, RpcHandler)
+import Ribosome.Host.Data.RpcName (RpcName (RpcName))
 import qualified Ribosome.Host.Data.RpcType as AutocmdOptions
 import Ribosome.Host.Data.RpcType (AutocmdEvent (unAutocmdEvent))
 import Ribosome.Host.Effect.Handlers (Handlers)
@@ -29,40 +30,47 @@ watcherEvents =
     "VimEnter"
   ]
 
+updateVar ::
+  Member (VariableWatcher !! HandlerError) r =>
+  Handler r ()
+updateVar =
+  restop VariableWatcher.update
+
 watcherRpc ::
   ∀ r .
-  Members [BuiltinHandlers !! HandlerError, Rpc !! RpcError, Resource, Race] r =>
+  Member (VariableWatcher !! HandlerError) r =>
   PluginName ->
   AutocmdEvent ->
   RpcHandler r
 watcherRpc (PluginName name) event =
-  rpcAutocmd method Async event def { AutocmdOptions.group = Just name } do
-    restop @_ @_ @(Stop _ : r) BuiltinHandlers.variables
+  rpcAutocmd (RpcName method) Async event def { AutocmdOptions.group = Just name } do
+    updateVar
   where
     method =
       [exon|#{capitalize name}VariableChanged#{unAutocmdEvent event}|]
 
-killScratchHandler ::
+deleteScratch ::
   Member (Scratch !! RpcError) r =>
   ScratchId ->
   Handler r ()
-killScratchHandler =
+deleteScratch =
   resumeHandlerError . Scratch.kill
+
+deleteName :: PluginName -> RpcName
+deleteName (PluginName name) =
+  RpcName [exon|#{capitalize name}DeleteScratch|]
 
 builtinHandlers ::
   ∀ r .
-  Members [Scratch !! RpcError, BuiltinHandlers !! HandlerError, Rpc !! RpcError, Log, Resource, Race] r =>
+  Members [Scratch !! RpcError, VariableWatcher !! HandlerError] r =>
   PluginName ->
   [RpcHandler r]
-builtinHandlers pn@(PluginName name) =
-  [
-    rpcFunction [exon|#{capitalize name}DeleteScratch|] Async killScratchHandler,
-    rpcFunction [exon|#{capitalize name}Mapping|] Async (restop @_ @_ @(Stop _ : r) . BuiltinHandlers.mapping)
-  ] <> (watcherRpc pn <$> watcherEvents)
+builtinHandlers name =
+    rpcFunction (deleteName name) Async deleteScratch : (watcherRpc name <$> watcherEvents)
 
 interceptHandlersBuiltin ::
-  Members [Handlers !! HandlerError, Reader PluginName, Error BootError] r =>
-  Members [Scratch !! RpcError, BuiltinHandlers !! HandlerError, Rpc !! RpcError, Log, Resource, Race] r =>
+  Members [VariableWatcher !! HandlerError, Handlers !! HandlerError] r =>
+  Members [Scratch !! RpcError, Rpc !! RpcError, Reader PluginName, Error BootError, Log] r =>
   Sem r a ->
   Sem r a
 interceptHandlersBuiltin sem = do

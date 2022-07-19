@@ -1,8 +1,7 @@
-{-# options_haddock prune #-}
-
 module Ribosome (
   -- * Introduction
   -- $intro
+
   -- * Creating a project
   -- $project
 
@@ -11,12 +10,16 @@ module Ribosome (
 
   RpcHandler (..),
   Handler,
+  Mapping (Mapping),
+  WatchedVariable (..),
 
   -- ** Constructing handlers
 
   rpcFunction,
   rpcCommand,
   rpcAutocmd,
+  rpc,
+  Execution (..),
 
   -- * Plugin execution #execution#
   -- $execution
@@ -27,7 +30,8 @@ module Ribosome (
   runNvimHandlersIO_,
   RemoteStack,
 
-  -- ** With mappings and watched variables
+  -- ** With watched variables
+  -- $execution-ext
 
   runNvimPluginIO,
   runNvimPluginIO_,
@@ -56,7 +60,17 @@ module Ribosome (
   interpretPluginEmbed,
   withPluginEmbed,
 
+  -- * MessagePack codec
+  -- $msgpack
+  MsgpackDecode (fromMsgpack),
+  MsgpackEncode (toMsgpack),
+  pattern Msgpack,
+  msgpackArray,
+  msgpackMap,
+
   -- * Utility effects
+  -- $util
+
   -- ** Settings
   Settings,
   interpretSettingsRpc,
@@ -81,11 +95,37 @@ module Ribosome (
   -- ** Command completion
 
   completeWith,
+  completeBuiltin,
+  CompleteStyle (..),
 
   -- ** Special command parameter types #command-params#
-  Args (Args),
+  HandlerArg (handlerArg),
+  CommandHandler (commandOptions),
+  Args (..),
+  ArgList (..),
+  JsonArgs (..),
+  Bang (..),
+  Bar (..),
+  Range (Range),
+  RangeStyle (..),
+  CommandMods (..),
+  CommandRegister (..),
+  HandlerCodec (handlerCodec),
+
+  -- * Command Modifiers
+  modifyCmd,
+  bufdo,
+  windo,
+  noautocmd,
+  silent,
+  silentBang,
 
   -- * Configuring the host
+  HostConfig (..),
+  LogConfig (..),
+  setStderr,
+  PluginConfig (PluginConfig),
+  pluginNamed,
 
   -- * Errors
   -- $errors
@@ -94,40 +134,66 @@ module Ribosome (
   mapHandlerError,
   resumeHandlerErrorFrom,
   mapHandlerErrorFrom,
-  handlerError,
-  basicHandlerError,
   resumeHandlerErrors,
   mapHandlerErrors,
+  HandlerError (HandlerError),
+  ErrorMessage (ErrorMessage),
+  ToErrorMessage (toErrorMessage),
+  HandlerTag (..),
+  handlerTagName,
+  toHandlerError,
+  handlerError,
+  basicHandlerError,
   userErrorMessage,
   resumeHoistUserMessage,
   mapUserMessage,
+  RpcError,
+  rpcErrorMessage,
+  ignoreRpcError,
+  BootError (..),
+  HostError (..),
+  StoredError (..),
+  Errors,
+
+  -- * Mutex State
+  MState,
+  ScopedMState,
+  mmodify,
+  mread,
+  mreads,
+  mstate,
+  mtrans,
+  muse,
+  stateToMState,
+  withMState,
+  evalMState,
+  interpretMState,
+  interpretMStates,
 
   -- * Misc
 
   noHandlers,
   rpcHandlers,
+  simpleHandler,
 
-  module Ribosome.Data.FloatOptions,
-  module Ribosome.Data.Mapping,
-  module Ribosome.Data.PersistError,
-  module Ribosome.Data.PersistPathError,
-  module Ribosome.Data.PluginConfig,
-  module Ribosome.Data.Register,
-  module Ribosome.Data.RegisterType,
-  module Ribosome.Data.ScratchId,
-  module Ribosome.Data.ScratchOptions,
-  module Ribosome.Data.ScratchState,
-  module Ribosome.Data.Setting,
-  module Ribosome.Data.SettingError,
-  module Ribosome.Data.WatchedVariable,
-  module Ribosome.Interpreter.BuiltinHandlers,
-  module Ribosome.Interpreter.MappingHandler,
-  module Ribosome.Interpreter.UserError,
-  module Ribosome.Interpreter.VariableWatcher,
-  module Ribosome.Errors,
-  module Ribosome.Host,
-  module Ribosome.IOStack,
-  module Ribosome.Path,
+  -- module Ribosome.Data.FloatOptions,
+  -- module Ribosome.Data.Mapping,
+  -- module Ribosome.Data.PersistError,
+  -- module Ribosome.Data.PersistPathError,
+  -- module Ribosome.Data.Register,
+  -- module Ribosome.Data.RegisterType,
+  -- module Ribosome.Data.ScratchId,
+  -- module Ribosome.Data.ScratchOptions,
+  -- module Ribosome.Data.ScratchState,
+  -- module Ribosome.Data.Setting,
+  -- module Ribosome.Data.SettingError,
+  -- module Ribosome.Data.WatchedVariable,
+  -- module Ribosome.Interpreter.BuiltinHandlers,
+  -- module Ribosome.Interpreter.UserError,
+  -- module Ribosome.Interpreter.VariableWatcher,
+  -- module Ribosome.Errors,
+  -- module Ribosome.IOStack,
+  -- module Ribosome.Path,
   module Prelate.Prelude,
 ) where
 
@@ -135,7 +201,7 @@ import Prelate.Prelude (type (!!), (<!))
 import Prelude hiding (async)
 
 import Ribosome.Data.FloatOptions (FloatOptions (FloatOptions))
-import Ribosome.Data.Mapping (Mapping (Mapping), MappingIdent (MappingIdent))
+import Ribosome.Data.Mapping (Mapping (Mapping), MappingId (MappingId))
 import Ribosome.Data.PersistError (PersistError)
 import Ribosome.Data.PersistPathError (PersistPathError)
 import Ribosome.Data.PluginConfig (PluginConfig (PluginConfig), pluginNamed)
@@ -155,15 +221,67 @@ import Ribosome.Effect.Scratch (Scratch)
 import Ribosome.Effect.Settings (Settings)
 import Ribosome.Embed (embedNvimPlugin, embedNvimPlugin_, interpretPluginEmbed, withPluginEmbed)
 import Ribosome.Errors (reportError, reportStop, resumeReportError, storeError)
-import Ribosome.Host
-import Ribosome.Host.Data.Args (Args (Args))
-import Ribosome.Host.Data.HandlerError (mapHandlerErrorFrom)
+import Ribosome.Host.Api.Data (Buffer, Tabpage, Window)
+import Ribosome.Host.Class.Msgpack.Array (msgpackArray)
+import Ribosome.Host.Class.Msgpack.Decode (pattern Msgpack, MsgpackDecode (fromMsgpack))
+import Ribosome.Host.Class.Msgpack.Encode (MsgpackEncode (toMsgpack))
+import Ribosome.Host.Class.Msgpack.Map (msgpackMap)
+import Ribosome.Host.Data.Args (ArgList (..), Args (..), JsonArgs (..))
+import Ribosome.Host.Data.Bang (Bang (..))
+import Ribosome.Host.Data.Bar (Bar (Bar))
+import Ribosome.Host.Data.BootError (BootError (..))
+import Ribosome.Host.Data.CommandMods (CommandMods (CommandMods))
+import Ribosome.Host.Data.CommandRegister (CommandRegister (CommandRegister))
+import Ribosome.Host.Data.Execution (Execution (..))
+import Ribosome.Host.Data.HandlerError (
+  ErrorMessage (ErrorMessage),
+  HandlerError (HandlerError),
+  HandlerTag (..),
+  ToErrorMessage (toErrorMessage),
+  basicHandlerError,
+  handlerError,
+  handlerTagName,
+  mapHandlerError,
+  mapHandlerErrorFrom,
+  mapHandlerErrors,
+  mapUserMessage,
+  resumeHandlerError,
+  resumeHandlerErrorFrom,
+  resumeHandlerErrors,
+  resumeHoistUserMessage,
+  toHandlerError,
+  userErrorMessage,
+  )
+import Ribosome.Host.Data.HostConfig (HostConfig (..), LogConfig (..), setStderr)
+import Ribosome.Host.Data.HostError (HostError (HostError))
+import Ribosome.Host.Data.Range (Range (Range), RangeStyle (..))
 import Ribosome.Host.Data.RpcCall (RpcCall)
-import Ribosome.Host.Data.RpcHandler (Handler, RpcHandler (..))
-import Ribosome.Host.Handler (completeWith, rpcAutocmd, rpcCommand, rpcFunction)
+import Ribosome.Host.Data.RpcError (RpcError, rpcErrorMessage)
+import Ribosome.Host.Data.RpcHandler (Handler, RpcHandler (..), simpleHandler)
+import Ribosome.Host.Data.RpcType (CompleteStyle (..))
+import Ribosome.Host.Data.StoredError (StoredError (StoredError))
+import Ribosome.Host.Effect.Errors (Errors)
+import Ribosome.Host.Effect.MState (
+  MState,
+  ScopedMState,
+  mmodify,
+  mread,
+  mreads,
+  mstate,
+  mtrans,
+  muse,
+  stateToMState,
+  withMState,
+  )
+import Ribosome.Host.Effect.Rpc (Rpc, async, notify, sync)
+import Ribosome.Host.Error (ignoreRpcError)
+import Ribosome.Host.Handler (completeBuiltin, completeWith, rpc, rpcAutocmd, rpcCommand, rpcFunction)
+import Ribosome.Host.Handler.Codec (HandlerArg (handlerArg), HandlerCodec (handlerCodec))
+import Ribosome.Host.Handler.Command (CommandHandler (commandOptions))
+import Ribosome.Host.Interpreter.MState (evalMState, interpretMState, interpretMStates)
+import Ribosome.Host.Modify (bufdo, modifyCmd, noautocmd, silent, silentBang, windo)
 import Ribosome.IOStack (BasicPluginStack, runBasicPluginStack)
 import Ribosome.Interpreter.BuiltinHandlers
-import Ribosome.Interpreter.MappingHandler (interpretMappingHandler, interpretMappingHandlerNull)
 import Ribosome.Interpreter.NvimPlugin (
   interpretNvimPlugin,
   noHandlers,
@@ -226,7 +344,8 @@ import Ribosome.Remote (RemoteStack, runNvimHandlersIO, runNvimHandlersIO_, runN
 -- > $ nix run 'github:tek/ribosome#new' my-plugin
 --
 -- The created plugin can be added to Neovim like any other.
--- For example, linking its directory to @~/.local/share/nvim/site/pack/foo/opt/my-plugin@ will allow you to run:
+-- For example, linking its directory to @~\/.local\/share\/nvim\/site\/pack\/foo\/opt\/my-plugin@ will allow you to
+-- run:
 --
 -- > :packadd my-plugin
 --
@@ -250,14 +369,35 @@ import Ribosome.Remote (RemoteStack, runNvimHandlersIO, runNvimHandlersIO_, runN
 -- > $ nix build
 
 -- $handlers
--- A plugin consists of a set of request handlers, which can be triggered by functions, commands or autocommands.
--- When the main loop is started, all specified handlers are registered in Neovim.
+-- When a plugin's main loop is started, triggers are registered in Neovim for all RPC handlers.
+-- These triggers can be explicit (functions and commands) or automatic (autocmds and variable changes).
+--
 -- See [Execution]("Ribosome#execution") for how to start a plugin with a set of handlers.
+--
+-- Basic handlers (functions, commands, autocmds) are represented by 'RpcHandler', while watched variables
+-- are separate entities (see the docs for [NvimPlugin]("Ribosome#execution-ext")).
 
 -- $execution
 -- There are many ways of running a plugin for different purposes, like as a remote plugin from Neovim (the usual
 -- production mode), directly in a test using an embedded Neovim process, or through a socket when testing a plugin in
 -- tmux.
+
+-- $execution-ext
+-- In addition to regular handlers, the following plugin runners allow you to specify two additional kinds:
+--
+-- /Watched variable handlers/ are called whenever a certain Neovim variable's value has changed:
+--
+-- > changed ::
+-- >   Member (Rpc !! RpcError) r =>
+-- >   Object ->
+-- >   Handler r ()
+-- > changed value =
+-- >   ignoreRpcError (echo ("Changed value to: " <> show value))
+--
+-- > main = runNvimPluginIO_ "watch-plugin" (interpretNvimPlugin mempty mempty [("trigger", changed)])
+--
+-- This registers the variable named @trigger@ to be watched for changes.
+-- When a change is detected, the handler @changed@ whill be executed with the new value as its argument.
 
 -- $api
 -- The effect 'Rpc' governs access to Neovim's remote API.
@@ -272,6 +412,30 @@ import Ribosome.Remote (RemoteStack, runNvimHandlersIO, runNvimHandlersIO_, runN
 --
 -- The API also defines the data types 'Buffer', 'Window' and 'Tabpage', which are abstract types carrying an internal
 -- identifier generated by Neovim.
+
+-- $embed
+-- TODO
+
+-- $msgpack
+-- Neovim's RPC communication uses the MessagePack protocol.
+-- All API functions convert their arguments and return values using the classes 'MsgpackEncode' and 'MsgpackDecode'.
+-- There are several Haskell libraries for this purpose.
+-- Ribosome uses [messagepack](https://hackage.haskell.org/package/messagepack), simply for the reason that it allows
+-- easy incremental parsing via [cereal](https://hackage.haskell.org/package/cereal).
+--
+-- All API functions that are declared as taking or returning an 'Data.MessagePack.Object' by Neovim are kept
+-- polymorphic, allowing the user to interface with them using arbitrary types.
+-- Codec classes for record types can be derived generically:
+--
+-- > data Cat =
+-- >   Cat { name :: Text, age :: Int }
+-- >   deriving stock (Generic)
+-- >   deriving anyclass (MsgpackEncode, MsgpackDecode)
+-- >
+-- > nvimSetVar "cat" (Cat "Dr. Boots" 4)
+
+-- $util
+-- TODO
 
 -- $scratch
 -- A scratch buffer is what Neovim calls text not associated with a file, used for informational or interactive content.

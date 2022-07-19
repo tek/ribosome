@@ -2,6 +2,8 @@ module Ribosome.Host.Data.RpcType where
 
 import Exon (exon)
 
+import Ribosome.Host.Data.RpcName (RpcName (RpcName), unRpcName)
+
 newtype AutocmdEvent =
   AutocmdEvent { unAutocmdEvent :: Text }
   deriving stock (Eq, Show, Generic)
@@ -29,23 +31,23 @@ data CompleteStyle =
 data CommandCompletion =
   CompleteBuiltin Text
   |
-  CompleteHandler CompleteStyle Text
+  CompleteHandler CompleteStyle RpcName
   deriving stock (Eq, Show)
 
 completionName ::
-  Text ->
-  Text
-completionName n =
-  [exon|Complete_#{n}|]
+  RpcName ->
+  RpcName
+completionName (RpcName n) =
+  RpcName [exon|Complete_#{n}|]
 
 completionOption :: CommandCompletion -> Text
 completionOption = \case
   CompleteBuiltin completer ->
     [exon|-complete=#{completer}|]
   CompleteHandler CompleteFiltered func ->
-    [exon|-complete=customlist,#{completionName func}|]
+    [exon|-complete=customlist,#{unRpcName (completionName func)}|]
   CompleteHandler CompleteUnfiltered func ->
-    [exon|-complete=custom,#{completionName func}|]
+    [exon|-complete=custom,#{unRpcName (completionName func)}|]
 
 data CommandOptions =
   CommandOptions {

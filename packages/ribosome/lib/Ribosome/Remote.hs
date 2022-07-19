@@ -85,7 +85,7 @@ runNvimHandlers_ =
 -- |Run a neovim plugin using a chain of interpreters that eliminate both 'NvimPlugin' and an arbitrary stack of custom
 -- effects.
 -- This provides more functionality than 'runNvimHandlersIO', since 'NvimPlugin' not only interprets basic request
--- handlers, but also mappings and watched variables. See its docs for more information.
+-- handlers, but also mappings and watched variables.
 runNvimPluginIO ::
   ∀ r .
   HigherOrder (NvimPlugin : r) RemoteStack =>

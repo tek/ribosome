@@ -6,7 +6,7 @@ import Polysemy.Test (UnitTest, assertJust, (===))
 import Polysemy.Time (Seconds (Seconds))
 
 import Ribosome.Api.Buffer (currentBufferContent)
-import Ribosome.Data.Mapping (Mapping (Mapping), MappingIdent (MappingIdent))
+import Ribosome.Data.Mapping (Mapping)
 import Ribosome.Data.ScratchOptions (ScratchOptions (ScratchOptions))
 import qualified Ribosome.Effect.Scratch as Scratch
 import Ribosome.Effect.Scratch (Scratch)
@@ -17,7 +17,8 @@ import Ribosome.Host.Data.RpcError (RpcError)
 import Ribosome.Host.Data.RpcHandler (Handler, RpcHandler)
 import qualified Ribosome.Host.Effect.Rpc as Rpc
 import Ribosome.Host.Effect.Rpc (Rpc)
-import Ribosome.Host.Handler (rpcFunction)
+import Ribosome.Host.Handler (rpcCommand, rpcFunction)
+import Ribosome.Mapping (mappingFor)
 import Ribosome.Test.Wait (assertWait)
 import Ribosome.Unit.Run (runTest, testHandlers)
 
@@ -30,14 +31,11 @@ mappingHandler ::
 mappingHandler =
   void (Sync.putWait (Seconds 5) 13)
 
-mapping :: Mapping
-mapping =
-  Mapping (MappingIdent "mappingHandler") "a" "n" False True
-
 setupMappingScratch ::
   Member (Scratch !! RpcError) r =>
+  Mapping ->
   Handler r ()
-setupMappingScratch = do
+setupMappingScratch mapping = do
   resumeHandlerError (void (Scratch.show target options))
   where
     options =
@@ -45,16 +43,22 @@ setupMappingScratch = do
 
 handlers ::
   ∀ r .
-  Member (Scratch !! RpcError) r =>
+  Members [Sync Int, Scratch !! RpcError, Rpc !! RpcError] r =>
   [RpcHandler r]
 handlers =
   [
-    rpcFunction "Setup" Sync setupMappingScratch
+    rpcFunction "Setup" Sync (setupMappingScratch m),
+    mapRpc
   ]
+  where
+    m =
+      mappingFor mapRpc "a" "n" Nothing
+    mapRpc =
+      rpcCommand "Map" Sync mappingHandler
 
 test_mapping :: UnitTest
 test_mapping =
-  runTest $ interpretSync $ testHandlers handlers [("mappingHandler", mappingHandler)] mempty do
+  runTest $ interpretSync $ testHandlers handlers mempty do
     () <- Rpc.sync (vimCallFunction @() "Setup" [])
     assertWait currentBufferContent (target ===)
     Rpc.notify (nvimFeedkeys "a" "x" False)

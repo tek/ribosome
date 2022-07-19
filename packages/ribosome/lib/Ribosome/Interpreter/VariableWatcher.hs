@@ -1,40 +1,54 @@
 module Ribosome.Interpreter.VariableWatcher where
 
-import Conc (interpretAtomic)
+import Conc (interpretAtomic, interpretLockReentrant, lockOrSkip_)
 import qualified Data.Map.Strict as Map
-import Data.MessagePack (Object)
-import Exon (exon)
+import Data.MessagePack (Object (ObjectNil))
 
 import Ribosome.Data.WatchedVariable (WatchedVariable (WatchedVariable))
 import qualified Ribosome.Effect.VariableWatcher as VariableWatcher
 import Ribosome.Effect.VariableWatcher (VariableWatcher)
-import qualified Ribosome.Host.Data.HandlerError as HandlerError
+import Ribosome.Host.Api.Effect (nvimGetVar)
 import Ribosome.Host.Data.HandlerError (HandlerError)
+import Ribosome.Host.Data.RpcError (RpcError)
 import Ribosome.Host.Data.RpcHandler (Handler)
+import Ribosome.Host.Effect.Rpc (Rpc)
 
 interpretVariableWatcherNull :: InterpreterFor (VariableWatcher !! HandlerError) r
 interpretVariableWatcherNull =
   interpretResumable \case
-    VariableWatcher.WatchedVariables -> mempty
-    VariableWatcher.Update _ _ -> unit
+    VariableWatcher.Update -> unit
     VariableWatcher.Unwatch _ -> unit
 
-noHandler :: WatchedVariable -> HandlerError
-noHandler var =
-  HandlerError.simple [exon|No handler for variable #{coerce var}|]
+runIfDifferent ::
+  (Object -> Handler r ()) ->
+  Object ->
+  Object ->
+  Handler r ()
+runIfDifferent handler new old =
+  unless (old == new) (handler new)
+
+checkVar ::
+  Member (Rpc !! RpcError) r =>
+  WatchedVariable ->
+  Object ->
+  (Object -> Handler r ()) ->
+  Handler r Object
+checkVar (WatchedVariable var) old handler = do
+  resumeAs old do
+    new <- nvimGetVar var
+    new <$ raise (runIfDifferent handler new old)
 
 interpretVariableWatcher ::
-  Member (Embed IO) r =>
+  Members [Rpc !! RpcError, Resource, Mask mres, Race, Embed IO] r =>
   Map WatchedVariable (Object -> Handler r ()) ->
   InterpreterFor (VariableWatcher !! HandlerError) r
 interpretVariableWatcher vars =
-  interpretAtomic vars .
+  interpretLockReentrant .
+  interpretAtomic ((ObjectNil,) <$> vars) .
   interpretResumable \case
-    VariableWatcher.WatchedVariables ->
-      atomicGets Map.keys
-    VariableWatcher.Update new var -> do
-      handler <- stopNote (noHandler var) =<< atomicGets (Map.lookup var)
-      raiseUnder (handler new)
+    VariableWatcher.Update ->
+      lockOrSkip_ do
+        atomicPut =<< Map.traverseWithKey (\ var (old, h) -> (,h) <$> raiseUnder2 (checkVar var old h)) =<< atomicGet
     VariableWatcher.Unwatch var ->
       atomicModify' (Map.delete var)
-  . raiseUnder
+  . raiseUnder2

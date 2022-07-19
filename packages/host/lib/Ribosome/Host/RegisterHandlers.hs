@@ -16,6 +16,7 @@ import Ribosome.Host.Data.Request (RpcMethod (RpcMethod))
 import Ribosome.Host.Data.RpcCall (RpcCall)
 import Ribosome.Host.Data.RpcError (RpcError, rpcErrorMessage)
 import Ribosome.Host.Data.RpcHandler (RpcHandler (RpcHandler), rpcMethod)
+import Ribosome.Host.Data.RpcName (RpcName (RpcName))
 import qualified Ribosome.Host.Data.RpcType as AutocmdOptions
 import qualified Ribosome.Host.Data.RpcType as RpcType
 import Ribosome.Host.Data.RpcType (
@@ -77,11 +78,11 @@ rpcCall (ChannelId i) (RpcMethod method) exec args =
 registerType ::
   ChannelId ->
   RpcMethod ->
-  Text ->
+  RpcName ->
   Execution ->
   RpcType ->
   Text
-registerType i method name exec = \case
+registerType i method (RpcName name) exec = \case
   RpcType.Function ->
     [exon|function! #{name}(...) range
 return #{rpcCall i method exec (Just "a:000")}

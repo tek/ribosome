@@ -2,49 +2,48 @@ module Ribosome.Mapping where
 
 import Exon (exon)
 
-import Ribosome.Data.Mapping (Mapping (Mapping), MappingIdent (MappingIdent))
-import Ribosome.Data.PluginName (PluginName (PluginName))
+import Ribosome.Data.Mapping (Mapping (Mapping), MappingId, unMappingId)
 import Ribosome.Host.Api.Data (Buffer)
-import Ribosome.Host.Api.Effect (vimCommand)
+import Ribosome.Host.Api.Effect (nvimCommand)
+import Ribosome.Host.Data.RpcHandler (RpcHandler (RpcHandler, rpcName))
+import Ribosome.Host.Data.RpcName (RpcName (RpcName))
 import Ribosome.Host.Effect.Rpc (Rpc)
 import Ribosome.Host.Modify (bufdo)
-import Ribosome.PluginName (pluginNameCapitalized)
-
-mapCommand :: Text -> Bool -> Text
-mapCommand mode remap =
-  mode <> (if remap then "map" else "noremap")
-
-mappingCall ::
-  Text ->
-  MappingIdent ->
-  Text
-mappingCall name (MappingIdent ident) =
-  [exon|:silent call #{name}Mapping('#{ident}')<cr>|]
 
 mappingCmd ::
-  Members [Rpc, Reader PluginName] r =>
-  Text ->
+  Member Rpc r =>
+  Bool ->
   Mapping ->
   Sem r ()
-mappingCmd extra (Mapping ident lhs mode remap _) = do
-  PluginName name <- pluginNameCapitalized
-  vimCommand (cmdline name)
+mappingCmd buffer (Mapping (RpcName name) lhs mode ident) =
+  nvimCommand [exon|#{mode}noremap#{buf} #{lhs} <cmd>silent #{name}#{i}<cr>|]
   where
-    cmdline name =
-      [exon|#{mapCommand mode remap}#{extra} #{lhs} #{mappingCall name ident}|]
+    buf =
+      if buffer then " <buffer>" else ""
+    i =
+      foldMap unMappingId ident
 
 activateMapping ::
-  Members [Rpc, Reader PluginName] r =>
+  Member Rpc r =>
   Mapping ->
   Sem r ()
 activateMapping =
-  mappingCmd ""
+  mappingCmd False
 
 activateBufferMapping ::
-  Members [Rpc, Reader PluginName] r =>
+  Member Rpc r =>
   Buffer ->
   Mapping ->
   Sem r ()
-activateBufferMapping buffer mapping =
+activateBufferMapping buffer m =
   bufdo buffer do
-    mappingCmd " <buffer>" mapping
+    mappingCmd True m
+
+mappingFor ::
+  RpcHandler r ->
+  Text ->
+  Text ->
+  Maybe MappingId ->
+  Mapping
+mappingFor RpcHandler {rpcName} =
+  Mapping rpcName

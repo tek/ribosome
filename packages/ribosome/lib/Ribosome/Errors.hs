@@ -17,7 +17,7 @@ import Ribosome.Host.Data.HandlerError (
   toHandlerError,
   )
 import Ribosome.Host.Data.HostError (HostError (HostError))
-import Ribosome.Host.Data.RpcError (RpcError)
+import Ribosome.Host.Data.RpcError (RpcError (..))
 import Ribosome.Host.Effect.Errors
 import Ribosome.Host.Effect.Rpc (Rpc)
 import Ribosome.Host.Interpreter.Errors

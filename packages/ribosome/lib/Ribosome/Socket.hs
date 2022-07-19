@@ -9,7 +9,6 @@ import Ribosome.Host.Interpreter.Host (withHost)
 import Ribosome.Host.Interpreter.Process.Socket (interpretProcessCerealSocket)
 import Ribosome.Host.Run (RpcDeps, RpcStack, interpretRpcStack)
 import Ribosome.IOStack (BasicPluginStack)
-import Ribosome.Interpreter.BuiltinHandlers (interpretBuiltinHandlers)
 import Ribosome.Interpreter.NvimPlugin (rpcHandlers, sendNvimPlugin)
 import Ribosome.Interpreter.Scratch (interpretScratch)
 import Ribosome.Interpreter.Settings (interpretSettingsRpc)
@@ -50,7 +49,6 @@ withPluginSocket ::
   Sem r a
 withPluginSocket =
   sendNvimPlugin .
-  interpretBuiltinHandlers .
   interceptHandlersBuiltin .
   withHost .
   insertAt @0

@@ -1,3 +1,6 @@
+{-# options_haddock prune #-}
+
+-- |Compute the command options and arguments based on handler function parameters.
 module Ribosome.Host.Handler.Command where
 
 import Type.Errors.Pretty (type (%), type (<>))
@@ -9,11 +12,15 @@ import Ribosome.Host.Data.CommandMods (CommandMods)
 import Ribosome.Host.Data.CommandRegister (CommandRegister)
 import Ribosome.Host.Data.Range (Range, RangeStyleOpt (rangeStyleArg, rangeStyleOpt))
 
+-- |Represents the value for the command option @-nargs@.
 data ArgCount =
+  -- |@-nargs=0@
   Zero
   |
+  -- |@-nargs=*@
   MinZero
   |
+  -- |@-nargs=+@
   MinOne
   deriving stock (Eq, Show)
 
@@ -22,16 +29,19 @@ type family Max (l :: ArgCount) (r :: ArgCount) :: ArgCount where
   Max 'MinZero 'MinOne = 'MinOne
   Max l _ = l
 
+-- |Determines how different special command handler parameter types may interact.
 data OptionState =
   OptionState {
+    -- |Are special option parameters allowed at this position?
     allowed :: Bool,
+    -- |The minimum number of arguments that are expected
     minArgs :: ArgCount,
-    optional :: Bool,
+    -- |Have all arguments been consumed, by types like 'ArgList'?
     argsConsumed :: Maybe Type
   }
 
 type OptionStateZero =
-  'OptionState 'True 'Zero 'True 'Nothing
+  'OptionState 'True 'Zero 'Nothing
 
 type family CommandSpecial (a :: Type) :: Bool where
   CommandSpecial (Range _) = 'True
@@ -44,6 +54,10 @@ type family CommandSpecial (a :: Type) :: Bool where
   CommandSpecial (JsonArgs _) = 'True
   CommandSpecial _ = 'False
 
+-- |Determine the command options and arguments that need to be specified when registering a command, for a special
+-- command option parameter.
+--
+-- See [Command params]("Ribosome#command-params") for the list of supported special types.
 class SpecialParam (state :: OptionState) (a :: Type) where
   type TransSpecial state a :: OptionState
   type TransSpecial s _ =
@@ -57,6 +71,10 @@ class SpecialParam (state :: OptionState) (a :: Type) where
   specialArg =
     Nothing
 
+-- |Emit a compile error if a special command option type is used as a handler parameter after a regular, value
+-- parameter.
+--
+-- The parameter @allowed@ is set to 'False' when the first non-option parameter is encountered.
 type family BeforeRegular (allowed :: Bool) (a :: Type) :: Constraint where
   BeforeRegular 'False a =
     TypeError ("Command option type " <> a <> " may not come after non-option") ~ ()
@@ -66,7 +84,7 @@ type family BeforeRegular (allowed :: Bool) (a :: Type) :: Constraint where
 instance (
     BeforeRegular al (Range rs),
     RangeStyleOpt rs
-  ) => SpecialParam ('OptionState al c o ac) (Range rs) where
+  ) => SpecialParam ('OptionState al c ac) (Range rs) where
   specialOpt =
     Just (rangeStyleOpt @rs)
   specialArg =
@@ -74,7 +92,7 @@ instance (
 
 instance (
     BeforeRegular al Bang
-  ) => SpecialParam ('OptionState al c o ac) Bang where
+  ) => SpecialParam ('OptionState al c ac) Bang where
   specialOpt =
     Just "-bang"
   specialArg =
@@ -82,7 +100,7 @@ instance (
 
 instance (
     BeforeRegular al Bar
-  ) => SpecialParam ('OptionState al c o ac) Bar where
+  ) => SpecialParam ('OptionState al c ac) Bar where
   specialOpt =
     Just "-bar"
   specialArg =
@@ -90,7 +108,7 @@ instance (
 
 instance (
     BeforeRegular al CommandMods
-  ) => SpecialParam ('OptionState al c o ac) CommandMods where
+  ) => SpecialParam ('OptionState al c ac) CommandMods where
   specialOpt =
     Nothing
   specialArg =
@@ -98,20 +116,26 @@ instance (
 
 instance (
     BeforeRegular al CommandRegister
-  ) => SpecialParam ('OptionState al c o ac) CommandRegister where
+  ) => SpecialParam ('OptionState al c ac) CommandRegister where
   specialOpt =
     Just "-register"
   specialArg =
     Just "<q-register>"
 
-instance SpecialParam ('OptionState al count o 'Nothing) Args where
-  type TransSpecial ('OptionState al count o _) _ =
-    'OptionState 'True (Max count 'MinZero) o ('Just Args)
+instance SpecialParam ('OptionState al count 'Nothing) Args where
+  type TransSpecial ('OptionState al count _) _ =
+    'OptionState 'True (Max count 'MinZero) ('Just Args)
 
-instance SpecialParam ('OptionState al count o ac) ArgList where
-  type TransSpecial ('OptionState al count o _) _ =
-    'OptionState 'True (Max count 'MinZero) o ('Just ArgList)
+instance SpecialParam ('OptionState al count ac) (JsonArgs a) where
+  type TransSpecial ('OptionState al count _) _ =
+    'OptionState 'True (Max count 'MinZero) ('Just (JsonArgs a))
 
+instance SpecialParam ('OptionState al count ac) ArgList where
+  type TransSpecial ('OptionState al count _) _ =
+    'OptionState 'True (Max count 'MinZero) ('Just ArgList)
+
+-- |Determines whether a regular, value parameter is allowed (it isn't after types like 'ArgList' that consume all
+-- remaining arguments), and increases the minimum argument count if the parameter isn't 'Maybe'.
 class RegularParam (state :: OptionState) (isMaybe :: Bool) a where
   type TransRegular state isMaybe a :: OptionState
 
@@ -123,19 +147,21 @@ type family ArgsError consumer a where
       "since " <> consumer <> " consumes all arguments"
     )
 
-instance RegularParam ('OptionState al count opt ('Just consumer)) m a where
-  type TransRegular ('OptionState al count opt ('Just consumer)) m a =
+instance RegularParam ('OptionState al count ('Just consumer)) m a where
+  type TransRegular ('OptionState al count ('Just consumer)) m a =
     ArgsError consumer a
 
-instance RegularParam ('OptionState al count opt 'Nothing) 'True (Maybe a) where
-  type TransRegular ('OptionState al count opt 'Nothing) 'True (Maybe a) =
-    'OptionState 'False (Max count 'MinZero) opt 'Nothing
+instance RegularParam ('OptionState al count 'Nothing) 'True (Maybe a) where
+  type TransRegular ('OptionState al count 'Nothing) 'True (Maybe a) =
+    'OptionState 'False (Max count 'MinZero) 'Nothing
 
-instance RegularParam ('OptionState al count opt 'Nothing) 'False a where
-  type TransRegular ('OptionState al count opt 'Nothing) 'False a =
-    'OptionState 'False 'MinOne 'False 'Nothing
+instance RegularParam ('OptionState al count 'Nothing) 'False a where
+  type TransRegular ('OptionState al count 'Nothing) 'False a =
+    'OptionState 'False 'MinOne 'Nothing
 
+-- |Determine the command option and parameter that a handler parameter type requires, if any.
 class CommandParam (special :: Bool) (state :: OptionState) (a :: Type) where
+  -- |Transition the current 'OptionState'.
   type TransState special state a :: OptionState
 
   paramOpt :: Maybe Text
@@ -168,18 +194,27 @@ instance (
     type TransState 'False state a =
       TransRegular state (IsMaybe a) a
 
-class CommandHandler (state :: OptionState) h where
+-- |Derive the command options and arguments that should be used when registering the Neovim command, from the
+-- parameters of the handler function.
+--
+-- See [Command params]("Ribosome#command-params") for the list of supported special types.
+--
+-- The parameter @state@ is a type level value that determines which parameter types may be used after another and
+-- counts the number of command arguments that are required or allowed.
+-- It is transitioned by families in the classes 'CommandParam', 'SpecialParam' and 'RegularParam'.
+class CommandHandler (state :: OptionState) (h :: Type) where
+  -- |Return the list of command options and special arguments determined by the handler function's parameters.
   commandOptions :: ([Text], [Text])
 
-instance CommandHandler ('OptionState _a 'Zero o c) (Sem r a) where
+instance CommandHandler ('OptionState _a 'Zero c) (Sem r a) where
   commandOptions =
     (["-nargs=0"], [])
 
-instance CommandHandler ('OptionState _a 'MinZero o c) (Sem r a) where
+instance CommandHandler ('OptionState _a 'MinZero c) (Sem r a) where
   commandOptions =
     (["-nargs=*"], ["<f-args>"])
 
-instance CommandHandler ('OptionState _a 'MinOne o c) (Sem r a) where
+instance CommandHandler ('OptionState _a 'MinOne c) (Sem r a) where
   commandOptions =
     (["-nargs=+"], ["<f-args>"])
 

@@ -10,6 +10,7 @@ import Ribosome.Host.Data.Execution (Execution)
 import Ribosome.Host.Data.HandlerError (HandlerError, resumeHandlerError)
 import Ribosome.Host.Data.Request (RpcMethod (RpcMethod))
 import Ribosome.Host.Data.RpcError (RpcError)
+import Ribosome.Host.Data.RpcName (RpcName (RpcName))
 import qualified Ribosome.Host.Data.RpcType as RpcType
 import Ribosome.Host.Data.RpcType (RpcType)
 import Ribosome.Host.Effect.Rpc (Rpc)
@@ -25,12 +26,15 @@ import Ribosome.Host.Effect.Rpc (Rpc)
 type Handler r a =
   Sem (Stop HandlerError : r) a
 
+-- |This type is the canonical form of an RPC handler, taking a list of MessagePack 'Object's to a 'Sem' with a
+-- 'HandlerError' at the head, returning an 'Object'.
 type RpcHandlerFun r =
   [Object] -> Handler r Object
 
 -- |This type defines a request handler, using a 'Handler' function, the request type, a name, and whether it should
 -- block Neovim while executing.
--- It can be constructed from functions using 'Ribosome.rpcFunction', 'Ribosome.rpcCommand' and 'Ribosome.rpcAutocmd'.
+-- It can be constructed from handler functions using 'Ribosome.rpcFunction', 'Ribosome.rpcCommand' and
+-- 'Ribosome.rpcAutocmd'.
 --
 -- A list of 'RpcHandler's can be used as a Neovim plugin by passing them to 'Ribosome.runNvimHandlersIO'.
 --
@@ -39,11 +43,11 @@ data RpcHandler r =
   RpcHandler {
     -- |Whether the trigger is a function, command, or autocmd, and the various options Neovim offers for them.
     rpcType :: RpcType,
-    -- |An identifier used to associate a request with a handler, which is also used as the name  of the function or
+    -- |An identifier used to associate a request with a handler, which is also used as the name of the function or
     -- command.
-    rpcName :: Text,
+    rpcName :: RpcName,
     -- |If this is 'Ribosome.Sync', the handler will block Neovim via @rpcrequest@.
-    -- If it is 'Ribosome.Async', Neovim will send @rpcnotify@ and forget about it.
+    -- If it is 'Ribosome.Async', Neovim will use @rpcnotify@ and forget about it.
     rpcExecution :: Execution,
     -- |The function operating on raw msgpack objects, derived from a 'Handler' by the smart constructors.
     rpcHandler :: RpcHandlerFun r
@@ -70,9 +74,9 @@ hoistRpcHandlers f =
 
 rpcMethod ::
   RpcType ->
-  Text ->
+  RpcName ->
   RpcMethod
-rpcMethod rpcType name =
+rpcMethod rpcType (RpcName name) =
   RpcMethod [exon|#{RpcType.methodPrefix rpcType}:#{name}|]
 
 rpcHandlerMethod :: RpcHandler r -> RpcMethod

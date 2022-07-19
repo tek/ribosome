@@ -5,7 +5,6 @@ import Data.MessagePack (Object)
 import Log (Severity (Trace))
 import Polysemy.Test (TestError, UnitTest)
 
-import Ribosome.Data.Mapping (MappingIdent)
 import Ribosome.Data.PluginConfig (PluginConfig (PluginConfig))
 import Ribosome.Data.PluginName (PluginName)
 import Ribosome.Data.WatchedVariable (WatchedVariable)
@@ -102,11 +101,10 @@ testPluginHandlers ::
   Members BasicPluginStack r =>
   Member (Error TestError) r =>
   [RpcHandler r] ->
-  Map MappingIdent (Handler r ()) ->
   Map WatchedVariable (Object -> Handler r ()) ->
   InterpretersFor EmbedEffects r
-testPluginHandlers handlers maps vars =
-  interpretNvimPlugin handlers maps vars .
+testPluginHandlers handlers vars =
+  interpretNvimPlugin handlers vars .
   testPluginEmbed
 
 testPluginConf ::

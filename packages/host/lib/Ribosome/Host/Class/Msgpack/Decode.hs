@@ -1,3 +1,6 @@
+{-# options_haddock prune #-}
+
+-- |Decoding values from MessagePack format
 module Ribosome.Host.Class.Msgpack.Decode where
 
 import qualified Data.Map.Strict as Map (empty, fromList, toList)
@@ -25,14 +28,20 @@ import Time (MicroSeconds, MilliSeconds, NanoSeconds, Seconds (Seconds))
 
 import qualified Ribosome.Host.Class.Msgpack.Util as Util (illegalType, invalid, lookupObjectMap, missingRecordKey)
 
+-- |Class of values that can be decoded from MessagePack 'Object's.
 class MsgpackDecode a where
+  -- |Attempt to decode an 'Object', returning an error message in a 'Left' if the data is incompatible.
+  --
+  -- The default implementation uses generic derivation.
   fromMsgpack :: Object -> Either Text a
   default fromMsgpack :: (Generic a, GMsgpackDecode (Rep a)) => Object -> Either Text a
   fromMsgpack = fmap to . gMsgpackDecode
 
+  -- |Utility method called by the generic machinery when a record key is missing.
   missingKey :: String -> Object -> Either Text a
   missingKey = Util.missingRecordKey
 
+-- |Pattern synonym for decoding an 'Object'.
 pattern Msgpack :: ∀ a . MsgpackDecode a => a -> Object
 pattern Msgpack a <- (fromMsgpack -> Right a)
 

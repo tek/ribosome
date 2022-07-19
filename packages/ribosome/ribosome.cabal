@@ -82,11 +82,9 @@ library
       Ribosome.Data.SettingError
       Ribosome.Data.Syntax
       Ribosome.Data.WatchedVariable
-      Ribosome.Data.WatchedVariableHandler
       Ribosome.Data.WindowConfig
       Ribosome.Data.WindowView
       Ribosome.Effect.BuiltinHandlers
-      Ribosome.Effect.MappingHandler
       Ribosome.Effect.NvimPlugin
       Ribosome.Effect.Persist
       Ribosome.Effect.PersistPath
@@ -100,7 +98,6 @@ library
       Ribosome.Float
       Ribosome.Internal.Scratch
       Ribosome.Interpreter.BuiltinHandlers
-      Ribosome.Interpreter.MappingHandler
       Ribosome.Interpreter.NvimPlugin
       Ribosome.Interpreter.Persist
       Ribosome.Interpreter.PersistPath
@@ -124,7 +121,6 @@ library
       Ribosome.Socket
       Ribosome.Syntax
       Ribosome.Text
-      Ribosome.VariableWatcher
   hs-source-dirs:
       lib
   default-extensions:

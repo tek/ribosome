@@ -1,7 +1,7 @@
 module Ribosome.Test.WatcherTest where
 
-import Data.MessagePack (Object)
 import Conc (interpretAtomic)
+import Data.MessagePack (Object)
 import Polysemy.Test (UnitTest, (===))
 
 import Ribosome.Api.Autocmd (doautocmd)
@@ -21,7 +21,7 @@ changed _ =
 
 test_varWatcher :: UnitTest
 test_varWatcher =
-  runTest $ interpretAtomic 0 $ testHandlers mempty mempty [("trigger", changed)] do
+  runTest $ interpretAtomic 0 $ testHandlers mempty [("trigger", changed)] do
     nvimSetVar "trigger" (4 :: Int)
     doautocmd "CmdlineLeave"
     assertWait atomicGet ((1 :: Int) ===)

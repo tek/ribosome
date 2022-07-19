@@ -1,3 +1,6 @@
+{-# options_haddock prune #-}
+
+-- |Encoding values to MessagePack format
 module Ribosome.Host.Class.Msgpack.Encode where
 
 import qualified Data.List.NonEmpty as NonEmpty (toList)
@@ -23,7 +26,11 @@ import Time (MicroSeconds, MilliSeconds (unMilliSeconds), NanoSeconds (unNanoSec
 
 import qualified Ribosome.Host.Class.Msgpack.Util as Util (assembleMap, string, text)
 
+-- |Class of values that can be encoded to MessagePack 'Object's.
 class MsgpackEncode a where
+  -- |Convert a value to MessagePack.
+  --
+  -- The default implementation uses generic derivation.
   toMsgpack :: a -> Object
   default toMsgpack :: (Generic a, GMsgpackEncode (Rep a)) => a -> Object
   toMsgpack = gMsgpackEncode . from

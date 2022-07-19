@@ -52,6 +52,7 @@ library
       Ribosome.Host.Data.RpcError
       Ribosome.Host.Data.RpcHandler
       Ribosome.Host.Data.RpcMessage
+      Ribosome.Host.Data.RpcName
       Ribosome.Host.Data.RpcType
       Ribosome.Host.Data.StoredError
       Ribosome.Host.Data.Tuple
@@ -164,7 +165,8 @@ library
       OverloadedLabels
   ghc-options: -Wall -Wredundant-constraints -Wincomplete-uni-patterns -Wmissing-deriving-strategies -Widentities -Wunused-packages -fplugin=Polysemy.Plugin
   build-depends:
-      base >=4.12 && <5
+      aeson >=2
+    , base >=4.12 && <5
     , casing
     , cereal
     , chronos

@@ -67,7 +67,7 @@ handlers =
 
 scratchTest :: Text -> UnitTest
 scratchTest fun = do
-  runTestHandlers handlers mempty mempty do
+  runTestHandlers handlers mempty do
     () <- vimCallFunction fun []
     assertWait scratchCount (assertEq (1 :: Int))
     assertWait currentBufferContent (assertEq target)
