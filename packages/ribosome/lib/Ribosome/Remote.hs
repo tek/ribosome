@@ -2,18 +2,20 @@ module Ribosome.Remote where
 
 import Ribosome.Data.PluginConfig (PluginConfig)
 import Ribosome.Data.PluginName (PluginName)
-import Ribosome.Effect.NvimPlugin (NvimPlugin)
+import Ribosome.Host.Data.HandlerError (HandlerError)
 import Ribosome.Host.Data.RpcHandler (RpcHandler)
+import Ribosome.Host.Effect.Handlers (Handlers)
 import Ribosome.Host.IOStack (IOStack)
 import Ribosome.Host.Interpret (HigherOrder)
+import Ribosome.Host.Interpreter.Handlers (interpretHandlers)
 import Ribosome.Host.Interpreter.Host (runHost)
 import Ribosome.Host.Interpreter.Process.Stdio (interpretProcessCerealStdio)
 import Ribosome.Host.Run (RpcDeps, RpcStack, interpretRpcStack)
 import Ribosome.IOStack (BasicPluginStack, runCli)
-import Ribosome.Interpreter.NvimPlugin (rpcHandlers)
 import Ribosome.Interpreter.Scratch (interpretScratch)
 import Ribosome.Interpreter.Settings (interpretSettingsRpc)
 import Ribosome.Interpreter.UserError (interpretUserErrorPrefixed)
+import Ribosome.Interpreter.VariableWatcher (interpretVariableWatcherNull)
 import Ribosome.Plugin.Builtin (interceptHandlersBuiltin)
 import Ribosome.Run (PluginEffects)
 
@@ -38,71 +40,49 @@ interpretPluginRemote ::
 interpretPluginRemote =
   interpretRpcDeps .
   interpretRpcStack .
+  interpretVariableWatcherNull .
   interpretSettingsRpc .
   interpretScratch
 
 runPluginHostRemote ::
   ∀ r .
-  Members NvimPlugin r =>
   Members HandlerStack r =>
   Members BasicPluginStack r =>
+  Member (Handlers !! HandlerError) r =>
   Sem r ()
 runPluginHostRemote =
   interceptHandlersBuiltin runHost
 
+-- |Run a Neovim plugin using a set of handlers and configuration, with an arbitrary stack of custom effects placed
+-- between the handlers and the Ribosome stack.
+--
+-- Like 'runNvimPluginIO', but doesn't run the IO stack.
 runNvimPlugin ::
-  ∀ r .
-  HigherOrder (NvimPlugin ++ r) RemoteStack =>
-  InterpretersFor (NvimPlugin ++ r) RemoteStack ->
-  Sem BasicPluginStack ()
-runNvimPlugin handlers =
-  interpretPluginRemote (handlers runPluginHostRemote)
-
-runNvimPlugin_ ::
-  InterpretersFor NvimPlugin RemoteStack ->
-  Sem BasicPluginStack ()
-runNvimPlugin_ =
-  runNvimPlugin @'[]
-
-runNvimHandlers ::
   ∀ r .
   HigherOrder r RemoteStack =>
   InterpretersFor r RemoteStack ->
   [RpcHandler (r ++ RemoteStack)] ->
   Sem BasicPluginStack ()
-runNvimHandlers effs handlers =
-  runNvimPlugin @r (effs . rpcHandlers handlers)
+runNvimPlugin effs handlers =
+  interpretPluginRemote (effs (interpretHandlers handlers runPluginHostRemote))
 
-runNvimHandlers_ ::
+-- |Run a Neovim plugin using a set of handlers and configuration, with an arbitrary stack of custom effects placed
+-- between the handlers and the Ribosome stack.
+--
+-- This function does not allow additional effects to be used. See 'runNvimHandlersIO' for that purpose.
+--
+-- Like 'runNvimPluginIO', but doesn't run the IO stack.
+runNvimPlugin_ ::
   [RpcHandler RemoteStack] ->
   Sem BasicPluginStack ()
-runNvimHandlers_ =
-  runNvimHandlers @'[] id
-
--- |Run a neovim plugin using a chain of interpreters that eliminate both 'NvimPlugin' and an arbitrary stack of custom
--- effects.
--- This provides more functionality than 'runNvimHandlersIO', since 'NvimPlugin' not only interprets basic request
--- handlers, but also mappings and watched variables.
-runNvimPluginIO ::
-  ∀ r .
-  HigherOrder (NvimPlugin ++ r) RemoteStack =>
-  PluginConfig ->
-  InterpretersFor (NvimPlugin ++ r) RemoteStack ->
-  IO ()
-runNvimPluginIO conf handlers =
-  runCli conf (runNvimPlugin @r handlers)
-
-runNvimPluginIO_ ::
-  PluginConfig ->
-  InterpretersFor NvimPlugin RemoteStack ->
-  IO ()
-runNvimPluginIO_ =
-  runNvimPluginIO @'[]
+runNvimPlugin_ =
+  runNvimPlugin @'[] id
 
 -- |Run a Neovim plugin using a set of handlers and configuration, with an arbitrary stack of custom effects placed
 -- between the handlers and the Ribosome stack.
 -- This is important, because the custom effects may want to use the Neovim API, while the handlers want to use both
 -- Neovim and the custom effects.
+--
 -- Example:
 --
 -- > data Numbers :: Effect where
@@ -123,7 +103,7 @@ runNvimPluginIO_ =
 -- > setNumber = atomicPut
 -- >
 -- > main :: IO ()
--- > main = runNvimHandlersIO @CustomStack "numbers" (interpretAtomic . runNumbers) [
+-- > main = runNvimPluginIO @CustomStack "numbers" (interpretAtomic . runNumbers) [
 -- >   rpcFunction "CurrentNumber" Sync currentNumber,
 -- >   rpcFunction "SetNumber" Async setNumber
 -- >   ]
@@ -137,23 +117,24 @@ runNvimPluginIO_ =
 -- - For an explanation of @Rpc !! RpcError@, see [Errors]("Ribosome#errors")
 --
 -- This runs the entire stack to completion, so it can be used in the app's @main@ function.
-runNvimHandlersIO ::
+runNvimPluginIO ::
   ∀ r .
   HigherOrder r RemoteStack =>
   PluginConfig ->
   InterpretersFor r RemoteStack ->
   [RpcHandler (r ++ RemoteStack)] ->
   IO ()
-runNvimHandlersIO conf effs handlers =
-  runCli conf (runNvimHandlers @r effs handlers)
+runNvimPluginIO conf effs handlers =
+  runCli conf (runNvimPlugin @r effs handlers)
 
 -- |Run a Neovim plugin using a set of handlers and configuration.
+--
 -- This function does not allow additional effects to be used. See 'runNvimHandlersIO' for that purpose.
 --
 -- This runs the entire stack to completion, so it can be used in the app's @main@ function.
-runNvimHandlersIO_ ::
+runNvimPluginIO_ ::
   PluginConfig ->
   [RpcHandler RemoteStack] ->
   IO ()
-runNvimHandlersIO_ conf =
-  runNvimHandlersIO @'[] conf id
+runNvimPluginIO_ conf =
+  runNvimPluginIO @'[] conf id

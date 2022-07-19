@@ -8,8 +8,8 @@ import Path (File, Path, Rel)
 -- Each distinct type corresponds to a separate copy of this effect. When the same type should be stored in separate
 -- files for different components of the plugin, use 'Tagged'.
 -- The subdirectory or file name used for a type is specified to the interpreter.
--- If the constructor is called with a file name, each value is stored in a separate file, otherwise the same file is
--- overwritten on every call to 'store'.
+-- If the constructor 'store' is called with 'Just' a file name, each value is stored in a separate file, otherwise the
+-- same file is overwritten on every call to 'store'.
 --
 -- The default interpreter delegates file path resolution to the effect 'Ribosome.Persist.PersistPath' and uses JSON to
 -- codec the data.

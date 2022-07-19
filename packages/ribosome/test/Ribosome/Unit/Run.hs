@@ -6,19 +6,21 @@ import Polysemy.Test (TestError (TestError), UnitTest)
 
 import Ribosome.Data.PluginName (PluginName)
 import Ribosome.Data.WatchedVariable (WatchedVariable)
-import Ribosome.Effect.NvimPlugin (NvimPlugin)
 import Ribosome.Effect.Scratch (Scratch)
 import Ribosome.Effect.Settings (Settings)
 import Ribosome.Embed (HandlerEffects, interpretPluginEmbed, withPluginEmbed)
 import Ribosome.Host.Data.HandlerError (HandlerError, handlerErrorMessage)
 import Ribosome.Host.Data.HostConfig (setStderr)
 import Ribosome.Host.Data.RpcHandler (Handler, RpcHandler)
+import Ribosome.Host.Effect.Handlers (Handlers)
 import Ribosome.Host.Effect.Rpc (Rpc)
 import Ribosome.Host.Error (resumeBootError)
+import Ribosome.Host.Interpret (type (|>))
+import Ribosome.Host.Interpreter.Handlers (interpretHandlers)
 import Ribosome.Host.Test.Data.TestConfig (host)
 import qualified Ribosome.Host.Test.Run as Host
 import Ribosome.Host.Test.Run (TestStack)
-import Ribosome.Interpreter.NvimPlugin (pluginHandlers)
+import Ribosome.Interpreter.VariableWatcher (watchVariables)
 
 type HandlerTestStack =
   HandlerEffects ++ Reader PluginName : TestStack
@@ -29,7 +31,7 @@ type EmbedEffects =
     Scratch,
     Settings,
     Rpc
-  ] ++ NvimPlugin
+  ] |> Handlers !! HandlerError
 
 type PluginTestStack =
   EmbedEffects ++ HandlerTestStack
@@ -58,7 +60,8 @@ testHandlers ::
   Map WatchedVariable (Object -> Handler r ()) ->
   InterpretersFor EmbedEffects r
 testHandlers handlers vars =
-  pluginHandlers handlers vars .
+  watchVariables vars .
+  interpretHandlers handlers .
   withPluginEmbed .
   resumeBootError @Rpc .
   resumeBootError @Settings .

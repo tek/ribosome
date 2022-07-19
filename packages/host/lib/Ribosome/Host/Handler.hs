@@ -30,7 +30,7 @@ import Ribosome.Host.Handler.Command (CommandHandler (commandOptions), OptionSta
 -- The function is converted to use messagepack types by the class 'HandlerCodec'.
 --
 -- For easier type inference, it is advisable to use @'Handler' r a@ for the return type of the handler instead of using
--- @'Member' ('Stop' 'HandlerError') r@.
+-- @'Member' ('Stop' 'Ribosome.HandlerError') r@.
 --
 -- Example:
 --

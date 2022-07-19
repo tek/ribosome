@@ -10,7 +10,6 @@ module Ribosome (
 
   RpcHandler (..),
   Handler,
-  Mapping (Mapping),
   WatchedVariable (..),
 
   -- ** Constructing handlers
@@ -26,22 +25,21 @@ module Ribosome (
 
   -- ** Only handlers
 
-  runNvimHandlersIO,
-  runNvimHandlersIO_,
-  RemoteStack,
-
-  -- ** With watched variables
-  -- $execution-ext
-
   runNvimPluginIO,
   runNvimPluginIO_,
-  NvimPlugin,
-  pluginHandlers,
+  RemoteStack,
+  BasicPluginStack,
+  runBasicPluginStack,
+
+  -- ** Watched variables
+  -- $watched-variables
+  watchVariables,
 
   -- * Interacting with Neovim
   -- $api
 
   Rpc,
+  Request (Request),
   RpcCall,
   sync,
   async,
@@ -72,10 +70,24 @@ module Ribosome (
 
   -- ** Settings
   Settings,
+  Setting (Setting),
+  SettingError,
   interpretSettingsRpc,
   -- ** Scratch buffers
   -- $scratch
   Scratch,
+  ScratchOptions (ScratchOptions),
+  scratch,
+  FloatOptions (FloatOptions),
+  ScratchId (ScratchId),
+  ScratchState (ScratchState),
+  -- ** Mappings
+  -- $mappings
+  Mapping (Mapping),
+  MappingId (MappingId),
+  mappingFor,
+  activateBufferMapping,
+  activateMapping,
   -- ** Persisting data across vim sessions
   Persist,
   interpretPersist,
@@ -85,6 +97,8 @@ module Ribosome (
   interpretPersistPath,
   interpretPersistPathSetting,
   interpretPersistPathAt,
+  PersistError,
+  PersistPathError,
   -- ** The plugin's name
   PluginName (PluginName),
   interpretPluginName,
@@ -153,6 +167,12 @@ module Ribosome (
   HostError (..),
   StoredError (..),
   Errors,
+  reportError,
+  reportStop,
+  resumeReportError,
+  storeError,
+  UserError,
+  interpretUserErrorPrefixed,
 
   -- * Mutex State
   MState,
@@ -171,28 +191,13 @@ module Ribosome (
 
   -- * Misc
 
-  noHandlers,
-  rpcHandlers,
   simpleHandler,
+  Register,
+  RegisterType,
+  registerRepr,
+  pathText,
 
-  -- module Ribosome.Data.FloatOptions,
-  -- module Ribosome.Data.Mapping,
-  -- module Ribosome.Data.PersistError,
-  -- module Ribosome.Data.PersistPathError,
-  -- module Ribosome.Data.Register,
-  -- module Ribosome.Data.RegisterType,
-  -- module Ribosome.Data.ScratchId,
-  -- module Ribosome.Data.ScratchOptions,
-  -- module Ribosome.Data.ScratchState,
-  -- module Ribosome.Data.Setting,
-  -- module Ribosome.Data.SettingError,
-  -- module Ribosome.Data.WatchedVariable,
-  -- module Ribosome.Interpreter.BuiltinHandlers,
-  -- module Ribosome.Interpreter.UserError,
-  -- module Ribosome.Interpreter.VariableWatcher,
-  -- module Ribosome.Errors,
-  -- module Ribosome.IOStack,
-  -- module Ribosome.Path,
+  -- * Reexports
   module Prelate.Prelude,
 ) where
 
@@ -213,7 +218,6 @@ import Ribosome.Data.ScratchState (ScratchState (ScratchState))
 import Ribosome.Data.Setting (Setting (Setting))
 import Ribosome.Data.SettingError (SettingError)
 import Ribosome.Data.WatchedVariable (WatchedVariable (..))
-import Ribosome.Effect.NvimPlugin (NvimPlugin)
 import Ribosome.Effect.Persist (Persist)
 import Ribosome.Effect.PersistPath (PersistPath, persistPath)
 import Ribosome.Effect.Scratch (Scratch)
@@ -254,6 +258,7 @@ import Ribosome.Host.Data.HandlerError (
 import Ribosome.Host.Data.HostConfig (HostConfig (..), LogConfig (..), setStderr)
 import Ribosome.Host.Data.HostError (HostError (HostError))
 import Ribosome.Host.Data.Range (Range (Range), RangeStyle (..))
+import Ribosome.Host.Data.Request (Request (Request))
 import Ribosome.Host.Data.RpcCall (RpcCall)
 import Ribosome.Host.Data.RpcError (RpcError, rpcErrorMessage)
 import Ribosome.Host.Data.RpcHandler (Handler, RpcHandler (..), simpleHandler)
@@ -273,6 +278,7 @@ import Ribosome.Host.Effect.MState (
   withMState,
   )
 import Ribosome.Host.Effect.Rpc (Rpc, async, notify, sync)
+import Ribosome.Host.Effect.UserError (UserError)
 import Ribosome.Host.Error (ignoreRpcError)
 import Ribosome.Host.Handler (completeBuiltin, completeWith, rpc, rpcAutocmd, rpcCommand, rpcFunction)
 import Ribosome.Host.Handler.Codec (HandlerArg (handlerArg), HandlerCodec (handlerCodec))
@@ -280,20 +286,15 @@ import Ribosome.Host.Handler.Command (CommandHandler (commandOptions))
 import Ribosome.Host.Interpreter.MState (evalMState, interpretMState, interpretMStates)
 import Ribosome.Host.Modify (bufdo, modifyCmd, noautocmd, silent, silentBang, windo)
 import Ribosome.IOStack (BasicPluginStack, runBasicPluginStack)
-import Ribosome.Interpreter.BuiltinHandlers
-import Ribosome.Interpreter.NvimPlugin (
-  pluginHandlers,
-  noHandlers,
-  rpcHandlers,
-  )
 import Ribosome.Interpreter.Persist (interpretPersist, interpretPersistNull)
 import Ribosome.Interpreter.PersistPath (interpretPersistPath, interpretPersistPathAt, interpretPersistPathSetting)
 import Ribosome.Interpreter.PluginName
 import Ribosome.Interpreter.Settings (interpretSettingsRpc)
 import Ribosome.Interpreter.UserError (interpretUserErrorPrefixed)
-import Ribosome.Interpreter.VariableWatcher (interpretVariableWatcher, interpretVariableWatcherNull)
+import Ribosome.Interpreter.VariableWatcher (watchVariables)
+import Ribosome.Mapping (activateBufferMapping, activateMapping, mappingFor)
 import Ribosome.Path (pathText)
-import Ribosome.Remote (RemoteStack, runNvimHandlersIO, runNvimHandlersIO_, runNvimPluginIO, runNvimPluginIO_)
+import Ribosome.Remote (RemoteStack, runNvimPluginIO, runNvimPluginIO_)
 
 -- $intro
 -- This library is a framework for building [Neovim](https://neovim.io) plugins with
@@ -319,7 +320,7 @@ import Ribosome.Remote (RemoteStack, runNvimHandlersIO, runNvimHandlersIO_, runN
 -- >
 -- > main :: IO ()
 -- > main =
--- >   runNvimHandlersIO_ (PluginConfig "counter" def) [rpcFunction "Count" Sync count]
+-- >   runNvimPluginIO_ (PluginConfig "counter" def) [rpcFunction "Count" Sync count]
 --
 -- This app can be used as a plugin by running it with @jobstart@ from Neovim:
 --
@@ -374,16 +375,14 @@ import Ribosome.Remote (RemoteStack, runNvimHandlersIO, runNvimHandlersIO_, runN
 -- See [Execution]("Ribosome#execution") for how to start a plugin with a set of handlers.
 --
 -- Basic handlers (functions, commands, autocmds) are represented by 'RpcHandler', while watched variables
--- are separate entities (see the docs for [NvimPlugin]("Ribosome#execution-ext")).
+-- are separate entities (see the docs for [NvimPlugin]("Ribosome#watched-variables")).
 
 -- $execution
 -- There are many ways of running a plugin for different purposes, like as a remote plugin from Neovim (the usual
 -- production mode), directly in a test using an embedded Neovim process, or through a socket when testing a plugin in
 -- tmux.
 
--- $execution-ext
--- In addition to regular handlers, the following plugin runners allow you to specify two additional kinds:
---
+-- $watched-variables
 -- /Watched variable handlers/ are called whenever a certain Neovim variable's value has changed:
 --
 -- > changed ::
@@ -393,7 +392,7 @@ import Ribosome.Remote (RemoteStack, runNvimHandlersIO, runNvimHandlersIO_, runN
 -- > changed value =
 -- >   ignoreRpcError (echo ("Changed value to: " <> show value))
 --
--- > main = runNvimPluginIO_ "watch-plugin" (interpretNvimPlugin mempty mempty [("trigger", changed)])
+-- > main = runNvimPluginIO "watch-plugin" (watchVariables [("trigger", changed)]) mempty
 --
 -- This registers the variable named @trigger@ to be watched for changes.
 -- When a change is detected, the handler @changed@ whill be executed with the new value as its argument.
@@ -442,13 +441,23 @@ import Ribosome.Remote (RemoteStack, runNvimHandlersIO, runNvimHandlersIO_, runN
 -- update the text displayed in it.
 -- Its full API is exposed by "Ribosome.Scratch".
 
+-- $mappings
+-- The function 'activateBufferMapping' can be used to dynamically create buffer-local Neovim key mappings that trigger
+-- handlers of a Ribosome plugin.
+--
+-- A slightly reliable way of constructing a 'Mapping' is to use 'mappingFor', which takes an 'RpcHandler' to ensure
+-- that the name it calls was at least associated with a handler at some point.
+--
+-- One use case for mappings is in a 'Scratch' buffer, which automatically registers a set of them after initializing
+-- the buffer.
+
 -- $errors
 -- Ribosome uses
 -- [polysemy-resume](https://hackage.haskell.org/package/polysemy-resume/docs/Polysemy-Resume.html)
 -- extensively, which is a concept for tracking errors across interpreters by attaching them to a wrapper effect.
 --
 -- In short, when an interpreter is written for the effect @'Rpc' !! 'RpcError'@ (which is a symbolic alias for
--- @'Resumable' 'RpcError' 'Rpc'), every use of the bare effect 'Rpc' must be converted at some point, with the
+-- @'Resumable' 'RpcError' 'Rpc'@), every use of the bare effect 'Rpc' must be converted at some point, with the
 -- possiblity of exposing the error on another interpreter that uses the effect.
 --
 -- Take the effect 'Scratch' for example, whose interpreter is for the effect @'Scratch' !! 'RpcError'@.

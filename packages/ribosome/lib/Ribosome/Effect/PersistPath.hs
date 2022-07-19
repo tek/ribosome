@@ -5,7 +5,7 @@ import Path (Abs, Dir, Path, Rel)
 
 import Ribosome.Data.Setting (Setting (Setting))
 
--- |This is a utility effect for 'Persist', determining the root directory for persistence files.
+-- |This is a utility effect for 'Ribosome.Persist', determining the root directory for persistence files.
 data PersistPath :: Effect where
   -- |Return the root if 'Nothing' is given, or the subdir of the root if 'Just' is given.
   PersistPath :: Maybe (Path Rel Dir) -> PersistPath m (Path Abs Dir)
