@@ -15,15 +15,16 @@ import Polysemy.Chronos (ChronosTime)
 import qualified Polysemy.Test as Test
 import Polysemy.Test (Hedgehog, Test, TestError, UnitTest, assert)
 
-import Ribosome.Effect.NvimPlugin (NvimPlugin)
 import Ribosome.Effect.Scratch (Scratch)
 import Ribosome.Effect.Settings (Settings)
+import Ribosome.Host.Data.HandlerError (HandlerError)
 import Ribosome.Host.Data.NvimSocket (NvimSocket (NvimSocket))
 import Ribosome.Host.Data.RpcHandler (RpcHandler)
+import Ribosome.Host.Effect.Handlers (Handlers)
 import Ribosome.Host.Effect.Rpc (Rpc)
 import Ribosome.Host.Error (resumeBootError)
+import Ribosome.Host.Interpreter.Handlers (interpretHandlers)
 import Ribosome.IOStack (BasicPluginStack)
-import Ribosome.Interpreter.NvimPlugin (rpcHandlers)
 import Ribosome.Path (pathText)
 import Ribosome.Socket (SocketHandlerEffects, interpretPluginSocket, withPluginSocket)
 import Ribosome.Test.Data.TestConfig (TmuxTestConfig)
@@ -84,7 +85,7 @@ runSocketTmuxGuiTest =
 testPluginSocket ::
   Members BasicPluginStack r =>
   Members SocketHandlerEffects r =>
-  Members NvimPlugin r =>
+  Member (Handlers !! HandlerError) r =>
   Member (Error TestError) r =>
   InterpretersFor TestEffects r
 testPluginSocket =
@@ -101,19 +102,22 @@ testPluginSocketTmuxConf ::
   HasCallStack =>
   Members TmuxHandlerStack (r ++ TmuxHandlerStack) =>
   TmuxTestConfig ->
-  InterpretersFor (NvimPlugin ++ r) TmuxHandlerStack ->
+  InterpretersFor r TmuxHandlerStack ->
+  [RpcHandler (r ++ TmuxHandlerStack)] ->
   Sem (SocketTmuxWith r) () ->
   UnitTest
-testPluginSocketTmuxConf conf handlers =
+testPluginSocketTmuxConf conf effs handlers =
   runSocketTmuxTestConf conf .
-  handlers .
+  effs .
+  interpretHandlers handlers .
   testPluginSocket
 
 testPluginSocketTmux ::
   ∀ r .
   HasCallStack =>
   Members TmuxHandlerStack (r ++ TmuxHandlerStack) =>
-  InterpretersFor (NvimPlugin ++ r) TmuxHandlerStack ->
+  InterpretersFor r TmuxHandlerStack ->
+  [RpcHandler (r ++ TmuxHandlerStack)] ->
   Sem (SocketTmuxWith r) () ->
   UnitTest
 testPluginSocketTmux =
@@ -121,23 +125,15 @@ testPluginSocketTmux =
 
 testPluginSocketTmux_ ::
   HasCallStack =>
-  InterpretersFor NvimPlugin TmuxHandlerStack ->
-  Sem SocketTmux () ->
-  UnitTest
-testPluginSocketTmux_ =
-  testPluginSocketTmux @'[]
-
-testHandlersSocketTmux ::
-  HasCallStack =>
   [RpcHandler TmuxHandlerStack] ->
   Sem SocketTmux () ->
   UnitTest
-testHandlersSocketTmux handlers =
-  testPluginSocketTmux @'[] (rpcHandlers handlers)
+testPluginSocketTmux_ =
+  testPluginSocketTmux @'[] id
 
 testSocketTmux ::
   HasCallStack =>
   Sem SocketTmux () ->
   UnitTest
 testSocketTmux =
-  testHandlersSocketTmux mempty
+  testPluginSocketTmux_ mempty

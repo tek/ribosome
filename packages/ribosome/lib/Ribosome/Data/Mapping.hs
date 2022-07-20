@@ -1,6 +1,8 @@
 -- |Data types for Neovim mappings
 module Ribosome.Data.Mapping where
 
+import Exon (exon)
+
 import Ribosome.Host.Class.Msgpack.Decode (MsgpackDecode)
 import Ribosome.Host.Class.Msgpack.Encode (MsgpackEncode)
 import Ribosome.Host.Data.RpcName (RpcName)
@@ -43,6 +45,30 @@ data MapMode =
   -- |@:omap@ – operator-pending
   MapOperator
   deriving stock (Eq, Show)
+
+-- |The character representing a map mode prefixing a @map@ command.
+mapModePrefix :: MapMode -> Text
+mapModePrefix = \case
+  MapDefault -> ""
+  MapNormal -> "n"
+  MapInsertCmdline -> ""
+  MapInsert -> "i"
+  MapCmdline -> "c"
+  MapLangArg -> "l"
+  MapVisual -> "x"
+  MapSelect -> "s"
+  MapVisualSelect -> "v"
+  MapOperator -> "o"
+
+-- |The bang suffixing the insert+cmdline map cmd.
+mapModeSuffix :: MapMode -> Text
+mapModeSuffix = \case
+  MapInsertCmdline -> "!"
+  _ -> ""
+
+noremapCmd :: MapMode -> Text
+noremapCmd mm =
+  [exon|#{mapModePrefix mm}noremap#{mapModeSuffix mm}|]
 
 -- |This type associates a sequence of keys and a mode for a Neovim mapping with an RPC handler.
 -- It is intended to be used with 'Ribosome.mappingFor' and 'Ribosome.activateBufferMapping'.

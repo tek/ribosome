@@ -6,7 +6,7 @@ import Polysemy.Test (UnitTest, assertJust, (===))
 import Polysemy.Time (Seconds (Seconds))
 
 import Ribosome.Api.Buffer (currentBufferContent)
-import Ribosome.Data.Mapping (Mapping)
+import Ribosome.Data.Mapping (MapMode (MapNormal), Mapping)
 import Ribosome.Data.ScratchOptions (ScratchOptions (ScratchOptions))
 import qualified Ribosome.Effect.Scratch as Scratch
 import Ribosome.Effect.Scratch (Scratch)
@@ -52,7 +52,7 @@ handlers =
   ]
   where
     m =
-      mappingFor mapRpc "a" "n" Nothing
+      mappingFor mapRpc "a" [MapNormal] Nothing
     mapRpc =
       rpcCommand "Map" Sync mappingHandler
 

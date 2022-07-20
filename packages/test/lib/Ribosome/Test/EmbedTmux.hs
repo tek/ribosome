@@ -2,10 +2,9 @@ module Ribosome.Test.EmbedTmux where
 
 import Polysemy.Test (UnitTest)
 
-import Ribosome.Effect.NvimPlugin (NvimPlugin)
 import Ribosome.Embed (HandlerEffects, interpretPluginEmbed)
 import Ribosome.Host.Data.RpcHandler (RpcHandler)
-import Ribosome.Interpreter.NvimPlugin (rpcHandlers)
+import Ribosome.Host.Interpreter.Handlers (interpretHandlers)
 import Ribosome.Test.Data.TestConfig (TmuxTestConfig)
 import Ribosome.Test.Embed (EmbedEffects, testPluginEmbed)
 import Ribosome.Test.TmuxCommon (TmuxStack, runTmuxNvim)
@@ -47,19 +46,22 @@ testPluginEmbedTmuxConf ::
   HasCallStack =>
   Members HandlerStack (r ++ HandlerStack) =>
   TmuxTestConfig ->
-  InterpretersFor (NvimPlugin ++ r) HandlerStack ->
+  InterpretersFor r HandlerStack ->
+  [RpcHandler (r ++ HandlerStack)] ->
   Sem (EmbedTmuxWith r) () ->
   UnitTest
-testPluginEmbedTmuxConf conf handlers =
+testPluginEmbedTmuxConf conf effs handlers =
   runEmbedTmuxTestConf conf .
-  handlers .
+  effs .
+  interpretHandlers handlers .
   testPluginEmbed
 
 testPluginEmbedTmux ::
   ∀ r .
   HasCallStack =>
   Members HandlerStack (r ++ HandlerStack) =>
-  InterpretersFor (NvimPlugin ++ r) HandlerStack ->
+  InterpretersFor r HandlerStack ->
+  [RpcHandler (r ++ HandlerStack)] ->
   Sem (EmbedTmuxWith r) () ->
   UnitTest
 testPluginEmbedTmux =
@@ -67,23 +69,15 @@ testPluginEmbedTmux =
 
 testPluginEmbedTmux_ ::
   HasCallStack =>
-  InterpretersFor NvimPlugin HandlerStack ->
-  Sem EmbedTmux () ->
-  UnitTest
-testPluginEmbedTmux_ =
-  testPluginEmbedTmux @'[]
-
-testHandlersEmbedTmux ::
-  HasCallStack =>
   [RpcHandler HandlerStack] ->
   Sem EmbedTmux () ->
   UnitTest
-testHandlersEmbedTmux handlers =
-  testPluginEmbedTmux @'[] (rpcHandlers handlers)
+testPluginEmbedTmux_ =
+  testPluginEmbedTmux @'[] id
 
 testEmbedTmux ::
   HasCallStack =>
   Sem EmbedTmux () ->
   UnitTest
 testEmbedTmux =
-  testHandlersEmbedTmux mempty
+  testPluginEmbedTmux_ mempty

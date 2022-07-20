@@ -1,14 +1,11 @@
 module Ribosome.Test.Embed where
 
 import Data.Generics.Labels ()
-import Data.MessagePack (Object)
 import Log (Severity (Trace))
 import Polysemy.Test (TestError, UnitTest)
 
 import Ribosome.Data.PluginConfig (PluginConfig (PluginConfig))
 import Ribosome.Data.PluginName (PluginName)
-import Ribosome.Data.WatchedVariable (WatchedVariable)
-import Ribosome.Effect.NvimPlugin (NvimPlugin)
 import Ribosome.Effect.Scratch (Scratch)
 import Ribosome.Effect.Settings (Settings)
 import Ribosome.Embed (HandlerEffects, interpretPluginEmbed, withPluginEmbed)
@@ -16,17 +13,19 @@ import Ribosome.Host.Data.BootError (BootError)
 import Ribosome.Host.Data.HandlerError (HandlerError)
 import Ribosome.Host.Data.HostConfig (setStderr)
 import Ribosome.Host.Data.RpcError (RpcError)
-import Ribosome.Host.Data.RpcHandler (Handler, RpcHandler)
+import Ribosome.Host.Data.RpcHandler (RpcHandler)
+import Ribosome.Host.Effect.Handlers (Handlers)
 import Ribosome.Host.Effect.Rpc (Rpc)
 import Ribosome.Host.Error (resumeBootError)
-import Ribosome.Host.Interpret (HigherOrder)
+import Ribosome.Host.Interpret (HigherOrder, type (|>))
+import Ribosome.Host.Interpreter.Handlers (interpretHandlers)
 import qualified Ribosome.Host.Test.Data.TestConfig as Host
 import qualified Ribosome.Host.Test.Run as Host
 import Ribosome.Host.Test.Run (TestConfStack, TestStack, runUnitTest)
 import Ribosome.IOStack (BasicPluginStack)
-import Ribosome.Interpreter.NvimPlugin (pluginHandlers, rpcHandlers)
 import Ribosome.Test.Data.TestConfig (TestConfig (TestConfig))
 import Ribosome.Test.Error (testError, testHandler)
+import Ribosome.Test.Log (testLogLevel)
 
 type TestEffects =
   [
@@ -38,7 +37,7 @@ type TestEffects =
   ]
 
 type EmbedEffects =
-  TestEffects ++ NvimPlugin
+  TestEffects |> Handlers !! HandlerError
 
 type EmbedHandlerStack =
   HandlerEffects ++ Reader PluginName : TestStack
@@ -85,7 +84,7 @@ runTest =
 testPluginEmbed ::
   Members HandlerEffects r =>
   Members BasicPluginStack r =>
-  Members NvimPlugin r =>
+  Member (Handlers !! HandlerError) r =>
   Member (Error TestError) r =>
   InterpretersFor TestEffects r
 testPluginEmbed =
@@ -97,35 +96,27 @@ testPluginEmbed =
   testHandler .
   insertAt @4
 
-testPluginHandlers ::
-  Members HandlerEffects r =>
-  Members BasicPluginStack r =>
-  Member (Error TestError) r =>
-  [RpcHandler r] ->
-  Map WatchedVariable (Object -> Handler r ()) ->
-  InterpretersFor EmbedEffects r
-testPluginHandlers handlers vars =
-  pluginHandlers handlers vars .
-  testPluginEmbed
-
 testPluginConf ::
   ∀ r .
   HasCallStack =>
   HigherOrder r EmbedHandlerStack =>
   TestConfig ->
-  InterpretersFor (NvimPlugin ++ r) EmbedHandlerStack ->
+  InterpretersFor r EmbedHandlerStack ->
+  [RpcHandler (r ++ EmbedHandlerStack)] ->
   Sem (EmbedStackWith r) () ->
   UnitTest
-testPluginConf conf handlers =
+testPluginConf conf effs handlers =
   runEmbedTest conf .
-  handlers .
+  effs .
+  interpretHandlers handlers .
   testPluginEmbed
 
 testPlugin ::
   ∀ r .
   HasCallStack =>
   HigherOrder r EmbedHandlerStack =>
-  InterpretersFor (NvimPlugin ++ r) EmbedHandlerStack ->
+  InterpretersFor r EmbedHandlerStack ->
+  [RpcHandler (r ++ EmbedHandlerStack)] ->
   Sem (EmbedStackWith r) () ->
   UnitTest
 testPlugin =
@@ -133,42 +124,11 @@ testPlugin =
 
 testPlugin_ ::
   HasCallStack =>
-  InterpretersFor NvimPlugin EmbedHandlerStack ->
-  Sem EmbedStack () ->
-  UnitTest
-testPlugin_ =
-  testPlugin @'[]
-
-testHandlersConf ::
-  ∀ r .
-  HasCallStack =>
-  HigherOrder r EmbedHandlerStack =>
-  TestConfig ->
-  InterpretersFor r EmbedHandlerStack ->
-  [RpcHandler (r ++ EmbedHandlerStack)] ->
-  Sem (EmbedStackWith r) () ->
-  UnitTest
-testHandlersConf conf effs handlers =
-  testPluginConf @r conf (effs . rpcHandlers handlers)
-
-testHandlers ::
-  ∀ r .
-  HasCallStack =>
-  HigherOrder r EmbedHandlerStack =>
-  InterpretersFor r EmbedHandlerStack ->
-  [RpcHandler (r ++ EmbedHandlerStack)] ->
-  Sem (EmbedStackWith r) () ->
-  UnitTest
-testHandlers =
-  testHandlersConf @r def
-
-testHandlers_ ::
-  HasCallStack =>
   [RpcHandler EmbedHandlerStack] ->
   Sem EmbedStack () ->
   UnitTest
-testHandlers_ =
-  testHandlers @'[] id
+testPlugin_ =
+  testPlugin @'[] id
 
 testEmbedConf ::
   ∀ r .
@@ -179,7 +139,7 @@ testEmbedConf ::
   Sem (EmbedStackWith r) () ->
   UnitTest
 testEmbedConf conf effs =
-  testHandlersConf @r conf effs mempty
+  testPluginConf @r conf effs mempty
 
 testEmbed ::
   ∀ r .
@@ -209,15 +169,15 @@ testEmbedTrace ::
   InterpretersFor r EmbedHandlerStack ->
   Sem (EmbedStackWith r) () ->
   UnitTest
-testEmbedTrace =
-  testEmbedLevel @r Trace
+testEmbedTrace effs =
+  testLogLevel Trace \ conf -> testEmbedConf @r conf effs
 
 testEmbed_ ::
   HasCallStack =>
   Sem EmbedStack () ->
   UnitTest
 testEmbed_ =
-  testHandlers_ mempty
+  testPlugin_ mempty
 
 testEmbedLevel_ ::
   HasCallStack =>

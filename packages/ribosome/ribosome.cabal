@@ -22,6 +22,7 @@ library
       Ribosome.Api
       Ribosome.Api.Autocmd
       Ribosome.Api.Buffer
+      Ribosome.Api.Data
       Ribosome.Api.Echo
       Ribosome.Api.Function
       Ribosome.Api.Input
@@ -374,8 +375,7 @@ test-suite ribosome-unit
       OverloadedLabels
   ghc-options: -Wall -Wredundant-constraints -Wincomplete-uni-patterns -Wmissing-deriving-strategies -Widentities -Wunused-packages -fplugin=Polysemy.Plugin -threaded -rtsopts -with-rtsopts=-N
   build-depends:
-      aeson
-    , base >=4.12 && <5
+      base >=4.12 && <5
     , chronos
     , exon
     , hedgehog

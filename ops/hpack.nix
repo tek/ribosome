@@ -143,7 +143,6 @@ in {
     ];
     tests.ribosome-unit = exe "ribosome" "test" {
       dependencies = [
-        "aeson"
         "chronos"
         "exon"
         "hedgehog"

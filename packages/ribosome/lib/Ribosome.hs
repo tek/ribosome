@@ -85,6 +85,7 @@ module Ribosome (
   -- $mappings
   Mapping (Mapping),
   MappingId (MappingId),
+  MapMode (..),
   mappingFor,
   activateBufferMapping,
   activateMapping,
@@ -205,7 +206,7 @@ import Prelate.Prelude (type (!!), (<!))
 import Prelude hiding (async)
 
 import Ribosome.Data.FloatOptions (FloatOptions (FloatOptions))
-import Ribosome.Data.Mapping (Mapping (Mapping), MappingId (MappingId))
+import Ribosome.Data.Mapping (MapMode (..), Mapping (Mapping), MappingId (MappingId))
 import Ribosome.Data.PersistError (PersistError)
 import Ribosome.Data.PersistPathError (PersistPathError)
 import Ribosome.Data.PluginConfig (PluginConfig (PluginConfig), pluginNamed)
