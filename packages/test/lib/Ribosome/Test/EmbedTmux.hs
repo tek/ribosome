@@ -4,16 +4,16 @@ import Polysemy.Test (UnitTest)
 
 import Ribosome.Embed (HandlerEffects, interpretPluginEmbed)
 import Ribosome.Host.Data.RpcHandler (RpcHandler)
-import Ribosome.Host.Interpreter.Handlers (interpretHandlers)
+import Ribosome.Host.Interpreter.Handlers (withHandlers)
 import Ribosome.Test.Data.TestConfig (TmuxTestConfig)
-import Ribosome.Test.Embed (EmbedEffects, testPluginEmbed)
+import Ribosome.Test.Embed (TestEffects, testPluginEmbed)
 import Ribosome.Test.TmuxCommon (TmuxStack, runTmuxNvim)
 
 type HandlerStack =
   HandlerEffects ++ TmuxStack
 
 type EmbedTmuxWith r =
-  EmbedEffects ++ r ++ HandlerStack
+  TestEffects ++ r ++ HandlerStack
 
 type EmbedTmux =
   EmbedTmuxWith '[]
@@ -53,7 +53,7 @@ testPluginEmbedTmuxConf ::
 testPluginEmbedTmuxConf conf effs handlers =
   runEmbedTmuxTestConf conf .
   effs .
-  interpretHandlers handlers .
+  withHandlers handlers .
   testPluginEmbed
 
 testPluginEmbedTmux ::

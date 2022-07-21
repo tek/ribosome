@@ -19,7 +19,7 @@ import Ribosome.Host.Data.RpcError (RpcError)
 --
 -- The module "Ribosome.Api" contains functions that call 'sync' with those 'RpcCall's, converting the input and return
 -- values to and from msgpack.
--- 
+--
 -- These functions have signatures like:
 --
 -- > nvimGetVar :: ∀ a r . Member Rpc r => MsgpackDecode a => Text -> Sem r a

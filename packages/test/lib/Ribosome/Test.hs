@@ -8,7 +8,7 @@ module Ribosome.Test (
   module Ribosome.Host.Data.HandlerError,
 ) where
 
-import Ribosome.Embed
+import Ribosome.Embed hiding (EmbedStack)
 import Ribosome.Host.Data.HandlerError (resumeHandlerFail, stopHandlerToFail)
 import Ribosome.Test.Data.TestConfig
 import Ribosome.Test.Embed

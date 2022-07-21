@@ -23,6 +23,8 @@ import Ribosome.Host.Effect.Rpc (Rpc)
 --
 -- If the plugin was started with @--log-file@, it is also written to the file log.
 -- Additionally, errors are stored in memory by the effect 'Ribosome.Errors'.
+--
+-- For an explanation of 'Stop', see [Errors]("Ribosome#errors").
 type Handler r a =
   Sem (Stop HandlerError : r) a
 
@@ -37,8 +39,6 @@ type RpcHandlerFun r =
 -- 'Ribosome.rpcAutocmd'.
 --
 -- A list of 'RpcHandler's can be used as a Neovim plugin by passing them to 'Ribosome.runNvimHandlersIO'.
---
--- For an explanation of 'Stop', see [Errors]("Ribosome#errors").
 data RpcHandler r =
   RpcHandler {
     -- |Whether the trigger is a function, command, or autocmd, and the various options Neovim offers for them.

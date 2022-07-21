@@ -17,18 +17,16 @@ import Polysemy.Test (Hedgehog, Test, TestError, UnitTest, assert)
 
 import Ribosome.Effect.Scratch (Scratch)
 import Ribosome.Effect.Settings (Settings)
-import Ribosome.Host.Data.HandlerError (HandlerError)
 import Ribosome.Host.Data.NvimSocket (NvimSocket (NvimSocket))
 import Ribosome.Host.Data.RpcHandler (RpcHandler)
-import Ribosome.Host.Effect.Handlers (Handlers)
 import Ribosome.Host.Effect.Rpc (Rpc)
 import Ribosome.Host.Error (resumeBootError)
-import Ribosome.Host.Interpreter.Handlers (interpretHandlers)
+import Ribosome.Host.Interpreter.Handlers (withHandlers)
 import Ribosome.IOStack (BasicPluginStack)
 import Ribosome.Path (pathText)
-import Ribosome.Socket (SocketHandlerEffects, interpretPluginSocket, withPluginSocket)
+import Ribosome.Socket (SocketHandlerEffects, interpretPluginSocket, socketPlugin)
 import Ribosome.Test.Data.TestConfig (TmuxTestConfig)
-import Ribosome.Test.Embed (EmbedEffects, TestEffects)
+import Ribosome.Test.Embed (TestEffects)
 import Ribosome.Test.Error (testError, testHandler)
 import Ribosome.Test.TmuxCommon (TmuxStack, runTmuxNvim)
 import Ribosome.Test.Wait (assertWait)
@@ -37,7 +35,7 @@ type TmuxHandlerStack =
   SocketHandlerEffects ++ Reader NvimSocket : TmuxStack
 
 type SocketTmuxWith r =
-  EmbedEffects ++ r ++ TmuxHandlerStack
+  TestEffects ++ r ++ TmuxHandlerStack
 
 type SocketTmux =
   SocketTmuxWith '[]
@@ -85,11 +83,10 @@ runSocketTmuxGuiTest =
 testPluginSocket ::
   Members BasicPluginStack r =>
   Members SocketHandlerEffects r =>
-  Member (Handlers !! HandlerError) r =>
   Member (Error TestError) r =>
   InterpretersFor TestEffects r
 testPluginSocket =
-  withPluginSocket .
+  socketPlugin .
   resumeBootError @Rpc .
   resumeBootError @Settings .
   resumeBootError @Scratch .
@@ -109,7 +106,7 @@ testPluginSocketTmuxConf ::
 testPluginSocketTmuxConf conf effs handlers =
   runSocketTmuxTestConf conf .
   effs .
-  interpretHandlers handlers .
+  withHandlers handlers .
   testPluginSocket
 
 testPluginSocketTmux ::

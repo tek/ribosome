@@ -45,6 +45,6 @@ subdirectory of `'packpath'` or using one of the many plugin managers.
 #{foldMap githubPlugin github}
 
 Since the plugin is written in Haskell with the
-[Ribosome](https://hackage.haskell.org/package/ribosome-host/docs/Ribosome.html) framework, its executable has to be
+[Ribosome](https://hackage.haskell.org/package/ribosome/docs/Ribosome.html) framework, its executable has to be
  #{maybe onlyBuild (githubFetch pn) github}
 |]

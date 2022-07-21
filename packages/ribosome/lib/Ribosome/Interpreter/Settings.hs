@@ -1,3 +1,4 @@
+-- |Interpreters for 'Settings'
 module Ribosome.Interpreter.Settings where
 
 import Exon (exon)
@@ -44,6 +45,7 @@ fallback = \case
     n <- settingVariableName s
     stop (SettingError.Unset n)
 
+-- |Interpret 'Settings' natively, using Neovim variables.
 interpretSettingsRpc ::
   Members [Rpc !! RpcError, Reader PluginName] r =>
   InterpreterFor (Settings !! SettingError) r

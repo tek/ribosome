@@ -8,7 +8,7 @@ import Ribosome.Data.PluginName (PluginName)
 import Ribosome.Data.WatchedVariable (WatchedVariable)
 import Ribosome.Effect.Scratch (Scratch)
 import Ribosome.Effect.Settings (Settings)
-import Ribosome.Embed (HandlerEffects, interpretPluginEmbed, withPluginEmbed)
+import Ribosome.Embed (HandlerEffects, interpretPluginEmbed, embedPlugin)
 import Ribosome.Host.Data.HandlerError (HandlerError, handlerErrorMessage)
 import Ribosome.Host.Data.HostConfig (setStderr)
 import Ribosome.Host.Data.RpcHandler (Handler, RpcHandler)
@@ -62,7 +62,7 @@ testHandlers ::
 testHandlers handlers vars =
   watchVariables vars .
   interpretHandlers handlers .
-  withPluginEmbed .
+  embedPlugin .
   resumeBootError @Rpc .
   resumeBootError @Settings .
   resumeBootError @Scratch .

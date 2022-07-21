@@ -94,6 +94,7 @@ library
       Ribosome.Embed
       Ribosome.Errors
       Ribosome.Examples.Example1
+      Ribosome.Examples.Example2
       Ribosome.Final
       Ribosome.Float
       Ribosome.Internal.Scratch
@@ -279,7 +280,6 @@ executable ribosome
   ghc-options: -Wall -Wredundant-constraints -Wincomplete-uni-patterns -Wmissing-deriving-strategies -Widentities -Wunused-packages -fplugin=Polysemy.Plugin -threaded -rtsopts -with-rtsopts=-N
   build-depends:
       base >=4.12 && <5
-    , optparse-applicative
     , polysemy
     , polysemy-plugin
     , prelate >=0.1

@@ -45,12 +45,12 @@ runHandler ::
 runHandler handlers method args =
   traverse ($ args) (Map.lookup method handlers)
 
-interceptHandlers ::
+withHandlers ::
   Members [Handlers !! HandlerError, Rpc !! RpcError, Log, Error BootError] r =>
   [RpcHandler r] ->
   Sem r a ->
   Sem r a
-interceptHandlers handlersList@(handlersByName -> handlers) =
+withHandlers handlersList@(handlersByName -> handlers) =
   interceptResumable \case
     Register -> do
       restop @HandlerError Handlers.register
@@ -64,4 +64,4 @@ interpretHandlers ::
   InterpreterFor (Handlers !! HandlerError) r
 interpretHandlers handlers =
   interpretHandlersNull .
-  interceptHandlers (hoistRpcHandlers raiseUnder handlers)
+  withHandlers (hoistRpcHandlers raiseUnder handlers)

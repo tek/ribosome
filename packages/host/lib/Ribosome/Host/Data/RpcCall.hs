@@ -1,3 +1,4 @@
+-- |Applicative sequencing for RPC requests
 module Ribosome.Host.Data.RpcCall where
 
 import Ribosome.Host.Class.Msgpack.Decode (MsgpackDecode)

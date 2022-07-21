@@ -8,17 +8,16 @@ import Ribosome.Data.PluginConfig (PluginConfig (PluginConfig))
 import Ribosome.Data.PluginName (PluginName)
 import Ribosome.Effect.Scratch (Scratch)
 import Ribosome.Effect.Settings (Settings)
-import Ribosome.Embed (HandlerEffects, interpretPluginEmbed, withPluginEmbed)
+import Ribosome.Embed (HandlerEffects, embedPlugin, interpretPluginEmbed)
 import Ribosome.Host.Data.BootError (BootError)
 import Ribosome.Host.Data.HandlerError (HandlerError)
 import Ribosome.Host.Data.HostConfig (setStderr)
 import Ribosome.Host.Data.RpcError (RpcError)
 import Ribosome.Host.Data.RpcHandler (RpcHandler)
-import Ribosome.Host.Effect.Handlers (Handlers)
 import Ribosome.Host.Effect.Rpc (Rpc)
 import Ribosome.Host.Error (resumeBootError)
-import Ribosome.Host.Interpret (HigherOrder, type (|>))
-import Ribosome.Host.Interpreter.Handlers (interpretHandlers)
+import Ribosome.Host.Interpret (HigherOrder)
+import Ribosome.Host.Interpreter.Handlers (withHandlers)
 import qualified Ribosome.Host.Test.Data.TestConfig as Host
 import qualified Ribosome.Host.Test.Run as Host
 import Ribosome.Host.Test.Run (TestConfStack, TestStack, runUnitTest)
@@ -36,14 +35,11 @@ type TestEffects =
     Rpc
   ]
 
-type EmbedEffects =
-  TestEffects |> Handlers !! HandlerError
-
 type EmbedHandlerStack =
   HandlerEffects ++ Reader PluginName : TestStack
 
 type EmbedStackWith r =
-  EmbedEffects ++ r ++ EmbedHandlerStack
+  TestEffects ++ r ++ EmbedHandlerStack
 
 type EmbedStack =
   EmbedStackWith '[]
@@ -84,11 +80,10 @@ runTest =
 testPluginEmbed ::
   Members HandlerEffects r =>
   Members BasicPluginStack r =>
-  Member (Handlers !! HandlerError) r =>
   Member (Error TestError) r =>
   InterpretersFor TestEffects r
 testPluginEmbed =
-  withPluginEmbed .
+  embedPlugin .
   resumeBootError @Rpc .
   resumeBootError @Settings .
   resumeBootError @Scratch .
@@ -108,7 +103,7 @@ testPluginConf ::
 testPluginConf conf effs handlers =
   runEmbedTest conf .
   effs .
-  interpretHandlers handlers .
+  withHandlers handlers .
   testPluginEmbed
 
 testPlugin ::

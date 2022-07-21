@@ -14,7 +14,7 @@ import Polysemy.Test (UnitTest, assertEq, liftH)
 import qualified Polysemy.Time as Time
 import Polysemy.Time (MilliSeconds (MilliSeconds), Minutes (Minutes))
 import Ribosome.Data.PluginName (PluginName (PluginName))
-import Ribosome.Embed (withPluginEmbed, HandlerEffects)
+import Ribosome.Embed (embedPlugin, HandlerEffects)
 import Ribosome.Host.Api.Effect (nvimCallFunction)
 import Ribosome.Host.Data.HostConfig (LogConfig, hostLog, logLevelStderr)
 import Ribosome.Host.Data.RpcError (RpcError)
@@ -74,7 +74,7 @@ testPlugin riboRoot = do
   let flake = toFilePath (target </> [relfile|flake.nix|])
   old <- embed (Text.readFile flake)
   embed (Text.writeFile flake (Text.replace "RIBOSOME" (toText riboRoot) old))
-  runReader (PluginName "integration") $ interpretTestPluginEmbed target $ noHandlers $ withPluginEmbed do
+  runReader (PluginName "integration") $ interpretTestPluginEmbed target $ noHandlers $ embedPlugin do
     waitForFunction
 
 test_plugin :: UnitTest

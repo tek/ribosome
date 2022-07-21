@@ -104,7 +104,6 @@ library
     , generic-lens
     , hedgehog
     , lens-regex-pcre
-    , messagepack
     , path
     , path-io
     , polysemy

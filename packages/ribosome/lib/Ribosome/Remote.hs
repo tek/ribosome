@@ -1,13 +1,12 @@
+{-# options_haddock prune #-}
+
+-- |Main function combinators for remote plugins
 module Ribosome.Remote where
 
 import Ribosome.Data.PluginConfig (PluginConfig)
-import Ribosome.Data.PluginName (PluginName)
-import Ribosome.Host.Data.HandlerError (HandlerError)
 import Ribosome.Host.Data.RpcHandler (RpcHandler)
-import Ribosome.Host.Effect.Handlers (Handlers)
-import Ribosome.Host.IOStack (IOStack)
 import Ribosome.Host.Interpret (HigherOrder)
-import Ribosome.Host.Interpreter.Handlers (interpretHandlers)
+import Ribosome.Host.Interpreter.Handlers (interpretHandlersNull, withHandlers)
 import Ribosome.Host.Interpreter.Host (runHost)
 import Ribosome.Host.Interpreter.Process.Stdio (interpretProcessCerealStdio)
 import Ribosome.Host.Run (RpcDeps, RpcStack, interpretRpcStack)
@@ -26,57 +25,34 @@ type HandlerStack =
 type RemoteStack =
   HandlerStack ++ BasicPluginStack
 
-interpretRpcDeps ::
-  Members IOStack r =>
-  Member (Reader PluginName) r =>
-  InterpretersFor RpcDeps r
-interpretRpcDeps =
-  interpretUserErrorPrefixed .
-  interpretProcessCerealStdio
-
 interpretPluginRemote ::
   Members BasicPluginStack r =>
   InterpretersFor HandlerStack r
 interpretPluginRemote =
-  interpretRpcDeps .
+  interpretUserErrorPrefixed .
+  interpretProcessCerealStdio .
   interpretRpcStack .
+  interpretHandlersNull .
   interpretVariableWatcherNull .
   interpretSettingsRpc .
   interpretScratch
 
-runPluginHostRemote ::
+-- |Run the main loop for a remote plugin.
+remotePlugin ::
   ∀ r .
   Members HandlerStack r =>
   Members BasicPluginStack r =>
-  Member (Handlers !! HandlerError) r =>
   Sem r ()
-runPluginHostRemote =
+remotePlugin =
   interceptHandlersBuiltin runHost
 
--- |Run a Neovim plugin using a set of handlers and configuration, with an arbitrary stack of custom effects placed
--- between the handlers and the Ribosome stack.
---
--- Like 'runNvimPluginIO', but doesn't run the IO stack.
-runNvimPlugin ::
-  ∀ r .
-  HigherOrder r RemoteStack =>
-  InterpretersFor r RemoteStack ->
-  [RpcHandler (r ++ RemoteStack)] ->
-  Sem BasicPluginStack ()
-runNvimPlugin effs handlers =
-  interpretPluginRemote (effs (interpretHandlers handlers runPluginHostRemote))
-
--- |Run a Neovim plugin using a set of handlers and configuration, with an arbitrary stack of custom effects placed
--- between the handlers and the Ribosome stack.
---
--- This function does not allow additional effects to be used. See 'runNvimHandlersIO' for that purpose.
---
--- Like 'runNvimPluginIO', but doesn't run the IO stack.
-runNvimPlugin_ ::
-  [RpcHandler RemoteStack] ->
-  Sem BasicPluginStack ()
-runNvimPlugin_ =
-  runNvimPlugin @'[] id
+-- |Run plugin internals and IO effects for a remote plugin, reading options from the CLI.
+runRemoteStack ::
+  PluginConfig ->
+  Sem RemoteStack () ->
+  IO ()
+runRemoteStack conf =
+  runCli conf . interpretPluginRemote
 
 -- |Run a Neovim plugin using a set of handlers and configuration, with an arbitrary stack of custom effects placed
 -- between the handlers and the Ribosome stack.
@@ -117,15 +93,18 @@ runNvimPlugin_ =
 -- - For an explanation of @Rpc !! RpcError@, see [Errors]("Ribosome#errors")
 --
 -- This runs the entire stack to completion, so it can be used in the app's @main@ function.
+--
+-- For more flexibility and less type inference noise, this can be inlined as:
+--
+-- > runRemoteStack conf $ myCustomInterpreters $ withHandlers handlers remotePlugin
 runNvimPluginIO ::
-  ∀ r .
   HigherOrder r RemoteStack =>
   PluginConfig ->
   InterpretersFor r RemoteStack ->
   [RpcHandler (r ++ RemoteStack)] ->
   IO ()
 runNvimPluginIO conf effs handlers =
-  runCli conf (runNvimPlugin @r effs handlers)
+  runRemoteStack conf (effs (withHandlers handlers remotePlugin))
 
 -- |Run a Neovim plugin using a set of handlers and configuration.
 --
@@ -136,5 +115,5 @@ runNvimPluginIO_ ::
   PluginConfig ->
   [RpcHandler RemoteStack] ->
   IO ()
-runNvimPluginIO_ conf =
-  runNvimPluginIO @'[] conf id
+runNvimPluginIO_ conf handlers =
+  runRemoteStack conf (withHandlers handlers remotePlugin)

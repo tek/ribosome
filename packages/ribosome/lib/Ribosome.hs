@@ -8,12 +8,11 @@ module Ribosome (
   -- * Handlers
   -- $handlers
 
+  -- ** Handler definition
   RpcHandler (..),
   Handler,
-  WatchedVariable (..),
 
   -- ** Constructing handlers
-
   rpcFunction,
   rpcCommand,
   rpcAutocmd,
@@ -24,20 +23,23 @@ module Ribosome (
   -- $execution
 
   -- ** Only handlers
-
   runNvimPluginIO,
   runNvimPluginIO_,
+  remotePlugin,
   RemoteStack,
+  runRemoteStack,
   BasicPluginStack,
   runBasicPluginStack,
+  runCli,
+  NvimPlugin,
 
   -- ** Watched variables
   -- $watched-variables
   watchVariables,
+  WatchedVariable (..),
 
   -- * Interacting with Neovim
   -- $api
-
   Rpc,
   Request (Request),
   RpcCall,
@@ -49,13 +51,12 @@ module Ribosome (
   Tabpage,
 
   -- * Embedded testing
-
   -- $embed
-
-  embedNvimPlugin,
-  embedNvimPlugin_,
+  runEmbedPluginIO,
+  runEmbedPluginIO_,
+  embedPlugin,
+  runEmbedStack,
   interpretPluginEmbed,
-  withPluginEmbed,
 
   -- * MessagePack codec
   -- $msgpack
@@ -73,14 +74,16 @@ module Ribosome (
   Setting (Setting),
   SettingError,
   interpretSettingsRpc,
+
   -- ** Scratch buffers
   -- $scratch
   Scratch,
-  ScratchOptions (ScratchOptions),
+  ScratchOptions,
   scratch,
-  FloatOptions (FloatOptions),
+  FloatOptions,
   ScratchId (ScratchId),
   ScratchState (ScratchState),
+
   -- ** Mappings
   -- $mappings
   Mapping (Mapping),
@@ -89,6 +92,7 @@ module Ribosome (
   mappingFor,
   activateBufferMapping,
   activateMapping,
+
   -- ** Persisting data across vim sessions
   Persist,
   interpretPersist,
@@ -107,7 +111,6 @@ module Ribosome (
   -- * More functionality for handlers
 
   -- ** Command completion
-
   completeWith,
   completeBuiltin,
   CompleteStyle (..),
@@ -143,7 +146,6 @@ module Ribosome (
 
   -- * Errors
   -- $errors
-
   resumeHandlerError,
   mapHandlerError,
   resumeHandlerErrorFrom,
@@ -191,7 +193,6 @@ module Ribosome (
   interpretMStates,
 
   -- * Misc
-
   simpleHandler,
   noHandlers,
   Register,
@@ -203,10 +204,10 @@ module Ribosome (
   module Prelate.Prelude,
 ) where
 
-import Prelate.Prelude (type (!!), (<!))
+import Prelate.Prelude (Stop, type (!!), (<!))
 import Prelude hiding (async)
 
-import Ribosome.Data.FloatOptions (FloatOptions (FloatOptions))
+import Ribosome.Data.FloatOptions (FloatOptions)
 import Ribosome.Data.Mapping (MapMode (..), Mapping (Mapping), MappingId (MappingId))
 import Ribosome.Data.PersistError (PersistError)
 import Ribosome.Data.PersistPathError (PersistPathError)
@@ -215,7 +216,7 @@ import Ribosome.Data.PluginName (PluginName (PluginName))
 import Ribosome.Data.Register (Register, registerRepr)
 import Ribosome.Data.RegisterType (RegisterType)
 import Ribosome.Data.ScratchId (ScratchId (ScratchId))
-import Ribosome.Data.ScratchOptions (ScratchOptions (ScratchOptions), scratch)
+import Ribosome.Data.ScratchOptions (ScratchOptions, scratch)
 import Ribosome.Data.ScratchState (ScratchState (ScratchState))
 import Ribosome.Data.Setting (Setting (Setting))
 import Ribosome.Data.SettingError (SettingError)
@@ -224,7 +225,7 @@ import Ribosome.Effect.Persist (Persist)
 import Ribosome.Effect.PersistPath (PersistPath, persistPath)
 import Ribosome.Effect.Scratch (Scratch)
 import Ribosome.Effect.Settings (Settings)
-import Ribosome.Embed (embedNvimPlugin, embedNvimPlugin_, interpretPluginEmbed, withPluginEmbed)
+import Ribosome.Embed (embedPlugin, interpretPluginEmbed, runEmbedPluginIO, runEmbedPluginIO_, runEmbedStack)
 import Ribosome.Errors (reportError, reportStop, resumeReportError, storeError)
 import Ribosome.Host.Api.Data (Buffer, Tabpage, Window)
 import Ribosome.Host.Class.Msgpack.Array (msgpackArray)
@@ -288,7 +289,7 @@ import Ribosome.Host.Handler.Command (CommandHandler (commandOptions))
 import Ribosome.Host.Interpreter.Handlers (noHandlers)
 import Ribosome.Host.Interpreter.MState (evalMState, interpretMState, interpretMStates)
 import Ribosome.Host.Modify (bufdo, modifyCmd, noautocmd, silent, silentBang, windo)
-import Ribosome.IOStack (BasicPluginStack, runBasicPluginStack)
+import Ribosome.IOStack (BasicPluginStack, runBasicPluginStack, runCli)
 import Ribosome.Interpreter.Persist (interpretPersist, interpretPersistNull)
 import Ribosome.Interpreter.PersistPath (interpretPersistPath, interpretPersistPathAt, interpretPersistPathSetting)
 import Ribosome.Interpreter.PluginName
@@ -297,7 +298,8 @@ import Ribosome.Interpreter.UserError (interpretUserErrorPrefixed)
 import Ribosome.Interpreter.VariableWatcher (watchVariables)
 import Ribosome.Mapping (activateBufferMapping, activateMapping, mappingFor)
 import Ribosome.Path (pathText)
-import Ribosome.Remote (RemoteStack, runNvimPluginIO, runNvimPluginIO_)
+import Ribosome.Remote (RemoteStack, remotePlugin, runNvimPluginIO, runNvimPluginIO_, runRemoteStack)
+import Ribosome.Run (NvimPlugin)
 
 -- $intro
 -- This library is a framework for building [Neovim](https://neovim.io) plugins with
@@ -312,7 +314,7 @@ import Ribosome.Remote (RemoteStack, runNvimPluginIO, runNvimPluginIO_)
 -- > import Ribosome.Api
 -- >
 -- > count ::
--- >   Member (Rpc !! RpcError) r =>
+-- >   Members NvimPlugin r =>
 -- >   Int ->
 -- >   Handler r Int
 -- > count n = do
@@ -323,9 +325,9 @@ import Ribosome.Remote (RemoteStack, runNvimPluginIO, runNvimPluginIO_)
 -- >
 -- > main :: IO ()
 -- > main =
--- >   runNvimPluginIO_ (PluginConfig "counter" def) [rpcFunction "Count" Sync count]
+-- >   runNvimPluginIO_ "counter" [rpcFunction "Count" Sync count]
 --
--- This app can be used as a plugin by running it with @jobstart@ from Neovim:
+-- This module can be used as a Neovim plugin by running it with @jobstart@ from Neovim:
 --
 -- > :call jobstart(['/path/to/plugin.exe'], { 'rpc': 1 })
 --
@@ -372,50 +374,75 @@ import Ribosome.Remote (RemoteStack, runNvimPluginIO, runNvimPluginIO_)
 -- > $ nix build
 
 -- $handlers
--- When a plugin's main loop is started, triggers are registered in Neovim for all RPC handlers.
--- These triggers can be explicit (functions and commands) or automatic (autocmds and variable changes).
+-- A list of 'RpcHandler's can be created by passing a handler function to one the smart constructors:
 --
--- See [Execution]("Ribosome#execution") for how to start a plugin with a set of handlers.
+-- > echoHello :: Member (Rpc !! RpcError) => Sem r ()
+-- > echoHello = ignoreRpcError (echo "Hello")
+-- >
+-- > handlers = [
+-- >   rpcFunction "Hello" Async echoHello,
+-- >   rpcCommand "Hello" Async echoHello,
+-- >   rpcAutocmd "HelloHaskellFile" Async "BufEnter" def { fPattern = "*.hs" } echoHello
+-- > ]
 --
--- Basic handlers (functions, commands, autocmds) are represented by 'RpcHandler', while watched variables
--- are separate entities (see the docs for [NvimPlugin]("Ribosome#watched-variables")).
+-- Passing these handlers to 'runNvimPluginIO_' starts a plugin that calls @echoHello@ when running @:call Hello()@,
+-- @:Hello@, or when entering a Haskell buffer.
+--
+-- When the plugin's main loop starts, 'interpretHandlers' registers the triggers in Neovim by running vim code like
+-- this:
+--
+-- > function! Hello(...) range
+-- >   return call('rpcnotify', [1, 'function:Hello'] + a:000)
+-- > endfunction
+-- > command! -nargs=0 Hello call call('rpcnotify', [1, 'command:Hello'])
+-- > autocmd BufEnter *.hs call call('rpcnotify', [1, 'autocmd:HelloHaskellFile'])
 
 -- $execution
 -- There are many ways of running a plugin for different purposes, like as a remote plugin from Neovim (the usual
--- production mode), directly in a test using an embedded Neovim process, or through a socket when testing a plugin in
+-- production mode), directly in a test using an embedded Neovim process, or over a socket when testing a plugin in
 -- tmux.
 
 -- $watched-variables
 -- /Watched variable handlers/ are called whenever a certain Neovim variable's value has changed:
 --
 -- > changed ::
--- >   Member (Rpc !! RpcError) r =>
+-- >   Members NvimPlugin r =>
 -- >   Object ->
 -- >   Handler r ()
 -- > changed value =
 -- >   ignoreRpcError (echo ("Changed value to: " <> show value))
---
--- > main = runNvimPluginIO "watch-plugin" (watchVariables [("trigger", changed)]) mempty
+-- >
+-- > main :: IO ()
+-- > main = runRemoteStack "watch-plugin" (watchVariables [("trigger", changed)] remotePlugin)
 --
 -- This registers the variable named @trigger@ to be watched for changes.
 -- When a change is detected, the handler @changed@ whill be executed with the new value as its argument.
+--
+-- /Note/ that the combinators in the main function are simply what's run by 'runNvimPluginIO', with 'watchVariables'
+-- being used as the custom effect stack and an empty list of handlers.
 
 -- $api
--- The effect 'Rpc' governs access to Neovim's remote API.
 --
--- The module [Ribosome.Api.Data]("Ribosome.Api.Data") contains declarative representations of all API calls that are
+-- - The effect 'Rpc' governs access to Neovim's remote API.
+--
+-- - The module [Ribosome.Api.Data]("Ribosome.Api.Data") contains declarative representations of all API calls that are
 -- listed at @:help api@.
 --
--- The module [Ribosome.Api.Effect]("Ribosome.Api.Effect"), reexported from [Ribosome.Api]("Ribosome.Api"), contains
+-- - The module [Ribosome.Api.Effect]("Ribosome.Api.Effect"), reexported from [Ribosome.Api]("Ribosome.Api"), contains
 -- the same set of API functions, but as callable 'Sem' functions that use the data declarations with 'sync'.
---
 -- [Ribosome.Api]("Ribosome.Api") additionally contains many composite functions using the Neovim API.
 --
 -- The API also defines the data types 'Buffer', 'Window' and 'Tabpage', which are abstract types carrying an internal
 -- identifier generated by Neovim.
 
 -- $embed
--- TODO
+-- While [remote plugins]("Ribosome#execution") are executed from within Neovim, Ribosome can also run Neovim from a
+-- Haskell process and attach to the subprocess' stdio.
+--
+-- The primary purpose of embedding Neovim is testing a plugin, but could also be used to build a GUI application around
+-- Neovim.
+--
+-- In this case, the main loop is forked and the test is run directly:
 
 -- $msgpack
 -- Neovim's RPC communication uses the MessagePack protocol.
@@ -442,7 +469,7 @@ import Ribosome.Remote (RemoteStack, runNvimPluginIO, runNvimPluginIO_)
 -- A scratch buffer is what Neovim calls text not associated with a file, used for informational or interactive content.
 -- Ribosome provides an interface for maintaining those, by associating a view configuration with an ID and allowing to
 -- update the text displayed in it.
--- Its full API is exposed by "Ribosome.Scratch".
+-- Its full API is exposed by [Ribosome.Scratch]("Ribosome.Scratch").
 
 -- $mappings
 -- The function 'activateBufferMapping' can be used to dynamically create buffer-local Neovim key mappings that trigger

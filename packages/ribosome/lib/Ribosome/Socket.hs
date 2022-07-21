@@ -2,11 +2,8 @@ module Ribosome.Socket where
 
 import Ribosome.Data.PluginName (PluginName)
 import Ribosome.Host.Data.BootError (BootError (BootError))
-import Ribosome.Host.Data.HandlerError (HandlerError)
 import Ribosome.Host.Data.NvimSocket (NvimSocket)
-import Ribosome.Host.Data.RpcHandler (RpcHandler)
-import Ribosome.Host.Effect.Handlers (Handlers)
-import Ribosome.Host.Interpreter.Handlers (interpretHandlers)
+import Ribosome.Host.Interpreter.Handlers (interpretHandlersNull)
 import Ribosome.Host.Interpreter.Host (withHost)
 import Ribosome.Host.Interpreter.Process.Socket (interpretProcessCerealSocket)
 import Ribosome.Host.Run (RpcDeps, RpcStack, interpretRpcStack)
@@ -22,7 +19,7 @@ type SocketHandlerEffects =
   PluginEffects ++ RpcStack ++ RpcDeps
 
 type PluginSocketStack =
-  Handlers !! HandlerError : SocketHandlerEffects
+  SocketHandlerEffects ++ Reader NvimSocket : BasicPluginStack
 
 interpretRpcDeps ::
   Members [Reader NvimSocket, Reader PluginName, Error BootError, Log, Resource, Race, Async, Embed IO] r =>
@@ -40,34 +37,18 @@ interpretPluginSocket ::
 interpretPluginSocket =
   interpretRpcDeps .
   interpretRpcStack .
+  interpretHandlersNull .
   interpretVariableWatcherNull .
   interpretSettingsRpc .
   interpretScratch
 
-withPluginSocket ::
+-- |Fork the main loop for a plugin connected to Neovim over a socket.
+socketPlugin ::
   Members BasicPluginStack r =>
   Members SocketHandlerEffects r =>
-  Member (Handlers !! HandlerError) r =>
   Sem r a ->
   Sem r a
-withPluginSocket =
+socketPlugin =
   interceptHandlersBuiltin .
   withHost .
   insertAt @0
-
-socketNvimPlugin ::
-  Members BasicPluginStack r =>
-  Member (Reader NvimSocket) r =>
-  [RpcHandler (SocketHandlerEffects ++ r)] ->
-  InterpretersFor PluginSocketStack r
-socketNvimPlugin handlers =
-  interpretPluginSocket .
-  interpretHandlers handlers .
-  withPluginSocket
-
-socketNvimPlugin_ ::
-  Members BasicPluginStack r =>
-  Member (Reader NvimSocket) r =>
-  InterpretersFor PluginSocketStack r
-socketNvimPlugin_ =
-  socketNvimPlugin []

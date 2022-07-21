@@ -155,11 +155,7 @@ in {
         "tasty"
       ];
     };
-    executables.ribosome = exe "ribosome" "app" {
-      dependencies = [
-        "optparse-applicative"
-      ];
-    };
+    executables.ribosome = exe "ribosome" "app" {};
   };
 
   ribosome-test = merge (project "ribosome-test" "Ribosome-Test") {
@@ -171,7 +167,6 @@ in {
       "generic-lens"
       "hedgehog"
       "lens-regex-pcre"
-      "messagepack"
       "path"
       "path-io"
       "polysemy-chronos"

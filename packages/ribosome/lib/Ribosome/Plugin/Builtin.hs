@@ -19,7 +19,7 @@ import Ribosome.Host.Data.RpcType (AutocmdEvent (unAutocmdEvent))
 import Ribosome.Host.Effect.Handlers (Handlers)
 import Ribosome.Host.Effect.Rpc (Rpc)
 import Ribosome.Host.Handler (rpcAutocmd, rpcFunction)
-import Ribosome.Host.Interpreter.Handlers (interceptHandlers)
+import Ribosome.Host.Interpreter.Handlers (withHandlers)
 import Ribosome.Text (capitalize)
 
 watcherEvents :: [AutocmdEvent]
@@ -75,4 +75,4 @@ interceptHandlersBuiltin ::
   Sem r a
 interceptHandlersBuiltin sem = do
   name <- ask
-  interceptHandlers (builtinHandlers name) sem
+  withHandlers (builtinHandlers name) sem
