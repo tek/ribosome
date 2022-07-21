@@ -193,6 +193,7 @@ module Ribosome (
   -- * Misc
 
   simpleHandler,
+  noHandlers,
   Register,
   RegisterType,
   registerRepr,
@@ -284,6 +285,7 @@ import Ribosome.Host.Error (ignoreRpcError)
 import Ribosome.Host.Handler (completeBuiltin, completeWith, rpc, rpcAutocmd, rpcCommand, rpcFunction)
 import Ribosome.Host.Handler.Codec (HandlerArg (handlerArg), HandlerCodec (handlerCodec))
 import Ribosome.Host.Handler.Command (CommandHandler (commandOptions))
+import Ribosome.Host.Interpreter.Handlers (noHandlers)
 import Ribosome.Host.Interpreter.MState (evalMState, interpretMState, interpretMStates)
 import Ribosome.Host.Modify (bufdo, modifyCmd, noautocmd, silent, silentBang, windo)
 import Ribosome.IOStack (BasicPluginStack, runBasicPluginStack)

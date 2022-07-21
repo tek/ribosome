@@ -27,6 +27,10 @@ interpretHandlersNull =
     Run _ _ ->
       pure Nothing
 
+noHandlers :: InterpreterFor (Handlers !! HandlerError) r
+noHandlers =
+  interpretHandlersNull
+
 handlersByName ::
   [RpcHandler r] ->
   Map RpcMethod (RpcHandlerFun r)
