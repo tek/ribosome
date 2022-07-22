@@ -12,7 +12,7 @@ import Ribosome.Host.Embed (EmbedExtra, interpretEmbedExtra)
 import Ribosome.Host.IOStack (IOStack)
 import Ribosome.Host.Interpret (HigherOrder)
 import Ribosome.Host.Interpreter.Handlers (interpretHandlersNull, withHandlers)
-import Ribosome.Host.Interpreter.Host (withHost)
+import Ribosome.Host.Interpreter.Host (HostDeps, withHost)
 import Ribosome.Host.Interpreter.Process.Embed (interpretProcessCerealNvimEmbed)
 import Ribosome.Host.Run (RpcDeps, RpcStack, interpretRpcStack)
 import Ribosome.IOStack (BasicPluginStack, runCli)
@@ -20,7 +20,7 @@ import Ribosome.Interpreter.Scratch (interpretScratch)
 import Ribosome.Interpreter.Settings (interpretSettingsRpc)
 import Ribosome.Interpreter.UserError (interpretUserErrorPrefixed)
 import Ribosome.Interpreter.VariableWatcher (interpretVariableWatcherNull)
-import Ribosome.Plugin.Builtin (interceptHandlersBuiltin)
+import Ribosome.Plugin.Builtin (BuiltinHandlersDeps, interceptHandlersBuiltin)
 import Ribosome.Run (PluginEffects)
 
 type HandlerEffects =
@@ -53,8 +53,8 @@ interpretPluginEmbed =
 
 -- |Fork the main loop for a plugin connected to an embedded Neovim.
 embedPlugin ::
-  Members BasicPluginStack r =>
-  Members HandlerEffects r =>
+  Members (HostDeps er) r =>
+  Members BuiltinHandlersDeps r =>
   Sem r a ->
   Sem r a
 embedPlugin =

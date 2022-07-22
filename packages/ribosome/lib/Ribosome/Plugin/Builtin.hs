@@ -68,9 +68,19 @@ builtinHandlers ::
 builtinHandlers name =
     rpcFunction (deleteName name) Async deleteScratch : (watcherRpc name <$> watcherEvents)
 
+type BuiltinHandlersDeps =
+  [
+    VariableWatcher !! HandlerError,
+    Handlers !! HandlerError,
+    Scratch !! RpcError,
+    Rpc !! RpcError,
+    Reader PluginName,
+    Error BootError,
+    Log
+  ]
+
 interceptHandlersBuiltin ::
-  Members [VariableWatcher !! HandlerError, Handlers !! HandlerError] r =>
-  Members [Scratch !! RpcError, Rpc !! RpcError, Reader PluginName, Error BootError, Log] r =>
+  Members BuiltinHandlersDeps r =>
   Sem r a ->
   Sem r a
 interceptHandlersBuiltin sem = do
