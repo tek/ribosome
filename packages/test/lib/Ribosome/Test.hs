@@ -1,8 +1,27 @@
 module Ribosome.Test (
   -- * Introduction
   -- $intro
-  module Ribosome.Test.Embed,
-  module Ribosome.Test.Data.TestConfig,
+
+  testPlugin,
+  testEmbed,
+  testPluginEmbed,
+  runEmbedTest,
+  runTest,
+  testPluginConf,
+  testPlugin_,
+  testEmbedConf,
+  testEmbed_,
+  testEmbedLevel,
+  testEmbedLevel_,
+  testEmbedTrace,
+  testEmbedTrace_,
+  runTestConf,
+  runTestLogConf,
+  EmbedStackWith,
+  EmbedStack,
+  TestEffects,
+  TestConfig (TestConfig),
+  TmuxTestConfig (TmuxTestConfig),
   module Ribosome.Test.Error,
   module Ribosome.Test.Ui,
   module Ribosome.Test.Wait,
@@ -10,8 +29,27 @@ module Ribosome.Test (
 ) where
 
 import Ribosome.Host.Data.HandlerError (resumeHandlerFail, stopHandlerToFail)
-import Ribosome.Test.Data.TestConfig
-import Ribosome.Test.Embed
+import Ribosome.Test.Data.TestConfig (TestConfig (TestConfig), TmuxTestConfig (TmuxTestConfig))
+import Ribosome.Test.Embed (
+  EmbedStack,
+  EmbedStackWith,
+  TestEffects,
+  runEmbedTest,
+  runTest,
+  runTestConf,
+  runTestLogConf,
+  testEmbed,
+  testEmbedConf,
+  testEmbedLevel,
+  testEmbedLevel_,
+  testEmbedTrace,
+  testEmbedTrace_,
+  testEmbed_,
+  testPlugin,
+  testPluginConf,
+  testPluginEmbed,
+  testPlugin_,
+  )
 import Ribosome.Test.Error
 import Ribosome.Test.Ui
 import Ribosome.Test.Wait
@@ -29,3 +67,17 @@ import Ribosome.Test.Wait
 -- or in an @xterm@ instance
 --
 -- This module reexports "Ribosome.Test.Embed".
+--
+-- The function 'testPluginEmbed' starts an embedded Neovim subprocess and a Ribosome main loop, then executes the
+-- supplied 'Sem'.
+--
+-- This can be interpreted into a "Hedgehog" 'Hedgehog.TestT' by using the functions 'runEmbedTest' and 'runTest'.
+--
+-- The functions 'testPluginConf' and 'testPlugin' run a full Ribosome plugin with RPC handlers and extra effects in
+-- addition to the above.
+-- This can be used to test calling RPC handlers from Neovim, which usually shouldn't be necessary but may be helpful
+-- for some edge cases.
+--
+-- The functions 'testEmbedConf' and 'testEmbed' run tests with extra effects, but no handlers.
+-- This is the most advisable way to test plugins, running handlers directly as Haskell functions instead of routing
+-- them through Neovim, in particular for those that don't have any parameters.
