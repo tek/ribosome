@@ -1,7 +1,6 @@
 module Ribosome.Test (
   -- * Introduction
   -- $intro
-
   testPlugin,
   testEmbed,
   testPluginEmbed,
@@ -22,10 +21,13 @@ module Ribosome.Test (
   TestEffects,
   TestConfig (TestConfig),
   TmuxTestConfig (TmuxTestConfig),
+  -- * Error handling
   module Ribosome.Test.Error,
-  module Ribosome.Test.Ui,
-  module Ribosome.Test.Wait,
   module Ribosome.Host.Data.HandlerError,
+  -- * Assertions for Neovim UI elements
+  module Ribosome.Test.Ui,
+  -- * Assertions that are made repeatedly until the succeed
+  module Ribosome.Test.Wait,
 ) where
 
 import Ribosome.Host.Data.HandlerError (resumeHandlerFail, stopHandlerToFail)
