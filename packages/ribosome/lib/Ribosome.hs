@@ -19,24 +19,18 @@ module Ribosome (
   rpc,
   Execution (..),
 
-  -- * Plugin execution #execution#
+  -- * Remote plugin execution #execution#
   -- $execution
-
-  -- ** Only handlers
   runNvimPluginIO,
   runNvimPluginIO_,
   remotePlugin,
   RemoteStack,
   runRemoteStack,
+  interpretPluginRemote,
   BasicPluginStack,
   runBasicPluginStack,
   runCli,
   NvimPlugin,
-
-  -- ** Watched variables
-  -- $watched-variables
-  watchVariables,
-  WatchedVariable (..),
 
   -- * Interacting with Neovim
   -- $api
@@ -50,7 +44,12 @@ module Ribosome (
   Window,
   Tabpage,
 
-  -- * Embedded testing
+  -- * Watching variables
+  -- $watched-variables
+  watchVariables,
+  WatchedVariable (..),
+
+  -- * Embedded Neovim execution
   -- $embed
   runEmbedPluginIO,
   runEmbedPluginIO_,
@@ -166,6 +165,7 @@ module Ribosome (
   RpcError,
   rpcErrorMessage,
   ignoreRpcError,
+  onRpcError,
   BootError (..),
   HostError (..),
   StoredError (..),
@@ -282,7 +282,7 @@ import Ribosome.Host.Effect.MState (
   )
 import Ribosome.Host.Effect.Rpc (Rpc, async, notify, sync)
 import Ribosome.Host.Effect.UserError (UserError)
-import Ribosome.Host.Error (ignoreRpcError)
+import Ribosome.Host.Error (ignoreRpcError, onRpcError)
 import Ribosome.Host.Handler (completeBuiltin, completeWith, rpc, rpcAutocmd, rpcCommand, rpcFunction)
 import Ribosome.Host.Handler.Codec (HandlerArg (handlerArg), HandlerCodec (handlerCodec))
 import Ribosome.Host.Handler.Command (CommandHandler (commandOptions))
@@ -298,7 +298,7 @@ import Ribosome.Interpreter.UserError (interpretUserErrorPrefixed)
 import Ribosome.Interpreter.VariableWatcher (watchVariables)
 import Ribosome.Mapping (activateBufferMapping, activateMapping, mappingFor)
 import Ribosome.Path (pathText)
-import Ribosome.Remote (RemoteStack, remotePlugin, runNvimPluginIO, runNvimPluginIO_, runRemoteStack)
+import Ribosome.Remote (RemoteStack, remotePlugin, runNvimPluginIO, runNvimPluginIO_, runRemoteStack, interpretPluginRemote)
 import Ribosome.Run (NvimPlugin)
 
 -- $intro
@@ -439,10 +439,26 @@ import Ribosome.Run (NvimPlugin)
 -- While [remote plugins]("Ribosome#execution") are executed from within Neovim, Ribosome can also run Neovim from a
 -- Haskell process and attach to the subprocess' stdio.
 --
--- The primary purpose of embedding Neovim is testing a plugin, but could also be used to build a GUI application around
--- Neovim.
+-- The primary purpose of embedding Neovim is testing a plugin, but it could also be used to build a GUI application
+-- around Neovim.
 --
--- In this case, the main loop is forked and the test is run directly:
+-- The library [Ribosome.Test](https://hackage.haskell.org/package/ribosome-test/docs/Ribosome-Test.html) provides more
+-- comprehensive functionality for the testing use case.
+--
+-- When embedding Neovim, the main loop is forked and the test is run synchronously:
+--
+-- > import qualified Data.Text.IO as Text
+-- > import Ribosome
+-- > import Ribosome.Api
+-- >
+-- > ping :: Handler r Text
+-- > ping = pure "Ping"
+-- >
+-- > main :: IO ()
+-- > main =
+-- >   runEmbedPluginIO_ "ping-plugin" [rpcFunction "Ping" Sync ping] do
+-- >     ignoreRpcError do
+-- >       embed . Text.putStrLn =<< nvimCallFunction "Ping" []
 
 -- $msgpack
 -- Neovim's RPC communication uses the MessagePack protocol.

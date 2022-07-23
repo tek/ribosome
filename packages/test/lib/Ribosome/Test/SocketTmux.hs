@@ -133,3 +133,38 @@ testSocketTmux ::
   UnitTest
 testSocketTmux =
   testHandlersSocketTmux mempty
+
+-- |Run a plugin test against a Neovim process running in a fresh tmux session displayed in a terminal, connected over a
+-- socket.
+testPluginSocketTmuxGui ::
+  ∀ r .
+  HasCallStack =>
+  Members TmuxHandlerStack (r ++ TmuxHandlerStack) =>
+  -- |Interpreter for custom effects
+  InterpretersFor r TmuxHandlerStack ->
+  -- |RPC handlers
+  [RpcHandler (r ++ TmuxHandlerStack)] ->
+  Sem (SocketTmuxWith r) () ->
+  UnitTest
+testPluginSocketTmuxGui =
+  testPluginSocketTmuxConf @r (def & #tmux . #gui .~ True)
+
+-- |Run a plugin test against a Neovim process running in a fresh tmux session displayed in a terminal, connected over a
+-- socket.
+testHandlersSocketTmuxGui ::
+  HasCallStack =>
+  -- |RPC handlers
+  [RpcHandler TmuxHandlerStack] ->
+  Sem SocketTmux () ->
+  UnitTest
+testHandlersSocketTmuxGui =
+  testPluginSocketTmuxGui @'[] id
+
+-- |Run a plugin test against a Neovim process running in a fresh tmux session displayed in a terminal, connected over a
+-- socket.
+testSocketTmuxGui ::
+  HasCallStack =>
+  Sem SocketTmux () ->
+  UnitTest
+testSocketTmuxGui =
+  testHandlersSocketTmuxGui mempty

@@ -1,6 +1,11 @@
 module Ribosome.Test (
   -- * Introduction
   -- $intro
+  -- * Embedded testing
+  -- $embed
+  -- * tmux testing
+  -- $tmux
+  -- * Embedded test API
   testPlugin,
   testEmbed,
   testPluginEmbed,
@@ -25,9 +30,13 @@ module Ribosome.Test (
   module Ribosome.Test.Error,
   module Ribosome.Host.Data.HandlerError,
   -- * Assertions for Neovim UI elements
-  module Ribosome.Test.Ui,
+  windowCountIs,
+  cursorIs,
+  currentCursorIs,
+  awaitScreenshot,
   -- * Assertions that are made repeatedly until the succeed
-  module Ribosome.Test.Wait,
+  assertWait,
+  assertWaitFor,
 ) where
 
 import Ribosome.Host.Data.HandlerError (resumeHandlerFail, stopHandlerToFail)
@@ -53,6 +62,7 @@ import Ribosome.Test.Embed (
   testPlugin_,
   )
 import Ribosome.Test.Error
+import Ribosome.Test.Screenshot (awaitScreenshot)
 import Ribosome.Test.Ui
 import Ribosome.Test.Wait
 
@@ -69,17 +79,77 @@ import Ribosome.Test.Wait
 -- or in an @xterm@ instance
 --
 -- This module reexports "Ribosome.Test.Embed".
+
+-- $embed
+-- Running a test against an embedded Neovim process is the simplest approach that is suited for unit testing plugin
+-- logic where the integration with Neovim startup isn't important.
 --
--- The function 'testPluginEmbed' starts an embedded Neovim subprocess and a Ribosome main loop, then executes the
--- supplied 'Sem'.
+-- Handlers can be registered in Neovim and triggered via RPC API functions like 'nvimCallFunction' and 'nvimCommand'.
+-- Most of the time this is only interesting if a handler has complex parameters and you want to test that they are
+-- decoded correctly, or that the handler is triggered properly by an autocmd.
+-- In more basic cases, where only the interaction with Neovim from within the handler is relevant, it can simply be run
+-- directly.
 --
--- This can be interpreted into a "Hedgehog" 'Hedgehog.TestT' by using the functions 'runEmbedTest' and 'runTest'.
+-- > import Polysemy.Test
+-- > import Ribosome
+-- > import Ribosome.Api
+-- > import Ribosome.Test
+-- >
+-- > store ::
+-- >   Member (Rpc !! RpcError) r =>
+-- >   Args ->
+-- >   Handler r ()
+-- > store (Args msg) =
+-- >   ignoreRpcError do
+-- >     nvimSetVar "message" msg
+-- >
+-- > test_direct :: UnitTest
+-- > test_direct =
+-- >   testEmbed_ do
+-- >     store "test directly"
+-- >     assertEq "test directly" =<< nvimGetVar @Text "message"
+-- >
+-- > test_rpc :: UnitTest
+-- > test_rpc =
+-- >   testPlugin_ [rpcCommand "Store" Sync store] do
+-- >     nvimCommand "Store test RPC"
+-- >     assertEq "test RPC" =<< nvimGetVar @Text "message"
 --
--- The functions 'testPluginConf' and 'testPlugin' run a full Ribosome plugin with RPC handlers and extra effects in
--- addition to the above.
--- This can be used to test calling RPC handlers from Neovim, which usually shouldn't be necessary but may be helpful
--- for some edge cases.
+-- See [Ribosome.Test.Embed]("Ribosome.Test.Embed") for more options.
+
+-- $tmux
+-- It is possible to run a standalone Neovim instance to test against.
+-- This is useful to observe the UI's behaviour for debugging purposes, but might also be desired to test a feature in
+-- the full environment that is used in production.
 --
--- The functions 'testEmbedConf' and 'testEmbed' run tests with extra effects, but no handlers.
--- This is the most advisable way to test plugins, running handlers directly as Haskell functions instead of routing
--- them through Neovim, in particular for those that don't have any parameters.
+-- Ribosome provides a testing mode that starts a terminal with a tmux server, in which Neovim is executed as a regular
+-- shell process.
+-- Variants of this that run tmux in a pseudo terminal that is not rendered, or simply run a tmux server for use in an
+-- embedded test, are also available.
+--
+-- In the terminal case, the test connects the plugin over a socket.
+-- It is possible to take \"screenshots\" (capturing the tmux pane running Neovim) that are automatically stored in the
+-- @fixtures@ directory of the test suite and compared to previous recordings on subsequent runs, as in this example
+-- that runs tmux in a terminal and tests some syntax rules:
+--
+-- > import Polysemy.Test
+-- > import Ribosome.Api
+-- > import Ribosome.Syntax
+-- > import Ribosome.Test
+-- > import Ribosome.Test.SocketTmux
+-- >
+-- > syntax :: Syntax
+-- > syntax =
+-- >   Syntax [syntaxMatch "TestColons" "::"] [
+-- >     syntaxHighlight "TestColons" [("cterm", "reverse"), ("ctermfg", "1"), ("gui", "reverse"), ("guifg", "#dc322f")]
+-- >   ] []
+-- >
+-- > test_syntax :: UnitTest
+-- > test_syntax =
+-- >   testSocketTmuxGui do
+-- >     setCurrentBufferContent ["function :: String -> Int", "function _ = 5"]
+-- >     _ <- executeSyntax syntax
+-- >     awaitScreenshot False "syntax" 0
+-- >
+-- > See [Ribosome.Test.SocketTmux]("Ribosome.Test.SocketTmux") and [Ribosome.Test.EmbedTmux]("Ribosome.Test.EmbedTmux")
+-- > for more options.

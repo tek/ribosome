@@ -1,5 +1,3 @@
-{-# options_haddock prune #-}
-
 -- |Main function combinators for remote plugins
 module Ribosome.Remote where
 
@@ -18,6 +16,7 @@ import Ribosome.Interpreter.VariableWatcher (interpretVariableWatcherNull)
 import Ribosome.Plugin.Builtin (interceptHandlersBuiltin)
 import Ribosome.Run (PluginEffects)
 
+-- |The stack of plugin internals.
 type HandlerStack =
   PluginEffects ++ RpcStack ++ RpcDeps
 
@@ -25,6 +24,7 @@ type HandlerStack =
 type RemoteStack =
   HandlerStack ++ BasicPluginStack
 
+-- |Run plugin internals without IO effects.
 interpretPluginRemote ::
   Members BasicPluginStack r =>
   InterpretersFor HandlerStack r
@@ -78,8 +78,11 @@ runRemoteStack conf =
 -- > setNumber :: Int -> Handler r ()
 -- > setNumber = atomicPut
 -- >
+-- > runCustomStack :: InterpretersFor CustomStack r
+-- > runCustomStack = interpretAtomic . runNumbers
+-- >
 -- > main :: IO ()
--- > main = runNvimPluginIO @CustomStack "numbers" (interpretAtomic . runNumbers) [
+-- > main = runNvimPluginIO @CustomStack "numbers" runCustomStack [
 -- >   rpcFunction "CurrentNumber" Sync currentNumber,
 -- >   rpcFunction "SetNumber" Async setNumber
 -- >   ]
@@ -96,7 +99,7 @@ runRemoteStack conf =
 --
 -- For more flexibility and less type inference noise, this can be inlined as:
 --
--- > runRemoteStack conf $ myCustomInterpreters $ withHandlers handlers remotePlugin
+-- > runRemoteStack conf $ runCustomStack $ withHandlers handlers remotePlugin
 runNvimPluginIO ::
   HigherOrder r RemoteStack =>
   PluginConfig ->
