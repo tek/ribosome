@@ -105,16 +105,15 @@
     "chiasma": {
       "inputs": {
         "hix": "hix",
-        "old": "old",
         "polysemy-conc": "polysemy-conc",
         "prelate": "prelate"
       },
       "locked": {
-        "lastModified": 1658620145,
-        "narHash": "sha256-Xksu040cEcxbn7a28akKuYL5/Zt5fbZRKj2pC00OszE=",
+        "lastModified": 1658670297,
+        "narHash": "sha256-xCCmJ9Clx/B7sbMLjwDFY5JNV0bQ7dz+qni7sA3kjCg=",
         "ref": "main",
-        "rev": "089903aa969c961af2405346c90b2f8e4ee89328",
-        "revCount": 157,
+        "rev": "53452c9d5b0aec63db105f003543efda3a3307b4",
+        "revCount": 161,
         "type": "git",
         "url": "https://git.tryp.io/tek/chiasma"
       },
@@ -4601,22 +4600,6 @@
         "owner": "tek",
         "ref": "ghc9",
         "repo": "obelisk",
-        "type": "github"
-      }
-    },
-    "old": {
-      "locked": {
-        "lastModified": 1620055814,
-        "narHash": "sha256-8LEHoYSJiL901bTMVatq+rf8y7QtWuZhwwpKE2fyaRY=",
-        "owner": "NixOS",
-        "repo": "nixpkgs",
-        "rev": "1db42b7fe3878f3f5f7a4f2dc210772fd080e205",
-        "type": "github"
-      },
-      "original": {
-        "owner": "NixOS",
-        "repo": "nixpkgs",
-        "rev": "1db42b7fe3878f3f5f7a4f2dc210772fd080e205",
         "type": "github"
       }
     },
