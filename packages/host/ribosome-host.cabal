@@ -176,6 +176,7 @@ library
     , generics-sop
     , messagepack
     , network
+    , optparse-applicative
     , path
     , polysemy
     , polysemy-chronos
@@ -291,6 +292,7 @@ test-suite ribosome-host-unit
     , generic-lens
     , hedgehog
     , messagepack
+    , optparse-applicative
     , path
     , polysemy
     , polysemy-chronos

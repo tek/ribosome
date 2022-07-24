@@ -9,13 +9,15 @@ import Exon (exon)
 
 import Ribosome.Host.Class.Msgpack.Decode (MsgpackDecode (fromMsgpack))
 import Ribosome.Host.Class.Msgpack.Encode (MsgpackEncode (toMsgpack))
-import Ribosome.Host.Data.Args (ArgList (ArgList), Args (Args), JsonArgs (JsonArgs))
+import Ribosome.Host.Data.Args (ArgList (ArgList), Args (Args), JsonArgs (JsonArgs), Options (Options), OptionParser (optionParser))
 import Ribosome.Host.Data.Bang (Bang (NoBang))
 import Ribosome.Host.Data.Bar (Bar (Bar))
 import qualified Ribosome.Host.Data.HandlerError as HandlerError
 import Ribosome.Host.Data.HandlerError (HandlerError, basicHandlerError)
 import Ribosome.Host.Data.RpcHandler (Handler, RpcHandlerFun)
 import qualified Data.ByteString as ByteString
+import Options.Applicative (execParserPure, defaultPrefs, info, renderFailure)
+import qualified Options.Applicative as Optparse
 
 decodeArg ::
   Member (Stop HandlerError) r =>
@@ -113,6 +115,22 @@ instance (
         pure ([], JsonArgs a)
       Left e ->
         basicHandlerError [exon|Invalid arguments: #{show os}|] ["Invalid type for JsonArgs", show os, e]
+
+instance (
+    Member (Stop HandlerError) r,
+    OptionParser a
+  ) => HandlerArg (Options a) r where
+  handlerArg os =
+    case result . execParserPure defaultPrefs (info (optionParser @a) mempty) =<< traverse fromMsgpack os of
+      Right a ->
+        pure ([], Options a)
+      Left e ->
+        basicHandlerError [exon|Invalid arguments: #{show os}|] ["Invalid type for Options", show os, e]
+    where
+      result = \case
+        Optparse.Success a -> Right a
+        Optparse.Failure e -> Left (toText (fst (renderFailure e "Ribosome")))
+        Optparse.CompletionInvoked _ -> Left "Internal optparse error"
 
 -- |The class of functions that can be converted to caononical RPC handlers of type 'RpcHandlerFun'.
 class HandlerCodec h r | h -> r where

@@ -120,6 +120,8 @@ module Ribosome (
   Args (..),
   ArgList (..),
   JsonArgs (..),
+  Options (..),
+  OptionParser (..),
   Bang (..),
   Bar (..),
   Range (Range),
@@ -232,7 +234,7 @@ import Ribosome.Host.Class.Msgpack.Array (msgpackArray)
 import Ribosome.Host.Class.Msgpack.Decode (pattern Msgpack, MsgpackDecode (fromMsgpack))
 import Ribosome.Host.Class.Msgpack.Encode (MsgpackEncode (toMsgpack))
 import Ribosome.Host.Class.Msgpack.Map (msgpackMap)
-import Ribosome.Host.Data.Args (ArgList (..), Args (..), JsonArgs (..))
+import Ribosome.Host.Data.Args (ArgList (..), Args (..), JsonArgs (..), OptionParser (..), Options (..))
 import Ribosome.Host.Data.Bang (Bang (..))
 import Ribosome.Host.Data.Bar (Bar (Bar))
 import Ribosome.Host.Data.BootError (BootError (..))
@@ -298,7 +300,7 @@ import Ribosome.Interpreter.UserError (interpretUserErrorPrefixed)
 import Ribosome.Interpreter.VariableWatcher (watchVariables)
 import Ribosome.Mapping (activateBufferMapping, activateMapping, mappingFor)
 import Ribosome.Path (pathText)
-import Ribosome.Remote (RemoteStack, remotePlugin, runNvimPluginIO, runNvimPluginIO_, runRemoteStack, interpretPluginRemote)
+import Ribosome.Remote (RemoteStack, interpretPluginRemote, remotePlugin, runNvimPluginIO, runNvimPluginIO_, runRemoteStack)
 import Ribosome.Run (NvimPlugin)
 
 -- $intro

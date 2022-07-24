@@ -5,7 +5,7 @@ module Ribosome.Host.Handler.Command where
 
 import Type.Errors.Pretty (type (%), type (<>))
 
-import Ribosome.Host.Data.Args (ArgList, Args, JsonArgs)
+import Ribosome.Host.Data.Args (ArgList, Args, JsonArgs, Options)
 import Ribosome.Host.Data.Bang (Bang)
 import Ribosome.Host.Data.Bar (Bar)
 import Ribosome.Host.Data.CommandMods (CommandMods)
@@ -52,6 +52,7 @@ type family CommandSpecial (a :: Type) :: Bool where
   CommandSpecial Args = 'True
   CommandSpecial ArgList = 'True
   CommandSpecial (JsonArgs _) = 'True
+  CommandSpecial (Options _) = 'True
   CommandSpecial _ = 'False
 
 -- |Determine the command options and arguments that need to be specified when registering a command, for a special
@@ -123,16 +124,20 @@ instance (
     Just "<q-register>"
 
 instance SpecialParam ('OptionState al count 'Nothing) Args where
-  type TransSpecial ('OptionState al count _) _ =
+  type TransSpecial ('OptionState _ count _) _ =
     'OptionState 'True (Max count 'MinZero) ('Just Args)
 
 instance SpecialParam ('OptionState al count ac) (JsonArgs a) where
-  type TransSpecial ('OptionState al count _) _ =
+  type TransSpecial ('OptionState _ count _) _ =
     'OptionState 'True (Max count 'MinZero) ('Just (JsonArgs a))
 
 instance SpecialParam ('OptionState al count ac) ArgList where
-  type TransSpecial ('OptionState al count _) _ =
+  type TransSpecial ('OptionState _ count _) _ =
     'OptionState 'True (Max count 'MinZero) ('Just ArgList)
+
+instance SpecialParam ('OptionState al count 'Nothing) (Options a) where
+  type TransSpecial ('OptionState _ count _) _ =
+    'OptionState 'True (Max count 'MinZero) ('Just (Options a))
 
 -- |Determines whether a regular, value parameter is allowed (it isn't after types like 'ArgList' that consume all
 -- remaining arguments), and increases the minimum argument count if the parameter isn't 'Maybe'.

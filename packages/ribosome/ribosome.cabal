@@ -95,6 +95,7 @@ library
       Ribosome.Errors
       Ribosome.Examples.Example1
       Ribosome.Examples.Example2
+      Ribosome.Examples.Example3
       Ribosome.Final
       Ribosome.Float
       Ribosome.Internal.Scratch

@@ -23,6 +23,7 @@ library
       Ribosome.Test.Embed
       Ribosome.Test.EmbedTmux
       Ribosome.Test.Error
+      Ribosome.Test.Examples.Example1
       Ribosome.Test.Log
       Ribosome.Test.Screenshot
       Ribosome.Test.SocketTmux
