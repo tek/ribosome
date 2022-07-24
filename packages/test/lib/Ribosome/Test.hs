@@ -23,6 +23,7 @@ module Ribosome.Test (
   runTestLogConf,
   EmbedStackWith,
   EmbedStack,
+  EmbedHandlerStack,
   TestEffects,
   TestConfig (TestConfig),
   TmuxTestConfig (TmuxTestConfig),
@@ -42,6 +43,7 @@ module Ribosome.Test (
 import Ribosome.Host.Data.HandlerError (resumeHandlerFail, stopHandlerToFail)
 import Ribosome.Test.Data.TestConfig (TestConfig (TestConfig), TmuxTestConfig (TmuxTestConfig))
 import Ribosome.Test.Embed (
+  EmbedHandlerStack,
   EmbedStack,
   EmbedStackWith,
   TestEffects,

@@ -19,6 +19,7 @@ module Ribosome.Test.Embed (
   runTestLogConf,
   EmbedStackWith,
   EmbedStack,
+  EmbedHandlerStack,
   TestEffects,
 ) where
 
