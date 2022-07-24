@@ -11,6 +11,7 @@ module Ribosome (
   -- ** Handler definition
   RpcHandler (..),
   Handler,
+  RpcName (..),
 
   -- ** Constructing handlers
   rpcFunction,
@@ -267,6 +268,7 @@ import Ribosome.Host.Data.Request (Request (Request))
 import Ribosome.Host.Data.RpcCall (RpcCall)
 import Ribosome.Host.Data.RpcError (RpcError, rpcErrorMessage)
 import Ribosome.Host.Data.RpcHandler (Handler, RpcHandler (..), simpleHandler)
+import Ribosome.Host.Data.RpcName (RpcName (..))
 import Ribosome.Host.Data.RpcType (CompleteStyle (..))
 import Ribosome.Host.Data.StoredError (StoredError (StoredError))
 import Ribosome.Host.Effect.Errors (Errors)
