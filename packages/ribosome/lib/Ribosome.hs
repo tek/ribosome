@@ -24,6 +24,7 @@ module Ribosome (
   -- $execution
   runNvimPluginIO,
   runNvimPluginIO_,
+  withHandlers,
   remotePlugin,
   RemoteStack,
   runRemoteStack,
@@ -198,6 +199,7 @@ module Ribosome (
   -- * Misc
   simpleHandler,
   noHandlers,
+  interpretHandlers,
   Register,
   RegisterType,
   registerRepr,
@@ -290,7 +292,7 @@ import Ribosome.Host.Error (ignoreRpcError, onRpcError)
 import Ribosome.Host.Handler (completeBuiltin, completeWith, rpc, rpcAutocmd, rpcCommand, rpcFunction)
 import Ribosome.Host.Handler.Codec (HandlerArg (handlerArg), HandlerCodec (handlerCodec))
 import Ribosome.Host.Handler.Command (CommandHandler (commandOptions))
-import Ribosome.Host.Interpreter.Handlers (noHandlers)
+import Ribosome.Host.Interpreter.Handlers (noHandlers, withHandlers, interpretHandlers)
 import Ribosome.Host.Interpreter.MState (evalMState, interpretMState, interpretMStates)
 import Ribosome.Host.Modify (bufdo, modifyCmd, noautocmd, silent, silentBang, windo)
 import Ribosome.IOStack (BasicPluginStack, runBasicPluginStack, runCli)
@@ -302,7 +304,14 @@ import Ribosome.Interpreter.UserError (interpretUserErrorPrefixed)
 import Ribosome.Interpreter.VariableWatcher (watchVariables)
 import Ribosome.Mapping (activateBufferMapping, activateMapping, mappingFor)
 import Ribosome.Path (pathText)
-import Ribosome.Remote (RemoteStack, interpretPluginRemote, remotePlugin, runNvimPluginIO, runNvimPluginIO_, runRemoteStack)
+import Ribosome.Remote (
+  RemoteStack,
+  interpretPluginRemote,
+  remotePlugin,
+  runNvimPluginIO,
+  runNvimPluginIO_,
+  runRemoteStack,
+  )
 import Ribosome.Run (NvimPlugin)
 
 -- $intro
