@@ -1,6 +1,7 @@
 module Ribosome.Api (
   module Ribosome.Api.Autocmd,
   module Ribosome.Api.Buffer,
+  FileBuffer (FileBuffer),
   module Ribosome.Api.Echo,
   module Ribosome.Api.Function,
   module Ribosome.Api.Input,
@@ -38,4 +39,5 @@ import Ribosome.Api.Tabpage
 import Ribosome.Api.Undo
 import Ribosome.Api.Variable
 import Ribosome.Api.Window
+import Ribosome.Data.FileBuffer (FileBuffer (FileBuffer))
 import Ribosome.Host.Api.Effect
