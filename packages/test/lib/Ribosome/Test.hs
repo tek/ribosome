@@ -1,10 +1,13 @@
 module Ribosome.Test (
   -- * Introduction
   -- $intro
+
   -- * Embedded testing
   -- $embed
+
   -- * tmux testing
   -- $tmux
+
   -- * Embedded test API
   testPlugin,
   testEmbed,
