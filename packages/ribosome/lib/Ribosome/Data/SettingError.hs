@@ -3,8 +3,8 @@ module Ribosome.Data.SettingError where
 import Exon (exon)
 import Log (Severity (Error))
 
-import Ribosome.Host.Data.HandlerError (ErrorMessage (ErrorMessage), ToErrorMessage (toErrorMessage))
-import Ribosome.Host.Data.RpcError (RpcError, rpcErrorMessage)
+import Ribosome.Host.Data.Report (Report (Report), Reportable (toReport))
+import Ribosome.Host.Data.RpcError (RpcError, rpcReport)
 
 data SettingError =
   Unset Text
@@ -14,11 +14,11 @@ data SettingError =
   UpdateFailed Text RpcError
   deriving stock (Eq, Show)
 
-instance ToErrorMessage SettingError where
-  toErrorMessage = \case
+instance Reportable SettingError where
+  toReport = \case
     Unset key ->
-      ErrorMessage [exon|Mandatory setting '#{key}' is unset|] ["SettingError.Unset:", key] Error
+      Report [exon|Mandatory setting '#{key}' is unset|] ["SettingError.Unset:", key] Error
     Decode key msg ->
-      ErrorMessage [exon|Setting '#{key}' has invalid value: #{msg}|] ["SettingError.Decode:", key, msg] Error
+      Report [exon|Setting '#{key}' has invalid value: #{msg}|] ["SettingError.Decode:", key, msg] Error
     UpdateFailed key err ->
-      ErrorMessage [exon|Failed to update setting '#{key}': #{rpcErrorMessage err}|] ["SettingError.UpdateFailed:", key, show err] Error
+      Report [exon|Failed to update setting '#{key}': #{rpcReport err}|] ["SettingError.UpdateFailed:", key, show err] Error

@@ -10,7 +10,7 @@ import Polysemy.Test (UnitTest, assertEq, assertLeft)
 
 import Ribosome.Host.Api.Effect (nvimCallFunction)
 import Ribosome.Host.Data.Execution (Execution (Sync))
-import Ribosome.Host.Data.HandlerError (ErrorMessage (ErrorMessage), handlerError)
+import Ribosome.Host.Data.Report (Report (Report))
 import Ribosome.Host.Data.RpcError (RpcError)
 import Ribosome.Host.Data.RpcHandler (Handler, RpcHandler)
 import Ribosome.Host.Embed (embedNvim)
@@ -19,7 +19,7 @@ import Ribosome.Host.Unit.Run (runTestConf, runUnitTest)
 
 stopper :: Handler r ()
 stopper =
-  handlerError (ErrorMessage "error" ["error", "meltdown"] Crit) "test"
+  stop (Report "error" ["error", "meltdown"] Crit)
 
 handlers :: [RpcHandler r]
 handlers =
@@ -28,7 +28,8 @@ handlers =
 fileTarget :: [Text]
 fileTarget =
   [
-    "\ESC[35m[crit] \ESC[0m [R.H.T.LogTest#22] error",
+    "\ESC[35m[crit] \ESC[0m [R.H.T.LogTest#22] function:Stopper:",
+    "error",
     "meltdown",
     ""
   ]

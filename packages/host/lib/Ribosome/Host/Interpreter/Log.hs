@@ -5,7 +5,9 @@ import Exon (exon)
 import qualified Log
 import Log (
   Log (Log),
-  Severity,
+  LogMessage (LogMessage),
+  Severity (Warn),
+  dataLog,
   formatLogEntry,
   interceptDataLogConc,
   interpretLogDataLogConc,
@@ -13,7 +15,7 @@ import Log (
   setLogLevel,
   )
 import Path (Abs, File, Path, toFilePath)
-import Polysemy.Chronos (ChronosTime, interpretTimeChronos)
+import Polysemy.Chronos (ChronosTime)
 import Polysemy.Log (interpretLogStderrLevelConc)
 import Polysemy.Log.Handle (interpretDataLogHandleWith)
 import Polysemy.Log.Log (interpretDataLog)
@@ -21,13 +23,12 @@ import System.IO (Handle, IOMode (AppendMode), hClose, openFile)
 
 import Ribosome.Host.Api.Effect (nvimEcho)
 import Ribosome.Host.Class.Msgpack.Encode (toMsgpack)
-import Ribosome.Host.Data.HandlerError (ErrorMessage (ErrorMessage), HandlerError (HandlerError))
 import qualified Ribosome.Host.Data.HostConfig as HostConfig
 import Ribosome.Host.Data.HostConfig (LogConfig (LogConfig))
-import Ribosome.Host.Data.HostError (HostError (HostError))
-import qualified Ribosome.Host.Effect.Errors as Errors
-import Ribosome.Host.Effect.Errors (Errors)
+import Ribosome.Host.Data.Report (LogReport (LogReport), Report (Report), renderNonemptyReportContextColon)
 import Ribosome.Host.Effect.Log (FileLog, StderrLog, fileLog, stderrLog)
+import qualified Ribosome.Host.Effect.Reports as Reports
+import Ribosome.Host.Effect.Reports (Reports)
 import Ribosome.Host.Effect.Rpc (Rpc)
 import Ribosome.Host.Effect.UserError (UserError, userError)
 
@@ -45,24 +46,35 @@ echoError minSeverity err severity | severity >= minSeverity =
 echoError _ _ _ =
   unit
 
-logHandlerError ::
+logLogReport ::
   Show e =>
-  Members [Rpc !! e, Errors, UserError, Log] r =>
+  Members [Rpc !! e, Reports, UserError, Log] r =>
   Severity ->
-  HostError ->
+  LogReport ->
   Sem r ()
-logHandlerError minSeverity (HostError report (HandlerError msg@(ErrorMessage user log severity) htag)) = do
-  Log.log severity (Text.unlines log)
-  Errors.store htag msg
-  when report (echoError minSeverity user severity)
+logLogReport minSeverity (LogReport msg@(Report user log severity) echo store context) =
+  withFrozenCallStack do
+    Log.log severity (Text.unlines (maybeToList (renderNonemptyReportContextColon context) <> log))
+    when store (Reports.storeReport context msg)
+    when echo (echoError minSeverity user severity)
 
 interpretDataLogRpc ::
   Show e =>
-  Members [Reader LogConfig, Rpc !! e, Errors, UserError, Log, Resource, Race, Async, Embed IO] r =>
-  InterpreterFor (DataLog HostError) r
+  Members [Reader LogConfig, Rpc !! e, Reports, UserError, Log, Resource, Race, Async, Embed IO] r =>
+  InterpreterFor (DataLog LogReport) r
 interpretDataLogRpc sem = do
   LogConfig {..} <- ask
-  interpretDataLog (logHandlerError logLevelEcho) ((if dataLogConc then interceptDataLogConc 64 else id) sem)
+  interpretDataLog (logLogReport logLevelEcho) ((if dataLogConc then interceptDataLogConc 64 else id) sem)
+
+interceptLogRpc ::
+  Members [Log, DataLog LogReport] r =>
+  Sem r a ->
+  Sem r a
+interceptLogRpc =
+  intercept \case
+    Log lm@(LogMessage severity msg) -> do
+      dataLog (LogReport (Report msg [msg] severity) True (severity >= Warn) mempty)
+      send (Log lm)
 
 interpretLogStderrFile ::
   Members [StderrLog, FileLog] r =>
@@ -80,9 +92,8 @@ interpretLogHandleLevel ::
 interpretLogHandleLevel handle level =
   interpretDataLogHandleWith handle formatLogEntry .
   setLogLevel level .
-  interpretTimeChronos .
   interpretLogDataLogConc 64 .
-  raiseUnder2
+  raiseUnder
 {-# inline interpretLogHandleLevel #-}
 
 interpretLogFileLevel ::

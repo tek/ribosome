@@ -8,9 +8,9 @@ import Ribosome.Data.PluginName (PluginName)
 import Ribosome.Data.WatchedVariable (WatchedVariable)
 import Ribosome.Effect.Scratch (Scratch)
 import Ribosome.Effect.Settings (Settings)
-import Ribosome.Embed (HandlerEffects, interpretPluginEmbed, embedPlugin)
-import Ribosome.Host.Data.HandlerError (HandlerError, handlerErrorMessage)
+import Ribosome.Embed (HandlerEffects, embedPlugin, interpretPluginEmbed)
 import Ribosome.Host.Data.HostConfig (setStderr)
+import Ribosome.Host.Data.Report (Report, reportMessages)
 import Ribosome.Host.Data.RpcHandler (Handler, RpcHandler)
 import Ribosome.Host.Effect.Handlers (Handlers)
 import Ribosome.Host.Effect.Rpc (Rpc)
@@ -27,11 +27,11 @@ type HandlerTestStack =
 
 type EmbedEffects =
   [
-    Stop HandlerError,
+    Stop Report,
     Scratch,
     Settings,
     Rpc
-  ] |> Handlers !! HandlerError
+  ] |> Handlers !! Report
 
 type PluginTestStack =
   EmbedEffects ++ HandlerTestStack
@@ -66,7 +66,7 @@ testHandlers handlers vars =
   resumeBootError @Rpc .
   resumeBootError @Settings .
   resumeBootError @Scratch .
-  stopToErrorWith (TestError . handlerErrorMessage) .
+  stopToErrorWith (TestError . reportMessages) .
   insertAt @4
 
 runTestHandlers ::

@@ -9,13 +9,13 @@ import Ribosome.Data.WatchedVariable (WatchedVariable (WatchedVariable))
 import qualified Ribosome.Effect.VariableWatcher as VariableWatcher
 import Ribosome.Effect.VariableWatcher (VariableWatcher)
 import Ribosome.Host.Api.Effect (nvimGetVar)
-import Ribosome.Host.Data.HandlerError (HandlerError)
+import Ribosome.Host.Data.Report (Report)
 import Ribosome.Host.Data.RpcError (RpcError)
 import Ribosome.Host.Data.RpcHandler (Handler)
 import Ribosome.Host.Effect.Rpc (Rpc)
 
 -- |Interpret 'VariableWatcher' by doing nothing.
-interpretVariableWatcherNull :: InterpreterFor (VariableWatcher !! HandlerError) r
+interpretVariableWatcherNull :: InterpreterFor (VariableWatcher !! Report) r
 interpretVariableWatcherNull =
   interpretResumable \case
     VariableWatcher.Update -> unit
@@ -54,7 +54,7 @@ checkVar (WatchedVariable var) old handler =
 -- This does not remove 'VariableWatcher' from the stack, but intercepts and resends it, to make it simpler to use
 -- with the plugin runners.
 watchVariables ::
-  Members [VariableWatcher !! HandlerError, Rpc !! RpcError, Resource, Mask mres, Race, Embed IO] r =>
+  Members [VariableWatcher !! Report, Rpc !! RpcError, Resource, Mask mres, Race, Embed IO] r =>
   Map WatchedVariable (Object -> Handler r ()) ->
   Sem r a ->
   Sem r a
@@ -65,16 +65,16 @@ watchVariables vars =
     VariableWatcher.Update -> do
       lockOrSkip_ do
         atomicPut =<< Map.traverseWithKey (\ var (old, h) -> (,h) <$> raiseUnder2 (checkVar var old h)) =<< atomicGet
-      restop @HandlerError VariableWatcher.update
+      restop @Report VariableWatcher.update
     VariableWatcher.Unwatch var -> do
       atomicModify' (Map.delete var)
-      restop @HandlerError (VariableWatcher.unwatch var)
+      restop @Report (VariableWatcher.unwatch var)
   . raise . raise
 
 -- |Interpret 'VariableWatcher' with 'watchVariables', but eliminate the effect from the stack.
 interpretVariableWatcher ::
   Members [Rpc !! RpcError, Resource, Mask mres, Race, Embed IO] r =>
-  Map WatchedVariable (Object -> Handler (VariableWatcher !! HandlerError : r) ()) ->
-  InterpreterFor (VariableWatcher !! HandlerError) r
+  Map WatchedVariable (Object -> Handler (VariableWatcher !! Report : r) ()) ->
+  InterpreterFor (VariableWatcher !! Report) r
 interpretVariableWatcher vars =
   interpretVariableWatcherNull . watchVariables vars

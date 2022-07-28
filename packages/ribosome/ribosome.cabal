@@ -92,7 +92,6 @@ library
       Ribosome.Effect.Settings
       Ribosome.Effect.VariableWatcher
       Ribosome.Embed
-      Ribosome.Errors
       Ribosome.Examples.Example1
       Ribosome.Examples.Example2
       Ribosome.Examples.Example3
@@ -115,6 +114,7 @@ library
       Ribosome.PluginName
       Ribosome.Register
       Ribosome.Remote
+      Ribosome.Report
       Ribosome.Run
       Ribosome.Scratch
       Ribosome.Settings

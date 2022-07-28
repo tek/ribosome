@@ -32,7 +32,7 @@ module Ribosome.Test (
   TmuxTestConfig (TmuxTestConfig),
   -- * Error handling
   module Ribosome.Test.Error,
-  module Ribosome.Host.Data.HandlerError,
+  module Ribosome.Host.Data.Report,
   -- * Assertions for Neovim UI elements
   windowCountIs,
   cursorIs,
@@ -43,7 +43,7 @@ module Ribosome.Test (
   assertWaitFor,
 ) where
 
-import Ribosome.Host.Data.HandlerError (resumeHandlerFail, stopHandlerToFail)
+import Ribosome.Host.Data.Report (resumeHandlerFail, stopHandlerToFail)
 import Ribosome.Test.Data.TestConfig (TestConfig (TestConfig), TmuxTestConfig (TmuxTestConfig))
 import Ribosome.Test.Embed (
   EmbedHandlerStack,

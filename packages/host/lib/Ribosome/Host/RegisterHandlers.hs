@@ -10,11 +10,10 @@ import Ribosome.Host.Api.Effect (nvimGetApiInfo)
 import Ribosome.Host.Class.Msgpack.Decode (fromMsgpack)
 import Ribosome.Host.Data.ChannelId (ChannelId (ChannelId))
 import Ribosome.Host.Data.Execution (Execution (Async, Sync))
-import qualified Ribosome.Host.Data.HandlerError as HandlerError
-import Ribosome.Host.Data.HandlerError (HandlerError, resumeHandlerError)
+import Ribosome.Host.Data.Report (Report, resumeReport)
 import Ribosome.Host.Data.Request (RpcMethod (RpcMethod))
 import Ribosome.Host.Data.RpcCall (RpcCall)
-import Ribosome.Host.Data.RpcError (RpcError, rpcErrorMessage)
+import Ribosome.Host.Data.RpcError (RpcError, rpcReport)
 import Ribosome.Host.Data.RpcHandler (RpcHandler (RpcHandler), rpcMethod)
 import Ribosome.Host.Data.RpcName (RpcName (RpcName))
 import qualified Ribosome.Host.Data.RpcType as AutocmdOptions
@@ -31,22 +30,22 @@ import qualified Ribosome.Host.Effect.Rpc as Rpc
 import Ribosome.Host.Effect.Rpc (Rpc)
 
 channelId ::
-  Members [Rpc !! RpcError, Stop HandlerError] r =>
+  Members [Rpc !! RpcError, Stop Report] r =>
   Sem r ChannelId
 channelId =
-  resumeHandlerError do
+  resumeReport do
     nvimGetApiInfo >>= \case
       [fromMsgpack -> Right i, _] ->
         pure (ChannelId i)
       i ->
-        stop (HandlerError.simple [exon|API info did not contain channel ID: #{show i}|])
+        stop (fromString [exon|API info did not contain channel ID: #{show i}|])
 
 registerFailed ::
   Member Log r =>
   RpcError ->
   Sem r ()
 registerFailed e =
-  Log.error [exon|Registering rpc handlers failed: #{rpcErrorMessage e}|]
+  Log.error [exon|Registering rpc handlers failed: #{rpcReport e}|]
 
 wrapAugroup :: Text -> Maybe Text -> Text
 wrapAugroup cmd = \case
@@ -107,7 +106,7 @@ registerHandler i (RpcHandler tpe name exec _) =
 registerHandlers ::
   Members [Rpc !! RpcError, Log] r =>
   [RpcHandler r] ->
-  Sem (Stop HandlerError : r) ()
+  Sem (Stop Report : r) ()
 registerHandlers defs = do
   i <- channelId
   Rpc.sync (foldMap (registerHandler i) defs) !! registerFailed

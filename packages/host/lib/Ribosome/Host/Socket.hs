@@ -1,8 +1,8 @@
 module Ribosome.Host.Socket where
 
 import Ribosome.Host.Data.BootError (BootError (BootError))
-import Ribosome.Host.Data.HandlerError (HandlerError)
 import Ribosome.Host.Data.NvimSocket (NvimSocket)
+import Ribosome.Host.Data.Report (Report)
 import Ribosome.Host.Data.RpcHandler (RpcHandler)
 import Ribosome.Host.Effect.Handlers (Handlers)
 import Ribosome.Host.Effect.Rpc (Rpc)
@@ -36,7 +36,7 @@ interpretHostSocket =
 withHostSocket ::
   Members BasicStack r =>
   Member (Reader NvimSocket) r =>
-  InterpreterFor (Handlers !! HandlerError) (HostSocketStack ++ r) ->
+  InterpreterFor (Handlers !! Report) (HostSocketStack ++ r) ->
   InterpretersFor HostSocketStack r
 withHostSocket handlers =
   interpretHostSocket .
@@ -47,7 +47,7 @@ withHostSocket handlers =
 testHostSocket ::
   Members BasicStack r =>
   Member (Reader NvimSocket) r =>
-  InterpreterFor (Handlers !! HandlerError) (HostSocketStack ++ r) ->
+  InterpreterFor (Handlers !! Report) (HostSocketStack ++ r) ->
   InterpretersFor (Rpc : HostSocketStack) r
 testHostSocket handlers =
   interpretHostSocket .

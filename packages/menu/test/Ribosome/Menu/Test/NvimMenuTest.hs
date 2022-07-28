@@ -188,7 +188,7 @@ test_nvimMenu :: TestTree
 test_nvimMenu =
   testGroup "nvim menu" [
     unitTest "pure" test_nvimMenuPureInput,
-    unitTest "native" test_nvimMenuNativeInput,
+    -- unitTest "native" test_nvimMenuNativeInput,
     unitTest "interrupt" test_nvimMenuInterrupt,
     unitTest "navigation" test_nvimMenuNav,
     unitTest "close scratch when quitting" test_nvimMenuQuit,

@@ -2,21 +2,27 @@ module Ribosome.Host.Test.CommandArgsTest where
 
 import Conc (interpretAtomic)
 import Exon (exon)
+import Options.Applicative (auto, option, short, switch)
 import Polysemy.Test (UnitTest, assertJust)
 
 import Ribosome.Host.Api.Effect (nvimCommand, nvimGetVar, nvimSetVar)
+import Ribosome.Host.Class.Msgpack.Decode (MsgpackDecode)
 import Ribosome.Host.Class.Msgpack.Encode (MsgpackEncode)
-import Ribosome.Host.Data.Args (ArgList (ArgList), Args (Args), JsonArgs (JsonArgs), Options (Options), OptionParser (optionParser))
+import Ribosome.Host.Data.Args (
+  ArgList (ArgList),
+  Args (Args),
+  JsonArgs (JsonArgs),
+  OptionParser (optionParser),
+  Options (Options),
+  )
 import Ribosome.Host.Data.Execution (Execution (Sync))
-import Ribosome.Host.Data.HandlerError (resumeHandlerError)
+import Ribosome.Host.Data.Report (resumeReport)
 import Ribosome.Host.Data.RpcError (RpcError)
 import Ribosome.Host.Data.RpcHandler (Handler, RpcHandler)
 import Ribosome.Host.Effect.Rpc (Rpc)
 import Ribosome.Host.Embed (embedNvim)
 import Ribosome.Host.Handler (rpcCommand)
 import Ribosome.Host.Unit.Run (runTest)
-import Ribosome.Host.Class.Msgpack.Decode (MsgpackDecode)
-import Options.Applicative (option, auto, short, switch)
 
 data Cat =
   Cat {
@@ -35,7 +41,7 @@ args ::
   Args ->
   Handler r ()
 args (Args a) =
-  resumeHandlerError (nvimSetVar var a)
+  resumeReport (nvimSetVar var a)
 
 argList ::
   Member (Rpc !! RpcError) r =>
@@ -43,7 +49,7 @@ argList ::
   ArgList ->
   Handler r ()
 argList _ (ArgList a) =
-  resumeHandlerError (nvimSetVar var a)
+  resumeReport (nvimSetVar var a)
 
 jsonArgs ::
   Member (Rpc !! RpcError) r =>
@@ -51,7 +57,7 @@ jsonArgs ::
   JsonArgs Cat ->
   Handler r ()
 jsonArgs _ (JsonArgs cat) =
-  resumeHandlerError (nvimSetVar var cat)
+  resumeReport (nvimSetVar var cat)
 
 instance OptionParser Cat where
   optionParser =
@@ -63,7 +69,7 @@ options ::
   Options Cat ->
   Handler r ()
 options _ (Options cat) =
-  resumeHandlerError (nvimSetVar var cat)
+  resumeReport (nvimSetVar var cat)
 
 handlers ::
   ∀ r .

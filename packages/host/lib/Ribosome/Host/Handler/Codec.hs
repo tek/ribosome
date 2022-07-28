@@ -3,39 +3,38 @@
 module Ribosome.Host.Handler.Codec where
 
 import Data.Aeson (eitherDecodeStrict')
+import qualified Data.ByteString as ByteString
 import Data.MessagePack (Object)
 import qualified Data.Text as Text
 import Exon (exon)
+import qualified Options.Applicative as Optparse
+import Options.Applicative (defaultPrefs, execParserPure, info, renderFailure)
 
 import Ribosome.Host.Class.Msgpack.Decode (MsgpackDecode (fromMsgpack))
 import Ribosome.Host.Class.Msgpack.Encode (MsgpackEncode (toMsgpack))
-import Ribosome.Host.Data.Args (ArgList (ArgList), Args (Args), JsonArgs (JsonArgs), Options (Options), OptionParser (optionParser))
+import Ribosome.Host.Data.Args (ArgList (ArgList), Args (Args), JsonArgs (JsonArgs), OptionParser (optionParser), Options (Options))
 import Ribosome.Host.Data.Bang (Bang (NoBang))
 import Ribosome.Host.Data.Bar (Bar (Bar))
-import qualified Ribosome.Host.Data.HandlerError as HandlerError
-import Ribosome.Host.Data.HandlerError (HandlerError, basicHandlerError)
+import Ribosome.Host.Data.Report (Report, basicReport)
 import Ribosome.Host.Data.RpcHandler (Handler, RpcHandlerFun)
-import qualified Data.ByteString as ByteString
-import Options.Applicative (execParserPure, defaultPrefs, info, renderFailure)
-import qualified Options.Applicative as Optparse
 
 decodeArg ::
-  Member (Stop HandlerError) r =>
+  Member (Stop Report) r =>
   MsgpackDecode a =>
   Object ->
   Sem r a
 decodeArg =
-  stopEither . first HandlerError.simple . fromMsgpack
+  stopEither . first fromText . fromMsgpack
 
 extraError ::
-  Member (Stop HandlerError) r =>
+  Member (Stop Report) r =>
   [Object] ->
   Sem r a
 extraError o =
-  stop (HandlerError.simple [exon|Extraneous arguments: #{show o}|])
+  stop (fromString [exon|Extraneous arguments: #{show o}|])
 
 optArg ::
-  Member (Stop HandlerError) r =>
+  Member (Stop Report) r =>
   MsgpackDecode a =>
   a ->
   [Object] ->
@@ -59,7 +58,7 @@ class HandlerArg a r where
   handlerArg :: [Object] -> Sem r ([Object], a)
 
 instance {-# overlappable #-} (
-    Member (Stop HandlerError) r,
+    Member (Stop Report) r,
     MsgpackDecode a
   ) => HandlerArg a r where
     handlerArg = \case
@@ -80,33 +79,33 @@ instance HandlerArg Bar r where
     pure (os, Bar)
 
 instance (
-    Member (Stop HandlerError) r
+    Member (Stop Report) r
   ) => HandlerArg Bang r where
     handlerArg =
       optArg NoBang
 
 instance (
-    Member (Stop HandlerError) r
+    Member (Stop Report) r
   ) => HandlerArg Args r where
   handlerArg os =
     case traverse fromMsgpack os of
       Right a ->
         pure ([], Args (Text.unwords a))
       Left e ->
-        basicHandlerError [exon|Invalid arguments: #{show os}|] ["Invalid type for Args", show os, e]
+        basicReport [exon|Invalid arguments: #{show os}|] ["Invalid type for Args", show os, e]
 
 instance (
-    Member (Stop HandlerError) r
+    Member (Stop Report) r
   ) => HandlerArg ArgList r where
   handlerArg os =
     case traverse fromMsgpack os of
       Right a ->
         pure ([], ArgList a)
       Left e ->
-        basicHandlerError [exon|Invalid arguments: #{show os}|] ["Invalid type for ArgList", show os, e]
+        basicReport [exon|Invalid arguments: #{show os}|] ["Invalid type for ArgList", show os, e]
 
 instance (
-    Member (Stop HandlerError) r,
+    Member (Stop Report) r,
     FromJSON a
   ) => HandlerArg (JsonArgs a) r where
   handlerArg os =
@@ -114,10 +113,10 @@ instance (
       Right a ->
         pure ([], JsonArgs a)
       Left e ->
-        basicHandlerError [exon|Invalid arguments: #{show os}|] ["Invalid type for JsonArgs", show os, e]
+        basicReport [exon|Invalid arguments: #{show os}|] ["Invalid type for JsonArgs", show os, e]
 
 instance (
-    Member (Stop HandlerError) r,
+    Member (Stop Report) r,
     OptionParser a
   ) => HandlerArg (Options a) r where
   handlerArg os =
@@ -125,7 +124,7 @@ instance (
       Right a ->
         pure ([], Options a)
       Left e ->
-        basicHandlerError [exon|Invalid arguments: #{show os}|] ["Invalid type for Options", show os, e]
+        basicReport [exon|Invalid arguments: #{show os}|] ["Invalid type for Options", show os, e]
     where
       result = \case
         Optparse.Success a -> Right a
@@ -146,7 +145,7 @@ instance (
       o -> extraError o
 
 instance (
-    HandlerArg a (Stop HandlerError : r),
+    HandlerArg a (Stop Report : r),
     HandlerCodec b r
   ) => HandlerCodec (a -> b) r where
   handlerCodec h o = do

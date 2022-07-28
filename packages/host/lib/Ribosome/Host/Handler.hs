@@ -30,14 +30,14 @@ import Ribosome.Host.Handler.Command (CommandHandler (commandOptions), OptionSta
 -- The function is converted to use messagepack types by the class 'HandlerCodec'.
 --
 -- For easier type inference, it is advisable to use @'Handler' r a@ for the return type of the handler instead of using
--- @'Member' ('Stop' 'Ribosome.HandlerError') r@.
+-- @'Member' ('Stop' 'Ribosome.LogReport') r@.
 --
 -- Example:
 --
 -- > import Ribosome
 -- >
 -- > ping :: Int -> Handler r Int
--- > ping 0 = basicHandlerError "Invalid ping number!" ["This is written to the log"]
+-- > ping 0 = basicLogReport "Invalid ping number!" ["This is written to the log"]
 -- > ping i = pure i
 -- >
 -- > rpcFunction "Ping" Sync ping
@@ -65,7 +65,7 @@ rpcFunction name execution h =
 -- See [command params]("Ribosome#command-params").
 --
 -- For easier type inference, it is advisable to use @'Handler' r a@ for the return type of the handler instead of using
--- @'Member' ('Stop' 'HandlerError') r@.
+-- @'Member' ('Stop' 'Report') r@.
 rpcCommand ::
   ∀ r h .
   HandlerCodec h r =>
@@ -129,7 +129,7 @@ completeWith style f main@RpcHandler {rpcName} =
 -- For a user autocommand, specify @User@ for the event and the event name for the file pattern in 'AutocmdOptions'.
 --
 -- For easier type inference, it is advisable to use @'Handler' r a@ for the return type of the handler instead of using
--- @'Member' ('Stop' 'HandlerError') r@.
+-- @'Member' ('Stop' 'Report') r@.
 rpcAutocmd ::
   ∀ r h .
   HandlerCodec h r =>

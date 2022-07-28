@@ -10,7 +10,7 @@ import Ribosome.Host.Api.Effect (nvimCallFunction, nvimGetVar, nvimSetVar)
 import Ribosome.Host.Class.Msgpack.Encode (toMsgpack)
 import Ribosome.Host.Data.Bar (Bar (Bar))
 import Ribosome.Host.Data.Execution (Execution (Sync))
-import Ribosome.Host.Data.HandlerError (resumeHandlerError)
+import Ribosome.Host.Data.Report (resumeReport)
 import Ribosome.Host.Data.RpcError (RpcError)
 import Ribosome.Host.Data.RpcHandler (Handler)
 import qualified Ribosome.Host.Effect.Rpc as Rpc
@@ -34,7 +34,7 @@ hand Bar _ n = do
     13 ->
       stop "already 13"
     _ -> do
-      resumeHandlerError (nvimSetVar var n)
+      resumeReport (nvimSetVar var n)
       47 <$ atomicPut 13
 
 targetError :: RpcError

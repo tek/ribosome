@@ -39,7 +39,7 @@ tests =
     unitTest "notify" test_notify,
     unitTest "error event" test_errorEvent,
     unitTest "atomic" test_atomic,
-    unitTest "log to ile" test_logFile
+    unitTest "log to file" test_logFile
   ]
 
 main :: IO ()

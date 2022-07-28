@@ -19,6 +19,7 @@ import qualified Time
 import Time (Seconds (Seconds))
 
 import Ribosome.Test.Wait (assertWait)
+import Ribosome.Host.Effect.Log (StderrLog, stderrLog)
 
 -- |Nvim appears to add random whitespace sequences, optionally interspersed with color codes, to empty lines.
 -- This remotes that noise from lines starting with `\ESC[94m~\ESC[39m`.
@@ -51,19 +52,19 @@ assertScreenshot name pane =
 
 updateScreeshot ::
   Members [NativeTmux, NativeCommandCodecE, Stop CodecError] r =>
-  Members [Hedgehog IO, Test, Error TestError, Error Failure, ChronosTime, Log, Race, Embed IO] r =>
+  Members [Hedgehog IO, Test, Error TestError, Error Failure, ChronosTime, StderrLog, Race, Embed IO] r =>
   Text ->
   Int ->
   Sem r ()
 updateScreeshot name pane =
   withTmux $ restop do
-    Log.info [exon|Waiting for one second before storing new screenshot for '#{name}'|]
+    stderrLog (Log.info [exon|Waiting for one second before storing new screenshot for '#{name}'|])
     Time.sleep (Seconds 1)
     void (screenshot True name pane)
 
 awaitScreenshot ::
   Members [NativeTmux, NativeCommandCodecE, Stop CodecError] r =>
-  Members [Hedgehog IO, Test, Error TestError, Error Failure, ChronosTime, Log, Race, Embed IO] r =>
+  Members [Hedgehog IO, Test, Error TestError, Error Failure, ChronosTime, StderrLog, Race, Embed IO] r =>
   Bool ->
   Text ->
   Int ->

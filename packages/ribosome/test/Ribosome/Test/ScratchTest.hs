@@ -12,7 +12,7 @@ import Ribosome.Effect.Scratch (Scratch)
 import Ribosome.Host.Api.Data (nvimCommand)
 import Ribosome.Host.Api.Effect (vimCallFunction)
 import Ribosome.Host.Data.Execution (Execution (Sync))
-import Ribosome.Host.Data.HandlerError (resumeHandlerError)
+import Ribosome.Host.Data.Report (resumeReport)
 import Ribosome.Host.Data.RpcError (RpcError)
 import Ribosome.Host.Data.RpcHandler (Handler, RpcHandler)
 import qualified Ribosome.Host.Effect.Rpc as Rpc
@@ -31,7 +31,7 @@ makeScratch ::
   Member (Scratch !! RpcError) r =>
   Handler r ()
 makeScratch =
-  resumeHandlerError (void (Scratch.show target options))
+  resumeReport (void (Scratch.show target options))
   where
     options =
       ScratchOptions False True False True True True False Nothing Nothing Nothing [] [] Nothing name
@@ -44,7 +44,7 @@ makeFloatScratch ::
   Member (Scratch !! RpcError) r =>
   Handler r ()
 makeFloatScratch =
-  resumeHandlerError (void (Scratch.show target options))
+  resumeReport (void (Scratch.show target options))
   where
     options =
       ScratchOptions False True False True True True False (Just floatOptions) Nothing (Just 0) [] [] Nothing name

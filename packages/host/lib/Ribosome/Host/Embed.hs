@@ -1,11 +1,11 @@
 module Ribosome.Host.Embed where
 
 import Conc (ChanConsumer, ChanEvents, interpretEventsChan)
-import qualified Polysemy.Process.Effect.Process as Process
 import Polysemy.Process (Process)
+import qualified Polysemy.Process.Effect.Process as Process
 
 import Ribosome.Host.Data.BootError (BootError)
-import Ribosome.Host.Data.HandlerError (HandlerError)
+import Ribosome.Host.Data.Report (Report)
 import Ribosome.Host.Data.RpcHandler (RpcHandler)
 import Ribosome.Host.Data.RpcMessage (RpcMessage)
 import Ribosome.Host.Effect.Handlers (Handlers)
@@ -63,7 +63,7 @@ interpretHostEmbed =
 
 withHostEmbed ::
   Members BasicStack r =>
-  InterpreterFor (Handlers !! HandlerError) (HostEmbedStack ++ r) ->
+  InterpreterFor (Handlers !! Report) (HostEmbedStack ++ r) ->
   InterpretersFor HostEmbedStack r
 withHostEmbed handlers =
   interpretHostEmbed .
@@ -73,7 +73,7 @@ withHostEmbed handlers =
 
 testHostEmbed ::
   Members BasicStack r =>
-  InterpreterFor (Handlers !! HandlerError) (HostEmbedStack ++ r) ->
+  InterpreterFor (Handlers !! Report) (HostEmbedStack ++ r) ->
   InterpretersFor (Rpc : HostEmbedStack) r
 testHostEmbed handlers =
   interpretHostEmbed .

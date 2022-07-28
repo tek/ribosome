@@ -1,7 +1,7 @@
 module Ribosome.Host.Remote where
 
-import Ribosome.Host.Data.HandlerError (HandlerError)
 import Ribosome.Host.Data.HostConfig (HostConfig)
+import Ribosome.Host.Data.Report (Report)
 import Ribosome.Host.Data.RpcHandler (RpcHandler)
 import Ribosome.Host.Effect.Handlers (Handlers)
 import Ribosome.Host.IOStack (BasicStack, IOStack, runBasicStack)
@@ -33,7 +33,7 @@ interpretHostRemote =
 
 runHostRemote ::
   Members BasicStack r =>
-  InterpreterFor (Handlers !! HandlerError) (HostRemoteStack ++ r) ->
+  InterpreterFor (Handlers !! Report) (HostRemoteStack ++ r) ->
   Sem r ()
 runHostRemote handlers =
   interpretHostRemote (handlers runHost)

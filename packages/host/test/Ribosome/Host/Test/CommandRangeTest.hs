@@ -12,7 +12,7 @@ import Ribosome.Host.Api.Effect (
   nvimWinSetCursor,
   )
 import Ribosome.Host.Data.Execution (Execution (Sync))
-import Ribosome.Host.Data.HandlerError (resumeHandlerError)
+import Ribosome.Host.Data.Report (resumeReport)
 import Ribosome.Host.Data.Range (Range (Range), RangeStyle (RangeCount, RangeFile, RangeLine))
 import Ribosome.Host.Data.RpcError (RpcError)
 import Ribosome.Host.Data.RpcHandler (Handler, RpcHandler)
@@ -32,7 +32,7 @@ rangeFile ::
   Handler r ()
 rangeFile = \case
   Range l (Just h) ->
-    \ i -> resumeHandlerError (nvimSetVar var (l, h, i))
+    \ i -> resumeReport (nvimSetVar var (l, h, i))
   Range _ Nothing ->
     const (stop "no upper range bound given")
 
@@ -42,7 +42,7 @@ rangeLine ::
   Handler r ()
 rangeLine = \case
   Range l (Just h) ->
-    resumeHandlerError (nvimSetVar var (l, h))
+    resumeReport (nvimSetVar var (l, h))
   Range _ Nothing ->
     stop "no upper range bound given"
 
@@ -52,7 +52,7 @@ rangeLineDefault ::
   Handler r ()
 rangeLineDefault = \case
   Range l Nothing ->
-    resumeHandlerError (nvimSetVar var l)
+    resumeReport (nvimSetVar var l)
   Range _ (Just _) ->
     stop "range line count function got upper bound"
 
@@ -64,7 +64,7 @@ rangeCountImplicit = \case
   Range _ (Just _) ->
     stop "range count function got upper bound"
   Range l Nothing ->
-    resumeHandlerError (nvimSetVar var l)
+    resumeReport (nvimSetVar var l)
 
 rangeCountDefault ::
   Member (Rpc !! RpcError) r =>
@@ -74,7 +74,7 @@ rangeCountDefault = \case
   Range _ (Just _) ->
     stop "range count function got upper bound"
   Range l Nothing ->
-    resumeHandlerError (nvimSetVar var l)
+    resumeReport (nvimSetVar var l)
 
 rangeHandlers ::
   ∀ r .

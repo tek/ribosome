@@ -10,7 +10,7 @@ import qualified Ribosome.Effect.VariableWatcher as VariableWatcher
 import Ribosome.Effect.VariableWatcher (VariableWatcher)
 import Ribosome.Host.Data.BootError (BootError)
 import Ribosome.Host.Data.Execution (Execution (Async))
-import Ribosome.Host.Data.HandlerError (HandlerError, resumeHandlerError)
+import Ribosome.Host.Data.Report (Report, resumeReport)
 import Ribosome.Host.Data.RpcError (RpcError)
 import Ribosome.Host.Data.RpcHandler (Handler, RpcHandler)
 import Ribosome.Host.Data.RpcName (RpcName (RpcName))
@@ -31,14 +31,14 @@ watcherEvents =
   ]
 
 updateVar ::
-  Member (VariableWatcher !! HandlerError) r =>
+  Member (VariableWatcher !! Report) r =>
   Handler r ()
 updateVar =
   restop VariableWatcher.update
 
 watcherRpc ::
   ∀ r .
-  Member (VariableWatcher !! HandlerError) r =>
+  Member (VariableWatcher !! Report) r =>
   PluginName ->
   AutocmdEvent ->
   RpcHandler r
@@ -54,7 +54,7 @@ deleteScratch ::
   ScratchId ->
   Handler r ()
 deleteScratch =
-  resumeHandlerError . Scratch.kill
+  resumeReport . Scratch.kill
 
 deleteName :: PluginName -> RpcName
 deleteName (PluginName name) =
@@ -62,7 +62,7 @@ deleteName (PluginName name) =
 
 builtinHandlers ::
   ∀ r .
-  Members [Scratch !! RpcError, VariableWatcher !! HandlerError] r =>
+  Members [Scratch !! RpcError, VariableWatcher !! Report] r =>
   PluginName ->
   [RpcHandler r]
 builtinHandlers name =
@@ -70,8 +70,8 @@ builtinHandlers name =
 
 type BuiltinHandlersDeps =
   [
-    VariableWatcher !! HandlerError,
-    Handlers !! HandlerError,
+    VariableWatcher !! Report,
+    Handlers !! Report,
     Scratch !! RpcError,
     Rpc !! RpcError,
     Reader PluginName,

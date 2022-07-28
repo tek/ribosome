@@ -4,8 +4,7 @@ import Exon (exon)
 import Path (Abs, Dir, File, Path, SomeBase (Abs, Rel), parseSomeDir, parseSomeFile, (</>))
 
 import Ribosome.Host.Api.Effect (nvimCommand, vimCallFunction)
-import qualified Ribosome.Host.Data.HandlerError as HandlerError
-import Ribosome.Host.Data.HandlerError (HandlerError)
+import Ribosome.Host.Data.Report (Report)
 import Ribosome.Host.Effect.Rpc (Rpc)
 import Ribosome.Path (pathText)
 
@@ -50,23 +49,23 @@ parseNvimFile =
   traverse nvimRelativePath . parseSomeFile . toString
 
 failInvalidPath ::
-  Member (Stop HandlerError) r =>
+  Member (Stop Report) r =>
   Text ->
   Maybe a ->
   Sem r a
 failInvalidPath spec result =
   withFrozenCallStack do
-    stopNote (HandlerError.simple [exon|Invalid path: #{spec}|]) result
+    stopNote (fromText [exon|Invalid path: #{spec}|]) result
 
 nvimDir ::
-  Members [Rpc, Stop HandlerError] r =>
+  Members [Rpc, Stop Report] r =>
   Text ->
   Sem r (Path Abs Dir)
 nvimDir spec =
   failInvalidPath spec =<< parseNvimDir spec
 
 nvimFile ::
-  Members [Rpc, Stop HandlerError] r =>
+  Members [Rpc, Stop Report] r =>
   Text ->
   Sem r (Path Abs File)
 nvimFile spec =

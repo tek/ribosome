@@ -6,9 +6,9 @@ import Polysemy.Test (UnitTest, assertJust)
 import Ribosome.Host.Api.Effect (nvimCommand, nvimGetVar, nvimSetVar)
 import Ribosome.Host.Data.CommandRegister (CommandRegister (CommandRegister))
 import Ribosome.Host.Data.Execution (Execution (Sync))
-import Ribosome.Host.Data.HandlerError (HandlerError, resumeHandlerError)
+import Ribosome.Host.Data.Report (resumeReport)
 import Ribosome.Host.Data.RpcError (RpcError)
-import Ribosome.Host.Data.RpcHandler (RpcHandler)
+import Ribosome.Host.Data.RpcHandler (Handler, RpcHandler)
 import Ribosome.Host.Effect.Rpc (Rpc)
 import Ribosome.Host.Embed (embedNvim)
 import Ribosome.Host.Handler (rpcCommand)
@@ -19,11 +19,11 @@ var =
   "test_var"
 
 reg ::
-  Members [Rpc !! RpcError, Stop HandlerError] r =>
+  Member (Rpc !! RpcError) r =>
   CommandRegister ->
-  Sem r ()
+  Handler r ()
 reg (CommandRegister r) =
-  resumeHandlerError (nvimSetVar var r)
+  resumeReport (nvimSetVar var r)
 
 handlers ::
   ∀ r .
@@ -31,7 +31,7 @@ handlers ::
   [RpcHandler r]
 handlers =
   [
-    rpcCommand "Register" Sync (reg @(Stop HandlerError : r))
+    rpcCommand "Register" Sync reg
   ]
 
 test_register :: UnitTest

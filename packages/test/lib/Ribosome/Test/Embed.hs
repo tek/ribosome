@@ -23,7 +23,6 @@ module Ribosome.Test.Embed (
   TestEffects,
 ) where
 
-import Data.Generics.Labels ()
 import Log (Severity (Trace))
 import Polysemy.Test (TestError, UnitTest)
 
@@ -34,8 +33,8 @@ import Ribosome.Effect.Scratch (Scratch)
 import Ribosome.Effect.Settings (Settings)
 import Ribosome.Embed (HandlerEffects, embedPlugin, interpretPluginEmbed)
 import Ribosome.Host.Data.BootError (BootError)
-import Ribosome.Host.Data.HandlerError (HandlerError)
 import Ribosome.Host.Data.HostConfig (setStderr)
+import Ribosome.Host.Data.Report (Report)
 import Ribosome.Host.Data.RpcError (RpcError)
 import Ribosome.Host.Data.RpcHandler (RpcHandler)
 import Ribosome.Host.Effect.Rpc (Rpc)
@@ -71,10 +70,10 @@ import Ribosome.Test.Log (testLogLevel)
 -- The plugin effects 'Scratch', 'Settings' and 'Rpc' are allowed without 'Resume', causing tests to terminate
 -- immediately if one of these effects is used and throws an error.
 --
--- Additionally, the two core errors, 'HandlerError' and 'RpcError' are executed directly via 'Stop'.
+-- Additionally, the two core errors, 'LogReport' and 'RpcError' are executed directly via 'Stop'.
 type TestEffects =
   [
-    Stop HandlerError,
+    Stop Report,
     Stop RpcError,
     Scratch,
     Settings,

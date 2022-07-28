@@ -11,7 +11,7 @@ import Ribosome.Host.Api.Effect (nvimCallFunction, nvimGetVar, nvimInput, nvimSe
 import Ribosome.Host.Class.Msgpack.Array (msgpackArray)
 import Ribosome.Host.Data.Args (Args (Args))
 import Ribosome.Host.Data.Execution (Execution (Sync))
-import Ribosome.Host.Data.HandlerError (resumeHandlerError)
+import Ribosome.Host.Data.Report (resumeReport)
 import Ribosome.Host.Data.RpcError (RpcError)
 import Ribosome.Host.Data.RpcHandler (Handler, RpcHandler)
 import Ribosome.Host.Data.RpcType (CompleteStyle (CompleteFiltered, CompleteUnfiltered))
@@ -29,7 +29,7 @@ completing ::
   Args ->
   Handler r ()
 completing (Args a) = do
-  resumeHandlerError (nvimSetVar var a)
+  resumeReport (nvimSetVar var a)
   void (Sync.putWait (Seconds 5) ())
 
 dictionary :: [Text]

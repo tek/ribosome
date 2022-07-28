@@ -11,15 +11,14 @@ module Ribosome.Host (
   module Ribosome.Host.Data.CommandMods,
   module Ribosome.Host.Data.CommandRegister,
   module Ribosome.Host.Data.Execution,
-  module Ribosome.Host.Data.HandlerError,
+  module Ribosome.Host.Data.Report,
   module Ribosome.Host.Data.HostConfig,
-  module Ribosome.Host.Data.HostError,
   module Ribosome.Host.Data.Range,
   module Ribosome.Host.Data.RpcError,
   module Ribosome.Host.Data.RpcHandler,
   module Ribosome.Host.Data.RpcType,
-  module Ribosome.Host.Data.StoredError,
-  module Ribosome.Host.Effect.Errors,
+  module Ribosome.Host.Data.StoredReport,
+  module Ribosome.Host.Effect.Reports,
   module Ribosome.Host.Effect.MState,
   module Ribosome.Host.Effect.Rpc,
   module Ribosome.Host.Embed,
@@ -42,32 +41,28 @@ import Ribosome.Host.Data.BootError (BootError (BootError))
 import Ribosome.Host.Data.CommandMods (CommandMods (CommandMods))
 import Ribosome.Host.Data.CommandRegister (CommandRegister (CommandRegister))
 import Ribosome.Host.Data.Execution (Execution (Async, Sync))
-import Ribosome.Host.Data.HandlerError (
-  ErrorMessage (ErrorMessage),
-  HandlerError (HandlerError),
-  HandlerTag (..),
-  ToErrorMessage (toErrorMessage),
-  basicHandlerError,
-  handlerError,
-  handlerTagName,
-  mapHandlerError,
-  mapHandlerErrors,
-  mapUserMessage,
-  resumeHandlerError,
-  resumeHandlerErrorFrom,
-  resumeHandlerErrors,
-  resumeHoistUserMessage,
-  toHandlerError,
-  userErrorMessage,
-  )
 import Ribosome.Host.Data.HostConfig (HostConfig (..), LogConfig (..), setStderr)
-import Ribosome.Host.Data.HostError (HostError (..))
 import Ribosome.Host.Data.Range (Range (Range), RangeStyle (..))
-import Ribosome.Host.Data.RpcError (RpcError, rpcErrorMessage)
+import Ribosome.Host.Data.Report (
+  LogReport (LogReport),
+  Report (Report),
+  ReportContext (..),
+  Reportable (toReport),
+  basicReport,
+  mapReport,
+  mapReports,
+  mapUserMessage,
+  resumeHoistUserMessage,
+  resumeReport,
+  resumeReports,
+  toReport,
+  userReport,
+  )
+import Ribosome.Host.Data.RpcError (RpcError, rpcReport)
 import Ribosome.Host.Data.RpcHandler (Handler, RpcHandler (RpcHandler), simpleHandler)
 import Ribosome.Host.Data.RpcType (CompleteStyle (..))
-import Ribosome.Host.Data.StoredError (StoredError (StoredError))
-import Ribosome.Host.Effect.Errors (Errors)
+import Ribosome.Host.Data.StoredReport (StoredReport (StoredReport))
+import Ribosome.Host.Effect.Reports (Reports)
 import Ribosome.Host.Effect.MState (
   MState,
   ScopedMState,

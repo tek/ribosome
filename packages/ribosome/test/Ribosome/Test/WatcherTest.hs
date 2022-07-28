@@ -6,14 +6,14 @@ import Polysemy.Test (UnitTest, (===))
 
 import Ribosome.Api.Autocmd (doautocmd)
 import Ribosome.Host.Api.Effect (nvimSetVar)
-import Ribosome.Host.Data.HandlerError (HandlerError)
+import Ribosome.Host.Data.Report (Report)
 import Ribosome.Host.Data.RpcError (RpcError)
 import Ribosome.Host.Effect.Rpc (Rpc)
 import Ribosome.Test.Wait (assertWait)
 import Ribosome.Unit.Run (runTest, testHandlers)
 
 changed ::
-  Members [AtomicState Int, Rpc !! RpcError, Stop HandlerError] r =>
+  Members [AtomicState Int, Rpc !! RpcError, Stop Report] r =>
   Object ->
   Sem r ()
 changed _ =

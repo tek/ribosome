@@ -147,37 +147,37 @@ module Ribosome (
   PluginConfig (PluginConfig),
   pluginNamed,
 
-  -- * Errors
+  -- * Reports
   -- $errors
-  resumeHandlerError,
-  mapHandlerError,
-  resumeHandlerErrorFrom,
-  mapHandlerErrorFrom,
-  resumeHandlerErrors,
-  mapHandlerErrors,
-  HandlerError (HandlerError),
-  ErrorMessage (ErrorMessage),
-  ToErrorMessage (toErrorMessage),
-  HandlerTag (..),
-  handlerTagName,
-  toHandlerError,
-  handlerError,
-  basicHandlerError,
-  userErrorMessage,
+  resumeReport,
+  mapReport,
+  resumeReports,
+  mapReports,
+  LogReport (LogReport),
+  Report (Report),
+  Reportable (toReport),
+  ReportContext (..),
+  renderReportContext,
+  renderReportContextColon,
+  renderNonemptyReportContext,
+  renderNonemptyReportContextColon,
+  basicReport,
+  userReport,
+  reportMessages,
   resumeHoistUserMessage,
   mapUserMessage,
+  logReport,
+  pluginLogReports,
   RpcError,
-  rpcErrorMessage,
+  rpcReport,
   ignoreRpcError,
   onRpcError,
   BootError (..),
-  HostError (..),
-  StoredError (..),
-  Errors,
-  reportError,
+  StoredReport (..),
+  Reports,
+  storedReports,
   reportStop,
-  resumeReportError,
-  storeError,
+  resumeLogReport,
   UserError,
   interpretUserErrorPrefixed,
 
@@ -231,7 +231,6 @@ import Ribosome.Effect.PersistPath (PersistPath, persistPath)
 import Ribosome.Effect.Scratch (Scratch)
 import Ribosome.Effect.Settings (Settings)
 import Ribosome.Embed (embedPlugin, interpretPluginEmbed, runEmbedPluginIO, runEmbedPluginIO_, runEmbedStack)
-import Ribosome.Errors (reportError, reportStop, resumeReportError, storeError)
 import Ribosome.Host.Api.Data (Buffer, Tabpage, Window)
 import Ribosome.Host.Class.Msgpack.Array (msgpackArray)
 import Ribosome.Host.Class.Msgpack.Decode (pattern Msgpack, MsgpackDecode (fromMsgpack))
@@ -244,36 +243,35 @@ import Ribosome.Host.Data.BootError (BootError (..))
 import Ribosome.Host.Data.CommandMods (CommandMods (CommandMods))
 import Ribosome.Host.Data.CommandRegister (CommandRegister (CommandRegister))
 import Ribosome.Host.Data.Execution (Execution (..))
-import Ribosome.Host.Data.HandlerError (
-  ErrorMessage (ErrorMessage),
-  HandlerError (HandlerError),
-  HandlerTag (..),
-  ToErrorMessage (toErrorMessage),
-  basicHandlerError,
-  handlerError,
-  handlerTagName,
-  mapHandlerError,
-  mapHandlerErrorFrom,
-  mapHandlerErrors,
-  mapUserMessage,
-  resumeHandlerError,
-  resumeHandlerErrorFrom,
-  resumeHandlerErrors,
-  resumeHoistUserMessage,
-  toHandlerError,
-  userErrorMessage,
-  )
 import Ribosome.Host.Data.HostConfig (HostConfig (..), LogConfig (..), setStderr)
-import Ribosome.Host.Data.HostError (HostError (HostError))
 import Ribosome.Host.Data.Range (Range (Range), RangeStyle (..))
+import Ribosome.Host.Data.Report (
+  LogReport (LogReport),
+  Report (Report),
+  ReportContext (..),
+  Reportable (toReport),
+  basicReport,
+  mapReport,
+  mapReports,
+  mapUserMessage,
+  renderNonemptyReportContext,
+  renderNonemptyReportContextColon,
+  renderReportContext,
+  renderReportContextColon,
+  reportMessages,
+  resumeHoistUserMessage,
+  resumeReport,
+  resumeReports,
+  toReport,
+  userReport,
+  )
 import Ribosome.Host.Data.Request (Request (Request))
 import Ribosome.Host.Data.RpcCall (RpcCall)
-import Ribosome.Host.Data.RpcError (RpcError, rpcErrorMessage)
+import Ribosome.Host.Data.RpcError (RpcError, rpcReport)
 import Ribosome.Host.Data.RpcHandler (Handler, RpcHandler (..), simpleHandler)
 import Ribosome.Host.Data.RpcName (RpcName (..))
 import Ribosome.Host.Data.RpcType (CompleteStyle (..))
-import Ribosome.Host.Data.StoredError (StoredError (StoredError))
-import Ribosome.Host.Effect.Errors (Errors)
+import Ribosome.Host.Data.StoredReport (StoredReport (StoredReport))
 import Ribosome.Host.Effect.MState (
   MState,
   ScopedMState,
@@ -286,13 +284,14 @@ import Ribosome.Host.Effect.MState (
   stateToMState,
   withMState,
   )
+import Ribosome.Host.Effect.Reports (Reports, storedReports)
 import Ribosome.Host.Effect.Rpc (Rpc, async, notify, sync)
 import Ribosome.Host.Effect.UserError (UserError)
 import Ribosome.Host.Error (ignoreRpcError, onRpcError)
 import Ribosome.Host.Handler (completeBuiltin, completeWith, rpc, rpcAutocmd, rpcCommand, rpcFunction)
 import Ribosome.Host.Handler.Codec (HandlerArg (handlerArg), HandlerCodec (handlerCodec))
 import Ribosome.Host.Handler.Command (CommandHandler (commandOptions))
-import Ribosome.Host.Interpreter.Handlers (noHandlers, withHandlers, interpretHandlers)
+import Ribosome.Host.Interpreter.Handlers (interpretHandlers, noHandlers, withHandlers)
 import Ribosome.Host.Interpreter.MState (evalMState, interpretMState, interpretMStates)
 import Ribosome.Host.Modify (bufdo, modifyCmd, noautocmd, silent, silentBang, windo)
 import Ribosome.IOStack (BasicPluginStack, runBasicPluginStack, runCli)
@@ -312,6 +311,7 @@ import Ribosome.Remote (
   runNvimPluginIO_,
   runRemoteStack,
   )
+import Ribosome.Report (logReport, pluginLogReports, reportStop, resumeLogReport)
 import Ribosome.Run (NvimPlugin)
 
 -- $intro
@@ -536,13 +536,13 @@ import Ribosome.Run (NvimPlugin)
 -- this type of error, while with plain 'Error', this would have to be tracked manually by the developer.
 --
 -- Since handler functions yield the control flow to Ribosome's internal machinery when returning, all 'Stop' effects
--- have to be converted to 'HandlerError' (which is expected by the request dispatcher and part of the 'Handler' stack),
+-- have to be converted to 'Report' (which is expected by the request dispatcher and part of the 'Handler' stack),
 -- and all bare effects like 'Rpc' have to be resumed or restopped since their interpreters only operate on the
 -- 'Resumable' variants.
 --
--- To make this chore a little less verbose, the class 'ToErrorMessage' can be leveraged to convert errors to
--- 'HandlerError', which consists of an 'ErrorMessage' and 'HandlerTag', which optionally identifies the plugin
+-- To make this chore a little less verbose, the class 'Reportable' can be leveraged to convert errors to
+-- 'Report', which consists of an 'Report' and 'ReportContext', which optionally identifies the plugin
 -- component that threw the error.
 --
--- Since 'RpcError' is an instance of 'ToErrorMessage', the combinators 'resumeHandlerError' and 'mapHandlerError' can
--- be used to reinterpret to @'Stop' 'HandlerError'@.
+-- Since 'RpcError' is an instance of 'Reportable', the combinators 'resumeReport' and 'mapReport' can be used to
+-- reinterpret to @'Stop' 'Report'@.

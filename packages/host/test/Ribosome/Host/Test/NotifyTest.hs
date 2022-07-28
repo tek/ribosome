@@ -8,7 +8,7 @@ import Polysemy.Time (Seconds (Seconds))
 import Ribosome.Host.Api.Data (nvimCallFunction)
 import Ribosome.Host.Class.Msgpack.Encode (toMsgpack)
 import Ribosome.Host.Data.Execution (Execution (Async))
-import Ribosome.Host.Data.HandlerError (HandlerError)
+import Ribosome.Host.Data.Report (Report)
 import Ribosome.Host.Data.RpcError (RpcError)
 import Ribosome.Host.Data.RpcHandler (RpcHandler)
 import qualified Ribosome.Host.Effect.Rpc as Rpc
@@ -18,7 +18,7 @@ import Ribosome.Host.Handler (rpcFunction)
 import Ribosome.Host.Unit.Run (runTest)
 
 hand ::
-  Members [Rpc !! RpcError, Sync Int, Stop HandlerError] r =>
+  Members [Rpc !! RpcError, Sync Int, Stop Report] r =>
   Int ->
   Sem r ()
 hand =
@@ -30,7 +30,7 @@ handlers ::
   [RpcHandler r]
 handlers =
   [
-    rpcFunction "Fun" Async (hand @(Stop HandlerError : r))
+    rpcFunction "Fun" Async (hand @(Stop Report : r))
   ]
 
 test_notify :: UnitTest

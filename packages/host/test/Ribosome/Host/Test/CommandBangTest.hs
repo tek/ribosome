@@ -7,7 +7,7 @@ import Ribosome.Host.Api.Effect (nvimCommand, nvimGetVar, nvimSetVar)
 import Ribosome.Host.Class.Msgpack.Encode (toMsgpack)
 import Ribosome.Host.Data.Bang (Bang (Bang, NoBang))
 import Ribosome.Host.Data.Execution (Execution (Sync))
-import Ribosome.Host.Data.HandlerError (HandlerError, resumeHandlerError)
+import Ribosome.Host.Data.Report (Report, resumeReport)
 import Ribosome.Host.Data.RpcError (RpcError)
 import Ribosome.Host.Data.RpcHandler (RpcHandler)
 import Ribosome.Host.Effect.Rpc (Rpc)
@@ -20,15 +20,15 @@ var =
   "test_var"
 
 bang ::
-  Members [Rpc !! RpcError, Stop HandlerError] r =>
+  Members [Rpc !! RpcError, Stop Report] r =>
   Bang ->
   Int64 ->
   Sem r ()
 bang = \case
   Bang ->
-    \ i -> resumeHandlerError (nvimSetVar @[_] var [toMsgpack True, toMsgpack i])
+    \ i -> resumeReport (nvimSetVar @[_] var [toMsgpack True, toMsgpack i])
   NoBang ->
-    \ i -> resumeHandlerError (nvimSetVar @[_] var [toMsgpack False, toMsgpack i])
+    \ i -> resumeReport (nvimSetVar @[_] var [toMsgpack False, toMsgpack i])
 
 handlers ::
   ∀ r .
@@ -36,7 +36,7 @@ handlers ::
   [RpcHandler r]
 handlers =
   [
-    rpcCommand "Bang" Sync (bang @(Stop HandlerError : r))
+    rpcCommand "Bang" Sync (bang @(Stop Report : r))
   ]
 
 test_bang :: UnitTest

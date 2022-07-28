@@ -4,7 +4,7 @@ module Ribosome.Test.Error where
 
 import Polysemy.Test (TestError (TestError))
 
-import Ribosome.Host.Data.HandlerError (ToErrorMessage, handlerErrorMessage, mapHandlerError)
+import Ribosome.Host.Data.Report (Reportable, mapReport, reportMessages)
 import Ribosome.Host.Data.RpcHandler (Handler)
 
 -- |Resume an effect and convert its error from @'Stop' err@ to @'Error' 'TestError'@.
@@ -16,16 +16,16 @@ resumeTestError ::
 resumeTestError =
   resumeHoistError (TestError . show)
 
--- |Run a 'Handler', converting the @'Stop' 'HandlerError'@ at its head to @'Error' 'TestError'@.
+-- |Run a 'Handler', converting the @'Stop' 'Report'@ at its head to @'Error' 'TestError'@.
 testHandler ::
   Member (Error TestError) r =>
   Handler r a ->
   Sem r a
 testHandler =
-  stopToErrorWith (TestError . handlerErrorMessage)
+  stopToErrorWith (TestError . reportMessages)
 
 -- |Run a 'Handler' in a new thread and return an action that waits for the thread to terminate when sequenced.
--- Converts the @'Stop' 'HandlerError'@ at its head to @'Error' 'TestError'@ when it is awaited.
+-- Converts the @'Stop' 'Report'@ at its head to @'Error' 'TestError'@ when it is awaited.
 testHandlerAsync ::
   Members [Error TestError, Async] r =>
   Handler r a ->
@@ -36,12 +36,12 @@ testHandlerAsync h = do
   pure do
     testHandler . stopEither =<< note (TestError "async handler didn't produce result") =<< await thread
 
--- |Interpret @'Stop' err@ to @'Error' 'TestError'@ by using @err@'s instance of 'ToErrorMessage'.
+-- |Interpret @'Stop' err@ to @'Error' 'TestError'@ by using @err@'s instance of 'Reportable'.
 testError ::
   ∀ err r a .
-  ToErrorMessage err =>
+  Reportable err =>
   Member (Error TestError) r =>
   Sem (Stop err : r) a ->
   Sem r a
 testError =
-  testHandler . mapHandlerError . raiseUnder
+  testHandler . mapReport . raiseUnder

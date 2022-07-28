@@ -4,7 +4,7 @@ import Log (Severity (Error))
 
 import Ribosome.Host.Class.Msgpack.Decode (MsgpackDecode)
 import Ribosome.Host.Class.Msgpack.Encode (MsgpackEncode)
-import Ribosome.Host.Data.HandlerError (ErrorMessage (ErrorMessage), ToErrorMessage (toErrorMessage))
+import Ribosome.Host.Data.Report (Report (Report), Reportable (toReport))
 
 data RpcError =
   Unexpected Text
@@ -17,14 +17,14 @@ instance IsString RpcError where
   fromString =
     Unexpected . toText
 
-instance ToErrorMessage RpcError where
-  toErrorMessage = \case
+instance Reportable RpcError where
+  toReport = \case
     Unexpected e ->
-      ErrorMessage "Nvim API failure" [e] Error
+      Report "Nvim API failure" [e] Error
     Decode e ->
-      ErrorMessage "Msgpack decoding failed" [e] Error
+      Report "Msgpack decoding failed" [e] Error
 
-rpcErrorMessage :: RpcError -> Text
-rpcErrorMessage = \case
+rpcReport :: RpcError -> Text
+rpcReport = \case
   Unexpected e -> e
   Decode e -> e

@@ -12,7 +12,7 @@ import qualified Ribosome.Effect.Scratch as Scratch
 import Ribosome.Effect.Scratch (Scratch)
 import Ribosome.Host.Api.Data (nvimFeedkeys, vimCallFunction)
 import Ribosome.Host.Data.Execution (Execution (Sync))
-import Ribosome.Host.Data.HandlerError (resumeHandlerError)
+import Ribosome.Host.Data.Report (resumeReport)
 import Ribosome.Host.Data.RpcError (RpcError)
 import Ribosome.Host.Data.RpcHandler (Handler, RpcHandler)
 import qualified Ribosome.Host.Effect.Rpc as Rpc
@@ -36,7 +36,7 @@ setupMappingScratch ::
   Mapping ->
   Handler r ()
 setupMappingScratch mapping = do
-  resumeHandlerError (void (Scratch.show target options))
+  resumeReport (void (Scratch.show target options))
   where
     options =
       ScratchOptions False True False True True True False Nothing Nothing Nothing [] [mapping] Nothing "mappo"

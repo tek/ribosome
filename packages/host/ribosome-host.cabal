@@ -40,12 +40,11 @@ library
       Ribosome.Host.Data.CommandRegister
       Ribosome.Host.Data.Event
       Ribosome.Host.Data.Execution
-      Ribosome.Host.Data.HandlerError
       Ribosome.Host.Data.HostConfig
-      Ribosome.Host.Data.HostError
       Ribosome.Host.Data.LuaRef
       Ribosome.Host.Data.NvimSocket
       Ribosome.Host.Data.Range
+      Ribosome.Host.Data.Report
       Ribosome.Host.Data.Request
       Ribosome.Host.Data.Response
       Ribosome.Host.Data.RpcCall
@@ -54,13 +53,13 @@ library
       Ribosome.Host.Data.RpcMessage
       Ribosome.Host.Data.RpcName
       Ribosome.Host.Data.RpcType
-      Ribosome.Host.Data.StoredError
+      Ribosome.Host.Data.StoredReport
       Ribosome.Host.Data.Tuple
-      Ribosome.Host.Effect.Errors
       Ribosome.Host.Effect.Handlers
       Ribosome.Host.Effect.Host
       Ribosome.Host.Effect.Log
       Ribosome.Host.Effect.MState
+      Ribosome.Host.Effect.Reports
       Ribosome.Host.Effect.Responses
       Ribosome.Host.Effect.Rpc
       Ribosome.Host.Effect.UserError
@@ -70,7 +69,6 @@ library
       Ribosome.Host.Handler.Codec
       Ribosome.Host.Handler.Command
       Ribosome.Host.Interpret
-      Ribosome.Host.Interpreter.Errors
       Ribosome.Host.Interpreter.Handlers
       Ribosome.Host.Interpreter.Host
       Ribosome.Host.Interpreter.Id
@@ -80,6 +78,7 @@ library
       Ribosome.Host.Interpreter.Process.Embed
       Ribosome.Host.Interpreter.Process.Socket
       Ribosome.Host.Interpreter.Process.Stdio
+      Ribosome.Host.Interpreter.Reports
       Ribosome.Host.Interpreter.Responses
       Ribosome.Host.Interpreter.Rpc
       Ribosome.Host.Interpreter.UserError

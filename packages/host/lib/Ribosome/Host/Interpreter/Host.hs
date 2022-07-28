@@ -1,16 +1,15 @@
 module Ribosome.Host.Interpreter.Host where
 
-import Exon (exon)
-import Log (Severity (Error), dataLog)
 import Conc (Restoration, withAsync_)
+import Exon (exon)
+import Log (Severity (Error, Warn), dataLog)
 import Polysemy.Process (Process)
 import System.IO.Error (IOError)
 
 import Ribosome.Host.Data.BootError (BootError (BootError))
 import Ribosome.Host.Data.Event (Event (Event), EventName (EventName))
-import Ribosome.Host.Data.HandlerError (ErrorMessage (ErrorMessage), HandlerError (HandlerError))
-import Ribosome.Host.Data.HostError (HostError (HostError))
-import Ribosome.Host.Data.Request (Request (Request), RequestId, RpcMethod (RpcMethod))
+import Ribosome.Host.Data.Report (LogReport (LogReport), Report (Report))
+import Ribosome.Host.Data.Request (Request (Request), RequestId, RpcMethod (RpcMethod), unRpcMethod)
 import qualified Ribosome.Host.Data.Response as Response
 import Ribosome.Host.Data.Response (Response)
 import qualified Ribosome.Host.Data.RpcError as RpcError
@@ -39,15 +38,15 @@ publishEvent (Request (RpcMethod name) args) =
   publish (Event (EventName name) args)
 
 handlerIOError ::
-  Members [Error HandlerError, Final IO] r =>
+  Members [Error Report, Final IO] r =>
   Sem r a ->
   Sem r a
 handlerIOError =
   fromExceptionSemVia \ (e :: IOError) ->
-    HandlerError (ErrorMessage "Internal error" ["Handler exception", show e] Error) "Host"
+    Report "Internal error" ["Handler exception", show e] Error
 
 handle ::
-  Members [Handlers !! HandlerError, Rpc !! RpcError, DataLog HostError, Log, Final IO] r =>
+  Members [Handlers !! Report, Rpc !! RpcError, DataLog LogReport, Log, Final IO] r =>
   Bool ->
   Request ->
   Sem r (Maybe Response)
@@ -57,12 +56,12 @@ handle notification (Request method args) =
       pure Nothing
     Right (Just a) ->
       pure (Just (Response.Success a))
-    Left err@(HandlerError (ErrorMessage e _ _) _) -> do
-      dataLog (HostError notification err)
+    Left err@(Report e _ severity) -> do
+      dataLog (LogReport err notification (severity >= Warn) (fromText (unRpcMethod method)))
       pure (Just (Response.Error (RpcError.Unexpected e)))
 
 interpretHost ::
-  Members [Handlers !! HandlerError, Rpc !! RpcError, DataLog HostError, Events er Event, Log, Final IO] r =>
+  Members [Handlers !! Report, Rpc !! RpcError, DataLog LogReport, Events er Event, Log, Final IO] r =>
   InterpreterFor Host r
 interpretHost =
   interpret \case
@@ -73,17 +72,17 @@ interpretHost =
       when (isNothing res) (publishEvent req)
 
 register ::
-  Members [Handlers !! HandlerError, Error BootError] r =>
+  Members [Handlers !! Report, Error BootError] r =>
   Sem r ()
 register =
   Handlers.register !! \ e -> throw (BootError [exon|Registering handlers: #{show e}|])
 
 type HostDeps er =
   [
-    Handlers !! HandlerError,
+    Handlers !! Report,
     Process RpcMessage (Either Text RpcMessage),
     Rpc !! RpcError,
-    DataLog HostError,
+    DataLog LogReport,
     Events er Event,
     Responses RequestId Response !! RpcError,
     Log,

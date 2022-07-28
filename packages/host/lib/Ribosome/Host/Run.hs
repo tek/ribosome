@@ -5,18 +5,18 @@ import Polysemy.Process (Process)
 
 import Ribosome.Host.Data.Event (Event)
 import Ribosome.Host.Data.HostConfig (LogConfig)
-import Ribosome.Host.Data.HostError (HostError)
+import Ribosome.Host.Data.Report (LogReport)
 import Ribosome.Host.Data.Request (RequestId)
 import Ribosome.Host.Data.Response (Response)
 import Ribosome.Host.Data.RpcError (RpcError)
 import Ribosome.Host.Data.RpcMessage (RpcMessage)
-import Ribosome.Host.Effect.Errors (Errors)
+import Ribosome.Host.Effect.Reports (Reports)
 import Ribosome.Host.Effect.Responses (Responses)
 import Ribosome.Host.Effect.Rpc (Rpc)
 import Ribosome.Host.Effect.UserError (UserError)
 import Ribosome.Host.IOStack (IOStack)
-import Ribosome.Host.Interpreter.Errors (interpretErrors)
-import Ribosome.Host.Interpreter.Log (interpretDataLogRpc)
+import Ribosome.Host.Interpreter.Reports (interpretReports)
+import Ribosome.Host.Interpreter.Log (interceptLogRpc, interpretDataLogRpc)
 import Ribosome.Host.Interpreter.Responses (interpretResponses)
 import Ribosome.Host.Interpreter.Rpc (interpretRpc)
 
@@ -25,12 +25,12 @@ type RpcProcess =
 
 type RpcStack =
   [
-    DataLog HostError,
+    DataLog LogReport,
     Rpc !! RpcError,
     Responses RequestId Response !! RpcError,
     ChanEvents Event,
     ChanConsumer Event,
-    Errors
+    Reports
   ]
 
 type RpcDeps =
@@ -45,8 +45,9 @@ interpretRpcStack ::
   Members [Log, Reader LogConfig] r =>
   InterpretersFor RpcStack r
 interpretRpcStack =
-  interpretErrors .
+  interpretReports .
   interpretEventsChan @Event .
   interpretResponses .
   interpretRpc .
-  interpretDataLogRpc
+  interpretDataLogRpc .
+  interceptLogRpc

@@ -4,11 +4,12 @@
   inputs = {
     hix.url = git+https://git.tryp.io/tek/hix;
     chiasma.url = git+https://git.tryp.io/tek/chiasma?ref=main;
+    polysemy-log.url = git+https://git.tryp.io/tek/polysemy-log;
     polysemy-conc.url = git+https://git.tryp.io/tek/polysemy-conc;
     prelate.url = git+https://git.tryp.io/tek/prelate;
   };
 
-  outputs = { self, hix, chiasma, polysemy-conc, prelate, ... }:
+  outputs = { self, hix, chiasma, polysemy-log, polysemy-conc, prelate, ... }:
   let
     RIBOSOME_ROOT = builtins.toPath self;
 
@@ -22,6 +23,7 @@
       massiv = hackage "0.6.1.0" "133ixc95qw10ni54y4hrq7swq7bskf398s11zdakdvnj9v6hwlsr";
       scheduler = hackage "1.5.0" "143bsd0kfknrhdz37599k2didxmplljdpnf1ixmdfh4r9hnrp9f3";
       integration = inputs;
+      polysemy-log = source.package polysemy-log "polysemy-log";
       polysemy-conc = source.package polysemy-conc "conc";
       polysemy-process = source.package polysemy-conc "process";
       prelate = source.package prelate "prelate";

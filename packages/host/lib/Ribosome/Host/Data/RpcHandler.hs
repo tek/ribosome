@@ -7,7 +7,7 @@ import Exon (exon)
 import Text.Show (showParen, showsPrec)
 
 import Ribosome.Host.Data.Execution (Execution)
-import Ribosome.Host.Data.HandlerError (HandlerError, resumeHandlerError)
+import Ribosome.Host.Data.Report (Report, resumeReport, Report)
 import Ribosome.Host.Data.Request (RpcMethod (RpcMethod))
 import Ribosome.Host.Data.RpcError (RpcError)
 import Ribosome.Host.Data.RpcName (RpcName (RpcName))
@@ -15,21 +15,21 @@ import qualified Ribosome.Host.Data.RpcType as RpcType
 import Ribosome.Host.Data.RpcType (RpcType)
 import Ribosome.Host.Effect.Rpc (Rpc)
 
--- |A request handler function is a 'Sem' with arbitrary stack that has an error of type 'HandlerError' at its head.
+-- |A request handler function is a 'Sem' with arbitrary stack that has an error of type 'Report' at its head.
 --
 -- These error messages are reported to the user by return value for synchronous requests and via @echo@ for
 -- asynchronous ones, provided that the severity specified in the error is greater than the log level set in
 -- 'Ribosome.UserError'.
 --
 -- If the plugin was started with @--log-file@, it is also written to the file log.
--- Additionally, errors are stored in memory by the effect 'Ribosome.Errors'.
+-- Additionally, reports are stored in memory by the effect 'Ribosome.Reports'.
 --
 -- For an explanation of 'Stop', see [Errors]("Ribosome#errors").
 type Handler r a =
-  Sem (Stop HandlerError : r) a
+  Sem (Stop Report : r) a
 
 -- |This type is the canonical form of an RPC handler, taking a list of MessagePack 'Object's to a 'Sem' with a
--- 'HandlerError' at the head, returning an 'Object'.
+-- 'Report' at the head, returning an 'Object'.
 type RpcHandlerFun r =
   [Object] -> Handler r Object
 
@@ -59,14 +59,14 @@ instance Show (RpcHandler m) where
     showParen (p > 10) [exon|RpcHandler #{showsPrec 11 t} #{showsPrec 11 n} #{showsPrec 11 e}|]
 
 hoistRpcHandler ::
-  (∀ x . Sem (Stop HandlerError : r) x -> Sem (Stop HandlerError : r1) x) ->
+  (∀ x . Sem (Stop Report : r) x -> Sem (Stop Report : r1) x) ->
   RpcHandler r ->
   RpcHandler r1
 hoistRpcHandler f RpcHandler {..} =
   RpcHandler {rpcHandler = f . rpcHandler, ..}
 
 hoistRpcHandlers ::
-  (∀ x . Sem (Stop HandlerError : r) x -> Sem (Stop HandlerError : r1) x) ->
+  (∀ x . Sem (Stop Report : r) x -> Sem (Stop Report : r1) x) ->
   [RpcHandler r] ->
   [RpcHandler r1]
 hoistRpcHandlers f =
@@ -85,7 +85,7 @@ rpcHandlerMethod RpcHandler {rpcType, rpcName} =
 
 simpleHandler ::
   Member (Rpc !! RpcError) r =>
-  Sem (Rpc : Stop HandlerError : r) a ->
+  Sem (Rpc : Stop Report : r) a ->
   Handler r a
 simpleHandler =
-  resumeHandlerError
+  resumeReport
