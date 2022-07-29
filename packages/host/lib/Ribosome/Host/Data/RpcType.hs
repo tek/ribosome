@@ -9,12 +9,26 @@ newtype AutocmdEvent =
   deriving stock (Eq, Show, Generic)
   deriving newtype (IsString, Ord)
 
+newtype AutocmdPattern =
+  AutocmdPattern { unAutocmdPattern :: Text }
+  deriving stock (Eq, Show)
+  deriving newtype (IsString, Ord)
+
+instance Default AutocmdPattern where
+  def =
+    "*"
+
+newtype AutocmdGroup =
+  AutocmdGroup { unAutocmdGroup :: Text }
+  deriving stock (Eq, Show)
+  deriving newtype (IsString, Ord)
+
 data AutocmdOptions =
   AutocmdOptions {
-    pat :: Text,
+    pat :: AutocmdPattern,
     nested :: Bool,
     once :: Bool,
-    group :: Maybe Text
+    group :: Maybe AutocmdGroup
   }
   deriving stock (Eq, Show, Generic)
 
@@ -24,7 +38,7 @@ instance Default AutocmdOptions where
 
 instance IsString AutocmdOptions where
   fromString pat =
-    def { pat = toText pat }
+    def { pat = fromString pat }
 
 data CompleteStyle =
   CompleteFiltered

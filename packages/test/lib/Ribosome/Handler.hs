@@ -5,7 +5,9 @@ module Ribosome.Handler (
 
 import Ribosome.Host.Data.RpcType (
   AutocmdEvent (..),
+  AutocmdGroup (..),
   AutocmdOptions (..),
+  AutocmdPattern (..),
   CommandCompletion (..),
   CommandOptions (..),
   CompleteStyle (..),

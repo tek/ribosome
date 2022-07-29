@@ -92,7 +92,6 @@ in {
       "optparse-applicative"
       "path"
       "polysemy-chronos"
-      "polysemy-conc"
       "polysemy-log"
       "polysemy-process"
       "template-haskell"

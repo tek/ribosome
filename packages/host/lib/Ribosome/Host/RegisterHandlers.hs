@@ -20,7 +20,9 @@ import qualified Ribosome.Host.Data.RpcType as AutocmdOptions
 import qualified Ribosome.Host.Data.RpcType as RpcType
 import Ribosome.Host.Data.RpcType (
   AutocmdEvent (AutocmdEvent),
+  AutocmdGroup (AutocmdGroup),
   AutocmdOptions (AutocmdOptions),
+  AutocmdPattern (AutocmdPattern),
   CommandArgs (CommandArgs),
   CommandOptions (CommandOptions),
   RpcType,
@@ -47,9 +49,9 @@ registerFailed ::
 registerFailed e =
   Log.error [exon|Registering rpc handlers failed: #{rpcReport e}|]
 
-wrapAugroup :: Text -> Maybe Text -> Text
+wrapAugroup :: Text -> Maybe AutocmdGroup -> Text
 wrapAugroup cmd = \case
-  Just g ->
+  Just (AutocmdGroup g) ->
     [exon|augroup #{g}
 #{cmd}
 augroup END
@@ -93,7 +95,7 @@ endfunction|]
         Text.intercalate " " (foldMap (pure . completionOption) comp <> options)
       argsText =
         [exon|[#{Text.intercalate ", " args}]|]
-  RpcType.Autocmd (AutocmdEvent event) AutocmdOptions {..} ->
+  RpcType.Autocmd (AutocmdEvent event) AutocmdOptions {pat = AutocmdPattern pat, ..} ->
     wrapAugroup [exon|autocmd #{event} #{pat} call #{rpcCall i method exec Nothing}|] group
 
 registerHandler ::

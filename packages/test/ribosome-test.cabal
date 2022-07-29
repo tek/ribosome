@@ -18,6 +18,7 @@ build-type:     Simple
 
 library
   exposed-modules:
+      Ribosome.Handler
       Ribosome.Test
       Ribosome.Test.Data.TestConfig
       Ribosome.Test.Embed
