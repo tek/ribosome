@@ -25,7 +25,7 @@ import Ribosome.Host.Api.Effect (nvimEcho)
 import Ribosome.Host.Class.Msgpack.Encode (toMsgpack)
 import qualified Ribosome.Host.Data.HostConfig as HostConfig
 import Ribosome.Host.Data.HostConfig (LogConfig (LogConfig))
-import Ribosome.Host.Data.Report (LogReport (LogReport), Report (Report), renderNonemptyReportContextColon)
+import Ribosome.Host.Data.Report (LogReport (LogReport), Report (Report), prefixReportContext')
 import Ribosome.Host.Effect.Log (FileLog, StderrLog, fileLog, stderrLog)
 import qualified Ribosome.Host.Effect.Reports as Reports
 import Ribosome.Host.Effect.Reports (Reports)
@@ -54,7 +54,7 @@ logLogReport ::
   Sem r ()
 logLogReport minSeverity (LogReport msg@(Report user log severity) echo store context) =
   withFrozenCallStack do
-    Log.log severity (Text.unlines (maybeToList (renderNonemptyReportContextColon context) <> log))
+    Log.log severity (Text.unlines (maybeToList (prefixReportContext' context) <> log))
     when store (Reports.storeReport context msg)
     when echo (echoError minSeverity user severity)
 

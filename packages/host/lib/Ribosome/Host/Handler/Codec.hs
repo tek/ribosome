@@ -131,7 +131,7 @@ instance (
         Optparse.Failure e -> Left (toText (fst (renderFailure e "Ribosome")))
         Optparse.CompletionInvoked _ -> Left "Internal optparse error"
 
--- |The class of functions that can be converted to caononical RPC handlers of type 'RpcHandlerFun'.
+-- |The class of functions that can be converted to canonical RPC handlers of type 'RpcHandlerFun'.
 class HandlerCodec h r | h -> r where
   -- |Convert a type containing a 'Sem' to a canonicalized 'RpcHandlerFun' by transforming each function parameter with
   -- 'HandlerArg'.

@@ -45,7 +45,7 @@ runHandler ::
 runHandler handlers method args =
   traverse ($ args) (Map.lookup method handlers)
 
--- |Add a set of 'RpcHandlers's to the plugin.
+-- |Add a set of 'RpcHandler's to the plugin.
 --
 -- This can be used multiple times and has to be terminated by 'interpretHandlersNull', which is done automatically when
 -- using the plugin main functions.

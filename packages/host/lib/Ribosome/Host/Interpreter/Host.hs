@@ -1,6 +1,7 @@
 module Ribosome.Host.Interpreter.Host where
 
 import Conc (Restoration, withAsync_)
+import Data.MessagePack (Object (ObjectNil))
 import Exon (exon)
 import Log (Severity (Error, Warn), dataLog)
 import Polysemy.Process (Process)
@@ -8,8 +9,8 @@ import System.IO.Error (IOError)
 
 import Ribosome.Host.Data.BootError (BootError (BootError))
 import Ribosome.Host.Data.Event (Event (Event), EventName (EventName))
-import Ribosome.Host.Data.Report (LogReport (LogReport), Report (Report))
-import Ribosome.Host.Data.Request (Request (Request), RequestId, RpcMethod (RpcMethod), unRpcMethod)
+import Ribosome.Host.Data.Report (LogReport (LogReport), Report (Report), severity)
+import Ribosome.Host.Data.Request (Request (Request), RequestId, RpcMethod (RpcMethod))
 import qualified Ribosome.Host.Data.Response as Response
 import Ribosome.Host.Data.Response (Response)
 import qualified Ribosome.Host.Data.RpcError as RpcError
@@ -45,20 +46,30 @@ handlerIOError =
   fromExceptionSemVia \ (e :: IOError) ->
     Report "Internal error" ["Handler exception", show e] Error
 
+handlerReport ::
+  Member (DataLog LogReport) r =>
+  Bool ->
+  RpcMethod ->
+  Report ->
+  Sem r ()
+handlerReport notification (RpcMethod method) r =
+  dataLog (LogReport r (notification || severity r < Error) (severity r >= Warn) (fromText method))
+
 handle ::
   Members [Handlers !! Report, Rpc !! RpcError, DataLog LogReport, Log, Final IO] r =>
   Bool ->
   Request ->
   Sem r (Maybe Response)
 handle notification (Request method args) =
-  runError (handlerIOError (resuming throw (Handlers.run method args))) >>= \case
+  errorToIOFinal (handlerIOError (resuming throw (Handlers.run method args))) >>= \case
     Right Nothing ->
       pure Nothing
     Right (Just a) ->
       pure (Just (Response.Success a))
-    Left err@(Report e _ severity) -> do
-      dataLog (LogReport err notification (severity >= Warn) (fromText (unRpcMethod method)))
-      pure (Just (Response.Error (RpcError.Unexpected e)))
+    Left r@(Report e _ severity) -> do
+      handlerReport notification method r
+      let response = if severity < Error then Response.Success ObjectNil else Response.Error (RpcError.Unexpected e)
+      pure (Just response)
 
 interpretHost ::
   Members [Handlers !! Report, Rpc !! RpcError, DataLog LogReport, Events er Event, Log, Final IO] r =>

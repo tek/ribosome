@@ -15,22 +15,22 @@ newtype ReportContext =
   deriving stock (Eq, Show)
   deriving newtype (Ord, Semigroup, Monoid)
 
-renderNonemptyReportContext :: ReportContext -> Maybe Text
-renderNonemptyReportContext = \case
+reportContext' :: ReportContext -> Maybe Text
+reportContext' = \case
   ReportContext [] -> Nothing
   ReportContext c -> Just (Text.intercalate "." c)
 
-renderNonemptyReportContextColon :: ReportContext -> Maybe Text
-renderNonemptyReportContextColon c =
-  flip Text.snoc ':' <$> renderNonemptyReportContext c
+prefixReportContext' :: ReportContext -> Maybe Text
+prefixReportContext' c =
+  flip Text.snoc ':' <$> reportContext' c
 
-renderReportContext :: ReportContext -> Text
-renderReportContext c =
-  fromMaybe "global" (renderNonemptyReportContext c)
+reportContext :: ReportContext -> Text
+reportContext c =
+  fromMaybe "global" (reportContext' c)
 
-renderReportContextColon :: ReportContext -> Text
-renderReportContextColon c =
-  Text.snoc (renderReportContext c) ':'
+prefixReportContext :: ReportContext -> Text
+prefixReportContext c =
+  Text.snoc (reportContext c) ':'
 
 instance IsString ReportContext where
   fromString =
