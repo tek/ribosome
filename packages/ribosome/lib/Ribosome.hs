@@ -254,10 +254,10 @@ import Ribosome.Host.Data.Report (
   mapReport,
   mapReports,
   mapUserMessage,
-  reportContext',
+  prefixReportContext,
   prefixReportContext',
   reportContext,
-  prefixReportContext,
+  reportContext',
   reportMessages,
   resumeHoistUserMessage,
   resumeReport,
@@ -288,7 +288,14 @@ import Ribosome.Host.Effect.Reports (Reports, storedReports)
 import Ribosome.Host.Effect.Rpc (Rpc, async, notify, sync)
 import Ribosome.Host.Effect.UserError (UserError)
 import Ribosome.Host.Error (ignoreRpcError, onRpcError)
-import Ribosome.Host.Handler (completeBuiltin, completeWith, rpc, rpcAutocmd, rpcCommand, rpcFunction)
+import Ribosome.Host.Handler (
+  completeBuiltin,
+  completeWith,
+  rpc,
+  rpcAutocmd,
+  rpcCommand,
+  rpcFunction,
+  )
 import Ribosome.Host.Handler.Codec (HandlerArg (handlerArg), HandlerCodec (handlerCodec))
 import Ribosome.Host.Handler.Command (CommandHandler (commandOptions))
 import Ribosome.Host.Interpreter.Handlers (interpretHandlers, noHandlers, withHandlers)
@@ -395,7 +402,7 @@ import Ribosome.Run (NvimPlugin)
 -- > handlers = [
 -- >   rpcFunction "Hello" Async echoHello,
 -- >   rpcCommand "Hello" Async echoHello,
--- >   rpcAutocmd "HelloHaskellFile" Async "BufEnter" def { fPattern = "*.hs" } echoHello
+-- >   rpcAutocmd "HelloHaskellFile" Async "BufEnter" "*.hs" echoHello
 -- > ]
 --
 -- Passing these handlers to 'runNvimPluginIO_' starts a plugin that calls @echoHello@ when running @:call Hello()@,

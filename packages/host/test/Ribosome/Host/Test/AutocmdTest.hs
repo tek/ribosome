@@ -7,10 +7,9 @@ import Polysemy.Time (Seconds (Seconds))
 
 import Ribosome.Host.Api.Effect (nvimCommand, nvimGetVar, nvimSetVar)
 import Ribosome.Host.Data.Execution (Execution (Async))
-import Ribosome.Host.Data.Report (Report, resumeReport)
+import Ribosome.Host.Data.Report (resumeReport)
 import Ribosome.Host.Data.RpcError (RpcError)
-import Ribosome.Host.Data.RpcHandler (RpcHandler)
-import Ribosome.Host.Data.RpcType (fPattern)
+import Ribosome.Host.Data.RpcHandler (Handler, RpcHandler)
 import Ribosome.Host.Effect.Rpc (Rpc)
 import Ribosome.Host.Embed (embedNvim)
 import Ribosome.Host.Handler (rpcAutocmd)
@@ -21,15 +20,15 @@ var =
   "test_var"
 
 au ::
-  Members [Rpc !! RpcError, Sync (), Stop Report] r =>
-  Sem r ()
+  Members [Rpc !! RpcError, Sync ()] r =>
+  Handler r ()
 au = do
   resumeReport (nvimSetVar var (12 :: Int))
   void $ Sync.putWait (Seconds 5) ()
 
 bn ::
-  Members [Rpc !! RpcError, Sync (), Stop Report] r =>
-  Sem r ()
+  Members [Rpc !! RpcError, Sync ()] r =>
+  Handler r ()
 bn = do
   resumeReport (nvimSetVar var (21 :: Int))
   void $ Sync.putWait (Seconds 5) ()
@@ -40,8 +39,8 @@ handlers ::
   [RpcHandler r]
 handlers =
   [
-    rpcAutocmd "Au" Async "User" def { fPattern = "Au" } (au @(Stop Report : r)),
-    rpcAutocmd "Bn" Async "BufNew" def (bn @(Stop Report : r))
+    rpcAutocmd "Au" Async "User" "Au" au,
+    rpcAutocmd "Bn" Async "BufNew" def bn
   ]
 
 test_autocmd :: UnitTest

@@ -11,7 +11,7 @@ newtype AutocmdEvent =
 
 data AutocmdOptions =
   AutocmdOptions {
-    fPattern :: Text,
+    pat :: Text,
     nested :: Bool,
     once :: Bool,
     group :: Maybe Text
@@ -21,6 +21,10 @@ data AutocmdOptions =
 instance Default AutocmdOptions where
   def =
     AutocmdOptions "*" False False Nothing
+
+instance IsString AutocmdOptions where
+  fromString pat =
+    def { pat = toText pat }
 
 data CompleteStyle =
   CompleteFiltered

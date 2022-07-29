@@ -19,7 +19,7 @@ import Ribosome.Host.Unit.Run (runTestConf, runUnitTest)
 
 stopper :: Handler r ()
 stopper =
-  stop (Report "error" ["error", "meltdown"] Crit)
+  stop (Report "error" ["error!!", "meltdown"] Crit)
 
 handlers :: [RpcHandler r]
 handlers =
@@ -29,7 +29,7 @@ fileTarget :: [Text]
 fileTarget =
   [
     "\ESC[35m[crit] \ESC[0m [R.H.T.LogTest#22] function:Stopper:",
-    "error",
+    "error!!",
     "meltdown"
   ]
 
