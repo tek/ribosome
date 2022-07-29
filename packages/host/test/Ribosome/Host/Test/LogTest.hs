@@ -30,8 +30,7 @@ fileTarget =
   [
     "\ESC[35m[crit] \ESC[0m [R.H.T.LogTest#22] function:Stopper:",
     "error",
-    "meltdown",
-    ""
+    "meltdown"
   ]
 
 test_logFile :: UnitTest

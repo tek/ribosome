@@ -54,7 +54,7 @@ logLogReport ::
   Sem r ()
 logLogReport minSeverity (LogReport msg@(Report user log severity) echo store context) =
   withFrozenCallStack do
-    Log.log severity (Text.unlines (maybeToList (prefixReportContext' context) <> log))
+    Log.log severity (Text.intercalate "\n" (maybeToList (prefixReportContext' context) <> log))
     when store (Reports.storeReport context msg)
     when echo (echoError minSeverity user severity)
 
@@ -66,15 +66,13 @@ interpretDataLogRpc sem = do
   LogConfig {..} <- ask
   interpretDataLog (logLogReport logLevelEcho) ((if dataLogConc then interceptDataLogConc 64 else id) sem)
 
-interceptLogRpc ::
+interpretLogRpc ::
   Members [Log, DataLog LogReport] r =>
-  Sem r a ->
-  Sem r a
-interceptLogRpc =
-  intercept \case
-    Log lm@(LogMessage severity msg) -> do
+  InterpreterFor Log r
+interpretLogRpc =
+  interpret \case
+    Log (LogMessage severity msg) -> do
       dataLog (LogReport (Report msg [msg] severity) True (severity >= Warn) mempty)
-      send (Log lm)
 
 interpretLogStderrFile ::
   Members [StderrLog, FileLog] r =>

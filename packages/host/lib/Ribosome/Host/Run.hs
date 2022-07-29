@@ -15,8 +15,8 @@ import Ribosome.Host.Effect.Responses (Responses)
 import Ribosome.Host.Effect.Rpc (Rpc)
 import Ribosome.Host.Effect.UserError (UserError)
 import Ribosome.Host.IOStack (IOStack)
+import Ribosome.Host.Interpreter.Log (interpretDataLogRpc, interpretLogRpc)
 import Ribosome.Host.Interpreter.Reports (interpretReports)
-import Ribosome.Host.Interpreter.Log (interceptLogRpc, interpretDataLogRpc)
 import Ribosome.Host.Interpreter.Responses (interpretResponses)
 import Ribosome.Host.Interpreter.Rpc (interpretRpc)
 
@@ -25,6 +25,7 @@ type RpcProcess =
 
 type RpcStack =
   [
+    Log,
     DataLog LogReport,
     Rpc !! RpcError,
     Responses RequestId Response !! RpcError,
@@ -50,4 +51,4 @@ interpretRpcStack =
   interpretResponses .
   interpretRpc .
   interpretDataLogRpc .
-  interceptLogRpc
+  interpretLogRpc
