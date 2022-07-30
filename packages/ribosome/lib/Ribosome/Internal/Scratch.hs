@@ -5,6 +5,7 @@ import qualified Data.Map.Strict as Map
 import Data.MessagePack (Object)
 import Exon (exon)
 import qualified Polysemy.Log as Log
+import Prelude hiding (group)
 
 import Ribosome.Api.Autocmd (bufferAutocmd, eventignore)
 import Ribosome.Api.Buffer (setBufferContent, wipeBuffer)
@@ -40,6 +41,7 @@ import Ribosome.Host.Api.Effect (
 import Ribosome.Host.Class.Msgpack.Decode (fromMsgpack)
 import Ribosome.Host.Class.Msgpack.Encode (toMsgpack)
 import Ribosome.Host.Data.RpcError (RpcError)
+import Ribosome.Host.Data.RpcType (group)
 import Ribosome.Host.Effect.Rpc (Rpc)
 import Ribosome.Mapping (activateBufferMapping)
 import Ribosome.PluginName (pluginNameCapitalized)
@@ -163,7 +165,7 @@ setupDeleteAutocmd ::
   Sem r ()
 setupDeleteAutocmd (ScratchState name _ buffer _ _ _) = do
   PluginName pname <- pluginNameCapitalized
-  bufferAutocmd buffer "RibosomeScratch" "BufDelete" (deleteCall pname)
+  bufferAutocmd buffer "BufDelete" def { group = Just "RibosomeScratch" } (deleteCall pname)
   where
     deleteCall pname =
       [exon|silent! call #{pname}DeleteScratch('#{coerce name}')|]

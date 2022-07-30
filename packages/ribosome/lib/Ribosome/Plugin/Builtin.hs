@@ -15,14 +15,7 @@ import Ribosome.Host.Data.Report (Report, resumeReport)
 import Ribosome.Host.Data.RpcError (RpcError)
 import Ribosome.Host.Data.RpcHandler (Handler, RpcHandler)
 import Ribosome.Host.Data.RpcName (RpcName (RpcName))
-import qualified Ribosome.Host.Data.RpcType as AutocmdOptions
-import Ribosome.Host.Data.RpcType (
-  AutocmdEvents (unAutocmdEvent),
-  AutocmdGroup (AutocmdGroup),
-  AutocmdOptions (pat),
-  AutocmdPatterns,
-  group,
-  )
+import Ribosome.Host.Data.RpcType (AutocmdGroup (AutocmdGroup), AutocmdOptions (pat), AutocmdPatterns, group)
 import Ribosome.Host.Effect.Handlers (Handlers)
 import Ribosome.Host.Effect.Rpc (Rpc)
 import Ribosome.Host.Handler (rpcAutocmd, rpcFunction)
@@ -52,7 +45,7 @@ watcherRpc ::
   AutocmdPatterns ->
   RpcHandler r
 watcherRpc (PluginName name) event pat =
-  rpcAutocmd (RpcName method) Async (fromText event) def {pat} { group = Just (AutocmdGroup name) } do
+  rpcAutocmd (RpcName method) Async (fromText event) def { pat, group = Just (AutocmdGroup name) } do
     updateVar
   where
     method =

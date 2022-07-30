@@ -1,13 +1,16 @@
 module Ribosome.Host.Data.RpcType where
 
+import Data.MessagePack (Object)
 import Exon (exon)
 
+import Ribosome.Host.Class.Msgpack.Decode (MsgpackDecode)
+import Ribosome.Host.Class.Msgpack.Encode (MsgpackEncode)
 import Ribosome.Host.Data.RpcName (RpcName (RpcName), unRpcName)
-import Data.MessagePack (Object)
 
 newtype AutocmdEvents =
   AutocmdEvents { unAutocmdEvent :: [Text] }
   deriving stock (Eq, Show, Generic)
+  deriving newtype (MsgpackEncode, MsgpackDecode)
 
 instance IsString AutocmdEvents where
   fromString =
@@ -16,6 +19,7 @@ instance IsString AutocmdEvents where
 newtype AutocmdPatterns =
   AutocmdPatterns { unAutocmdPattern :: [Text] }
   deriving stock (Eq, Show)
+  deriving newtype (MsgpackEncode, MsgpackDecode)
 
 instance IsString AutocmdPatterns where
   fromString =
@@ -28,20 +32,21 @@ instance Default AutocmdPatterns where
 newtype AutocmdGroup =
   AutocmdGroup { unAutocmdGroup :: Text }
   deriving stock (Eq, Show)
-  deriving newtype (IsString, Ord)
+  deriving newtype (IsString, Ord, MsgpackEncode, MsgpackDecode)
 
 data AutocmdOptions =
   AutocmdOptions {
     pat :: AutocmdPatterns,
     nested :: Bool,
     once :: Bool,
-    group :: Maybe AutocmdGroup
+    group :: Maybe AutocmdGroup,
+    buffer :: Maybe Int
   }
   deriving stock (Eq, Show, Generic)
 
 instance Default AutocmdOptions where
   def =
-    AutocmdOptions "*" False False Nothing
+    AutocmdOptions "*" False False Nothing Nothing
 
 instance IsString AutocmdOptions where
   fromString pat =

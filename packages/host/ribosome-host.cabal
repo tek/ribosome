@@ -19,6 +19,7 @@ build-type:     Simple
 library
   exposed-modules:
       Ribosome.Host
+      Ribosome.Host.Api.Autocmd
       Ribosome.Host.Api.Data
       Ribosome.Host.Api.Effect
       Ribosome.Host.Class.Msgpack.Array

@@ -1,25 +1,39 @@
-module Ribosome.Api.Autocmd where
+module Ribosome.Api.Autocmd (
+  module Ribosome.Api.Autocmd,
+  autocmd,
+) where
 
-import Exon (exon)
+import Data.MessagePack (Object)
 
-import Ribosome.Host.Api.Data (Buffer, nvimCommand)
-import Ribosome.Host.Api.Effect (bufferGetNumber, vimGetOption, vimSetOption)
+import Ribosome.Host.Api.Autocmd (autocmd)
+import Ribosome.Host.Api.Data (Buffer)
+import Ribosome.Host.Api.Effect (bufferGetNumber, nvimExecAutocmds, vimGetOption, vimSetOption)
+import Ribosome.Host.Class.Msgpack.Encode (toMsgpack)
+import Ribosome.Host.Data.RpcType (AutocmdEvents, AutocmdOptions, buffer)
 import qualified Ribosome.Host.Effect.Rpc as Rpc
 import Ribosome.Host.Effect.Rpc (Rpc)
 
+doautocmdWith ::
+  Member Rpc r =>
+  AutocmdEvents ->
+  Map Text Object ->
+  Sem r ()
+doautocmdWith =
+  nvimExecAutocmds
+
 doautocmd ::
   Member Rpc r =>
-  Text ->
+  AutocmdEvents ->
   Sem r ()
-doautocmd name =
-  Rpc.notify (nvimCommand [exon|doautocmd #{name}|])
+doautocmd events =
+  nvimExecAutocmds events mempty
 
 uautocmd ::
   Member Rpc r =>
   Text ->
   Sem r ()
 uautocmd name =
-  doautocmd [exon|User #{name}|]
+  doautocmdWith "User" [("pattern", toMsgpack name)]
 
 eventignore ::
   Members [Rpc, Resource] r =>
@@ -38,14 +52,12 @@ eventignore =
 bufferAutocmd ::
   Member Rpc r =>
   Buffer ->
-  Text ->
-  Text ->
+  AutocmdEvents ->
+  AutocmdOptions ->
   Text ->
   Sem r ()
-bufferAutocmd buffer grp event cmd = do
-  number <- bufferGetNumber buffer
+bufferAutocmd buf events options cmd = do
+  number <- bufferGetNumber buf
   Rpc.sync do
-    nvimCommand [exon|augroup #{grp}|]
-    nvimCommand [exon|autocmd #{event} <buffer=#{show number}> #{cmd}|]
-    nvimCommand "augroup end"
+    autocmd events options { buffer = Just number } cmd
     pure ()
