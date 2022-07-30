@@ -3,18 +3,25 @@ module Ribosome.Host.Data.RpcType where
 import Exon (exon)
 
 import Ribosome.Host.Data.RpcName (RpcName (RpcName), unRpcName)
+import Data.MessagePack (Object)
 
-newtype AutocmdEvent =
-  AutocmdEvent { unAutocmdEvent :: Text }
+newtype AutocmdEvents =
+  AutocmdEvents { unAutocmdEvent :: [Text] }
   deriving stock (Eq, Show, Generic)
-  deriving newtype (IsString, Ord)
 
-newtype AutocmdPattern =
-  AutocmdPattern { unAutocmdPattern :: Text }
+instance IsString AutocmdEvents where
+  fromString =
+    AutocmdEvents . pure . fromString
+
+newtype AutocmdPatterns =
+  AutocmdPatterns { unAutocmdPattern :: [Text] }
   deriving stock (Eq, Show)
-  deriving newtype (IsString, Ord)
 
-instance Default AutocmdPattern where
+instance IsString AutocmdPatterns where
+  fromString =
+    AutocmdPatterns . pure . fromString
+
+instance Default AutocmdPatterns where
   def =
     "*"
 
@@ -25,7 +32,7 @@ newtype AutocmdGroup =
 
 data AutocmdOptions =
   AutocmdOptions {
-    pat :: AutocmdPattern,
+    pat :: AutocmdPatterns,
     nested :: Bool,
     once :: Bool,
     group :: Maybe AutocmdGroup
@@ -58,18 +65,22 @@ completionName ::
 completionName (RpcName n) =
   RpcName [exon|Complete_#{n}|]
 
-completionOption :: CommandCompletion -> Text
-completionOption = \case
+completionValue :: CommandCompletion -> Text
+completionValue = \case
   CompleteBuiltin completer ->
-    [exon|-complete=#{completer}|]
+    [exon|#{completer}|]
   CompleteHandler CompleteFiltered func ->
-    [exon|-complete=customlist,#{unRpcName (completionName func)}|]
+    [exon|customlist,#{unRpcName (completionName func)}|]
   CompleteHandler CompleteUnfiltered func ->
-    [exon|-complete=custom,#{unRpcName (completionName func)}|]
+    [exon|custom,#{unRpcName (completionName func)}|]
+
+completionOption :: CommandCompletion -> Text
+completionOption cc =
+  [exon|-complete=#{completionValue cc}|]
 
 data CommandOptions =
   CommandOptions {
-    basic :: [Text],
+    basic :: Map Text Object,
     completion :: Maybe CommandCompletion
   }
   deriving stock (Show)
@@ -83,7 +94,7 @@ data RpcType =
   |
   Command CommandOptions CommandArgs
   |
-  Autocmd AutocmdEvent AutocmdOptions
+  Autocmd AutocmdEvents AutocmdOptions
   deriving stock (Show, Generic)
 
 methodPrefix :: RpcType -> Text

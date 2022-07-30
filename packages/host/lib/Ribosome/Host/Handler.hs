@@ -8,7 +8,7 @@ import Ribosome.Host.Data.RpcHandler (Handler, RpcHandler (RpcHandler))
 import Ribosome.Host.Data.RpcName (RpcName)
 import qualified Ribosome.Host.Data.RpcType as RpcType
 import Ribosome.Host.Data.RpcType (
-  AutocmdEvent,
+  AutocmdEvents,
   AutocmdOptions,
   CommandArgs (CommandArgs),
   CommandCompletion (CompleteBuiltin, CompleteHandler),
@@ -138,7 +138,7 @@ rpcAutocmd ::
   -- from continuing execution while the handler is active, which is particularly important for @VimLeave@.
   Execution ->
   -- |The Neovim event identifier, like @BufWritePre@ or @User@.
-  AutocmdEvent ->
+  AutocmdEvents ->
   -- |Various Neovim options like the file pattern.
   AutocmdOptions ->
   -- |The handler function.

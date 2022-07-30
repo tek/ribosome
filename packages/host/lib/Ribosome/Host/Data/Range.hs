@@ -7,6 +7,7 @@ import Data.MessagePack (Object (ObjectArray))
 import Exon (exon)
 
 import Ribosome.Host.Class.Msgpack.Decode (pattern Msgpack, MsgpackDecode (fromMsgpack))
+import Ribosome.Host.Class.Msgpack.Encode (toMsgpack)
 
 -- |Neovim offers different semantics for the command range (see @:help :command-range@).
 --
@@ -50,7 +51,7 @@ instance MsgpackDecode (Range style) where
       Left [exon|Range must be an array with one or two elements: #{show o}|]
 
 class RangeStyleOpt (s :: RangeStyle) where
-  rangeStyleOpt :: Text
+  rangeStyleOpt :: Map Text Object
 
   rangeStyleArg :: Text
   rangeStyleArg =
@@ -58,24 +59,24 @@ class RangeStyleOpt (s :: RangeStyle) where
 
 instance RangeStyleOpt ('RangeLine 'Nothing) where
   rangeStyleOpt =
-    "-range"
+    [("range", toMsgpack True)]
 
 instance RangeStyleOpt 'RangeFile where
   rangeStyleOpt =
-    "-range=%"
+    [("range", toMsgpack @Text "%")]
 
 instance (
     KnownNat n
   ) => RangeStyleOpt ('RangeLine ('Just n)) where
   rangeStyleOpt =
-    [exon|-range=#{show (natVal (Proxy @n))}|]
+    [("range", toMsgpack (natVal (Proxy @n)))]
 
   rangeStyleArg =
     "[<count>]"
 
 instance RangeStyleOpt ('RangeCount 'Nothing) where
   rangeStyleOpt =
-    "-count"
+    [("count", toMsgpack True)]
 
   rangeStyleArg =
     "[<count>]"
@@ -84,7 +85,7 @@ instance (
     KnownNat n
   ) => RangeStyleOpt ('RangeCount ('Just n)) where
   rangeStyleOpt =
-    [exon|-count=#{show (natVal (Proxy @n))}|]
+    [("count", toMsgpack (natVal (Proxy @n)))]
 
   rangeStyleArg =
     "[<count>]"

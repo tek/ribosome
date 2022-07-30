@@ -11,6 +11,8 @@ import Ribosome.Host.Data.Bar (Bar)
 import Ribosome.Host.Data.CommandMods (CommandMods)
 import Ribosome.Host.Data.CommandRegister (CommandRegister)
 import Ribosome.Host.Data.Range (Range, RangeStyleOpt (rangeStyleArg, rangeStyleOpt))
+import Data.MessagePack (Object)
+import Ribosome.Host.Class.Msgpack.Encode (toMsgpack)
 
 -- |Represents the value for the command option @-nargs@.
 data ArgCount =
@@ -64,9 +66,9 @@ class SpecialParam (state :: OptionState) (a :: Type) where
   type TransSpecial s _ =
     s
 
-  specialOpt :: Maybe Text
+  specialOpt :: Map Text Object
   specialOpt =
-    Nothing
+    mempty
 
   specialArg :: Maybe Text
   specialArg =
@@ -87,7 +89,7 @@ instance (
     RangeStyleOpt rs
   ) => SpecialParam ('OptionState al c ac) (Range rs) where
   specialOpt =
-    Just (rangeStyleOpt @rs)
+    rangeStyleOpt @rs
   specialArg =
     Just (rangeStyleArg @rs)
 
@@ -95,7 +97,7 @@ instance (
     BeforeRegular al Bang
   ) => SpecialParam ('OptionState al c ac) Bang where
   specialOpt =
-    Just "-bang"
+    [("bang", toMsgpack True)]
   specialArg =
     Just "'<bang>' == '!'"
 
@@ -103,7 +105,7 @@ instance (
     BeforeRegular al Bar
   ) => SpecialParam ('OptionState al c ac) Bar where
   specialOpt =
-    Just "-bar"
+    [("bar", toMsgpack True)]
   specialArg =
     Nothing
 
@@ -111,7 +113,7 @@ instance (
     BeforeRegular al CommandMods
   ) => SpecialParam ('OptionState al c ac) CommandMods where
   specialOpt =
-    Nothing
+    mempty
   specialArg =
     Just "<q-mods>"
 
@@ -119,7 +121,7 @@ instance (
     BeforeRegular al CommandRegister
   ) => SpecialParam ('OptionState al c ac) CommandRegister where
   specialOpt =
-    Just "-register"
+    [("register", toMsgpack True)]
   specialArg =
     Just "<q-register>"
 
@@ -169,9 +171,9 @@ class CommandParam (special :: Bool) (state :: OptionState) (a :: Type) where
   -- |Transition the current 'OptionState'.
   type TransState special state a :: OptionState
 
-  paramOpt :: Maybe Text
+  paramOpt :: Map Text Object
   paramOpt =
-    Nothing
+    mempty
 
   paramArg :: Maybe Text
   paramArg =
@@ -209,19 +211,19 @@ instance (
 -- It is transitioned by families in the classes 'CommandParam', 'SpecialParam' and 'RegularParam'.
 class CommandHandler (state :: OptionState) (h :: Type) where
   -- |Return the list of command options and special arguments determined by the handler function's parameters.
-  commandOptions :: ([Text], [Text])
+  commandOptions :: (Map Text Object, [Text])
 
 instance CommandHandler ('OptionState _a 'Zero c) (Sem r a) where
   commandOptions =
-    (["-nargs=0"], [])
+    ([("nargs", toMsgpack @Int 0)], [])
 
 instance CommandHandler ('OptionState _a 'MinZero c) (Sem r a) where
   commandOptions =
-    (["-nargs=*"], ["<f-args>"])
+    ([("nargs", toMsgpack @Text "*")], ["<f-args>"])
 
 instance CommandHandler ('OptionState _a 'MinOne c) (Sem r a) where
   commandOptions =
-    (["-nargs=+"], ["<f-args>"])
+    ([("nargs", toMsgpack @Text "+")], ["<f-args>"])
 
 instance (
     special ~ CommandSpecial a,
@@ -233,7 +235,7 @@ instance (
       (opts, args)
       where
         opts =
-          maybeToList (paramOpt @special @state @a) <> optsAfter
+          paramOpt @special @state @a <> optsAfter
         args =
           maybeToList (paramArg @special @state @a) <> argsAfter
         (optsAfter, argsAfter) =

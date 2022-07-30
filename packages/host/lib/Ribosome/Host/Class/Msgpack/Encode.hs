@@ -80,6 +80,9 @@ instance (
   ) => MsgpackEncode (Map k v) where
   toMsgpack = ObjectMap . Map.fromList . fmap (bimap toMsgpack toMsgpack) . Map.toList
 
+instance MsgpackEncode Integer where
+  toMsgpack = ObjectInt . fromInteger
+
 instance MsgpackEncode Int where
   toMsgpack = ObjectInt . fromIntegral
 

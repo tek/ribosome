@@ -1,13 +1,16 @@
 module Ribosome.Host.RegisterHandlers where
 
+import Data.MessagePack (Object)
 import qualified Data.Text as Text
 import Exon (exon)
 import qualified Polysemy.Log as Log
 import Prelude hiding (group)
 
-import Ribosome.Host.Api.Data (nvimCommand)
+import Ribosome.Host.Api.Data (nvimCommand, nvimCreateAugroup, nvimCreateAutocmd, nvimCreateUserCommand)
 import Ribosome.Host.Api.Effect (nvimGetApiInfo)
 import Ribosome.Host.Class.Msgpack.Decode (fromMsgpack)
+import Ribosome.Host.Class.Msgpack.Encode (toMsgpack)
+import Ribosome.Host.Class.Msgpack.Map (msgpackMap)
 import Ribosome.Host.Data.ChannelId (ChannelId (ChannelId))
 import Ribosome.Host.Data.Execution (Execution (Async, Sync))
 import Ribosome.Host.Data.Report (Report, resumeReport)
@@ -19,14 +22,14 @@ import Ribosome.Host.Data.RpcName (RpcName (RpcName))
 import qualified Ribosome.Host.Data.RpcType as AutocmdOptions
 import qualified Ribosome.Host.Data.RpcType as RpcType
 import Ribosome.Host.Data.RpcType (
-  AutocmdEvent (AutocmdEvent),
+  AutocmdEvents (AutocmdEvents),
   AutocmdGroup (AutocmdGroup),
   AutocmdOptions (AutocmdOptions),
-  AutocmdPattern (AutocmdPattern),
+  AutocmdPatterns (AutocmdPatterns),
   CommandArgs (CommandArgs),
   CommandOptions (CommandOptions),
   RpcType,
-  completionOption,
+  completionValue,
   )
 import qualified Ribosome.Host.Effect.Rpc as Rpc
 import Ribosome.Host.Effect.Rpc (Rpc)
@@ -59,6 +62,14 @@ augroup END
   Nothing ->
     cmd
 
+withAugroup :: (Map Text Object -> RpcCall a) -> Maybe AutocmdGroup -> RpcCall ()
+withAugroup f =
+  void . \case
+    Just (AutocmdGroup g) ->
+      nvimCreateAugroup g [("clear", toMsgpack False)] *> f [("group", toMsgpack g)]
+    Nothing ->
+      f mempty
+
 trigger :: Execution -> Text
 trigger = \case
   Sync -> "rpcrequest"
@@ -82,28 +93,33 @@ registerType ::
   RpcName ->
   Execution ->
   RpcType ->
-  Text
+  RpcCall ()
 registerType i method (RpcName name) exec = \case
   RpcType.Function ->
-    [exon|function! #{name}(...) range
+    nvimCommand [exon|function! #{name}(...) range
 return #{rpcCall i method exec (Just "a:000")}
 endfunction|]
   RpcType.Command (CommandOptions options comp) (CommandArgs args) ->
-    [exon|command! #{optionsText} #{name} call #{rpcCall i method exec (Just argsText)}|]
+    nvimCreateUserCommand name [exon|call #{rpcCall i method exec (Just argsText)}|] (options <> foldMap compOpt comp)
     where
-      optionsText =
-        Text.intercalate " " (foldMap (pure . completionOption) comp <> options)
+      compOpt c =
+        [("complete", toMsgpack (completionValue c))]
       argsText =
         [exon|[#{Text.intercalate ", " args}]|]
-  RpcType.Autocmd (AutocmdEvent event) AutocmdOptions {pat = AutocmdPattern pat, ..} ->
-    wrapAugroup [exon|autocmd #{event} #{pat} call #{rpcCall i method exec Nothing}|] group
+  RpcType.Autocmd (AutocmdEvents event) AutocmdOptions {pat = AutocmdPatterns pat, ..} ->
+    flip withAugroup group \ grp -> nvimCreateAutocmd event (opts <> grp)
+    where
+      opts =
+        msgpackMap ("pattern", pat) ("command", cmd) ("once", once) ("nested", nested)
+      cmd =
+        [exon|call #{rpcCall i method exec Nothing}|]
 
 registerHandler ::
   ChannelId ->
   RpcHandler r ->
   RpcCall ()
 registerHandler i (RpcHandler tpe name exec _) =
-  nvimCommand (registerType i (rpcMethod tpe name) name exec tpe)
+  registerType i (rpcMethod tpe name) name exec tpe
 
 registerHandlers ::
   Members [Rpc !! RpcError, Log] r =>

@@ -1,6 +1,7 @@
 module Ribosome.Plugin.Builtin where
 
 import Exon (exon)
+import Prelude hiding (group)
 
 import Ribosome.Data.PluginName (PluginName (PluginName))
 import Ribosome.Data.ScratchId (ScratchId)
@@ -16,10 +17,11 @@ import Ribosome.Host.Data.RpcHandler (Handler, RpcHandler)
 import Ribosome.Host.Data.RpcName (RpcName (RpcName))
 import qualified Ribosome.Host.Data.RpcType as AutocmdOptions
 import Ribosome.Host.Data.RpcType (
-  AutocmdEvent (unAutocmdEvent),
+  AutocmdEvents (unAutocmdEvent),
   AutocmdGroup (AutocmdGroup),
   AutocmdOptions (pat),
-  AutocmdPattern,
+  AutocmdPatterns,
+  group,
   )
 import Ribosome.Host.Effect.Handlers (Handlers)
 import Ribosome.Host.Effect.Rpc (Rpc)
@@ -27,7 +29,7 @@ import Ribosome.Host.Handler (rpcAutocmd, rpcFunction)
 import Ribosome.Host.Interpreter.Handlers (withHandlers)
 import Ribosome.Text (capitalize)
 
-watcherEvents :: [(AutocmdEvent, AutocmdPattern)]
+watcherEvents :: [(Text, AutocmdPatterns)]
 watcherEvents =
   [
     ("CmdlineLeave", def),
@@ -46,15 +48,15 @@ watcherRpc ::
   ∀ r .
   Member (VariableWatcher !! Report) r =>
   PluginName ->
-  AutocmdEvent ->
-  AutocmdPattern ->
+  Text ->
+  AutocmdPatterns ->
   RpcHandler r
 watcherRpc (PluginName name) event pat =
-  rpcAutocmd (RpcName method) Async event def { pat = pat } { AutocmdOptions.group = Just (AutocmdGroup name) } do
+  rpcAutocmd (RpcName method) Async (fromText event) def {pat} { group = Just (AutocmdGroup name) } do
     updateVar
   where
     method =
-      [exon|#{capitalize name}VariableChanged#{unAutocmdEvent event}|]
+      [exon|#{capitalize name}VariableChanged#{event}|]
 
 deleteScratch ::
   Member (Scratch !! RpcError) r =>

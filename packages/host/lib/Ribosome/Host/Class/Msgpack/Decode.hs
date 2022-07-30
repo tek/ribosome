@@ -153,6 +153,9 @@ msgpackText typeName decode =
     run (ObjectBinary os) = decode $ decodeUtf8 os
     run o = Util.illegalType typeName o
 
+instance MsgpackDecode Integer where
+  fromMsgpack = msgpackIntegral
+
 instance MsgpackDecode Int where
   fromMsgpack = msgpackIntegral
 

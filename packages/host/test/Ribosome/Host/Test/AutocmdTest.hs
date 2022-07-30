@@ -10,6 +10,7 @@ import Ribosome.Host.Data.Execution (Execution (Async))
 import Ribosome.Host.Data.Report (resumeReport)
 import Ribosome.Host.Data.RpcError (RpcError)
 import Ribosome.Host.Data.RpcHandler (Handler, RpcHandler)
+import qualified Ribosome.Host.Data.RpcType as AutocmdOptions
 import Ribosome.Host.Effect.Rpc (Rpc)
 import Ribosome.Host.Embed (embedNvim)
 import Ribosome.Host.Handler (rpcAutocmd)
@@ -40,7 +41,7 @@ handlers ::
 handlers =
   [
     rpcAutocmd "Au" Async "User" "Au" au,
-    rpcAutocmd "Bn" Async "BufNew" def bn
+    rpcAutocmd "Bn" Async "BufNew" def { AutocmdOptions.group = Just "test" } bn
   ]
 
 test_autocmd :: UnitTest

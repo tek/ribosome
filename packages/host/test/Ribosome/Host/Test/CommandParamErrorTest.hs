@@ -6,11 +6,12 @@ import qualified Data.Text as Text
 import Polysemy.Test (Hedgehog, UnitTest, assertLeft, runTestAuto)
 
 import Ribosome.Host.Test.CommandParamErrorDecls (argAfterArgs, argsAfterArg)
+import Data.MessagePack (Object)
 
 typeError ::
   Members [Hedgehog IO, Embed IO] r =>
   [Text] ->
-  ([Text], [Text]) ->
+  (Map Text Object, [Text]) ->
   Sem r ()
 typeError msg t = do
   e <- tryAny (evaluate (force t))
