@@ -14,7 +14,7 @@ import Ribosome.Host.Data.Execution (Execution (Async, Sync))
 import Ribosome.Host.Data.Report (Report, resumeReport)
 import Ribosome.Host.Data.Request (RpcMethod (RpcMethod))
 import Ribosome.Host.Data.RpcCall (RpcCall)
-import Ribosome.Host.Data.RpcError (RpcError, rpcReport)
+import Ribosome.Host.Data.RpcError (RpcError, rpcError)
 import Ribosome.Host.Data.RpcHandler (RpcHandler (RpcHandler), rpcMethod)
 import Ribosome.Host.Data.RpcName (RpcName (RpcName))
 import qualified Ribosome.Host.Data.RpcType as RpcType
@@ -38,7 +38,7 @@ registerFailed ::
   RpcError ->
   Sem r ()
 registerFailed e =
-  Log.error [exon|Registering rpc handlers failed: #{rpcReport e}|]
+  Log.error [exon|Registering rpc handlers failed: #{rpcError e}|]
 
 trigger :: Execution -> Text
 trigger = \case

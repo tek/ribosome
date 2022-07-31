@@ -18,6 +18,7 @@ import Ribosome.Host.Effect.Rpc (Rpc)
 import Ribosome.Host.Embed (embedNvim)
 import Ribosome.Host.Handler (rpcFunction)
 import Ribosome.Host.Unit.Run (runTest)
+import qualified Ribosome.Host.Data.RpcError as RpcError
 
 var :: Text
 var =
@@ -39,7 +40,7 @@ hand Bar _ n = do
 
 targetError :: RpcError
 targetError =
-  "Vim(return):Error invoking 'function:Fun' on channel 1:\nalready 13"
+  RpcError.Api "nvim_call_function" "Vim(return):Error invoking 'function:Fun' on channel 1:\nalready 13"
 
 callTest ::
   Member Rpc r =>

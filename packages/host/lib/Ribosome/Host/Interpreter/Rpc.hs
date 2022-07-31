@@ -6,7 +6,13 @@ import qualified Polysemy.Log as Log
 import qualified Polysemy.Process as Process
 import Polysemy.Process (Process)
 
-import Ribosome.Host.Data.Request (Request, RequestId, TrackedRequest (TrackedRequest), formatReq, formatTrackedReq)
+import Ribosome.Host.Data.Request (
+  Request (Request, method),
+  RequestId,
+  TrackedRequest (TrackedRequest),
+  formatReq,
+  formatTrackedReq,
+  )
 import qualified Ribosome.Host.Data.Response as Response
 import Ribosome.Host.Data.Response (Response)
 import Ribosome.Host.Data.RpcCall (RpcCall)
@@ -27,7 +33,7 @@ request ::
   Request ->
   (Object -> Either Text a) ->
   Sem r a
-request exec req decode = do
+request exec req@Request {method} decode = do
   reqId <- restop Responses.add
   let treq = TrackedRequest reqId (coerce req)
   Log.trace [exon|#{exec} rpc: #{formatTrackedReq treq}|]
@@ -36,7 +42,7 @@ request exec req decode = do
     Response.Success a ->
       stopEitherWith RpcError.Decode (decode a)
     Response.Error e ->
-      stop e
+      stop (RpcError.Api method e)
 
 handleCall ::
   RpcCall a ->

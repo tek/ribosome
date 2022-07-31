@@ -4,20 +4,17 @@ import Data.MessagePack (Object)
 import Exon (exon)
 
 import Ribosome.Host.Data.Request (RequestId (RequestId))
-import qualified Ribosome.Host.Data.RpcError as RpcError
-import Ribosome.Host.Data.RpcError (RpcError)
 
 data Response =
   Success Object
   |
-  Error RpcError
+  Error Text
   deriving stock (Eq, Show)
 
 formatResponse :: Response -> Text
 formatResponse = \case
   Success o -> show o
-  Error (RpcError.Decode e) -> [exon|decode error: #{e}|]
-  Error (RpcError.Unexpected e) -> [exon|error: #{e}|]
+  Error e -> [exon|error: #{e}|]
 
 data TrackedResponse =
   TrackedResponse {

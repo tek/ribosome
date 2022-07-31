@@ -56,7 +56,10 @@ interpretSettingsRpc =
         RpcError.Decode e -> do
           n <- settingVariableName s
           stop (SettingError.Decode n e)
-        RpcError.Unexpected _ -> fallback s
+        RpcError.Api _ _ ->
+          fallback s
+        RpcError.Unexpected _ ->
+          fallback s
     Update s a -> do
       n <- settingVariableName s
       resumeHoist (SettingError.UpdateFailed n) (nvimSetVar n a)

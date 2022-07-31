@@ -169,7 +169,7 @@ module Ribosome (
   logReport,
   pluginLogReports,
   RpcError,
-  rpcReport,
+  rpcError,
   ignoreRpcError,
   onRpcError,
   BootError (..),
@@ -267,7 +267,7 @@ import Ribosome.Host.Data.Report (
   )
 import Ribosome.Host.Data.Request (Request (Request))
 import Ribosome.Host.Data.RpcCall (RpcCall)
-import Ribosome.Host.Data.RpcError (RpcError, rpcReport)
+import Ribosome.Host.Data.RpcError (RpcError, rpcError)
 import Ribosome.Host.Data.RpcHandler (Handler, RpcHandler (..), simpleHandler)
 import Ribosome.Host.Data.RpcName (RpcName (..))
 import Ribosome.Host.Data.RpcType (CompleteStyle (..))

@@ -4,7 +4,7 @@ import Exon (exon)
 import Log (Severity (Error))
 
 import Ribosome.Host.Data.Report (Report (Report), Reportable (toReport))
-import Ribosome.Host.Data.RpcError (RpcError, rpcReport)
+import Ribosome.Host.Data.RpcError (RpcError, rpcError)
 
 data SettingError =
   Unset Text
@@ -21,4 +21,4 @@ instance Reportable SettingError where
     Decode key msg ->
       Report [exon|Setting '#{key}' has invalid value: #{msg}|] ["SettingError.Decode:", key, msg] Error
     UpdateFailed key err ->
-      Report [exon|Failed to update setting '#{key}': #{rpcReport err}|] ["SettingError.UpdateFailed:", key, show err] Error
+      Report [exon|Failed to update setting '#{key}': #{rpcError err}|] ["SettingError.UpdateFailed:", key, show err] Error

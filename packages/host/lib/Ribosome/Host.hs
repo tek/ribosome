@@ -58,7 +58,7 @@ import Ribosome.Host.Data.Report (
   toReport,
   userReport,
   )
-import Ribosome.Host.Data.RpcError (RpcError, rpcReport)
+import Ribosome.Host.Data.RpcError (RpcError, rpcError)
 import Ribosome.Host.Data.RpcHandler (Handler, RpcHandler (RpcHandler), simpleHandler)
 import Ribosome.Host.Data.RpcType (CompleteStyle (..))
 import Ribosome.Host.Data.StoredReport (StoredReport (StoredReport))

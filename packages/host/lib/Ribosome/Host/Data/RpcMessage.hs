@@ -12,20 +12,17 @@ import qualified Ribosome.Host.Data.Request as Request
 import Ribosome.Host.Data.Request (Request, TrackedRequest (TrackedRequest), formatReq, formatTrackedReq)
 import qualified Ribosome.Host.Data.Response as Response
 import Ribosome.Host.Data.Response (TrackedResponse (TrackedResponse), formatTrackedResponse)
-import qualified Ribosome.Host.Data.RpcError as RpcError
-import Ribosome.Host.Data.RpcError (RpcError)
 
-rpcError :: Object -> RpcError
-rpcError =
-  RpcError.Unexpected . \case
-    Msgpack e ->
-      e
-    ObjectArray [_, Msgpack e] ->
-      e
-    o ->
-      show o
+rpcError :: Object -> Text
+rpcError = \case
+  Msgpack e ->
+    e
+  ObjectArray [_, Msgpack e] ->
+    e
+  o ->
+    show o
 
-pattern ErrorPayload :: RpcError -> Object
+pattern ErrorPayload :: Text -> Object
 pattern ErrorPayload e <- (rpcError -> e)
 
 data RpcMessage =
