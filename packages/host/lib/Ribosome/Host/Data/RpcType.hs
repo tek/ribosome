@@ -25,6 +25,11 @@ instance IsString AutocmdPatterns where
   fromString =
     AutocmdPatterns . pure . fromString
 
+newtype AutocmdBuffer =
+  AutocmdBuffer { unAutocmdBuffer :: Int }
+  deriving stock (Eq, Show)
+  deriving newtype (Num, Real, Enum, Integral, Ord, MsgpackEncode, MsgpackDecode)
+
 instance Default AutocmdPatterns where
   def =
     "*"
@@ -36,21 +41,20 @@ newtype AutocmdGroup =
 
 data AutocmdOptions =
   AutocmdOptions {
-    pat :: AutocmdPatterns,
+    target :: Either AutocmdBuffer AutocmdPatterns,
     nested :: Bool,
     once :: Bool,
-    group :: Maybe AutocmdGroup,
-    buffer :: Maybe Int
+    group :: Maybe AutocmdGroup
   }
   deriving stock (Eq, Show, Generic)
 
 instance Default AutocmdOptions where
   def =
-    AutocmdOptions "*" False False Nothing Nothing
+    AutocmdOptions (Right "*") False False Nothing
 
 instance IsString AutocmdOptions where
   fromString pat =
-    def { pat = fromString pat }
+    def { target = Right (fromString pat) }
 
 newtype AutocmdId =
   AutocmdId { unAutocmdId :: Int }
