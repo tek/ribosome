@@ -9,7 +9,7 @@ import Ribosome.Host.Api.Autocmd (autocmd)
 import Ribosome.Host.Api.Data (Buffer)
 import Ribosome.Host.Api.Effect (bufferGetNumber, nvimExecAutocmds, vimGetOption, vimSetOption)
 import Ribosome.Host.Class.Msgpack.Encode (toMsgpack)
-import Ribosome.Host.Data.RpcType (AutocmdEvents, AutocmdOptions, buffer)
+import Ribosome.Host.Data.RpcType (AutocmdEvents, AutocmdOptions, buffer, AutocmdId)
 import qualified Ribosome.Host.Effect.Rpc as Rpc
 import Ribosome.Host.Effect.Rpc (Rpc)
 
@@ -55,9 +55,8 @@ bufferAutocmd ::
   AutocmdEvents ->
   AutocmdOptions ->
   Text ->
-  Sem r ()
+  Sem r AutocmdId
 bufferAutocmd buf events options cmd = do
   number <- bufferGetNumber buf
   Rpc.sync do
     autocmd events options { buffer = Just number } cmd
-    pure ()

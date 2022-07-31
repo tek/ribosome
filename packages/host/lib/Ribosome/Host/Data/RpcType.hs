@@ -52,6 +52,11 @@ instance IsString AutocmdOptions where
   fromString pat =
     def { pat = fromString pat }
 
+newtype AutocmdId =
+  AutocmdId { unAutocmdId :: Int }
+  deriving stock (Eq, Show)
+  deriving newtype (Num, Real, Enum, Integral, Ord, MsgpackDecode, MsgpackEncode)
+
 data CompleteStyle =
   CompleteFiltered
   |

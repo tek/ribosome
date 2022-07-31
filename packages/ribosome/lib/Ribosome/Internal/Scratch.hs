@@ -21,7 +21,6 @@ import Ribosome.Data.ScratchState (ScratchState (ScratchState))
 import Ribosome.Host.Api.Data (Buffer, Tabpage, Window)
 import Ribosome.Host.Api.Effect (
   bufferGetName,
-  bufferGetNumber,
   bufferSetName,
   bufferSetOption,
   nvimBufIsLoaded,
@@ -36,12 +35,12 @@ import Ribosome.Host.Api.Effect (
   windowIsValid,
   windowSetHeight,
   windowSetOption,
-  windowSetWidth,
+  windowSetWidth, nvimDelAutocmd,
   )
 import Ribosome.Host.Class.Msgpack.Decode (fromMsgpack)
 import Ribosome.Host.Class.Msgpack.Encode (toMsgpack)
 import Ribosome.Host.Data.RpcError (RpcError)
-import Ribosome.Host.Data.RpcType (group)
+import Ribosome.Host.Data.RpcType (group, AutocmdId (AutocmdId))
 import Ribosome.Host.Effect.Rpc (Rpc)
 import Ribosome.Mapping (activateBufferMapping)
 import Ribosome.PluginName (pluginNameCapitalized)
@@ -161,14 +160,15 @@ setupScratchBuffer window buffer ft name = do
 
 setupDeleteAutocmd ::
   Members [Rpc, Reader PluginName] r =>
-  ScratchState ->
-  Sem r ()
-setupDeleteAutocmd (ScratchState name _ buffer _ _ _) = do
+  ScratchId ->
+  Buffer ->
+  Sem r AutocmdId
+setupDeleteAutocmd (ScratchId name) buffer = do
   PluginName pname <- pluginNameCapitalized
   bufferAutocmd buffer "BufDelete" def { group = Just "RibosomeScratch" } (deleteCall pname)
   where
     deleteCall pname =
-      [exon|silent! call #{pname}DeleteScratch('#{coerce name}')|]
+      [exon|silent! call #{pname}DeleteScratch('#{name}')|]
 
 setupScratchIn ::
   Members [Rpc, AtomicState (Map ScratchId ScratchState), Reader PluginName, Log] r =>
@@ -183,9 +183,9 @@ setupScratchIn buffer previous window tab options@(ScratchOptions _ _ _ focus _ 
   traverse_ (executeWindowSyntax window) syntax
   traverse_ (activateBufferMapping validBuffer) mappings
   unless focus $ vimSetCurrentWindow previous
-  let scratch = ScratchState name options validBuffer window previous tab
+  auId <- setupDeleteAutocmd name validBuffer
+  let scratch = ScratchState name options validBuffer window previous tab auId
   atomicModify' (Map.insert name scratch)
-  setupDeleteAutocmd scratch
   pure scratch
 
 createScratch ::
@@ -216,8 +216,8 @@ updateScratch ::
   ScratchState ->
   ScratchOptions ->
   Sem r ScratchState
-updateScratch oldScratch@(ScratchState name _ oldBuffer oldWindow _ _) options = do
-  Log.debug [exon|updating existing scratch '#{coerce name}'|]
+updateScratch oldScratch@(ScratchState name _ oldBuffer oldWindow _ _ _) options = do
+  Log.debug [exon|updating existing scratch `#{coerce name}`|]
   ifM (windowIsValid oldWindow) attemptReuseWindow reset
   where
     attemptReuseWindow =
@@ -264,7 +264,7 @@ setScratchContent ::
   ScratchState ->
   t Text ->
   Sem r ()
-setScratchContent (ScratchState _ options buffer win _ _) lines' = do
+setScratchContent (ScratchState _ options buffer win _ _ _) lines' = do
   withModifiable buffer options $ setBufferContent buffer (toList lines')
   when (options ^. #resize) (resume_ @RpcError @Rpc (setSize win size))
   where
@@ -301,15 +301,13 @@ killScratch ::
   Members [Rpc !! RpcError, AtomicState (Map ScratchId ScratchState), Log] r =>
   ScratchState ->
   Sem r ()
-killScratch (ScratchState name _ buffer window _ tab) = do
-  Log.debug [exon|Killing scratch buffer '#{unScratchId name}'|]
+killScratch (ScratchState name _ buffer window _ tab (AutocmdId auId)) = do
+  Log.debug [exon|Killing scratch buffer `#{unScratchId name}`|]
   atomicModify' (Map.delete @_ @ScratchState name)
-  resume_ @RpcError @Rpc do
-      number <- bufferGetNumber buffer
-      vimCommand [exon|autocmd! RibosomeScratch BufDelete <buffer=#{show number}>|]
-  traverse_ (resume_ @RpcError @Rpc . closeTabpage) tab
-  resume_ @RpcError @Rpc (closeWindow window)
-  resume_ @RpcError @Rpc (wipeBuffer buffer)
+  resume_ (nvimDelAutocmd auId)
+  traverse_ (resume_ . closeTabpage) tab
+  resume_ (closeWindow window)
+  resume_ (wipeBuffer buffer)
 
 scratchPreviousWindow ::
   Member (AtomicState (Map ScratchId ScratchState)) r =>

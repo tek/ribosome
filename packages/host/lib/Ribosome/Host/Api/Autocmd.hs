@@ -10,6 +10,7 @@ import Ribosome.Host.Data.RpcCall (RpcCall)
 import Ribosome.Host.Data.RpcType (
   AutocmdEvents (AutocmdEvents),
   AutocmdGroup (AutocmdGroup),
+  AutocmdId (AutocmdId),
   AutocmdOptions (..),
   AutocmdPatterns (AutocmdPatterns),
   )
@@ -20,9 +21,9 @@ withAugroup (Just (AutocmdGroup g)) f =
 withAugroup Nothing f =
   f mempty
 
-autocmd :: AutocmdEvents -> AutocmdOptions -> Text -> RpcCall Int
+autocmd :: AutocmdEvents -> AutocmdOptions -> Text -> RpcCall AutocmdId
 autocmd (AutocmdEvents events) AutocmdOptions {pat = AutocmdPatterns pat, ..} cmd =
-  withAugroup group \ grp -> nvimCreateAutocmd events (opts <> grp)
+  withAugroup group \ grp -> AutocmdId <$> nvimCreateAutocmd events (opts <> grp)
   where
     opts =
       msgpackMap ("pattern", pat) ("command", cmd) ("once", once) ("nested", nested)
