@@ -11,7 +11,7 @@ import Ribosome.Host.Data.Request (
   RequestId,
   TrackedRequest (TrackedRequest),
   formatReq,
-  formatTrackedReq,
+  formatTrackedReq, arguments,
   )
 import qualified Ribosome.Host.Data.Response as Response
 import Ribosome.Host.Data.Response (Response)
@@ -33,7 +33,7 @@ request ::
   Request ->
   (Object -> Either Text a) ->
   Sem r a
-request exec req@Request {method} decode = do
+request exec req@Request {method, arguments} decode = do
   reqId <- restop Responses.add
   let treq = TrackedRequest reqId (coerce req)
   Log.trace [exon|#{exec} rpc: #{formatTrackedReq treq}|]
@@ -42,7 +42,7 @@ request exec req@Request {method} decode = do
     Response.Success a ->
       stopEitherWith RpcError.Decode (decode a)
     Response.Error e ->
-      stop (RpcError.Api method e)
+      stop (RpcError.Api method arguments e)
 
 handleCall ::
   RpcCall a ->

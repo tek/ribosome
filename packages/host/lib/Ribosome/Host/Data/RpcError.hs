@@ -1,5 +1,7 @@
 module Ribosome.Host.Data.RpcError where
 
+import Data.MessagePack (Object)
+import qualified Data.Text as Text
 import Exon (exon)
 import Log (Severity (Error))
 
@@ -11,7 +13,7 @@ import Ribosome.Host.Data.Request (RpcMethod (RpcMethod))
 data RpcError =
   Unexpected Text
   |
-  Api RpcMethod Text
+  Api RpcMethod [Object] Text
   |
   Decode Text
   deriving stock (Eq, Show, Generic)
@@ -25,13 +27,13 @@ instance Reportable RpcError where
   toReport = \case
     Unexpected e ->
       Report "Internal error" [e] Error
-    Api (RpcMethod m) e ->
-      Report "Nvim API failure" [m, e] Error
+    Api (RpcMethod m) args e ->
+      Report "Nvim API failure" [m, show args, e] Error
     Decode e ->
       Report "Msgpack decoding failed" [e] Error
 
 rpcError :: RpcError -> Text
 rpcError = \case
   Unexpected e -> e
-  Api (RpcMethod m) e -> [exon|#{m}: #{e}|]
+  Api (RpcMethod m) args e -> [exon|#{m}: #{e}(#{Text.intercalate ", " (show <$> args)})|]
   Decode e -> e

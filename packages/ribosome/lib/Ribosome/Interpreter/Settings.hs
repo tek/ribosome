@@ -56,7 +56,7 @@ interpretSettingsRpc =
         RpcError.Decode e -> do
           n <- settingVariableName s
           stop (SettingError.Decode n e)
-        RpcError.Api _ _ ->
+        RpcError.Api _ _ _ ->
           fallback s
         RpcError.Unexpected _ ->
           fallback s
