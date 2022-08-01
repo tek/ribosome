@@ -24,10 +24,12 @@ module Ribosome (
   -- $execution
   runNvimPluginIO,
   runNvimPluginIO_,
+  runNvimPluginCli,
   withHandlers,
   remotePlugin,
   RemoteStack,
   runRemoteStack,
+  runRemoteStackCli,
   interpretPluginRemote,
   BasicPluginStack,
   runBasicPluginStack,
@@ -55,8 +57,10 @@ module Ribosome (
   -- $embed
   runEmbedPluginIO,
   runEmbedPluginIO_,
+  runEmbedPluginCli,
   embedPlugin,
   runEmbedStack,
+  runEmbedStackCli,
   interpretPluginEmbed,
 
   -- * MessagePack codec
@@ -204,6 +208,7 @@ module Ribosome (
   RegisterType,
   registerRepr,
   pathText,
+  CustomConfig (CustomConfig),
 
   -- * Reexports
   module Prelate.Prelude,
@@ -212,6 +217,7 @@ module Ribosome (
 import Prelate.Prelude (Stop, type (!!), (<!))
 import Prelude hiding (async)
 
+import Ribosome.Data.CustomConfig (CustomConfig (CustomConfig))
 import Ribosome.Data.FloatOptions (FloatOptions)
 import Ribosome.Data.Mapping (MapMode (..), Mapping (Mapping), MappingId (MappingId))
 import Ribosome.Data.PersistError (PersistError)
@@ -230,7 +236,15 @@ import Ribosome.Effect.Persist (Persist)
 import Ribosome.Effect.PersistPath (PersistPath, persistPath)
 import Ribosome.Effect.Scratch (Scratch)
 import Ribosome.Effect.Settings (Settings)
-import Ribosome.Embed (embedPlugin, interpretPluginEmbed, runEmbedPluginIO, runEmbedPluginIO_, runEmbedStack)
+import Ribosome.Embed (
+  embedPlugin,
+  interpretPluginEmbed,
+  runEmbedPluginCli,
+  runEmbedPluginIO,
+  runEmbedPluginIO_,
+  runEmbedStack,
+  runEmbedStackCli,
+  )
 import Ribosome.Host.Api.Data (Buffer, Tabpage, Window)
 import Ribosome.Host.Class.Msgpack.Array (msgpackArray)
 import Ribosome.Host.Class.Msgpack.Decode (pattern Msgpack, MsgpackDecode (fromMsgpack))
@@ -314,9 +328,11 @@ import Ribosome.Remote (
   RemoteStack,
   interpretPluginRemote,
   remotePlugin,
+  runNvimPluginCli,
   runNvimPluginIO,
   runNvimPluginIO_,
   runRemoteStack,
+  runRemoteStackCli,
   )
 import Ribosome.Report (logReport, pluginLogReports, reportStop, resumeLogReport)
 import Ribosome.Run (NvimPlugin)

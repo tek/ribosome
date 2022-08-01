@@ -16,8 +16,8 @@ import Ribosome.Run (PluginEffects)
 type SocketHandlerEffects =
   PluginEffects ++ RpcStack ++ RpcDeps
 
-type PluginSocketStack =
-  SocketHandlerEffects ++ Reader NvimSocket : BasicPluginStack
+type PluginSocketStack c =
+  SocketHandlerEffects ++ Reader NvimSocket : BasicPluginStack c
 
 interpretRpcDeps ::
   Members [Reader NvimSocket, Reader PluginName, Error BootError, Log, Resource, Race, Async, Embed IO] r =>
@@ -29,7 +29,7 @@ interpretRpcDeps =
   raiseUnder
 
 interpretPluginSocket ::
-  Members BasicPluginStack r =>
+  Members (BasicPluginStack c) r =>
   Member (Reader NvimSocket) r =>
   InterpretersFor SocketHandlerEffects r
 interpretPluginSocket =

@@ -27,8 +27,8 @@ type HandlerEffects =
   PluginEffects ++ RpcStack ++ EmbedExtra ++ RpcDeps
 
 -- |The complete stack for an embedded plugin test.
-type EmbedStack =
-  HandlerEffects ++ BasicPluginStack
+type EmbedStack c =
+  HandlerEffects ++ BasicPluginStack c
 
 interpretRpcDeps ::
   Members [Reader PluginName, Error BootError, Log, Resource, Race, Async, Embed IO] r =>
@@ -63,12 +63,43 @@ embedPlugin =
   insertAt @0
 
 -- |Run an embedded Neovim, plugin internals and IO effects, reading options from the CLI.
+--
+-- Like 'runEmbedStack', but allows the CLI option parser to be specified.
+runEmbedStackCli ::
+  PluginConfig c ->
+  Sem (EmbedStack c) () ->
+  IO ()
+runEmbedStackCli conf =
+  runCli conf . interpretPluginEmbed
+
+-- |Run an embedded Neovim, plugin internals and IO effects, reading options from the CLI.
 runEmbedStack ::
-  PluginConfig ->
-  Sem EmbedStack () ->
+  PluginConfig () ->
+  Sem (EmbedStack ()) () ->
   IO ()
 runEmbedStack conf =
   runCli conf . interpretPluginEmbed
+
+-- |Run a 'Sem' in an embedded plugin context by starting a Neovim subprocess, forking the Ribosome main loop and
+-- registering the supplied handlers, using the supplied custom effect stack.
+--
+-- Like 'runEmbedPluginIO', but allows the 'PluginConfig' to contain a CLI parser for an arbitrary type @c@ that is then
+-- provided in a @'Reader' c@ to the plugin.
+--
+-- This is separate from 'runEmbedPluginIO' because it requires a type hint when using @OverloadedStrings@ or 'def' to
+-- construct the config without an option parser.
+runEmbedPluginCli ::
+  HigherOrder r (EmbedStack c) =>
+  PluginConfig c ->
+  InterpretersFor r (EmbedStack c) ->
+  [RpcHandler (r ++ EmbedStack c)] ->
+  Sem (r ++ EmbedStack c) () ->
+  IO ()
+runEmbedPluginCli conf effs handlers =
+  runEmbedStackCli conf .
+  effs .
+  withHandlers handlers .
+  embedPlugin
 
 -- |Run a 'Sem' in an embedded plugin context by starting a Neovim subprocess, forking the Ribosome main loop and
 -- registering the supplied handlers, using the supplied custom effect stack.
@@ -80,11 +111,11 @@ runEmbedStack conf =
 --
 -- The parameters have the same meaning as for [remote plugins]("Ribosome#execution").
 runEmbedPluginIO ::
-  HigherOrder r EmbedStack =>
-  PluginConfig ->
-  InterpretersFor r EmbedStack ->
-  [RpcHandler (r ++ EmbedStack)] ->
-  Sem (r ++ EmbedStack) () ->
+  HigherOrder r (EmbedStack ()) =>
+  PluginConfig () ->
+  InterpretersFor r (EmbedStack ()) ->
+  [RpcHandler (r ++ EmbedStack ())] ->
+  Sem (r ++ EmbedStack ()) () ->
   IO ()
 runEmbedPluginIO conf effs handlers =
   runEmbedStack conf .
@@ -97,9 +128,9 @@ runEmbedPluginIO conf effs handlers =
 --
 -- Like 'runEmbedPluginIO', but without extra effects.
 runEmbedPluginIO_ ::
-  PluginConfig ->
-  [RpcHandler EmbedStack] ->
-  Sem EmbedStack () ->
+  PluginConfig () ->
+  [RpcHandler (EmbedStack ())] ->
+  Sem (EmbedStack ()) () ->
   IO ()
 runEmbedPluginIO_ conf handlers =
   runEmbedStack conf .

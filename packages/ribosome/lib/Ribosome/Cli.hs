@@ -19,7 +19,6 @@ import Path.IO (getCurrentDir)
 
 import Ribosome.CliParser (filePathOption, severityOption)
 import Ribosome.Data.CliConfig (CliConfig (CliConfig), CliLogConfig (CliLogConfig))
-import Ribosome.Data.PluginConfig (PluginConfig (PluginConfig, name))
 import Ribosome.Data.PluginName (PluginName (PluginName))
 import Ribosome.Host.Data.HostConfig (HostConfig (HostConfig), LogConfig (LogConfig))
 
@@ -35,25 +34,29 @@ logParser cwd = do
 
 confParser ::
   Path Abs Dir ->
-  Parser CliConfig
-confParser cwd =
-  CliConfig <$> logParser cwd
+  Parser c ->
+  Parser (CliConfig, c)
+confParser cwd customParser = do
+  cli <- CliConfig <$> logParser cwd
+  custom <- customParser
+  pure (cli, custom)
 
 parseCli ::
   PluginName ->
-  IO CliConfig
-parseCli (PluginName name) = do
+  Parser c ->
+  IO (CliConfig, c)
+parseCli (PluginName name) customParser = do
   cwd <- getCurrentDir
-  customExecParser parserPrefs (info (confParser cwd <**> helper) desc)
+  customExecParser parserPrefs (info (helper <*> confParser cwd customParser) desc)
   where
     parserPrefs =
       prefs (showHelpOnEmpty <> showHelpOnError)
     desc =
       fullDesc <> header [exon|#{toString name} is a Neovim plugin.|]
 
-withDefault :: PluginConfig -> CliConfig -> PluginConfig
-withDefault (PluginConfig name (HostConfig defLog)) cliConfig =
-  PluginConfig name (HostConfig log)
+withDefault :: HostConfig -> CliConfig -> HostConfig
+withDefault (HostConfig defLog) cliConfig =
+  HostConfig log
   where
     CliConfig (CliLogConfig file levelEcho levelStderr levelFile) =
       cliConfig
@@ -64,9 +67,11 @@ withDefault (PluginConfig name (HostConfig defLog)) cliConfig =
       (fromMaybe defLevelFile levelFile) conc
 
 withCli ::
-  PluginConfig ->
-  (PluginConfig -> IO a) ->
+  PluginName ->
+  HostConfig ->
+  Parser c ->
+  (HostConfig -> c -> IO a) ->
   IO a
-withCli defaultConf@PluginConfig {name} f = do
-  cliConfig <- parseCli name
-  f (withDefault defaultConf cliConfig)
+withCli name defaultConf customParser f = do
+  (cliConfig, custom) <- parseCli name customParser
+  f (withDefault defaultConf cliConfig) custom

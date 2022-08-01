@@ -8,13 +8,13 @@ import Ribosome.Host.Data.HostConfig (HostConfig (HostConfig), dataLogConc)
 data TestConfig =
   TestConfig {
     freeze :: Bool,
-    plugin :: PluginConfig
+    plugin :: PluginConfig ()
   }
   deriving stock (Eq, Show, Generic)
 
 instance Default TestConfig where
   def =
-    TestConfig False (PluginConfig "test" (HostConfig def { dataLogConc = False }))
+    TestConfig False (PluginConfig "test" (HostConfig def { dataLogConc = False }) unit)
 
 data TmuxTestConfig =
   TmuxTestConfig {

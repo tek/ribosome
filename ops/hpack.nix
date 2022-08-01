@@ -165,7 +165,6 @@ in {
       "chiasma"
       "chiasma-test"
       "exon"
-      "generic-lens"
       "hedgehog"
       "lens-regex-pcre"
       "path"

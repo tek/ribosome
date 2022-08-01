@@ -9,7 +9,7 @@ import Ribosome.Data.PluginName (PluginName)
 --
 -- This interpreter is used by the main function machinery.
 interpretPluginName ::
-  Member (Reader PluginConfig) r =>
+  Member (Reader (PluginConfig c)) r =>
   InterpreterFor (Reader PluginName) r
 interpretPluginName sem =
   ask >>= \ PluginConfig {name} ->

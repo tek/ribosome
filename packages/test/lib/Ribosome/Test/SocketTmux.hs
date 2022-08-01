@@ -26,10 +26,11 @@ import Ribosome.Test.Data.TestConfig (TmuxTestConfig)
 import Ribosome.Test.Embed (TestEffects, testPluginEmbed)
 import Ribosome.Test.TmuxCommon (TmuxStack, runTmuxNvim)
 import Ribosome.Test.Wait (assertWait)
+import Ribosome.Data.CustomConfig (CustomConfig (CustomConfig))
 
 -- |The stack of internal effects for socket tmux tests.
 type TmuxHandlerStack =
-  SocketHandlerEffects ++ Reader NvimSocket : TmuxStack
+  SocketHandlerEffects ++ Reader (CustomConfig ()) : Reader NvimSocket : TmuxStack
 
 -- |The socket tmux test stack with additional effects.
 type SocketTmuxWith r =
@@ -65,6 +66,7 @@ runSocketTmuxTestConf ::
 runSocketTmuxTestConf conf =
   runTmuxNvim conf .
   withSocketTmuxNvim .
+  runReader (CustomConfig ()) .
   interpretPluginSocket
 
 -- |Run the tmux test stack, using a pty to host tmux.

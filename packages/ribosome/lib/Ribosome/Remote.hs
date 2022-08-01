@@ -21,12 +21,12 @@ type HandlerStack =
   PluginEffects ++ RpcStack ++ RpcDeps
 
 -- |The complete stack of a Neovim plugin.
-type RemoteStack =
-  HandlerStack ++ BasicPluginStack
+type RemoteStack c =
+  HandlerStack ++ BasicPluginStack c
 
 -- |Run plugin internals without IO effects.
 interpretPluginRemote ::
-  Members BasicPluginStack r =>
+  Members (BasicPluginStack c) r =>
   InterpretersFor HandlerStack r
 interpretPluginRemote =
   interpretUserErrorPrefixed .
@@ -39,20 +39,47 @@ interpretPluginRemote =
 
 -- |Run the main loop for a remote plugin.
 remotePlugin ::
-  ∀ r .
+  ∀ c r .
   Members HandlerStack r =>
-  Members BasicPluginStack r =>
+  Members (BasicPluginStack c) r =>
   Sem r ()
 remotePlugin =
   interceptHandlersBuiltin runHost
 
 -- |Run plugin internals and IO effects for a remote plugin, reading options from the CLI.
+--
+-- Like 'runRemoteStack', but allows the CLI option parser to be specified.
+runRemoteStackCli ::
+  PluginConfig c ->
+  Sem (RemoteStack c) () ->
+  IO ()
+runRemoteStackCli conf =
+  runCli conf . interpretPluginRemote
+
+-- |Run plugin internals and IO effects for a remote plugin, reading options from the CLI.
 runRemoteStack ::
-  PluginConfig ->
-  Sem RemoteStack () ->
+  PluginConfig () ->
+  Sem (RemoteStack ()) () ->
   IO ()
 runRemoteStack conf =
   runCli conf . interpretPluginRemote
+
+-- |Run a Neovim plugin using a set of handlers and configuration, with an arbitrary stack of custom effects placed
+-- between the handlers and the Ribosome stack.
+--
+-- Like 'runNvimPluginIO', but allows the 'PluginConfig' to contain a CLI parser for an arbitrary type @c@ that is then
+-- provided in a @'Reader' c@ to the plugin.
+--
+-- This is separate from 'runNvimPluginIO' because it requires a type hint when using @OverloadedStrings@ or 'def' to
+-- construct the config without an option parser.
+runNvimPluginCli ::
+  HigherOrder r (RemoteStack c) =>
+  PluginConfig c ->
+  InterpretersFor r (RemoteStack c) ->
+  [RpcHandler (r ++ RemoteStack c)] ->
+  IO ()
+runNvimPluginCli conf effs handlers =
+  runRemoteStackCli conf (effs (withHandlers handlers remotePlugin))
 
 -- |Run a Neovim plugin using a set of handlers and configuration, with an arbitrary stack of custom effects placed
 -- between the handlers and the Ribosome stack.
@@ -101,10 +128,11 @@ runRemoteStack conf =
 --
 -- > runRemoteStack conf $ runCustomStack $ withHandlers handlers remotePlugin
 runNvimPluginIO ::
-  HigherOrder r RemoteStack =>
-  PluginConfig ->
-  InterpretersFor r RemoteStack ->
-  [RpcHandler (r ++ RemoteStack)] ->
+  ∀ r .
+  HigherOrder r (RemoteStack ()) =>
+  PluginConfig () ->
+  InterpretersFor r (RemoteStack ()) ->
+  [RpcHandler (r ++ RemoteStack ())] ->
   IO ()
 runNvimPluginIO conf effs handlers =
   runRemoteStack conf (effs (withHandlers handlers remotePlugin))
@@ -115,8 +143,8 @@ runNvimPluginIO conf effs handlers =
 --
 -- This runs the entire stack to completion, so it can be used in the app's @main@ function.
 runNvimPluginIO_ ::
-  PluginConfig ->
-  [RpcHandler RemoteStack] ->
+  PluginConfig () ->
+  [RpcHandler (RemoteStack ())] ->
   IO ()
 runNvimPluginIO_ conf handlers =
   runRemoteStack conf (withHandlers handlers remotePlugin)

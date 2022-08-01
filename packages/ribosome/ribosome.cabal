@@ -66,6 +66,7 @@ library
       Ribosome.Cli
       Ribosome.CliParser
       Ribosome.Data.CliConfig
+      Ribosome.Data.CustomConfig
       Ribosome.Data.FileBuffer
       Ribosome.Data.FloatOptions
       Ribosome.Data.Locks

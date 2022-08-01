@@ -97,7 +97,7 @@ runTestLogConf ::
   Members [Error BootError, Resource, Race, Async, Embed IO] r =>
   TestConfig ->
   InterpretersFor (Reader PluginName : TestConfStack) r
-runTestLogConf (TestConfig freezeTime (PluginConfig name conf)) =
+runTestLogConf (TestConfig freezeTime (PluginConfig name conf _)) =
   Host.runTestLogConf (Host.TestConfig freezeTime conf) .
   runReader name
 
