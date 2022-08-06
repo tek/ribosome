@@ -1,6 +1,7 @@
 module Ribosome.Host.Data.Event where
 
 import Data.MessagePack (Object)
+
 import Ribosome.Host.Class.Msgpack.Decode (MsgpackDecode)
 import Ribosome.Host.Class.Msgpack.Encode (MsgpackEncode)
 

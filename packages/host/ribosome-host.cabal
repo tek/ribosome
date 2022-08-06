@@ -22,6 +22,7 @@ library
       Ribosome.Host.Api.Autocmd
       Ribosome.Host.Api.Data
       Ribosome.Host.Api.Effect
+      Ribosome.Host.Api.Event
       Ribosome.Host.Class.Msgpack.Array
       Ribosome.Host.Class.Msgpack.Decode
       Ribosome.Host.Class.Msgpack.DecodeSOP
