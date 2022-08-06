@@ -47,6 +47,8 @@ module Ribosome (
   Buffer,
   Window,
   Tabpage,
+  Event (Event),
+  EventName (EventName),
 
   -- * Watching variables
   -- $watched-variables
@@ -92,9 +94,13 @@ module Ribosome (
   -- ** Mappings
   -- $mappings
   Mapping (Mapping),
+  MappingAction (..),
   MappingId (MappingId),
+  MappingLhs (MappingLhs),
   MapMode (..),
+  MappingSpec (MappingSpec),
   mappingFor,
+  eventMapping,
   activateBufferMapping,
   activateMapping,
 
@@ -219,7 +225,14 @@ import Prelude hiding (async)
 
 import Ribosome.Data.CustomConfig (CustomConfig (CustomConfig))
 import Ribosome.Data.FloatOptions (FloatOptions)
-import Ribosome.Data.Mapping (MapMode (..), Mapping (Mapping), MappingId (MappingId))
+import Ribosome.Data.Mapping (
+  MapMode (..),
+  Mapping (Mapping),
+  MappingAction (..),
+  MappingId (MappingId),
+  MappingLhs (MappingLhs),
+  MappingSpec (MappingSpec),
+  )
 import Ribosome.Data.PersistError (PersistError)
 import Ribosome.Data.PersistPathError (PersistPathError)
 import Ribosome.Data.PluginConfig (PluginConfig (PluginConfig), pluginNamed)
@@ -256,6 +269,7 @@ import Ribosome.Host.Data.Bar (Bar (Bar))
 import Ribosome.Host.Data.BootError (BootError (..))
 import Ribosome.Host.Data.CommandMods (CommandMods (CommandMods))
 import Ribosome.Host.Data.CommandRegister (CommandRegister (CommandRegister))
+import Ribosome.Host.Data.Event (Event (Event), EventName (EventName))
 import Ribosome.Host.Data.Execution (Execution (..))
 import Ribosome.Host.Data.HostConfig (HostConfig (..), LogConfig (..), setStderr)
 import Ribosome.Host.Data.Range (Range (Range), RangeStyle (..))
@@ -322,7 +336,7 @@ import Ribosome.Interpreter.PluginName
 import Ribosome.Interpreter.Settings (interpretSettingsRpc)
 import Ribosome.Interpreter.UserError (interpretUserErrorPrefixed)
 import Ribosome.Interpreter.VariableWatcher (watchVariables)
-import Ribosome.Mapping (activateBufferMapping, activateMapping, mappingFor)
+import Ribosome.Mapping (activateBufferMapping, activateMapping, eventMapping, mappingFor)
 import Ribosome.Path (pathText)
 import Ribosome.Remote (
   RemoteStack,

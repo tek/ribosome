@@ -4,7 +4,7 @@ import Conc (withAsync_)
 import qualified Polysemy.Time as Time
 import Time (MilliSeconds, NanoSeconds, convert)
 
-import Ribosome.Host.Api.Effect (vimInput)
+import Ribosome.Host.Api.Effect (nvimInput)
 import Ribosome.Host.Effect.Rpc (Rpc)
 
 syntheticInput ::
@@ -14,7 +14,7 @@ syntheticInput ::
   Sem r ()
 syntheticInput interval =
   traverse_ \ c ->
-    traverse_ Time.sleep interval *> vimInput c
+    traverse_ Time.sleep interval *> nvimInput c
 
 withInput ::
   Members [Rpc, Resource, Race, Async, Time t d] r =>
