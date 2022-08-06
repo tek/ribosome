@@ -1,63 +1,51 @@
 module Ribosome.Menu.MenuTest where
 
-import Conc (ChanEvents, Restoration, timeout_, withAsync_)
+import Conc (Consume, GatesIO, Restoration, timeout_, withAsync_)
+import qualified Data.Map.Strict as Map
 import qualified Streamly.Prelude as Stream
+import Streamly.Prelude (SerialT)
 import qualified Sync
 import Time (Seconds (Seconds))
 
+import Ribosome.Data.Mapping (MappingLhs)
 import Ribosome.Data.ScratchOptions (ScratchOptions)
 import Ribosome.Data.SettingError (SettingError)
 import Ribosome.Effect.Scratch (Scratch)
 import Ribosome.Effect.Settings (Settings)
-import Ribosome.Host.Data.Report (resumeHandlerFail)
+import Ribosome.Host.Data.Report (resumeReportFail)
 import Ribosome.Host.Data.RpcError (RpcError)
 import Ribosome.Host.Effect.Rpc (Rpc)
-import Ribosome.Menu.Data.MenuConfig (MenuConfig)
+import Ribosome.Host.Interpret (type (|>))
+import Ribosome.Menu.Action (MenuWidget)
 import Ribosome.Menu.Data.MenuEvent (MenuEvent)
 import Ribosome.Menu.Data.MenuItem (MenuItem)
-import Ribosome.Menu.Effect.MenuConsumer (MenuConsumer)
-import Ribosome.Menu.Effect.MenuFilter (MenuFilter)
-import Ribosome.Menu.Effect.MenuRenderer (MenuRenderer, withMenuRenderer)
-import Ribosome.Menu.Effect.MenuState (MenuState)
-import Ribosome.Menu.Effect.MenuStream (MenuStream)
-import Ribosome.Menu.Effect.MenuTest (MenuTest, waitItemsDone)
-import Ribosome.Menu.Effect.PromptControl (PromptControl, waitPromptListening)
-import Ribosome.Menu.Effect.PromptEvents (PromptEvents)
-import Ribosome.Menu.Effect.PromptInput (PromptInput)
-import Ribosome.Menu.Effect.PromptRenderer (PromptRenderer)
-import Ribosome.Menu.Effect.PromptState (PromptState)
-import Ribosome.Menu.Effect.PromptStream (PromptStream)
-import Ribosome.Menu.Interpreter.Menu (MenuIOStack, runMenuFinal)
-import Ribosome.Menu.Interpreter.MenuConsumer (Mappings, withMappings)
-import Ribosome.Menu.Interpreter.MenuRenderer (interpretMenuRendererNull)
+import Ribosome.Menu.Effect.MenuLoop (MenuLoop, MenuLoops, waitPrompt)
+import Ribosome.Menu.Effect.MenuTest (MenuTest)
+import Ribosome.Menu.Effect.MenuUi (MenuUi, NvimMenuConfig (NvimMenuConfig), withMenuUi)
+import Ribosome.Menu.Interpreter.MenuLoop (MenuLoopDeps, interpretMenuLoopDeps, interpretMenuLoops)
 import Ribosome.Menu.Interpreter.MenuTest (
   MenuTestResources,
   TestTimeout (TestTimeout),
   interpretMenuTest,
-  interpretMenuTestResources,
+  interpretMenuTestResources, WaitEvent,
   )
-import Ribosome.Menu.Interpreter.PromptRenderer (interpretPromptRendererNull)
-import Ribosome.Menu.Main (menu)
-import Ribosome.Menu.Nvim (interpretNvimMenu)
-import Ribosome.Menu.Prompt.Data.PromptFlag (PromptFlag)
+import Ribosome.Menu.Interpreter.MenuUi (interpretMenuUiNvimNull)
+import Ribosome.Menu.Interpreter.MenuUiEcho (interpretMenuUiNvimEcho)
+import Ribosome.Menu.Loop (lookupMapping, menu', runMenu)
+import Ribosome.Menu.Mappings (Mappings)
+import Ribosome.Menu.Prompt.Data.PromptConfig (PromptConfig)
 import Ribosome.Menu.Stream.Util (queueStream)
+import qualified Log
 
 type MenuTestDeps i result =
   [
-    MenuConsumer result,
-    Reader (MenuConfig i),
-    MenuState i,
-    MenuStream,
-    MenuFilter,
-    PromptStream,
-    PromptState,
-    PromptEvents,
-    PromptControl,
-    ChanEvents MenuEvent
+    GatesIO,
+    Stop RpcError
   ] ++ MenuTestResources i result
 
 type MenuTestIOStack =
   [
+    GatesIO,
     Log,
     Fail,
     Mask Restoration,
@@ -68,125 +56,120 @@ type MenuTestIOStack =
     Final IO
   ]
 
+type MenuRenderEffects i result =
+  [MenuLoop i, MenuTest i result, Consume MenuEvent] ++ MenuLoops i : MenuLoopDeps
+
 type MenuTestEffects i result =
-  [
-    PromptInput,
-    MenuTest i result,
-    PromptRenderer
-  ]
+  MenuRenderEffects i result |> MenuUi
 
 type MenuTestStack i result =
-  MenuIOStack i ++ MenuTestResources i result
+  Reader (SerialT IO (MenuItem i)) : MenuTestResources i result
 
 runTestMenuWith ::
   ∀ u i a r .
   TimeUnit u =>
   Members MenuTestIOStack r =>
   u ->
-  [PromptFlag] ->
+  PromptConfig ->
   InterpretersFor (MenuTestStack i a) r
-runTestMenuWith timeout flags sem =
-  interpretMenuTestResources timeout do
+runTestMenuWith timeout pconf sem =
+  interpretMenuTestResources timeout pconf do
     items <- queueStream
-    runMenuFinal items flags sem
+    runReader items sem
 
 runTestMenu ::
   Members MenuTestIOStack r =>
-  [PromptFlag] ->
-  Mappings (MenuTestStack i a ++ r) a ->
-  InterpretersFor (MenuConsumer a : MenuTestStack i a) r
-runTestMenu flags maps =
-  runTestMenuWith (Seconds 5) flags . withMappings maps
+  PromptConfig ->
+  InterpretersFor (MenuTestStack i result) r
+runTestMenu =
+  runTestMenuWith (Seconds 5)
 
 runStaticTestMenuWith ::
-  ∀ u i a r .
+  ∀ u i result r .
   TimeUnit u =>
   Members MenuTestIOStack r =>
   u ->
+  PromptConfig ->
   [MenuItem i] ->
-  [PromptFlag] ->
-  InterpretersFor (MenuTestStack i a) r
-runStaticTestMenuWith timeout items flags sem =
-  interpretMenuTestResources timeout do
-    runMenuFinal (Stream.fromList items) flags sem
+  InterpretersFor (MenuTestStack i result) r
+runStaticTestMenuWith timeout pconf items =
+  interpretMenuTestResources timeout pconf .
+  runReader (Stream.fromList items)
 
 runStaticTestMenu ::
   Members MenuTestIOStack r =>
+  PromptConfig ->
   [MenuItem i] ->
-  [PromptFlag] ->
-  Mappings (MenuTestStack i a ++ r) a ->
-  InterpretersFor (MenuConsumer a : MenuTestStack i a) r
-runStaticTestMenu items flags maps =
-  runStaticTestMenuWith (Seconds 5) items flags . withMappings maps
+  InterpretersFor (MenuTestStack i a) r
+runStaticTestMenu =
+  runStaticTestMenuWith (Seconds 5)
+
+withEventLog ::
+  Members [AtomicState [WaitEvent], Log, Resource] r =>
+  Sem r a ->
+  Sem r a
+withEventLog =
+  flip onException (Log.crit . show =<< atomicGet)
 
 testMenuRender ::
   Show i =>
-  Show result =>
   Members MenuTestIOStack r =>
-  Members (MenuTestDeps i result) r =>
-  Members [MenuRenderer i, Scoped pres PromptRenderer !! RpcError] r =>
-  InterpretersFor (MenuTestEffects i result) r
-testMenuRender sem = do
+  Members (MenuTestResources i result) r =>
+  Members [Reader (SerialT IO (MenuItem i)), MenuUi, Stop RpcError] r =>
+  PromptConfig ->
+  (MappingLhs -> Maybe (MenuWidget i (MenuRenderEffects i result ++ r) result)) ->
+  InterpretersFor (MenuRenderEffects i result) r
+testMenuRender pconf mappings sem = do
   TestTimeout timeout <- ask
-  resumeHandlerFail $ interpretMenuTest $ withAsync_ (Sync.putWait timeout =<< menu) do
-    timeout_ (fail "prompt didn't start") timeout waitPromptListening
-    insertAt @3 sem
+  items <- ask
+  interpretMenuLoopDeps $ interpretMenuLoops $ interpretMenuTest pconf $ runMenu items $ withEventLog do
+    withAsync_ (Sync.putWait timeout =<< menu' mappings) do
+      timeout_ (fail "prompt didn't start") timeout waitPrompt
+      sem
 
 testMenu ::
   Show i =>
-  Show result =>
   Members MenuTestIOStack r =>
+  Member (Reader (SerialT IO (MenuItem i))) r =>
   Members (MenuTestDeps i result) r =>
+  PromptConfig ->
+  Mappings i (MenuRenderEffects i result ++ MenuUi : r) result ->
   InterpretersFor (MenuTestEffects i result) r
-testMenu =
-  interpretMenuRendererNull . raiseResumable interpretPromptRendererNull . testMenuRender . insertAt @3
+testMenu pconf maps =
+  interpretMenuUiNvimNull .
+  resumeReportFail .
+  withMenuUi def .
+  raiseUnder2 .
+  testMenuRender pconf (lookupMapping maps)
 
 testNvimMenu ::
   ∀ i result r .
   Show i =>
-  Show result =>
+  Member (Reader (SerialT IO (MenuItem i))) r =>
   Members MenuTestIOStack r =>
   Members (MenuTestDeps i result) r =>
   Members [Rpc, Rpc !! RpcError, Settings !! SettingError, Scratch !! RpcError] r =>
+  PromptConfig ->
   ScratchOptions ->
+  Mappings i (MenuRenderEffects i result ++ MenuUi : r) result ->
   InterpretersFor (MenuTestEffects i result) r
-testNvimMenu scratch sem = do
-  interpretNvimMenu $ resumeHandlerFail $ withMenuRenderer scratch do
-    testMenuRender (insertAt @3 sem)
-
-testMenuWaitItemsRender ::
-  ∀ i result pres r .
-  Show i =>
-  Show result =>
-  Members MenuTestIOStack r =>
-  Members (MenuTestDeps i result) r =>
-  Members [MenuRenderer i, Scoped pres PromptRenderer !! RpcError] r =>
-  InterpretersFor (MenuTestEffects i result) r
-testMenuWaitItemsRender sem =
-  testMenuRender do
-    TestTimeout timeout <- ask
-    timeout_ (fail "items didn't terminate") timeout waitItemsDone
-    sem
-
-testMenuWaitItems ::
-  ∀ i result r .
-  Show i =>
-  Show result =>
-  Members MenuTestIOStack r =>
-  Members (MenuTestDeps i result) r =>
-  InterpretersFor (MenuTestEffects i result) r
-testMenuWaitItems =
-  interpretMenuRendererNull . raiseResumable interpretPromptRendererNull . testMenuWaitItemsRender . insertAt @3
+testNvimMenu pconf options maps =
+  interpretMenuUiNvimEcho .
+  resumeReportFail .
+  withMenuUi (NvimMenuConfig pconf options (Map.keys maps)) .
+  raiseUnder2 .
+  testMenuRender pconf (lookupMapping maps)
 
 testStaticNvimMenu ::
   ∀ i result r .
   Show i =>
-  Show result =>
   Members MenuTestIOStack r =>
-  Members (MenuTestDeps i result) r =>
-  Members [Rpc, Rpc !! RpcError, Settings !! SettingError, Scratch !! RpcError] r =>
+  Members [Rpc, Rpc !! RpcError, Settings !! SettingError, Scratch !! RpcError, Stop RpcError] r =>
+  [MenuItem i] ->
+  PromptConfig ->
   ScratchOptions ->
-  InterpretersFor (MenuTestEffects i result) r
-testStaticNvimMenu scratch sem = do
-  interpretNvimMenu $ resumeHandlerFail $ withMenuRenderer scratch do
-    testMenuWaitItemsRender (insertAt @3 sem)
+  Mappings i (MenuRenderEffects i result ++ MenuUi : MenuTestStack i result ++ r) result ->
+  InterpretersFor (MenuTestEffects i result ++ MenuTestStack i result) r
+testStaticNvimMenu items pconf options maps =
+  runStaticTestMenu pconf items .
+  testNvimMenu pconf options maps

@@ -1,8 +1,5 @@
-{-# options_ghc -Wno-redundant-constraints #-}
-
 module Ribosome.Menu.ItemLens where
 
-import Data.Generics.Labels ()
 import qualified Data.IntMap.Strict as IntMap
 import Data.Trie (Trie)
 import Lens.Micro.Mtl (view)
@@ -12,9 +9,9 @@ import Ribosome.Menu.Data.CursorIndex (CursorIndex (CursorIndex))
 import qualified Ribosome.Menu.Data.Entry as Entry
 import Ribosome.Menu.Data.Entry (Entries, Entry)
 import Ribosome.Menu.Data.Menu (Menu)
-import Ribosome.Menu.Data.MenuData (MenuQuery)
 import qualified Ribosome.Menu.Data.MenuItem as MenuItem
 import Ribosome.Menu.Data.MenuItem (Items, MenuItem)
+import Ribosome.Menu.Data.MenuItems (MenuQuery)
 
 entries :: Lens' (Menu i) (Entries i)
 entries =
@@ -67,7 +64,7 @@ entriesByIndex ::
   Menu i ->
   [Entry i]
 entriesByIndex indexes menu =
-  filterIndexesFlat indexes (menu ^. sortedEntries)
+  filterIndexesFlat indexes (menu ^. #items . sortedEntries)
 
 itemsByEntryIndex ::
   [Int] ->
@@ -80,7 +77,7 @@ getFocus ::
   Menu i ->
   Maybe (MenuItem i)
 getFocus menu =
-  menu ^? sortedEntries . ix (fromIntegral (menu ^. #cursor)) . #item
+  menu ^? #items . sortedEntries . ix (fromIntegral (menu ^. #cursor)) . #item
 
 focus ::
   SimpleGetter (Menu i) (Maybe (MenuItem i))

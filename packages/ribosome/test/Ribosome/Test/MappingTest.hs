@@ -52,7 +52,7 @@ handlers =
   ]
   where
     m =
-      mappingFor mapRpc "a" [MapNormal] Nothing
+      mappingFor mapRpc "a" [MapNormal] Nothing mempty
     mapRpc =
       rpcCommand "Map" Sync mappingHandler
 

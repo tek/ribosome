@@ -1,6 +1,5 @@
 module Ribosome.Menu.Filters where
 
-import Data.Generics.Labels ()
 import qualified Data.IntMap.Strict as IntMap
 import qualified Data.Sequence as Seq
 import qualified Data.Text as Text
@@ -9,7 +8,7 @@ import Text.FuzzyFind (Alignment (Alignment), bestMatch)
 
 import qualified Ribosome.Menu.Data.Entry as Entry
 import Ribosome.Menu.Data.Entry (Entries, Entry (Entry))
-import Ribosome.Menu.Data.MenuData (MenuQuery (MenuQuery))
+import Ribosome.Menu.Data.MenuItems (MenuQuery (MenuQuery))
 import qualified Ribosome.Menu.Data.MenuItem as MenuItem
 import Ribosome.Menu.Data.MenuItem (Items, MenuItem (MenuItem))
 import qualified Ribosome.Menu.Stream.ParMap as Stream

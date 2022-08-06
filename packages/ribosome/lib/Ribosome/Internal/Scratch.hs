@@ -1,6 +1,5 @@
 module Ribosome.Internal.Scratch where
 
-import Data.Generics.Labels ()
 import qualified Data.Map.Strict as Map
 import Data.MessagePack (Object)
 import Exon (exon)
@@ -15,7 +14,7 @@ import Ribosome.Api.Window (closeWindow)
 import Ribosome.Data.FloatOptions (FloatOptions, enter)
 import Ribosome.Data.PluginName (PluginName (PluginName))
 import Ribosome.Data.ScratchId (ScratchId (ScratchId, unScratchId))
-import Ribosome.Data.ScratchOptions (ScratchOptions (ScratchOptions))
+import Ribosome.Data.ScratchOptions (ScratchOptions (ScratchOptions, filetype, name), syntax, mappings, focus)
 import qualified Ribosome.Data.ScratchState as ScratchState
 import Ribosome.Data.ScratchState (ScratchState (ScratchState))
 import Ribosome.Host.Api.Data (Buffer, Tabpage, Window)
@@ -178,11 +177,11 @@ setupScratchIn ::
   Maybe Tabpage ->
   ScratchOptions ->
   Sem r ScratchState
-setupScratchIn buffer previous window tab options@(ScratchOptions _ _ _ focus _ _ _ _ _ _ syntax mappings ft name) = do
-  validBuffer <- setupScratchBuffer window buffer ft name
+setupScratchIn buffer previous window tab options@(ScratchOptions {..}) = do
+  validBuffer <- setupScratchBuffer window buffer filetype name
   traverse_ (executeWindowSyntax window) syntax
   traverse_ (activateBufferMapping validBuffer) mappings
-  unless focus $ vimSetCurrentWindow previous
+  unless focus (vimSetCurrentWindow previous)
   auId <- setupDeleteAutocmd name validBuffer
   let scratch = ScratchState name options validBuffer window previous tab auId
   atomicModify' (Map.insert name scratch)
@@ -195,7 +194,7 @@ createScratch ::
 createScratch options = do
   Log.debug [exon|creating new scratch: #{show options}|]
   previous <- vimGetCurrentWindow
-  (buffer, window, tab) <- eventignore $ createScratchUi options
+  (buffer, window, tab) <- eventignore (createScratchUi options)
   eventignore $ setupScratchIn buffer previous window tab options
 
 bufferStillLoaded ::

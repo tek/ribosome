@@ -7,7 +7,6 @@ import qualified Data.IntMap.Strict as IntMap
 import qualified Data.IntSet as IntSet
 import qualified Data.Sequence as Seq
 import Data.Sequence ((|>))
-import Lens.Micro.Mtl (use, (%=), (.=))
 import Prelude hiding (unify)
 
 import Ribosome.Menu.Data.CursorIndex (CursorIndex (CursorIndex))
@@ -15,11 +14,12 @@ import qualified Ribosome.Menu.Data.Entry as Entry
 import Ribosome.Menu.Data.Entry (Entries, Entry)
 import Ribosome.Menu.Data.Menu (Menu)
 import qualified Ribosome.Menu.Data.MenuAction as MenuAction
+import Ribosome.Menu.Data.MenuAction (MenuAction)
 import qualified Ribosome.Menu.Data.MenuItem as MenuItem
 import Ribosome.Menu.Data.MenuItem (MenuItem)
-import Ribosome.Menu.Data.MenuState (MenuWidget, semState)
 import Ribosome.Menu.Effect.MenuState (MenuState, viewMenu)
 import Ribosome.Menu.ItemLens (entries, focus, history, items, selected, selected')
+import Ribosome.Menu.Lens (use, (%=), (.=))
 
 -- |Run an action with the focused entry if the menu is non-empty.
 withFocusItem ::
@@ -42,7 +42,7 @@ withFocus' f =
 withFocus ::
   Member (MenuState i) r =>
   (i -> Sem r a) ->
-  MenuWidget r a
+  Sem r (Maybe (MenuAction a))
 withFocus f =
   Just . maybe MenuAction.Continue MenuAction.success <$> withFocus' f
 
@@ -67,7 +67,7 @@ withSelection' f =
 withSelection ::
   Member (MenuState i) r =>
   (NonEmpty i -> Sem r a) ->
-  MenuWidget r a
+  Sem r (Maybe (MenuAction a))
 withSelection f =
   Just . maybe MenuAction.Continue MenuAction.success <$> withSelection' f
 
@@ -76,7 +76,7 @@ withSelection f =
 traverseSelection_ ::
   Member (MenuState i) r =>
   (i -> Sem r ()) ->
-  MenuWidget r ()
+  Sem r (Maybe (MenuAction ()))
 traverseSelection_ f =
   withSelection (traverse_ f)
 
@@ -146,11 +146,10 @@ popSelection curs initial =
 deleteSelected ::
   Member (State (Menu i)) r =>
   Sem r ()
-deleteSelected =
-  semState do
-    CursorIndex curs <- use #cursor
-    ((deletedEntries, deletedItems), kept) <- use (entries . to (popSelection curs))
-    entries .= kept
-    history .= mempty
-    items %= flip IntMap.withoutKeys (IntSet.fromList deletedItems)
-    #cursor %= adaptCursorAfterDeletion deletedEntries
+deleteSelected = do
+  CursorIndex curs <- use #cursor
+  ((deletedEntries, deletedItems), kept) <- use (entries . to (popSelection curs))
+  entries .= kept
+  history .= mempty
+  items %= flip IntMap.withoutKeys (IntSet.fromList deletedItems)
+  #cursor %= adaptCursorAfterDeletion deletedEntries

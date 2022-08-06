@@ -19,6 +19,7 @@
       inputs = buildInputs [pkgs.neovim pkgs.tmux pkgs.xterm];
     in {
       bytestring-trie = hackage "0.2.6" "0hlgdl7plif58r73hza2148671jf6l2pim84a0a7xf13n8bkrmh7";
+      criterion = notest;
       fuzzyfind = hackage "3.0.0" "1aba9rxxdi6sv0z6qgwyq87fnqqhncqakvrbph0fvppd0lnajaac";
       massiv = hackage "0.6.1.0" "133ixc95qw10ni54y4hrq7swq7bskf398s11zdakdvnj9v6hwlsr";
       scheduler = hackage "1.5.0" "143bsd0kfknrhdz37599k2didxmplljdpnf1ixmdfh4r9hnrp9f3";
@@ -32,6 +33,7 @@
       ribosome-menu = inputs;
       ribosome-test = inputs;
       streamly = hackage "0.8.1" "0ywyy7gxjnp32hx8kki0lfn94bnc9mzjh8g6mg65ff3vv28k2vdr";
+      type-errors = notest;
       type-errors-pretty = notest jailbreak;
       unicode-data = hackage "0.2.0" "14crb68g79yyw87fgh49z2fn4glqx0zr53v6mapihaxzkikhkkc3";
     };
@@ -46,6 +48,7 @@
       ribosome-test = ./packages/test;
     };
     main = "ribosome-menu";
+    devGhc.compiler = "ghc902";
     inherit overrides;
     depsFull = [chiasma];
     hpack.packages = import ./ops/hpack.nix { inherit config lib; };

@@ -33,6 +33,13 @@ mmodify ::
 mmodify f =
   mtrans (pure . f)
 
+mput ::
+  Member (MState s) r =>
+  s ->
+  Sem r ()
+mput s =
+  mmodify (const s)
+
 mread ::
   Member (MState s) r =>
   Sem r s

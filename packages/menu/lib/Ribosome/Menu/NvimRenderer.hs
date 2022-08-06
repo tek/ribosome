@@ -2,7 +2,6 @@ module Ribosome.Menu.NvimRenderer where
 
 import Control.Monad.Trans.Reader (ReaderT, runReaderT)
 import Control.Monad.Trans.State.Strict (StateT (runStateT))
-import Data.Generics.Labels ()
 import qualified Data.IntMap.Strict as IntMap
 import qualified Data.Map.Strict as Map
 import Data.Monoid (Sum (Sum, getSum))
@@ -11,12 +10,11 @@ import qualified Data.Text as Text (cons, snoc)
 import Lens.Micro.Mtl (use, view, (%=), (.=), (<.=))
 import qualified Polysemy.Log as Log
 
-import Ribosome.Api.Window (redraw, restoreView, setLine)
+import Ribosome.Api.Window (redraw, setLine, windowExec)
 import Ribosome.Data.ScratchState (ScratchState (buffer, window))
-import Ribosome.Data.WindowView (PartialWindowView (PartialWindowView))
 import qualified Ribosome.Effect.Scratch as Scratch
 import Ribosome.Effect.Scratch (Scratch)
-import Ribosome.Host.Api.Effect (nvimBufIsLoaded, nvimSetCurrentWin)
+import Ribosome.Host.Api.Effect (nvimBufIsLoaded)
 import Ribosome.Host.Data.RpcError (RpcError)
 import Ribosome.Host.Effect.Rpc (Rpc)
 import Ribosome.Menu.Data.CursorIndex (CursorIndex (CursorIndex))
@@ -28,6 +26,7 @@ import Ribosome.Menu.Data.NvimMenuState (NvimMenuState, botIndex, cursorLine, to
 import Ribosome.Menu.ItemLens (entries)
 import Ribosome.Syntax (HiLink (..), Syntax (Syntax), SyntaxItem (..), syntaxMatch)
 
+-- TODO use signs instead of this
 marker :: Char
 marker =
   '†'
@@ -184,11 +183,10 @@ updateMenu ::
   ScratchState ->
   Sem r ()
 updateMenu scratch = do
-  nvimSetCurrentWin win
   (visible, changed) <- runSR (updateMenuState (fromMaybe 30 (scratch ^. #options . #maxSize)))
   when changed do
     void (Scratch.update (scratch ^. #id) (reverse (toList (withMark <$> visible))))
-  restoreView (PartialWindowView Nothing (Just 1))
+  windowExec win "call winrestview({'topline': 1})"
   targetLine <- runSR windowLine
   setLine win targetLine !>> Log.debug "menu cursor line invalid"
   where

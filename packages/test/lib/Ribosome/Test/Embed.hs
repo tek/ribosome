@@ -14,7 +14,9 @@ module Ribosome.Test.Embed (
   testEmbedLevel,
   testEmbedLevel_,
   testEmbedTrace,
+  testEmbedDebug,
   testEmbedTrace_,
+  testEmbedDebug_,
   runTestConf,
   runTestLogConf,
   EmbedStackWith,
@@ -23,7 +25,7 @@ module Ribosome.Test.Embed (
   TestEffects,
 ) where
 
-import Log (Severity (Trace))
+import Log (Severity (Debug, Trace))
 import Polysemy.Test (TestError, UnitTest)
 
 import Ribosome.Data.PluginConfig (PluginConfig (PluginConfig))
@@ -218,6 +220,17 @@ testEmbedLevel ::
 testEmbedLevel level =
   testEmbedConf @r (def & #plugin . #host %~ setStderr level)
 
+-- |Run a plugin test with extra effects but no RPC handlers at the 'Debug' log level.
+testEmbedDebug ::
+  ∀ r .
+  HasCallStack =>
+  HigherOrder r EmbedHandlerStack =>
+  InterpretersFor r EmbedHandlerStack ->
+  Sem (EmbedStackWith r) () ->
+  UnitTest
+testEmbedDebug effs =
+  testLogLevel Debug \ conf -> testEmbedConf @r conf effs
+
 -- |Run a plugin test with extra effects but no RPC handlers at the 'Trace' log level for debugging RPC traffic.
 testEmbedTrace ::
   ∀ r .
@@ -247,6 +260,14 @@ testEmbedLevel_ ::
   UnitTest
 testEmbedLevel_ level =
   testEmbedConf @'[] (def & #plugin . #host %~ setStderr level) id
+
+-- |Run a plugin test without extra effects and RPC handlers at the 'Debug' log level.
+testEmbedDebug_ ::
+  HasCallStack =>
+  Sem EmbedStack () ->
+  UnitTest
+testEmbedDebug_ =
+  testEmbedLevel_ Debug
 
 -- |Run a plugin test without extra effects and RPC handlers at the 'Trace' log level for debugging RPC traffic.
 testEmbedTrace_ ::

@@ -231,21 +231,21 @@ mapUserMessage f =
   mapStop (f . userReport)
 
 -- |Convert an error that's an instance of 'Reportable' to 'Fail', for use in tests.
-stopHandlerToFail ::
+stopReportToFail ::
   ∀ e r .
   Member Fail r =>
   Reportable e =>
   InterpreterFor (Stop e) r
-stopHandlerToFail =
+stopReportToFail =
   either (fail . toString . userReport) pure <=< runStop
-{-# inline stopHandlerToFail #-}
+{-# inline stopReportToFail #-}
 
 -- |Resume an effect with an error that's an instance of 'Reportable' by reinterpreting to 'Fail', for use in tests.
-resumeHandlerFail ::
+resumeReportFail ::
   ∀ eff err r .
   Members [Fail, eff !! err] r =>
   Reportable err =>
   InterpreterFor eff r
-resumeHandlerFail =
+resumeReportFail =
   resuming (fail . toString . userReport)
-{-# inline resumeHandlerFail #-}
+{-# inline resumeReportFail #-}

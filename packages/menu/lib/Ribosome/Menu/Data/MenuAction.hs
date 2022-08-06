@@ -3,6 +3,7 @@ module Ribosome.Menu.Data.MenuAction where
 import qualified Ribosome.Menu.Data.MenuResult as MenuResult
 import Ribosome.Menu.Data.MenuResult (MenuResult)
 import Ribosome.Menu.Prompt.Data.Prompt (Prompt)
+import Exon (exon)
 
 data MenuAction a =
   Continue
@@ -24,3 +25,10 @@ abort ::
   MenuAction a
 abort =
   Quit MenuResult.Aborted
+
+describe :: MenuAction a -> Text
+describe = \case
+  Continue -> "Continue"
+  Render -> "Render"
+  UpdatePrompt p -> [exon|UpdatePrompt #{show p}|]
+  Quit res -> [exon|Quit #{MenuResult.describe res}|]

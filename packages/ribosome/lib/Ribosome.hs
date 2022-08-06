@@ -91,7 +91,7 @@ module Ribosome (
   ScratchId (ScratchId),
   ScratchState (ScratchState),
 
-  -- ** Mappings
+  -- ** Mappings #mappings#
   -- $mappings
   Mapping (Mapping),
   MappingAction (..),
@@ -460,7 +460,7 @@ import Ribosome.Run (NvimPlugin)
 -- >   Object ->
 -- >   Handler r ()
 -- > changed value =
--- >   ignoreRpcError (echo ("Changed value to: " <> show value))
+-- >   ignoreRpcError (echo ("Update value to: " <> show value))
 -- >
 -- > main :: IO ()
 -- > main = runRemoteStack "watch-plugin" (watchVariables [("trigger", changed)] remotePlugin)

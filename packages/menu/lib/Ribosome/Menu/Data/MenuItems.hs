@@ -1,4 +1,4 @@
-module Ribosome.Menu.Data.MenuData where
+module Ribosome.Menu.Data.MenuItems where
 
 import Data.Trie (Trie)
 

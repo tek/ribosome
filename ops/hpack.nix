@@ -191,10 +191,10 @@ in {
       "bytestring-trie"
       "exon"
       "fuzzyfind"
-      "generic-lens"
+      "lens-regex-pcre"
       "microlens-mtl"
-      "mtl"
       "polysemy-chronos"
+      "polysemy-conc"
       "ribosome"
       "ribosome-host"
       "streamly"
@@ -202,6 +202,7 @@ in {
     ];
     tests.ribosome-menu-unit = exe "ribosome-menu" "test" {
       dependencies = [
+        "exon"
         "hedgehog"
         "microlens-mtl"
         "polysemy-chronos"
@@ -222,6 +223,7 @@ in {
         "exon"
         "microlens"
         "ribosome"
+        "ribosome-host"
         "path"
         "polysemy-conc"
         "polysemy-test"

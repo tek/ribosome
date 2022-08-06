@@ -1,111 +1,112 @@
 module Ribosome.Menu.Test.Menu where
 
-import Conc (Restoration, interpretQueueTBM, resultToMaybe)
+import Conc (Consume, Restoration, consumeFind, interpretQueueTBM, resultToMaybe)
+import Exon (exon)
 import Polysemy.Chronos (ChronosTime, interpretTimeChronos)
-import Polysemy.Log (interpretLogNull)
-import Polysemy.Test (Hedgehog, TestError, assertEq, assertJust, evalMaybe)
+import Polysemy.Test (Hedgehog, TestError, assertEq, evalMaybe)
 import qualified Queue
 import Time (Seconds (Seconds))
 
 import Ribosome.Host.Data.RpcError (RpcError)
-import Ribosome.Menu.Action (menuIgnore, menuQuit)
+import Ribosome.Menu.Action (MenuWidget, menuIgnore)
 import Ribosome.Menu.Combinators (sortedEntries)
 import qualified Ribosome.Menu.Data.Entry as Entry
-import Ribosome.Menu.Data.Entry (Entry)
-import Ribosome.Menu.Data.MenuAction (MenuAction)
 import qualified Ribosome.Menu.Data.MenuEvent as MenuEvent
+import Ribosome.Menu.Data.MenuEvent (MenuEvent (Rendered))
 import qualified Ribosome.Menu.Data.MenuItem as MenuItem
-import Ribosome.Menu.Effect.MenuConsumer (MenuConsumer (MenuConsumerEvent))
-import qualified Ribosome.Menu.Effect.MenuRenderer as MenuRenderer
-import Ribosome.Menu.Effect.MenuRenderer (MenuRenderer)
-import Ribosome.Menu.Effect.MenuState (MenuState, readPrompt)
-import Ribosome.Menu.Effect.PromptRenderer (PromptRenderer)
-import Ribosome.Menu.Interpreter.PromptRenderer (interpretPromptRendererNull)
-import Ribosome.Menu.MenuTest (MenuTestEffects, MenuTestStack, runTestMenuWith, testMenuRender)
+import Ribosome.Menu.Effect.MenuTest (waitEvent)
+import qualified Ribosome.Menu.Effect.MenuUi as MenuUi
+import Ribosome.Menu.Effect.MenuUi (MenuUi)
+import Ribosome.Menu.Interpreter.MenuTest (TestTimeout, failTimeout)
+import Ribosome.Menu.Interpreter.MenuUi (interpretMenuUiNull)
+import Ribosome.Menu.MenuTest (MenuRenderEffects, MenuTestIOStack, MenuTestStack, runTestMenu, testMenuRender)
 import Ribosome.Menu.Prompt.Data.Prompt (Prompt)
-import Ribosome.Menu.Prompt.Data.PromptFlag (PromptFlag (StartInsert))
+import Ribosome.Menu.Prompt.Data.PromptConfig (startInsert)
+import qualified Ribosome.Menu.Prompt.Data.PromptEvent as PromptEvent
 import Ribosome.Test.Error (testError)
 
 enqueueItems ::
-  Members [Hedgehog IO, Queue [Entry i]] r =>
-  InterpreterFor (MenuRenderer i) r
+  Members [MenuUi, Hedgehog IO, Queue [Text]] r =>
+  Sem r a ->
+  Sem r a
 enqueueItems =
-  interpret \case
-    MenuRenderer.MenuRender menu -> do
-      evalMaybe . resultToMaybe =<< Queue.writeTimeout (Seconds 5) (menu ^. sortedEntries)
+  intercept \case
+    MenuUi.Render menu ->
+      evalMaybe . resultToMaybe =<< Queue.writeTimeout (Seconds 5) (MenuItem.text . Entry.item <$> menu ^. #items . sortedEntries)
+    MenuUi.RenderPrompt _ ->
+      unit
+    MenuUi.PromptEvent _ ->
+      pure PromptEvent.Ignore
 
 enqueuePrompt ::
-  ∀ i r .
-  Members [MenuState i, Hedgehog IO, Queue Prompt, Resource, Embed IO] r =>
-  InterpreterFor (MenuConsumer ()) r
-enqueuePrompt =
-  interpret \case
-    MenuConsumerEvent MenuEvent.PromptEdit ->
-      enq
-    MenuConsumerEvent MenuEvent.PromptNavigation ->
-      enq
-    MenuConsumerEvent (MenuEvent.Quit _) ->
-      menuQuit
-    MenuConsumerEvent _ ->
-      menuIgnore
-  where
-    enq :: Sem r (Maybe (MenuAction ()))
-    enq = do
-      Queue.write =<< readPrompt
-      menuIgnore
+  ∀ i r a .
+  Members [Hedgehog IO, Queue Prompt, Resource, Embed IO] r =>
+  MenuWidget i r a
+enqueuePrompt = do
+  Queue.write =<< ask
+  menuIgnore
 
-type SimpleTestMenu i =
+type SimpleTestMenu =
   [
-    Scoped () PromptRenderer !! RpcError,
-    MenuRenderer i,
+    MenuUi,
     ChronosTime,
-    Log,
-    Queue [Entry i],
+    Queue [Text],
     Queue Prompt
   ]
 
 runSimpleTestMenu ::
-  ∀ i r .
-  Members [Hedgehog IO, Resource, Race, Mask Restoration, Embed IO, Final IO] r =>
-  InterpretersFor (SimpleTestMenu i) r
+  Members [Reader TestTimeout, Fail, Hedgehog IO, Log, Resource, Race, Mask Restoration, Embed IO, Final IO] r =>
+  InterpretersFor SimpleTestMenu r
 runSimpleTestMenu =
   interpretQueueTBM @Prompt 64 .
-  interpretQueueTBM @[Entry i] 64 .
-  interpretLogNull .
+  interpretQueueTBM @[Text] 64 .
   interpretTimeChronos .
-  enqueueItems .
-  raiseResumable interpretPromptRendererNull
+  interpretMenuUiNull .
+  enqueueItems
 
 type PromptTest i =
-  MenuTestEffects i () ++ Stop RpcError : MenuConsumer () : SimpleTestMenu i ++ MenuTestStack i ()
+  Consume MenuEvent : MenuRenderEffects i () ++ Stop RpcError : SimpleTestMenu ++ MenuTestStack i ()
 
 promptTest ::
   Show i =>
+  Members MenuTestIOStack r =>
   Members [Hedgehog IO, Error TestError, Fail, Log, Resource, Race, Mask Restoration, Async, Embed IO, Final IO] r =>
   InterpretersFor (PromptTest i) r
-promptTest =
-  runTestMenuWith (Seconds 5) [StartInsert] .
-  runSimpleTestMenu .
-  enqueuePrompt .
-  testError .
-  testMenuRender
+promptTest sem =
+  runTestMenu startInsert $
+  runSimpleTestMenu $
+  testError $
+  testMenuRender startInsert (const (Just enqueuePrompt)) $
+  subscribe @MenuEvent do
+    waitEvent "initial render" Rendered
+    assertItems []
+    sem
 
 assertPrompt ::
-  Members [Hedgehog IO, Queue Prompt] r =>
+  HasCallStack =>
+  Members [Hedgehog IO, Reader TestTimeout, Fail, Consume MenuEvent, Race] r =>
+  Text ->
   Prompt ->
   Sem r ()
-assertPrompt p =
-  assertJust p . resultToMaybe =<< Queue.readTimeout (Seconds 5)
+assertPrompt desc p =
+  withFrozenCallStack do
+    void $ failTimeout [exon|prompt #{desc}|] $ consumeFind \case
+      MenuEvent.PromptUpdated newP | newP == p -> pure True
+      _ -> pure False
 
 currentItems ::
-  Members [Queue [Entry i], Hedgehog IO] r =>
+  HasCallStack =>
+  Members [Queue [Text], Hedgehog IO] r =>
   Sem r [Text]
 currentItems =
-  fmap (MenuItem.text . Entry.item) <$> (evalMaybe . resultToMaybe =<< Queue.readTimeout @[Entry _] (Seconds 5))
+  withFrozenCallStack do
+    evalMaybe . resultToMaybe =<< Queue.readTimeout (Seconds 5)
 
 assertItems ::
-  Members [Hedgehog IO, Queue [Entry i]] r =>
+  HasCallStack =>
+  Members [Hedgehog IO, Queue [Text]] r =>
   [Text] ->
   Sem r ()
 assertItems i =
-  assertEq i =<< currentItems
+  withFrozenCallStack do
+    assertEq i =<< currentItems

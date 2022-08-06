@@ -10,7 +10,7 @@ changed ::
   Object ->
   Handler r ()
 changed value =
-  ignoreRpcError (echo ("Changed value to: " <> show value))
+  ignoreRpcError (echo ("Update value to: " <> show value))
 
 main :: IO ()
 main =

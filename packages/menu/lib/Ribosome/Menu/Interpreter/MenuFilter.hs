@@ -2,7 +2,7 @@ module Ribosome.Menu.Interpreter.MenuFilter where
 
 import qualified Data.IntMap.Strict as IntMap
 
-import Ribosome.Menu.Data.MenuData (MenuQuery (MenuQuery))
+import Ribosome.Menu.Data.MenuItems (MenuQuery (MenuQuery))
 import Ribosome.Menu.Effect.MenuFilter (MenuFilter (Initial, Match, Refine))
 import Ribosome.Menu.Filters (filterFuzzy, initialSubstring, matchFuzzy, matchSubstring, refineFuzzy, refineSubstring)
 

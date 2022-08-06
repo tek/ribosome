@@ -1,105 +1,98 @@
 module Ribosome.Menu.Action where
 
-import Data.Generics.Labels ()
-import Lens.Micro.Mtl (use, (%=))
-
 import Ribosome.Menu.Combinators (numVisible, overEntries)
 import Ribosome.Menu.Data.CursorIndex (CursorIndex (CursorIndex))
 import qualified Ribosome.Menu.Data.MenuAction as MenuAction
 import Ribosome.Menu.Data.MenuAction (MenuAction)
-import Ribosome.Menu.Data.MenuState (MenuWidget, ModifyCursor, ModifyMenu, liftCursor, modifyCursor, modifyMenu, semState)
-import Ribosome.Menu.Effect.MenuState (MenuState)
-import Ribosome.Menu.ItemLens (entries)
+import Ribosome.Menu.Effect.MenuState (MenuState, itemsState, modifyCursor, readCursor, viewItems)
+import Ribosome.Menu.Lens ((%=))
 import Ribosome.Menu.Prompt.Data.Prompt (Prompt)
+
+type MenuSem i r a =
+  Sem (MenuState i : Reader Prompt : r) a
+
+type MenuWidget i r a =
+  MenuSem i r (Maybe (MenuAction a))
 
 act ::
   MenuAction a ->
-  MenuWidget r a
+  Sem r (Maybe (MenuAction a))
 act =
   pure . Just
 
-menuIgnore ::
-  MenuWidget r a
+menuIgnore :: MenuWidget i r a
 menuIgnore =
   pure Nothing
 
-menuOk ::
-  MenuWidget r a
+menuOk :: Sem r (Maybe (MenuAction a))
 menuOk =
   pure (Just MenuAction.Continue)
 
-menuRender ::
-  MenuWidget r a
+menuRender :: Sem r (Maybe (MenuAction a))
 menuRender =
   act MenuAction.Render
 
-menuQuit ::
-  MenuWidget r a
+menuQuit :: Sem r (Maybe (MenuAction a))
 menuQuit =
   act MenuAction.abort
 
 menuSuccess ::
   a ->
-  MenuWidget r a
+  Sem r (Maybe (MenuAction a))
 menuSuccess ma =
   act (MenuAction.success ma)
 
 cycleMenu ::
   Int ->
-  ModifyCursor i r ()
+  MenuSem i r ()
 cycleMenu offset = do
-  count <- asks numVisible
-  modify' \ currentCount -> fromMaybe 0 ((currentCount + fromIntegral offset) `mod` fromIntegral count)
+  count <- viewItems (to numVisible)
+  modifyCursor \ current -> fromMaybe 0 ((current + fromIntegral offset) `mod` fromIntegral count)
 
 menuModify ::
-  Member (MenuState i) r =>
-  ModifyMenu i r () ->
-  MenuWidget r a
+  MenuSem i r () ->
+  MenuWidget i r a
 menuModify action = do
-  modifyMenu action
+  action
   menuRender
 
 menuNavigate ::
-  Member (MenuState i) r =>
-  ModifyCursor i r () ->
-  MenuWidget r a
+  MenuSem i r () ->
+  MenuWidget i r a
 menuNavigate action = do
-  modifyCursor action
+  action
   menuRender
 
 menuCycle ::
-  Member (MenuState i) r =>
   Int ->
-  MenuWidget r a
+  MenuWidget i r a
 menuCycle offset =
   menuNavigate (cycleMenu offset)
 
 toggleSelected ::
-  ModifyMenu i r ()
+  MenuSem i r ()
 toggleSelected = do
-  semState do
-    CursorIndex cur <- use #cursor
-    entries %= overEntries \ index ->
+  itemsState do
+    CursorIndex cur <- readCursor
+    #entries %= overEntries \ index ->
       if index == cur
       then #selected %~ not
       else id
-  liftCursor (cycleMenu 1)
+  cycleMenu 1
 
 menuToggle ::
-  Member (MenuState i) r =>
-  MenuWidget r a
+  MenuWidget i r a
 menuToggle =
   menuModify toggleSelected
 
 menuToggleAll ::
-  Member (MenuState i) r =>
-  MenuWidget r a
+  MenuWidget i r a
 menuToggleAll =
-  menuModify $ semState do
-    entries %= overEntries (const (#selected %~ not))
+  menuModify $ itemsState do
+    #entries %= overEntries (const (#selected %~ not))
 
 menuUpdatePrompt ::
   Prompt ->
-  MenuWidget r a
+  MenuWidget i r a
 menuUpdatePrompt prompt =
   act (MenuAction.UpdatePrompt prompt)

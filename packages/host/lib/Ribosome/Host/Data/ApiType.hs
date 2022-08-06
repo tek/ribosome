@@ -15,10 +15,10 @@ import FlatParse.Basic (
   runParser,
   satisfy,
   satisfyASCII,
-  spanned,
   string,
   switch,
   takeRest,
+  withSpan,
   (<|>),
   )
 import Prelude hiding (optional, some, span, try, (<|>))
@@ -71,7 +71,7 @@ ws =
 
 span :: Parser () -> Parser String
 span seek =
-  spanned seek \ _ sp -> inSpan sp takeRest
+  withSpan seek \ _ sp -> inSpan sp takeRest
 
 prim :: Parser ApiPrim
 prim =

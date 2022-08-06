@@ -1,65 +1,57 @@
 module Ribosome.Menu.Interpreter.MenuStream where
 
+import qualified Data.List.NonEmpty as NonEmpty
 import Polysemy.Final (bindS, getInitialStateS, getInspectorS, interpretFinal, runS)
-import Prelude hiding (consume)
 import qualified Streamly.Data.Fold as Fold
 import qualified Streamly.Internal.Data.Stream.IsStream as Stream
+import Streamly.Internal.Data.Stream.IsStream (after_)
 
 import qualified Ribosome.Menu.Data.MenuEvent as MenuEvent
+import Ribosome.Menu.Data.RenderEvent (RenderEvent (RenderEvent))
 import Ribosome.Menu.Effect.MenuStream (MenuStream (MenuStream))
-import Ribosome.Menu.Stream.Accumulate (mapMAccMaybe)
+import Ribosome.Menu.Stream.Accumulate (mapMAcc)
+import Ribosome.Menu.Stream.Util (repeatUntilNothing)
 
 interpretMenuStream ::
   Member (Final IO) r =>
   InterpreterFor MenuStream r
 interpretMenuStream =
   interpretFinal \case
-    MenuStream items promptEvents handleActionM classifyM queryUpdateM insertM quitM consumeM outputActionM ->
+    MenuStream items promptEventsM queryUpdateM insertM renderEventM menuEventM ->
       handle
         where
           handle = do
             s <- getInitialStateS
             Inspector (ins :: ∀ y . f y -> Maybe y) <- getInspectorS
-            handleAction <- bindS handleActionM
-            classify <- bindS (uncurry classifyM)
-            queryUpdate <- runS queryUpdateM
+            promptEvents <- runS promptEventsM
+            queryUpdate <- bindS queryUpdateM
             insertItems <- bindS insertM
-            quit <- runS quitM
-            consume <- bindS consumeM
-            outputAction <- bindS outputActionM
+            renderEvent <- bindS renderEventM
+            menuEvent <- bindS menuEventM
             let
-              maybeF :: ∀ b . IO (f (Maybe b)) -> IO (Maybe (f b))
+              pureS :: ∀ b . b -> f b
+              pureS =
+                (<$ s)
+              maybeF :: ∀ b . f (Maybe b) -> Maybe (f b)
               maybeF =
-                fmap (fmap (<$ s) <=< ins)
-              maybeF' :: ∀ b . IO (Maybe (f b)) -> IO (f (Maybe b))
-              maybeF' =
-                fmap \case
-                  Nothing -> Nothing <$ s
-                  Just a -> Just <$> a
-              cls pp =
-                maybeF (classify pp)
+                fmap (<$ s) <=< ins
               prompt =
-                Stream.fromAsync $
-                mapMAccMaybe cls queryUpdate $
-                Stream.mkAsync ((<$ s) <$> Stream.fromSerial promptEvents)
+                mapMAcc (pure . Left) (queryUpdate . NonEmpty.last) $
+                repeatUntilNothing (maybeF <$> promptEvents)
               menuItems =
-                flip Stream.serial (Stream.fromPure (MenuEvent.Exhausted <$ s)) $
+                after_ (menuEvent (pureS MenuEvent.Exhausted)) $
                 Stream.mapM insert $
                 Stream.foldIterateM chunker (pure []) $
                 Stream.fromSerial items
                 where
                   insert new =
-                    (MenuEvent.NewItems <$ s) <$ insertItems (new <$ s)
+                    pureS (RenderEvent "new items") <$ insertItems (pureS new)
                   chunker = pure . \case
                     [] ->
                       Fold.take 100 Fold.toList
                     _ ->
                       Fold.take 10000 Fold.toList
             pure $
-              maybeF' $
-              Stream.last $
-              Stream.finally quit $
-              Stream.mapMaybeM (maybeF . outputAction) $
-              Stream.tapAsync (Fold.drainBy handleAction) $
-              Stream.mapM consume $
+              fmap pureS $
+              Stream.fold (Fold.drainBy renderEvent) $
               Stream.parallelFst prompt menuItems

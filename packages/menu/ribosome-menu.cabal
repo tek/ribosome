@@ -1,6 +1,6 @@
 cabal-version: 2.2
 
--- This file has been generated from package.yaml by hpack version 0.34.6.
+-- This file has been generated from package.yaml by hpack version 0.34.7.
 --
 -- see: https://github.com/sol/hpack
 
@@ -27,66 +27,56 @@ library
       Ribosome.Menu.Data.Menu
       Ribosome.Menu.Data.MenuAction
       Ribosome.Menu.Data.MenuConfig
-      Ribosome.Menu.Data.MenuData
       Ribosome.Menu.Data.MenuEvent
       Ribosome.Menu.Data.MenuItem
-      Ribosome.Menu.Data.MenuRenderEvent
+      Ribosome.Menu.Data.MenuItems
       Ribosome.Menu.Data.MenuResult
-      Ribosome.Menu.Data.MenuState
       Ribosome.Menu.Data.MenuView
       Ribosome.Menu.Data.NvimMenuState
+      Ribosome.Menu.Data.PromptAction
       Ribosome.Menu.Data.QuitReason
-      Ribosome.Menu.Effect.MenuConsumer
+      Ribosome.Menu.Data.RenderEvent
       Ribosome.Menu.Effect.MenuFilter
-      Ribosome.Menu.Effect.MenuRenderer
+      Ribosome.Menu.Effect.MenuLoop
       Ribosome.Menu.Effect.MenuState
       Ribosome.Menu.Effect.MenuStream
       Ribosome.Menu.Effect.MenuTest
-      Ribosome.Menu.Effect.NvimPromptInput
-      Ribosome.Menu.Effect.PromptControl
+      Ribosome.Menu.Effect.MenuUi
       Ribosome.Menu.Effect.PromptEvents
-      Ribosome.Menu.Effect.PromptInput
-      Ribosome.Menu.Effect.PromptRenderer
-      Ribosome.Menu.Effect.PromptState
-      Ribosome.Menu.Effect.PromptStream
       Ribosome.Menu.Filters
-      Ribosome.Menu.Interpreter.Menu
-      Ribosome.Menu.Interpreter.MenuConsumer
       Ribosome.Menu.Interpreter.MenuFilter
-      Ribosome.Menu.Interpreter.MenuRenderer
+      Ribosome.Menu.Interpreter.MenuLoop
       Ribosome.Menu.Interpreter.MenuState
       Ribosome.Menu.Interpreter.MenuStream
       Ribosome.Menu.Interpreter.MenuTest
-      Ribosome.Menu.Interpreter.NvimPromptInput
-      Ribosome.Menu.Interpreter.PromptControl
+      Ribosome.Menu.Interpreter.MenuUi
+      Ribosome.Menu.Interpreter.MenuUiEcho
+      Ribosome.Menu.Interpreter.MenuUiPure
+      Ribosome.Menu.Interpreter.MenuUiWindow
       Ribosome.Menu.Interpreter.PromptEvents
-      Ribosome.Menu.Interpreter.PromptInput
-      Ribosome.Menu.Interpreter.PromptRenderer
-      Ribosome.Menu.Interpreter.PromptState
-      Ribosome.Menu.Interpreter.PromptStream
       Ribosome.Menu.ItemLens
       Ribosome.Menu.Items
-      Ribosome.Menu.Main
+      Ribosome.Menu.Lens
+      Ribosome.Menu.Loop
+      Ribosome.Menu.Mappings
       Ribosome.Menu.MenuTest
-      Ribosome.Menu.Nvim
       Ribosome.Menu.NvimRenderer
       Ribosome.Menu.Prompt
       Ribosome.Menu.Prompt.Data.Codes
       Ribosome.Menu.Prompt.Data.CursorUpdate
       Ribosome.Menu.Prompt.Data.InputEvent
       Ribosome.Menu.Prompt.Data.Prompt
-      Ribosome.Menu.Prompt.Data.PromptControlEvent
+      Ribosome.Menu.Prompt.Data.PromptConfig
       Ribosome.Menu.Prompt.Data.PromptEvent
-      Ribosome.Menu.Prompt.Data.PromptFlag
       Ribosome.Menu.Prompt.Data.PromptInputEvent
       Ribosome.Menu.Prompt.Data.PromptListening
       Ribosome.Menu.Prompt.Data.PromptMode
-      Ribosome.Menu.Prompt.Data.PromptQuit
       Ribosome.Menu.Prompt.Data.PromptUpdate
       Ribosome.Menu.Prompt.Data.TextUpdate
-      Ribosome.Menu.Prompt.Input
+      Ribosome.Menu.Prompt.GetChar
       Ribosome.Menu.Prompt.Nvim
       Ribosome.Menu.Prompt.Run
+      Ribosome.Menu.Scratch
       Ribosome.Menu.Settings
       Ribosome.Menu.Stream.Accumulate
       Ribosome.Menu.Stream.ChunkAfter
@@ -165,11 +155,11 @@ library
     , bytestring-trie
     , exon
     , fuzzyfind
-    , generic-lens
+    , lens-regex-pcre
     , microlens-mtl
-    , mtl
     , polysemy
     , polysemy-chronos
+    , polysemy-conc
     , polysemy-plugin
     , prelate >=0.1
     , ribosome
@@ -189,7 +179,7 @@ test-suite ribosome-menu-unit
       Ribosome.Menu.Test.Menu
       Ribosome.Menu.Test.MenuTest
       Ribosome.Menu.Test.NvimMenuTest
-      Ribosome.Menu.Test.PromptTest
+      Ribosome.Menu.Test.Run
       Ribosome.Menu.Test.StreamTest
   hs-source-dirs:
       test
@@ -260,6 +250,7 @@ test-suite ribosome-menu-unit
   ghc-options: -Wall -Wredundant-constraints -Wincomplete-uni-patterns -Wmissing-deriving-strategies -Widentities -Wunused-packages -fplugin=Polysemy.Plugin -threaded -rtsopts -with-rtsopts=-N
   build-depends:
       base >=4.12 && <5
+    , exon
     , hedgehog
     , microlens-mtl
     , polysemy
@@ -364,6 +355,7 @@ benchmark ribosome-menu-bench
     , polysemy-test
     , prelate >=0.1
     , ribosome
+    , ribosome-host
     , ribosome-menu
     , streamly
   mixins:

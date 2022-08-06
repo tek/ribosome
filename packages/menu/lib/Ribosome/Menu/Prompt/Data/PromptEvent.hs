@@ -1,15 +1,13 @@
 module Ribosome.Menu.Prompt.Data.PromptEvent where
 
+import Ribosome.Menu.Prompt.Data.Prompt (Prompt)
+
 data PromptEvent =
-  Init
-  |
-  Edit
-  |
-  Navigation
+  Update Prompt
   |
   Mapping Text
   |
-  Quit
+  Quit (Maybe Text)
   |
-  Error Text
+  Ignore
   deriving stock (Eq, Show)

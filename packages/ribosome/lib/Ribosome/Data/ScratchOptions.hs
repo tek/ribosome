@@ -32,7 +32,7 @@ data ScratchOptions =
     maxSize :: Maybe Int,
     -- |A set of syntax rules to apply to the buffer.
     syntax :: [Syntax],
-    -- |A set of key mappings to define buffer-locally, handled by the 'Ribosome.MappingHandler' effect.
+    -- |A set of key mappings to define buffer-locally. See [Ribosome.Mappings]("Ribosome#mappings").
     mappings :: [Mapping],
     -- |The value for the @filetype@ option.
     filetype :: Maybe Text,
@@ -44,8 +44,23 @@ data ScratchOptions =
 -- |The default configuration, setting all flags to 'False' except for 'resize' and 'bottom', and everything else to
 -- 'mempty'.
 scratch :: ScratchId -> ScratchOptions
-scratch =
-  ScratchOptions False False False False True True False Nothing Nothing Nothing [] [] Nothing
+scratch name =
+  ScratchOptions {
+      tab = False,
+      vertical = False,
+      wrap = False,
+      focus = False,
+      resize = True,
+      bottom = True,
+      modify = False,
+      float = Nothing,
+      size = Nothing,
+      maxSize = Nothing,
+      syntax = [],
+      mappings = [],
+      filetype = Nothing,
+      ..
+    }
 
 instance Default ScratchOptions where
   def =

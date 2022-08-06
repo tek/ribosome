@@ -55,7 +55,7 @@ withHandlers ::
   Sem r a ->
   Sem r a
 withHandlers handlersList@(handlersByName -> handlers) =
-  interceptResumable \case
+  interceptResumable @Report \case
     Register -> do
       restop @Report Handlers.register
       registerHandlers handlersList

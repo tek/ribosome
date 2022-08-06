@@ -4,6 +4,7 @@ import Ribosome.Data.WindowView (PartialWindowView, WindowView)
 import Ribosome.Host.Api.Data (Window)
 import Ribosome.Host.Api.Effect (
   nvimBufGetOption,
+  nvimCallFunction,
   nvimCommand,
   nvimGetCurrentWin,
   nvimWinClose,
@@ -132,3 +133,11 @@ restoreView ::
   Sem r ()
 restoreView v =
   vimCallFunction "winrestview" [toMsgpack v]
+
+windowExec ::
+  Member Rpc r =>
+  Window ->
+  Text ->
+  Sem r ()
+windowExec window cmd =
+  nvimCallFunction "win_execute" [toMsgpack window, toMsgpack cmd]

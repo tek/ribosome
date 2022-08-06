@@ -130,7 +130,7 @@ instance SpecialParam ('OptionState al count 'Nothing) Args where
     'OptionState 'True (Max count 'MinZero) ('Just Args)
 
 instance SpecialParam ('OptionState al count ac) (JsonArgs a) where
-  type TransSpecial ('OptionState _ count _) _ =
+  type TransSpecial ('OptionState _ count _) (JsonArgs a) =
     'OptionState 'True (Max count 'MinZero) ('Just (JsonArgs a))
 
 instance SpecialParam ('OptionState al count ac) ArgList where
@@ -138,7 +138,7 @@ instance SpecialParam ('OptionState al count ac) ArgList where
     'OptionState 'True (Max count 'MinZero) ('Just ArgList)
 
 instance SpecialParam ('OptionState al count 'Nothing) (Options a) where
-  type TransSpecial ('OptionState _ count _) _ =
+  type TransSpecial ('OptionState _ count _) (Options a) =
     'OptionState 'True (Max count 'MinZero) ('Just (Options a))
 
 -- |Determines whether a regular, value parameter is allowed (it isn't after types like 'ArgList' that consume all

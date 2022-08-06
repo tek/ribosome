@@ -1,19 +1,25 @@
 module Ribosome.Menu.Data.MenuEvent where
 
-import Ribosome.Menu.Data.QuitReason (QuitReason)
+import Ribosome.Menu.Prompt.Data.Prompt (Prompt)
+
+data QueryEvent =
+  Refined
+  |
+  Reset
+  |
+  History
+  deriving stock (Eq, Show)
 
 data MenuEvent =
-  Init
+  Query QueryEvent
   |
-  PromptEdit
+  Inserted
   |
-  PromptNavigation
+  PromptUpdated Prompt
   |
-  Mapping Text
+  PromptLoop
   |
-  NewItems
+  Rendered
   |
   Exhausted
-  |
-  Quit QuitReason
   deriving stock (Eq, Show)

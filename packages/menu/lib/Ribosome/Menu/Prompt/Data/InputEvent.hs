@@ -5,9 +5,5 @@ data InputEvent =
   |
   NoInput
   |
-  Unexpected Int
-  |
   Interrupt
-  |
-  Error Text
   deriving stock (Eq, Show)

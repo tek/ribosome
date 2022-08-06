@@ -16,6 +16,20 @@ takeUntilNothing ::
 takeUntilNothing s =
   fromJust <$> Stream.takeWhile isJust s
 
+repeatUntilNothing :: 
+  Monad m =>
+  Monad (t m) =>
+  IsStream t =>
+  m (Maybe a) ->
+  t m a
+repeatUntilNothing ma =
+  spin
+  where
+    spin =
+      Stream.fromEffect ma >>= \case
+        Just a -> Stream.cons a spin
+        Nothing -> Stream.nil
+
 queueStream ::
   IsStream t =>
   Functor (t IO) =>

@@ -5,7 +5,15 @@ import Prelude hiding (consume)
 
 import Ribosome.Api.Window (redraw)
 import qualified Ribosome.Host.Api.Data as ApiData (vimCommand)
-import Ribosome.Host.Api.Effect (vimCallFunction, vimCommand, vimCommandOutput, vimGetOption, vimSetOption, nvimFeedkeys, nvimReplaceTermcodes)
+import Ribosome.Host.Api.Effect (
+  vimCallFunction,
+  vimCommand,
+  vimCommandOutput,
+  vimGetOption,
+  vimSetOption,
+  nvimFeedkeys,
+  nvimReplaceTermcodes,
+  )
 import Ribosome.Host.Class.Msgpack.Encode (toMsgpack)
 import Ribosome.Host.Data.RpcError (RpcError)
 import qualified Ribosome.Host.Effect.Rpc as Rpc

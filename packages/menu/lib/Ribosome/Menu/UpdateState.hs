@@ -4,50 +4,45 @@ import qualified Data.IntMap.Strict as IntMap
 import qualified Data.Text as Text
 import qualified Data.Trie as Trie
 import Exon (exon)
-import Lens.Micro.Mtl (use, (%=), (+=), (.=))
-import qualified Polysemy.Log as Log
+import qualified Log
 
 import Ribosome.Menu.Combinators (push)
 import Ribosome.Menu.Data.Entry (Entries)
-import Ribosome.Menu.Data.MenuData (MenuItems, MenuQuery (MenuQuery))
 import qualified Ribosome.Menu.Data.MenuEvent as MenuEvent
-import Ribosome.Menu.Data.MenuEvent (MenuEvent)
+import Ribosome.Menu.Data.MenuEvent (MenuEvent, QueryEvent (History, Refined, Reset))
 import Ribosome.Menu.Data.MenuItem (MenuItem)
-import Ribosome.Menu.Data.MenuState (SemS (SemS), semState)
-import qualified Ribosome.Menu.Data.QuitReason as QuitReason
+import Ribosome.Menu.Data.MenuItems (MenuItems, MenuQuery (MenuQuery))
 import qualified Ribosome.Menu.Effect.MenuFilter as MenuFilter
 import Ribosome.Menu.Effect.MenuFilter (MenuFilter)
-import Ribosome.Menu.Effect.MenuState (MenuState, readPrompt, setPrompt, useItems)
-import Ribosome.Menu.Prompt.Data.Prompt (
-  Prompt (Prompt),
-  PromptChange (PromptAppend, PromptRandom, PromptUnappend),
-  PromptText (PromptText),
-  )
-import qualified Ribosome.Menu.Prompt.Data.PromptEvent as PromptEvent
-import Ribosome.Menu.Prompt.Data.PromptEvent (PromptEvent)
+import Ribosome.Menu.Effect.MenuState (MenuState, itemsState)
+import Ribosome.Menu.Lens (use, (%=), (+=), (.=))
+import qualified Ribosome.Menu.Prompt.Data.Prompt as Prompt
+import Ribosome.Menu.Prompt.Data.Prompt (PromptChange, PromptText (PromptText), unPromptText)
 
 refineFiltered ::
-  Member MenuFilter r =>
+  Members [MenuFilter, State (MenuItems i)] r =>
   MenuQuery ->
   Entries i ->
-  SemS (MenuItems i) r ()
-refineFiltered query ents =
-  push query =<< SemS (MenuFilter.refine query ents)
+  Sem r QueryEvent
+refineFiltered query ents = do
+  push query =<< MenuFilter.refine query ents
+  pure Refined
 
 resetFiltered ::
-  Member MenuFilter r =>
+  Members [MenuFilter, State (MenuItems i)] r =>
   MenuQuery ->
-  SemS (MenuItems i) r ()
+  Sem r QueryEvent
 resetFiltered query = do
   its <- use #items
-  new <- SemS (MenuFilter.initial query its)
+  new <- MenuFilter.initial query its
   #entries .= new
   #currentQuery .= query
+  pure Reset
 
 popFiltered ::
-  Member MenuFilter r =>
+  Members [MenuFilter, State (MenuItems i)] r =>
   MenuQuery ->
-  SemS (MenuItems i) r ()
+  Sem r QueryEvent
 popFiltered query@(MenuQuery (encodeUtf8 -> queryBs)) =
   maybe (resetFiltered query) matching =<< use (#history . to (`Trie.match` queryBs))
   where
@@ -55,90 +50,65 @@ popFiltered query@(MenuQuery (encodeUtf8 -> queryBs)) =
       (_, f, "") -> do
         #entries .= f
         #currentQuery .= query
+        pure History
       (_, f, _) ->
         refineFiltered query f
 
 appendFilter ::
-  Member MenuFilter r =>
+  Members [MenuFilter, State (MenuItems i)] r =>
   MenuQuery ->
-  SemS (MenuItems i) r ()
+  Sem r QueryEvent
 appendFilter query =
   ifM (use (#entries . to null)) (resetFiltered query) (refineFiltered query =<< use #entries)
 
 promptChange ::
-  Member MenuFilter r =>
+  Members [MenuFilter, State (MenuItems i)] r =>
   PromptChange ->
   MenuQuery ->
-  SemS (MenuItems i) r ()
+  Sem r QueryEvent
 promptChange = \case
-  PromptAppend ->
+  Prompt.Append ->
     appendFilter
-  PromptUnappend ->
+  Prompt.Unappend ->
     popFiltered
-  PromptRandom ->
+  Prompt.Random ->
     resetFiltered
 
 insertItems ::
-  Member MenuFilter r =>
+  Members [MenuFilter, State (MenuItems i)] r =>
   [MenuItem i] ->
-  SemS (MenuItems i) r ()
+  Sem r ()
 insertItems new = do
   index <- use #itemCount
   #itemCount += length new
   let newI = IntMap.fromList (zip [index..] new)
   #items %= IntMap.union newI
   query <- use #currentQuery
-  ents <- SemS (MenuFilter.initial query newI)
+  ents <- MenuFilter.initial query newI
   #entries %= IntMap.unionWith (<>) ents
   unless (null ents) do
     #history .= mempty
 
 promptItemUpdate ::
-  Member MenuFilter r =>
+  Members [MenuFilter, State (MenuItems i)] r =>
   PromptChange ->
-  Prompt ->
-  SemS (MenuItems i) r ()
-promptItemUpdate change (Prompt _ _ (PromptText (MenuQuery -> query))) =
-  promptChange change query
+  PromptText ->
+  Sem r MenuEvent
+promptItemUpdate change (PromptText (MenuQuery -> query)) =
+  MenuEvent.Query <$> promptChange change query
 
-diffPrompt :: Prompt -> MenuQuery -> PromptChange
-diffPrompt (Prompt _ _ (PromptText new)) (MenuQuery old)
-  | Text.isPrefixOf old new = PromptAppend
-  | Text.isPrefixOf new old = PromptUnappend
-  | otherwise = PromptRandom
+diffPrompt :: PromptText -> MenuQuery -> PromptChange
+diffPrompt (PromptText new) (MenuQuery old)
+  | Text.isPrefixOf old new = Prompt.Append
+  | Text.isPrefixOf new old = Prompt.Unappend
+  | otherwise = Prompt.Random
 
 queryUpdate ::
-  Members [MenuState i, MenuFilter] r =>
-  Sem r MenuEvent
-queryUpdate = do
-  useItems \ s -> do
-    prompt <- readPrompt
-    runState s $ semState do
-      change <- use (#currentQuery . to (diffPrompt prompt))
-      promptItemUpdate change prompt
-      pure MenuEvent.PromptEdit
-
-classifyEvent :: PromptEvent -> Maybe MenuEvent
-classifyEvent = \case
-  PromptEvent.Mapping c ->
-    Just (MenuEvent.Mapping c)
-  PromptEvent.Edit ->
-    Nothing
-  PromptEvent.Navigation ->
-    Just MenuEvent.PromptNavigation
-  PromptEvent.Init ->
-    Just MenuEvent.Init
-  PromptEvent.Quit ->
-    Just (MenuEvent.Quit QuitReason.Aborted)
-  PromptEvent.Error e ->
-    Just (MenuEvent.Quit (QuitReason.Error e))
-
-setPromptAndClassify ::
-  Member (MenuState i) r =>
-  Member Log r =>
-  Prompt ->
-  PromptEvent ->
-  Sem r (Maybe MenuEvent)
-setPromptAndClassify prompt event = do
-  Log.debug [exon|prompt event: #{show @Text event}|]
-  classifyEvent event <$ setPrompt prompt
+  Members [MenuState i, MenuFilter, Events res MenuEvent, Log] r =>
+  PromptText ->
+  Sem r ()
+queryUpdate prompt = do
+  Log.debug [exon|query update: #{unPromptText prompt}|]
+  itemsState do
+    change <- use (#currentQuery . to (diffPrompt prompt))
+    publish =<< promptItemUpdate change prompt

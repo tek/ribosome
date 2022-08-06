@@ -20,6 +20,8 @@ module Ribosome.Test (
   testEmbed_,
   testEmbedLevel,
   testEmbedLevel_,
+  testEmbedDebug,
+  testEmbedDebug_,
   testEmbedTrace,
   testEmbedTrace_,
   runTestConf,
@@ -43,7 +45,7 @@ module Ribosome.Test (
   assertWaitFor,
 ) where
 
-import Ribosome.Host.Data.Report (resumeHandlerFail, stopHandlerToFail)
+import Ribosome.Host.Data.Report (resumeReportFail, stopReportToFail)
 import Ribosome.Test.Data.TestConfig (TestConfig (TestConfig), TmuxTestConfig (TmuxTestConfig))
 import Ribosome.Test.Embed (
   EmbedHandlerStack,
@@ -59,7 +61,9 @@ import Ribosome.Test.Embed (
   testEmbedLevel,
   testEmbedLevel_,
   testEmbedTrace,
+  testEmbedDebug,
   testEmbedTrace_,
+  testEmbedDebug_,
   testEmbed_,
   testPlugin,
   testPluginConf,

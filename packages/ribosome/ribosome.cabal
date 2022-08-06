@@ -71,6 +71,7 @@ library
       Ribosome.Data.FloatOptions
       Ribosome.Data.Locks
       Ribosome.Data.Mapping
+      Ribosome.Data.Mode
       Ribosome.Data.PersistError
       Ribosome.Data.PersistPathError
       Ribosome.Data.PluginConfig

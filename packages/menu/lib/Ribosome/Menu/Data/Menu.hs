@@ -4,7 +4,7 @@ import Data.Trie (Trie)
 
 import Ribosome.Menu.Data.CursorIndex (CursorIndex)
 import Ribosome.Menu.Data.Entry (Entries)
-import Ribosome.Menu.Data.MenuData (MenuItems (MenuItems), MenuQuery)
+import Ribosome.Menu.Data.MenuItems (MenuItems (MenuItems), MenuQuery)
 import Ribosome.Menu.Data.MenuItem (Items)
 
 data Menu i =

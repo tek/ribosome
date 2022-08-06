@@ -1,9 +1,9 @@
 module Ribosome.Host.Test.Run where
 
 import qualified Chronos
-import Conc (Restoration, interpretMaskFinal, interpretRace, interpretUninterruptibleMaskFinal)
+import Conc (GatesIO, Restoration, interpretGates, interpretMaskFinal, interpretRace, interpretUninterruptibleMaskFinal)
 import Hedgehog.Internal.Property (Failure)
-import Log (Severity (Trace, Warn), interpretLogStderrLevelConc)
+import Log (Severity (Debug, Trace, Warn), interpretLogStderrLevelConc)
 import Polysemy.Chronos (ChronosTime, interpretTimeChronos, interpretTimeChronosConstant)
 import Polysemy.Test (Hedgehog, Test, TestError (TestError), UnitTest, runTestAuto)
 import Time (mkDatetime)
@@ -21,6 +21,7 @@ type TestIOStack =
     Log,
     Mask Restoration,
     UninterruptibleMask Restoration,
+    GatesIO,
     Race,
     Async,
     Error BootError,
@@ -56,6 +57,7 @@ runUnitTest =
   mapError (TestError . unBootError) .
   asyncToIOFinal .
   interpretRace .
+  interpretGates .
   interpretUninterruptibleMaskFinal .
   interpretMaskFinal .
   interpretLogStderrLevelConc (Just Warn)
@@ -84,12 +86,27 @@ runTest ::
 runTest =
   runTestConf def
 
+runTestLevel ::
+  HasCallStack =>
+  Severity ->
+  Sem TestStack () ->
+  UnitTest
+runTestLevel level =
+  runTestConf def { host = setStderr level def }
+
+runTestDebug ::
+  HasCallStack =>
+  Sem TestStack () ->
+  UnitTest
+runTestDebug =
+  runTestLevel Debug
+
 runTestTrace ::
   HasCallStack =>
   Sem TestStack () ->
   UnitTest
 runTestTrace =
-  runTestConf def { host = setStderr Trace def }
+  runTestLevel Trace
 
 embedTestConf ::
   HasCallStack =>

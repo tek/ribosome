@@ -1,23 +1,17 @@
 module Ribosome.Menu.Interpreter.MenuState where
 
-import Conc (Lock, interpretAtomic, interpretScopedWithH, interpretSync, lock)
+import Conc (Lock, interpretScopedWithH, lock)
 
 import Ribosome.Host.Effect.MState (MState, mread, muse)
 import Ribosome.Host.Interpreter.MState (interpretMState)
 import Ribosome.Menu.Data.CursorIndex (CursorIndex)
-import Ribosome.Menu.Data.MenuData (MenuItems)
+import Ribosome.Menu.Data.MenuItems (MenuItems)
 import Ribosome.Menu.Effect.MenuState (MenuState (..), ScopedMenuState)
-import Ribosome.Menu.Prompt.Data.Prompt (Prompt)
-import Ribosome.Menu.Prompt.Data.PromptListening (PromptListening)
-import Ribosome.Menu.Prompt.Data.PromptQuit (PromptQuit)
 
 type MenuStateDeps i =
   [
-    Sync PromptQuit,
-    Sync PromptListening,
     MState (MenuItems i),
-    MState CursorIndex,
-    AtomicState Prompt
+    MState CursorIndex
   ]
 
 interpretMenuStateDeps ::
@@ -25,25 +19,33 @@ interpretMenuStateDeps ::
   Members [Resource, Race, Mask mres, Embed IO] r =>
   InterpretersFor (MenuStateDeps i) r
 interpretMenuStateDeps =
-  interpretAtomic def .
   interpretMState def .
-  interpretMState def .
-  interpretSync @PromptListening .
-  interpretSync @PromptQuit
+  interpretMState def
 
 itemsLock ::
-  Members [Tagged "items" Lock, Resource] r =>
+  Members [Lock @@ "items", Resource] r =>
   Sem r a ->
   Sem r a
 itemsLock =
   tag . lock . raise
 
 cursorLock ::
-  Members [Tagged "cursor" Lock, Resource] r =>
+  Members [Lock @@ "cursor", Resource] r =>
   Sem r a ->
   Sem r a
 cursorLock =
   tag . lock . raise
+
+mcState' ::
+  Functor f =>
+  (s -> m (s, a)) ->
+  s ->
+  Sem (WithTactics e f m r) (s, f a)
+mcState' f s = do
+  res <- runTSimple (f s)
+  Inspector ins <- getInspectorT
+  let newS = fromMaybe s (fst <$> ins res)
+  pure (newS, snd <$> res)
 
 mcState ::
   Functor f =>
@@ -51,11 +53,7 @@ mcState ::
   (s -> m (s, a)) ->
   Sem (WithTactics e f m r) (f a)
 mcState f =
-  muse \ s -> do
-    res <- runTSimple (f s)
-    Inspector ins <- getInspectorT
-    let newS = fromMaybe s (fst <$> ins res)
-    pure (newS, snd <$> res)
+  muse (mcState' f)
 
 handleMenuState ::
   Members (MenuStateDeps i) r =>
@@ -66,10 +64,6 @@ handleMenuState = \case
     mcState f
   ReadCursor ->
     pureT =<< mread
-  SetPrompt p ->
-    pureT =<< atomicPut p
-  ReadPrompt ->
-    pureT =<< atomicGet
   UseItems f ->
     mcState f
   ReadItems ->

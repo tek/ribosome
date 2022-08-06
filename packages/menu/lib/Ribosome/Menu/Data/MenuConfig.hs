@@ -1,11 +1,18 @@
 module Ribosome.Menu.Data.MenuConfig where
 
-import Streamly.Prelude (SerialT)
-
-import Ribosome.Menu.Data.MenuItem (MenuItem)
-
-data MenuConfig i =
+data MenuConfig =
   MenuConfig {
-    items :: SerialT IO (MenuItem i)
+    sync :: Bool
   }
-  deriving stock (Generic)
+  deriving stock (Eq, Show, Generic)
+
+instance Default MenuConfig where
+  def =
+    MenuConfig False
+
+menuSync ::
+  Member (Reader MenuConfig) r =>
+  Sem r a ->
+  Sem r a
+menuSync =
+  local (#sync .~ True)

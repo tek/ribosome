@@ -4,17 +4,17 @@ import qualified Data.IntMap.Strict as IntMap
 import qualified Data.Sequence as Seq
 import Data.Sequence ((|>))
 import qualified Data.Trie as Trie
-import Lens.Micro.Mtl (use, view, (%=), (.=))
+import Lens.Micro.Mtl (view)
 
 import Ribosome.Menu.Data.Entry (Entries, Entry)
-import Ribosome.Menu.Data.Menu (Menu)
-import Ribosome.Menu.Data.MenuData (MenuItems, MenuQuery (MenuQuery))
-import Ribosome.Menu.Data.MenuState (SemS)
+import Ribosome.Menu.Data.MenuItems (MenuItems, MenuQuery (MenuQuery))
+import Ribosome.Menu.Lens (use, (%=), (.=))
 
 push ::
+  Member (State (MenuItems i)) r =>
   MenuQuery ->
   Entries i ->
-  SemS (MenuItems i) r ()
+  Sem r ()
 push newQuery new = do
   MenuQuery oldQuery <- use #currentQuery
   old <- use #entries
@@ -33,9 +33,9 @@ sortEntries =
   concatMap (toList . snd) . IntMap.toDescList
 
 sortedEntries ::
-  SimpleGetter (Menu i) [Entry i]
+  SimpleGetter (MenuItems i) [Entry i]
 sortedEntries =
-  #items . #entries . to sortEntries
+  #entries . to sortEntries
 
 overEntries ::
   (Int -> Entry i -> Entry i) ->

@@ -4,15 +4,11 @@ import Lens.Micro.Mtl (view)
 
 import Ribosome.Menu.Data.CursorIndex (CursorIndex)
 import Ribosome.Menu.Data.Menu (Menu (Menu))
-import Ribosome.Menu.Data.MenuData (MenuItems)
-import Ribosome.Menu.Prompt.Data.Prompt (Prompt)
+import Ribosome.Menu.Data.MenuItems (MenuItems)
 
--- TODO split in PromptControl/MenuState
 data MenuState i :: Effect where
   UseCursor :: (CursorIndex -> m (CursorIndex, a)) -> MenuState i m a
   ReadCursor :: MenuState i m CursorIndex
-  SetPrompt :: Prompt -> MenuState i m ()
-  ReadPrompt :: MenuState i m Prompt
   UseItems :: (MenuItems i -> m (MenuItems i, a)) -> MenuState i m a
   ReadItems :: MenuState i m (MenuItems i)
 
@@ -46,12 +42,19 @@ getsItems ::
 getsItems f =
   f <$> readItems
 
-viewCursor ::
+modifyCursor ::
   Member (MenuState i) r =>
-  (SimpleGetter CursorIndex a) ->
-  Sem r a
-viewCursor g =
-  view g <$> readCursor
+  (CursorIndex -> CursorIndex) ->
+  Sem r ()
+modifyCursor f =
+  useCursor \ c -> pure (f c, ())
+
+modifyItems ::
+  Member (MenuState i) r =>
+  (MenuItems i -> MenuItems i) ->
+  Sem r ()
+modifyItems f =
+  useItems \ i -> pure (f i, ())
 
 viewItems ::
   Member (MenuState i) r =>
@@ -73,6 +76,14 @@ viewMenu ::
 viewMenu g =
   view g <$> readMenu
 
+itemsState ::
+  Member (MenuState i) r =>
+  Sem (State (MenuItems i) : r) a ->
+  Sem r a
+itemsState action =
+  useItems \ s ->
+    runState s action
+
 type ScopedMenuState i =
   Scoped () (MenuState i)
 
@@ -81,3 +92,21 @@ withMenuState ::
   InterpreterFor (MenuState i) r
 withMenuState =
   scoped
+
+menuState ::
+  Member (MenuState i) r =>
+  InterpreterFor (State (Menu i)) r
+menuState action =
+  useCursor \ cursor ->
+    useItems \ items -> do
+      (Menu newItems newCursor, result) <- runState (Menu items cursor) action
+      pure (newItems, (newCursor, result))
+
+cursorState ::
+  Member (MenuState i) r =>
+  Sem (State CursorIndex : Reader (MenuItems i) : r) a ->
+  Sem r a
+cursorState action =
+  useCursor \ cursor -> do
+    items <- readItems
+    runReader items (runState cursor action)

@@ -288,7 +288,6 @@ instance DecodePath b t => MsgpackDecode (Path b t) where
     msgpackText "Path" decodePathE
 
 timeUnit ::
-  Integral a =>
   Fractional a =>
   Text ->
   Object ->

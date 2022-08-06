@@ -1,18 +1,21 @@
 module Ribosome.Menu.Interpreter.PromptEvents where
 
+import Control.Lens.Regex.Text (group, regex)
 import qualified Data.Text as Text (isPrefixOf)
+import Prelude hiding (group)
 
 import Ribosome.Menu.Effect.PromptEvents (PromptEvents (HandlePromptEvent))
 import Ribosome.Menu.Prompt.Data.CursorUpdate (CursorUpdate)
 import qualified Ribosome.Menu.Prompt.Data.CursorUpdate as CursorUpdate (CursorUpdate (..))
-import Ribosome.Menu.Prompt.Data.PromptFlag (PromptFlag, onlyInsert)
-import Ribosome.Menu.Prompt.Data.PromptInputEvent (PromptInputEvent)
-import qualified Ribosome.Menu.Prompt.Data.PromptInputEvent as PromptInputEvent (PromptInputEvent (..))
 import qualified Ribosome.Menu.Prompt.Data.PromptMode as PromptMode
 import Ribosome.Menu.Prompt.Data.PromptMode (PromptMode)
 import qualified Ribosome.Menu.Prompt.Data.PromptUpdate as PromptUpdate
 import Ribosome.Menu.Prompt.Data.PromptUpdate (PromptUpdate)
 import qualified Ribosome.Menu.Prompt.Data.TextUpdate as TextUpdate (TextUpdate (..))
+
+stripTermcode :: Text -> Text
+stripTermcode t =
+  fromMaybe t (t ^? [regex|<(.*)>|] . group 0)
 
 unprocessableChars :: [Text]
 unprocessableChars =
@@ -30,63 +33,56 @@ consumeUnmodified s u =
   PromptUpdate.Modify s u TextUpdate.Unmodified
 
 basicTransitionNormal ::
-  PromptInputEvent ->
+  Text ->
   PromptUpdate
 basicTransitionNormal = \case
-  PromptInputEvent.Character "esc" ->
+  "esc" ->
     PromptUpdate.Quit
-  PromptInputEvent.Character "q" ->
+  "q" ->
     PromptUpdate.Quit
-  PromptInputEvent.Character "i" ->
+  "i" ->
     consumeUnmodified PromptMode.Insert CursorUpdate.Unmodified
-  PromptInputEvent.Character "I" ->
+  "I" ->
     consumeUnmodified PromptMode.Insert CursorUpdate.Prepend
-  PromptInputEvent.Character "a" ->
+  "a" ->
     consumeUnmodified PromptMode.Insert CursorUpdate.OneRight
-  PromptInputEvent.Character "A" ->
+  "A" ->
     consumeUnmodified PromptMode.Insert CursorUpdate.Append
-  PromptInputEvent.Character "h" ->
+  "h" ->
     consumeUnmodified PromptMode.Normal CursorUpdate.OneLeft
-  PromptInputEvent.Character "l" ->
+  "l" ->
     consumeUnmodified PromptMode.Normal CursorUpdate.OneRight
-  PromptInputEvent.Character "x" ->
+  "x" ->
     PromptUpdate.Modify PromptMode.Normal CursorUpdate.OneLeft TextUpdate.DeleteRight
   _ ->
     PromptUpdate.Ignore
 
 basicTransitionInsert ::
-  [PromptFlag] ->
-  PromptInputEvent ->
+  Text ->
   PromptUpdate
-basicTransitionInsert flags = \case
-  PromptInputEvent.Character "esc" | onlyInsert flags ->
-    PromptUpdate.Quit
-  PromptInputEvent.Character "esc" ->
+basicTransitionInsert = \case
+  "esc" ->
     normal
-  PromptInputEvent.Character "c-n" ->
+  "c-n" ->
     normal
-  PromptInputEvent.Character "bs" ->
+  "bs" ->
     insert CursorUpdate.OneLeft TextUpdate.DeleteLeft
-  PromptInputEvent.Character c | unprocessable c ->
+  c | unprocessable c ->
     PromptUpdate.Ignore
-  PromptInputEvent.Character "space" ->
+  "space" ->
     insert CursorUpdate.OneRight (TextUpdate.Insert " ")
-  PromptInputEvent.Character c ->
+  c ->
     insert CursorUpdate.OneRight (TextUpdate.Insert c)
-  _ ->
-    PromptUpdate.Ignore
   where
     insert =
       PromptUpdate.Modify PromptMode.Insert
     normal =
       PromptUpdate.Modify PromptMode.Normal CursorUpdate.OneLeft TextUpdate.Unmodified
 
-interpretPromptEventsDefault ::
-  [PromptFlag] ->
-  InterpreterFor PromptEvents r
-interpretPromptEventsDefault flags =
+interpretPromptEventsDefault :: InterpreterFor PromptEvents r
+interpretPromptEventsDefault =
   interpret \case
-    HandlePromptEvent event PromptMode.Insert ->
-      pure (basicTransitionInsert flags event)
-    HandlePromptEvent event PromptMode.Normal ->
-      pure (basicTransitionNormal event)
+    HandlePromptEvent key PromptMode.Insert -> do
+      pure (basicTransitionInsert (stripTermcode key))
+    HandlePromptEvent key PromptMode.Normal ->
+      pure (basicTransitionNormal (stripTermcode key))

@@ -1,6 +1,7 @@
 -- |Data types for Neovim mappings
 module Ribosome.Data.Mapping where
 
+import Data.MessagePack (Object)
 import Exon (exon)
 
 import Ribosome.Host.Class.Msgpack.Decode (MsgpackDecode)
@@ -77,6 +78,11 @@ mapModeSuffix = \case
   MapInsertCmdline -> "!"
   _ -> ""
 
+-- |The character representing a map mode when passing it to an api function.
+mapModeShortName :: MapMode -> Text
+mapModeShortName m =
+  mapModePrefix m <> mapModeSuffix m
+
 noremapCmd :: MapMode -> Text
 noremapCmd mm =
   [exon|#{mapModePrefix mm}noremap#{mapModeSuffix mm}|]
@@ -98,7 +104,7 @@ data MappingSpec =
     -- |The modes in which the mapping should be installed.
     mode :: NonEmpty MapMode
   }
-  deriving stock (Eq, Show, Ord)
+  deriving stock (Eq, Show, Ord, Generic)
 
 instance IsString MappingSpec where
   fromString s =
@@ -113,6 +119,8 @@ data Mapping =
     -- |The Neovim related configuration for the mapping, i.e. its key sequence and modes.
     spec :: MappingSpec,
     -- |An optional string identifying the source of the mapping, for example when adding it to multiple buffers.
-    id :: Maybe MappingId
+    id :: Maybe MappingId,
+    -- |Options like @nowait@ or @desc@.
+    opts :: Map Text Object
   }
-  deriving stock (Eq, Show)
+  deriving stock (Eq, Show, Generic)

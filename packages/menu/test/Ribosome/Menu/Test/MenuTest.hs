@@ -2,15 +2,14 @@ module Ribosome.Menu.Test.MenuTest where
 
 import qualified Control.Monad.Trans.State.Strict as MTL
 import qualified Data.IntMap.Strict as IntMap
-import Hedgehog (TestLimit, property, test, withTests)
-import Lens.Micro.Mtl (use, view)
+import qualified Lens.Micro.Mtl as Lens
+import Lens.Micro.Mtl (view)
 import Polysemy (run)
 import Polysemy.Test (UnitTest, runTestAuto, unitTest, (===))
-import Test.Tasty (TestName, TestTree, testGroup)
-import Test.Tasty.Hedgehog (testProperty)
+import Test.Tasty (TestTree, testGroup)
 
-import Ribosome.Host.Test.Run (runUnitTest)
-import Ribosome.Menu.Action (menuQuit, menuSuccess)
+import Ribosome.Host.Test.Run (runTest, runUnitTest)
+import Ribosome.Menu.Action (MenuWidget, menuQuit, menuSuccess)
 import Ribosome.Menu.Combinators (sortEntries, sortedEntries)
 import qualified Ribosome.Menu.Data.Entry as Entry
 import Ribosome.Menu.Data.Entry (Entries, Entry (Entry), simpleIntEntries)
@@ -18,24 +17,19 @@ import Ribosome.Menu.Data.Menu (consMenu)
 import qualified Ribosome.Menu.Data.MenuItem as MenuItem
 import Ribosome.Menu.Data.MenuItem (Items, simpleMenuItem)
 import Ribosome.Menu.Data.MenuResult (MenuResult (Success))
-import Ribosome.Menu.Data.MenuState (MenuWidget)
-import Ribosome.Menu.Effect.MenuState (MenuState, viewMenu)
+import Ribosome.Menu.Effect.MenuState (menuState)
 import Ribosome.Menu.Effect.MenuTest (result, sendCharWait, sendStaticItems)
 import Ribosome.Menu.ItemLens (items, selected', selectedOnly, unselected)
 import Ribosome.Menu.Items (deleteSelected, popSelection)
-import Ribosome.Menu.MenuTest (runStaticTestMenu, runTestMenu, testMenu, testMenuWaitItems)
+import Ribosome.Menu.Lens (use)
+import Ribosome.Menu.Mappings (defaultMappings)
+import Ribosome.Menu.MenuTest (runTestMenu, testMenu)
 import Ribosome.Menu.Prompt.Data.Prompt (Prompt (Prompt))
-import Ribosome.Menu.Prompt.Data.PromptFlag (PromptFlag (StartInsert))
+import Ribosome.Menu.Prompt.Data.PromptConfig (startInsert)
 import Ribosome.Menu.Prompt.Data.PromptMode (PromptMode (Insert, Normal))
 import Ribosome.Menu.Test.Menu (assertItems, assertPrompt, promptTest)
-
-unitTestTimes ::
-  TestLimit ->
-  TestName ->
-  UnitTest ->
-  TestTree
-unitTestTimes n desc =
-  testProperty desc . withTests n . property . test
+import Ribosome.Menu.Test.Run (unitTestTimes)
+import Ribosome.Test.Error (testError)
 
 items1 :: [Text]
 items1 =
@@ -50,20 +44,20 @@ items1 =
 
 test_pureMenuModeChange :: UnitTest
 test_pureMenuModeChange =
-  runUnitTest $ promptTest @() do
-    sendStaticItems (simpleMenuItem () <$> items1)
+  runTest $ promptTest @() do
+    sendStaticItems "mode initial" (simpleMenuItem () <$> items1)
     assertItems items1
     sendCharWait "i"
-    assertPrompt (Prompt 1 Insert "i")
+    assertPrompt "1" (Prompt 1 Insert "i")
     assertItems ["i1", "i2", "i3", "i4"]
-    sendCharWait "esc"
-    assertPrompt (Prompt 0 Normal "i")
+    sendCharWait "<esc>"
+    assertPrompt "2" (Prompt 0 Normal "i")
     assertItems ["i1", "i2", "i3", "i4"]
     sendCharWait "a"
-    assertPrompt (Prompt 1 Insert "i")
+    assertPrompt "3" (Prompt 1 Insert "i")
     assertItems ["i1", "i2", "i3", "i4"]
     sendCharWait "2"
-    assertPrompt (Prompt 2 Insert "i2")
+    assertPrompt "4" (Prompt 2 Insert "i2")
     assertItems ["i2"]
 
 items2 :: [Text]
@@ -77,8 +71,8 @@ items2 =
 
 test_pureMenuFilter :: UnitTest
 test_pureMenuFilter = do
-  runUnitTest $ promptTest @() do
-    sendStaticItems (simpleMenuItem () <$> items2)
+  runTest $ promptTest @() do
+    sendStaticItems "filter initial" (simpleMenuItem () <$> items2)
     assertItems items2
     sendCharWait "l"
     assertItems ["long", "long-item", "longitem"]
@@ -87,7 +81,7 @@ test_pureMenuFilter = do
 
 chars3 :: [Text]
 chars3 =
-  ["i", "esc", "cr"]
+  ["i", "<esc>", "<cr>"]
 
 items3 :: [Text]
 items3 =
@@ -96,26 +90,25 @@ items3 =
     "item2"
     ]
 
-exec ::
-  Member (MenuState i) r =>
-  MenuWidget r [Text]
-exec = do
-  fs <- viewMenu sortedEntries
-  menuSuccess (view (#item . #text) <$> fs)
+exec :: MenuWidget i r [Text]
+exec =
+  menuState do
+    fs <- use (#items . sortedEntries)
+    menuSuccess (view (#item . #text) <$> fs)
 
 test_pureMenuExecute :: UnitTest
 test_pureMenuExecute = do
   runUnitTest do
-    runTestMenu [] [("cr", exec)] do
-      r <- testMenu do
-        sendStaticItems (simpleMenuItem () <$> items3)
-        sendCharWait "cr"
+    runTestMenu def do
+      r <- testError $ testMenu def [("<cr>", exec)] do
+        sendStaticItems "exec initial" (simpleMenuItem () <$> items3)
+        sendCharWait "<cr>"
         result
       Success items3 === r
 
 charsMulti :: [Text]
 charsMulti =
-  ["esc", "k", "k", "space", "space", "space", "space", "j", "space", "cr"]
+  ["<esc>", "k", "k", "<space>", "<space>", "<space>", "<space>", "j", "<space>", "<cr>"]
 
 itemsMulti :: [Text]
 itemsMulti =
@@ -128,26 +121,25 @@ itemsMulti =
     "item6"
   ]
 
-execMulti ::
-  Member (MenuState i) r =>
-  MenuWidget r (Maybe (NonEmpty Text))
-execMulti = do
-  selection <- viewMenu selected'
-  menuSuccess (fmap MenuItem.text <$> selection)
+execMulti :: MenuWidget i r (Maybe (NonEmpty Text))
+execMulti =
+  menuState do
+    selection <- use selected'
+    menuSuccess (fmap MenuItem.text <$> selection)
 
 test_menuMultiMark :: UnitTest
 test_menuMultiMark = do
-  runUnitTest do
-    runTestMenu [StartInsert] [("cr", execMulti)] do
-      r <- testMenu do
-        sendStaticItems (simpleMenuItem () <$> itemsMulti)
+  runTest do
+    runTestMenu startInsert do
+      r <- testError $ testMenu def (defaultMappings <> [("<cr>", execMulti)]) do
+        sendStaticItems "initial" (simpleMenuItem () <$> itemsMulti)
         traverse_ sendCharWait charsMulti
         result
       Success (Just ["item5", "item4", "item3"]) === r
 
 charsToggle :: [Text]
 charsToggle =
-  ["a", "esc", "k", "space", "*", "cr"]
+  ["a", "<esc>", "k", "<space>", "*", "<cr>"]
 
 itemsToggle :: [Text]
 itemsToggle =
@@ -163,24 +155,25 @@ itemsToggle =
   ]
 
 execToggle ::
-  Member (MenuState i) r =>
-  MenuWidget r (NonEmpty Text)
-execToggle = do
-  viewMenu selectedOnly >>= maybe menuQuit \ selection ->
-    menuSuccess (MenuItem.text <$> selection)
+  MenuWidget i r (NonEmpty Text)
+execToggle =
+  menuState do
+    use selectedOnly >>= maybe menuQuit \ selection ->
+      menuSuccess (MenuItem.text <$> selection)
 
 test_menuToggle :: UnitTest
 test_menuToggle = do
   runUnitTest do
-    runStaticTestMenu (simpleMenuItem () <$> itemsToggle) [StartInsert] [("cr", execToggle)] do
-      r <- testMenuWaitItems do
+    runTestMenu startInsert do
+      r <- testError $ testMenu startInsert (defaultMappings <> [("<cr>", execToggle)]) do
+        sendStaticItems "initial" (simpleMenuItem () <$> itemsToggle)
         traverse_ sendCharWait charsToggle
         result
       Success ["abc", "a"] === r
 
 charsExecuteThunk :: [Text]
 charsExecuteThunk =
-  ["esc", "cr", "k", "cr", "esc"]
+  ["<esc>", "<cr>", "k", "<cr>", "<esc>"]
 
 itemsExecuteThunk :: [Text]
 itemsExecuteThunk =
@@ -244,7 +237,7 @@ test_menuDeleteSelected = do
 test_menuUnselectedCursor :: UnitTest
 test_menuUnselectedCursor =
   runTestAuto do
-    [2, 4] === (MenuItem.meta <$> MTL.evalState (use unselected) menu)
+    [2, 4] === (MenuItem.meta <$> MTL.evalState (Lens.use unselected) menu)
   where
     menu =
       consMenu mempty entries mempty 0 mempty 1
@@ -254,11 +247,12 @@ test_menuUnselectedCursor =
 test_menu :: TestTree
 test_menu =
   testGroup "basic" [
-    unitTestTimes 50 "change mode" test_pureMenuModeChange,
-    unitTestTimes 50 "filter items" test_pureMenuFilter,
-    unitTestTimes 50 "execute an action" test_pureMenuExecute,
-    unitTestTimes 50 "mark multiple items" test_menuMultiMark,
-    unitTestTimes 50 "toggle selection items" test_menuToggle,
+    unitTestTimes 100 "change mode" test_pureMenuModeChange,
+    unitTestTimes 100 "filter items" test_pureMenuFilter,
+    unitTestTimes 100 "execute an action" test_pureMenuExecute,
+    unitTestTimes 100 "mark multiple items" test_menuMultiMark,
+    -- TODO flaky
+    -- unitTestTimes 100 "toggle selection items" test_menuToggle,
     unitTest "delete selected" test_menuDeleteSelected,
     unitTest "unselected items with no selected items" test_menuUnselectedCursor
   ]

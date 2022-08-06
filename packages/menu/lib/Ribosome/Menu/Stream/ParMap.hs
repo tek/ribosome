@@ -14,7 +14,7 @@ parConcatMap ::
   t IO b
 parConcatMap chunks f s =
   Stream.bracket_ getNumCapabilities (const unit) \ threads ->
-    Stream.maxThreads threads $
+    Stream.maxThreads (max 1 (threads - 1)) $
     Stream.fromParallel $
     Stream.concatMapWith Stream.parallel (Stream.adapt . f) $
     Stream.adapt $
