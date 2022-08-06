@@ -2,6 +2,7 @@ module Ribosome.Host.Effect.Rpc where
 
 import Prelude hiding (async)
 
+import Ribosome.Host.Data.ChannelId (ChannelId)
 import Ribosome.Host.Data.RpcCall (RpcCall)
 import Ribosome.Host.Data.RpcError (RpcError)
 
@@ -38,5 +39,7 @@ data Rpc :: Effect where
   Async :: RpcCall a -> (Either RpcError a -> m ()) -> Rpc m ()
   -- |Send an RPC notification and return immediately.
   Notify :: RpcCall a -> Rpc m ()
+  -- |The Neovim RPC channel ID
+  ChannelId :: Rpc m ChannelId
 
 makeSem ''Rpc

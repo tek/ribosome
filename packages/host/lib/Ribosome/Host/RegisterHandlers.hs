@@ -6,8 +6,6 @@ import qualified Polysemy.Log as Log
 
 import Ribosome.Host.Api.Autocmd (autocmd)
 import Ribosome.Host.Api.Data (nvimCommand, nvimCreateUserCommand)
-import Ribosome.Host.Api.Effect (nvimGetApiInfo)
-import Ribosome.Host.Class.Msgpack.Decode (fromMsgpack)
 import Ribosome.Host.Class.Msgpack.Encode (toMsgpack)
 import Ribosome.Host.Data.ChannelId (ChannelId (ChannelId))
 import Ribosome.Host.Data.Execution (Execution (Async, Sync))
@@ -21,17 +19,6 @@ import qualified Ribosome.Host.Data.RpcType as RpcType
 import Ribosome.Host.Data.RpcType (CommandArgs (CommandArgs), CommandOptions (CommandOptions), RpcType, completionValue)
 import qualified Ribosome.Host.Effect.Rpc as Rpc
 import Ribosome.Host.Effect.Rpc (Rpc)
-
-channelId ::
-  Members [Rpc !! RpcError, Stop Report] r =>
-  Sem r ChannelId
-channelId =
-  resumeReport do
-    nvimGetApiInfo >>= \case
-      [fromMsgpack -> Right i, _] ->
-        pure (ChannelId i)
-      i ->
-        stop (fromString [exon|API info did not contain channel ID: #{show i}|])
 
 registerFailed ::
   Member Log r =>
@@ -91,5 +78,5 @@ registerHandlers ::
   [RpcHandler r] ->
   Sem (Stop Report : r) ()
 registerHandlers defs = do
-  i <- channelId
+  i <- resumeReport Rpc.channelId
   Rpc.sync (foldMap (registerHandler i) defs) !! registerFailed

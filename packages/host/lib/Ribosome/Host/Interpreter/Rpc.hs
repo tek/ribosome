@@ -6,16 +6,18 @@ import qualified Polysemy.Log as Log
 import qualified Polysemy.Process as Process
 import Polysemy.Process (Process)
 
+import Ribosome.Host.Data.ChannelId (ChannelId)
 import Ribosome.Host.Data.Request (
   Request (Request, method),
   RequestId,
   TrackedRequest (TrackedRequest),
+  arguments,
   formatReq,
-  formatTrackedReq, arguments,
+  formatTrackedReq,
   )
 import qualified Ribosome.Host.Data.Response as Response
 import Ribosome.Host.Data.Response (Response)
-import Ribosome.Host.Data.RpcCall (RpcCall)
+import Ribosome.Host.Data.RpcCall (RpcCall (RpcCallRequest))
 import qualified Ribosome.Host.Data.RpcError as RpcError
 import Ribosome.Host.Data.RpcError (RpcError)
 import qualified Ribosome.Host.Data.RpcMessage as RpcMessage
@@ -55,8 +57,24 @@ handleCall call handle =
     Left a ->
       pure a
 
+fetchChannelId ::
+  Member (AtomicState (Maybe ChannelId)) r =>
+  Members [Process RpcMessage o, Responses RequestId Response !! RpcError, Log, Stop RpcError] r =>
+  Sem r ChannelId
+fetchChannelId = do
+  (cid, ()) <- handleCall (RpcCallRequest (Request "nvim_get_api_info" [])) (request "sync")
+  cid <$ atomicPut (Just cid)
+
+cachedChannelId ::
+  Member (AtomicState (Maybe ChannelId)) r =>
+  Members [Process RpcMessage o, Responses RequestId Response !! RpcError, Log, Stop RpcError] r =>
+  Sem r ChannelId
+cachedChannelId =
+  maybe fetchChannelId pure =<< atomicGet
+
 interpretRpc ::
   ∀ o r .
+  Member (AtomicState (Maybe ChannelId)) r =>
   Members [Responses RequestId Response !! RpcError, Process RpcMessage o, Log, Async] r =>
   InterpreterFor (Rpc !! RpcError) r
 interpretRpc =
@@ -73,3 +91,5 @@ interpretRpc =
         Log.trace [exon|notify rpc: #{formatReq req}|]
         Process.send (RpcMessage.Notification req)
       unitT
+    Rpc.ChannelId ->
+      pureT =<< cachedChannelId

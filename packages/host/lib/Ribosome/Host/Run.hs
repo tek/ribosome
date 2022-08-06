@@ -1,6 +1,6 @@
 module Ribosome.Host.Run where
 
-import Conc (ChanConsumer, ChanEvents, interpretEventsChan)
+import Conc (ChanConsumer, ChanEvents, interpretAtomic, interpretEventsChan)
 import Polysemy.Process (Process)
 
 import Ribosome.Host.Data.Event (Event)
@@ -49,6 +49,8 @@ interpretRpcStack =
   interpretReports .
   interpretEventsChan @Event .
   interpretResponses .
+  interpretAtomic Nothing .
   interpretRpc .
+  raiseUnder .
   interpretDataLogRpc .
   interpretLogRpc

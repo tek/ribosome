@@ -37,6 +37,8 @@ modifyCmd modifier =
       pureT =<< Rpc.async (modifyCall modifier call) (\ r -> void (runTSimple (use r)))
     Rpc.Notify call ->
       pureT =<< Rpc.notify (modifyCall modifier call)
+    Rpc.ChannelId ->
+      pureT =<< Rpc.channelId
 
 silent ::
   Member Rpc r =>
