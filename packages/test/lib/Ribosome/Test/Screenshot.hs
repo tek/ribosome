@@ -18,14 +18,14 @@ import Prelude hiding (group)
 import qualified Time
 import Time (Seconds (Seconds))
 
-import Ribosome.Test.Wait (assertWait)
 import Ribosome.Host.Effect.Log (StderrLog, stderrLog)
+import Ribosome.Test.Wait (assertWait)
 
 -- |Nvim appears to add random whitespace sequences, optionally interspersed with color codes, to empty lines.
--- This remotes that noise from lines starting with `\ESC[94m~\ESC[39m`.
+-- This remotes that noise from lines starting with `~\ESC[39m` or `\ESC[94m~\ESC[39m`.
 sanitize :: Text -> Text
 sanitize =
-  [regex|\x{1b}\[94m~\x{1b}\[39m(\s*(\x{1b}\[94m\s*\x{1b}\[39m\s*)?)$|] . group 0 .~ ""
+  [regex|(\x{1b}\[94m)?~((\s|\x{1b}\[94m|\x{1b}\[39m)*)$|] . group 1 .~ ""
 
 screenshot ::
   Members [Tmux, Test, Error TestError, Embed IO] r =>
@@ -38,19 +38,21 @@ screenshot record name pane = do
   mapError TestError (Chiasma.screenshotSanitized sanitize record storage name pane)
 
 assertScreenshot ::
+  HasCallStack =>
   Members [NativeTmux, NativeCommandCodecE, Stop CodecError] r =>
   Members [Hedgehog IO, Test, Error TestError, Error Failure, ChronosTime, Race, Embed IO] r =>
   Text ->
   Int ->
   Sem r ()
 assertScreenshot name pane =
-  withTmux $ restop do
+  withFrozenCallStack $ withTmux $ restop do
     assertWait (screenshot False name pane) (traverse_ check)
   where
     check (current, existing) =
       existing === current
 
 updateScreeshot ::
+  HasCallStack =>
   Members [NativeTmux, NativeCommandCodecE, Stop CodecError] r =>
   Members [Hedgehog IO, Test, Error TestError, Error Failure, ChronosTime, StderrLog, Race, Embed IO] r =>
   Text ->
@@ -63,6 +65,7 @@ updateScreeshot name pane =
     void (screenshot True name pane)
 
 awaitScreenshot ::
+  HasCallStack =>
   Members [NativeTmux, NativeCommandCodecE, Stop CodecError] r =>
   Members [Hedgehog IO, Test, Error TestError, Error Failure, ChronosTime, StderrLog, Race, Embed IO] r =>
   Bool ->
@@ -73,4 +76,4 @@ awaitScreenshot = \case
   True ->
     updateScreeshot
   False ->
-    assertScreenshot
+    withFrozenCallStack assertScreenshot

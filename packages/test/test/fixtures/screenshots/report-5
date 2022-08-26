@@ -1,60 +1,60 @@
 
-[94m~[39m
-[94m~[39m
-[94m~[39m
-[94m~[39m
-[94m~[39m
-[94m~[39m
-[94m~[39m
-[94m~[39m
-[94m~[39m
-[94m~[39m
-[94m~[39m
-[94m~[39m
-[94m~[39m
-[94m~[39m
-[94m~[39m
-[94m~[39m
-[94m~[39m
-[94m~[39m
-[94m~[39m
-[94m~[39m
-[94m~[39m
-[94m~[39m
-[94m~[39m
-[94m~[39m
-[94m~[39m
-[94m~[39m
-[94m~[39m
-[94m~[39m
-[94m~[39m
-[94m~[39m
-[94m~[39m
-[94m~[39m
-[94m~[39m
-[94m~[39m
-[94m~[39m
-[94m~[39m
-[94m~[39m
-[94m~[39m
-[94m~[39m
-[94m~[39m
-[94m~[39m
-[94m~[39m
-[94m~[39m
-[94m~[39m
-[94m~[39m
-[94m~[39m
-[94m~[39m
-[94m~[39m
-[94m~[39m
-[94m~[39m
-[94m~[39m
-[94m~[39m
-[94m~[39m
-[1;7m
-[0m[97m[41mError detected while processing function StopError:[39m[49m
-[93mline    1:[39m
-[97m[41mError invoking 'function:StopError' on channel 3:[39m[49m
-[97m[41mreport an error Stop by responding[39m[49m
-[38;5;121mPress ENTER or type command to continue[39m
+[94m~
+~
+~
+~
+~
+~
+~
+~
+~
+~
+~
+~
+~
+~
+~
+~
+~
+~
+~
+~
+~
+~
+~
+~
+~
+~
+~
+~
+~
+~
+~
+~
+~
+~
+~
+~
+~
+~
+~
+~
+~
+~
+~
+~
+~
+~
+~
+~
+~
+~
+~
+~
+~
+[1;7m[39m
+[0m[97m[41mError detected while processing function StopError:
+[93m[49mline    1:
+[97m[41mError invoking 'function:StopError' on channel 3:
+report an error Stop by responding
+[38;5;121m[49mPress ENTER or type command to continue
