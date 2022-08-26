@@ -91,4 +91,5 @@ awaitScreenshot ::
   Int ->
   Sem r ()
 awaitScreenshot record =
-  awaitScreenshot' record True
+  withFrozenCallStack do
+    awaitScreenshot' record True
