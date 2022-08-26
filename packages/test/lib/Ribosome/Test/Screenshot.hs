@@ -30,23 +30,25 @@ sanitize =
 screenshot ::
   Members [Tmux, Test, Error TestError, Embed IO] r =>
   Bool ->
+  Bool ->
   Text ->
   Int ->
   Sem r (Maybe ([Text], [Text]))
-screenshot record name pane = do
+screenshot record sane name pane = do
   storage <- Test.fixturePath [reldir|screenshots|]
-  mapError TestError (Chiasma.screenshotSanitized sanitize record storage name pane)
+  mapError TestError (Chiasma.screenshotSanitized (if sane then sanitize else id) record storage name pane)
 
 assertScreenshot ::
   HasCallStack =>
   Members [NativeTmux, NativeCommandCodecE, Stop CodecError] r =>
   Members [Hedgehog IO, Test, Error TestError, Error Failure, ChronosTime, Race, Embed IO] r =>
+  Bool ->
   Text ->
   Int ->
   Sem r ()
-assertScreenshot name pane =
+assertScreenshot sane name pane =
   withFrozenCallStack $ withTmux $ restop do
-    assertWait (screenshot False name pane) (traverse_ check)
+    assertWait (screenshot False sane name pane) (traverse_ check)
   where
     check (current, existing) =
       existing === current
@@ -55,14 +57,30 @@ updateScreeshot ::
   HasCallStack =>
   Members [NativeTmux, NativeCommandCodecE, Stop CodecError] r =>
   Members [Hedgehog IO, Test, Error TestError, Error Failure, ChronosTime, StderrLog, Race, Embed IO] r =>
+  Bool ->
   Text ->
   Int ->
   Sem r ()
-updateScreeshot name pane =
+updateScreeshot sane name pane =
   withTmux $ restop do
     stderrLog (Log.info [exon|Waiting for one second before storing new screenshot for '#{name}'|])
     Time.sleep (Seconds 1)
-    void (screenshot True name pane)
+    void (screenshot sane True name pane)
+
+awaitScreenshot' ::
+  HasCallStack =>
+  Members [NativeTmux, NativeCommandCodecE, Stop CodecError] r =>
+  Members [Hedgehog IO, Test, Error TestError, Error Failure, ChronosTime, StderrLog, Race, Embed IO] r =>
+  Bool ->
+  Bool ->
+  Text ->
+  Int ->
+  Sem r ()
+awaitScreenshot' = \case
+  True ->
+    updateScreeshot
+  False ->
+    withFrozenCallStack assertScreenshot
 
 awaitScreenshot ::
   HasCallStack =>
@@ -72,8 +90,5 @@ awaitScreenshot ::
   Text ->
   Int ->
   Sem r ()
-awaitScreenshot = \case
-  True ->
-    updateScreeshot
-  False ->
-    withFrozenCallStack assertScreenshot
+awaitScreenshot record =
+  awaitScreenshot' record True
