@@ -158,7 +158,7 @@ geometry = do
   pure (height - marginV, marginH, height - 2 * marginV, width - 2 * marginH)
   where
     marginRatio =
-      0.2 :: Float
+      0.05 :: Float
 
 itemsOptions :: (Int, Int, Int, Int) -> ScratchOptions -> ScratchOptions
 itemsOptions (row, col, height, width) =
