@@ -8,7 +8,7 @@ import Polysemy.Conc.Gate (signal)
 import Prelude hiding (group)
 
 import qualified Ribosome.Api.Mode as Api
-import Ribosome.Api.Window (currentCursor, windowExec)
+import Ribosome.Api.Window (currentCursor, windowExec, setCursor)
 import qualified Ribosome.Data.FloatOptions as FloatOptions
 import Ribosome.Data.FloatOptions (FloatAnchor (SW), FloatRelative (Editor))
 import Ribosome.Data.Mapping (Mapping, MappingId (MappingId), MappingLhs (MappingLhs), MappingSpec (MappingSpec))
@@ -51,6 +51,7 @@ import qualified Ribosome.Menu.Prompt.Data.PromptEvent as PromptEvent
 import Ribosome.Menu.Prompt.Data.PromptEvent (PromptEvent)
 import qualified Ribosome.Menu.Prompt.Data.PromptMode as PromptMode
 import Ribosome.Menu.Prompt.Data.PromptMode (PromptMode)
+import Ribosome.Data.ScratchState (ScratchState)
 
 pattern MenuMapping :: MappingId -> Event
 pattern MenuMapping {id} <- Event "menu-mapping" [Msgpack id]
@@ -210,7 +211,7 @@ withPrompt ::
   PromptConfig ->
   [MappingSpec] ->
   (Int, Int, Int, Int) ->
-  Sem (Consume PromptEvent : r) a ->
+  (ScratchState -> Sem (Consume PromptEvent : r) a) ->
   Sem r a
 withPrompt pconf mappings geo use =
   interpretEventsChan @PromptEvent $ bracket acquire release \ s -> do
@@ -219,7 +220,7 @@ withPrompt pconf mappings geo use =
     subscribe @PromptEvent do
       void (nvimBufAttach (s ^. #buffer) False mempty)
       withAsyncGated_ (promptBufferEvents pconf) do
-        insertAt @1 use
+        insertAt @1 (use s)
   where
     acquire =
       Scratch.show @_ @[] [] (promptOptions geo mappings)
@@ -235,21 +236,24 @@ windowResources ::
   NvimMenuConfig ->
   (WindowMenu -> Sem (WindowScope ++ r) a) ->
   Sem r a
-windowResources (NvimMenuConfig pconf options mappings) use = do
+windowResources (NvimMenuConfig pconf options mappings) use =
   restop @_ @Rpc $ restop @_ @Scratch do
     geo <- geometry
     withItemsScratch (itemsOptions geo options) \ itemsScratch ->
-      withPrompt pconf mappings geo do
-        insertAt @2 (use (WindowMenu itemsScratch))
+      withPrompt pconf mappings geo \ promptScratch ->
+        insertAt @2 (use (WindowMenu itemsScratch promptScratch))
 
--- TODO implement RenderPrompt only for consumer-updated prompts
+-- TODO see how a 'buftype=prompt' looks
 interpretMenuUiWindow ::
   Members [Log, GatesIO, Resource, Race, Async, Embed IO] r =>
   Members [Scratch !! RpcError, Rpc !! RpcError, Settings !! SettingError, EventConsumer eres Event] r =>
   InterpreterFor WindowMenuUi r
 interpretMenuUiWindow =
-  interpretPScopedResumableWith @WindowScope windowResources \ (WindowMenu itemsScratch) -> \case
-    RenderPrompt _ ->
+  interpretPScopedResumableWith @WindowScope windowResources \ (WindowMenu itemsScratch promptScratch) -> \case
+    RenderPrompt True (Prompt cursor _ (PromptText text)) -> do
+      void (restop (Scratch.update (promptScratch ^. #id) ([text] :: [Text])))
+      restop (setCursor (promptScratch ^. #window) 0 cursor)
+    RenderPrompt False _ ->
       unit
     PromptEvent _ ->
       consume

@@ -166,7 +166,7 @@ interpretMenuUiNvimEcho ::
   InterpreterFor (NvimMenuUi EchoMenu) r
 interpretMenuUiNvimEcho =
   interpretPScopedResumableWith @EchoScope echoResources \ (EchoMenu conf scr) -> \case
-    RenderPrompt prompt ->
+    RenderPrompt _ prompt ->
       restop (nvimRenderPrompt prompt)
     PromptEvent prompt ->
       promptEvent conf prompt
@@ -186,7 +186,7 @@ interpretGetCharMenuNvimNoRender ::
   InterpreterFor (NvimMenuUi PromptConfig) r
 interpretGetCharMenuNvimNoRender =
   interpretPScopedResumableWithH @[PromptEvents, Queue GetCharEvent] onlyPromptEvents \ conf -> \case
-    RenderPrompt _ ->
+    RenderPrompt _ _ ->
       unitT
     PromptEvent prompt ->
       pureT =<< promptEvent conf prompt

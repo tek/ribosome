@@ -27,6 +27,7 @@ import qualified Ribosome.Menu.Effect.MenuUi as MenuUi
 import Ribosome.Menu.Effect.MenuUi (MenuUi, NvimMenuConfig (NvimMenuConfig), NvimMenuUi, withMenuUi)
 import Ribosome.Menu.Interpreter.MenuState (mcState')
 import Ribosome.Menu.Mappings (Mappings, defaultMappings)
+import Ribosome.Menu.Prompt.Data.Prompt (Prompt)
 import Ribosome.Menu.Prompt.Data.PromptConfig (PromptConfig)
 import qualified Ribosome.Menu.Prompt.Data.PromptEvent as PromptEvent
 import Ribosome.Menu.Prompt.Data.PromptEvent (PromptEvent)
@@ -89,6 +90,11 @@ handlePromptEvent mappings = \case
   PromptEvent.Ignore ->
     pure PromptAction.Continue
 
+consumerChangedPrompt :: Prompt -> PromptEvent -> Bool
+consumerChangedPrompt new = \case
+  PromptEvent.Update old -> new /= old
+  _ -> True
+
 menu' ::
   ∀ i a r .
   Members [MenuLoop i, MenuUi, Log] r =>
@@ -107,7 +113,7 @@ menu' mappings = do
           pure (old, Just result)
         PromptAction.Update new -> do
           MenuLoop.promptUpdated new
-          MenuUi.renderPrompt new
+          MenuUi.renderPrompt (consumerChangedPrompt new event) new
           pure (new, Nothing)
         PromptAction.Continue ->
           pure (old, Nothing)

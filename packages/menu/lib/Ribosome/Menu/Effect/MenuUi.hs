@@ -12,7 +12,7 @@ import Ribosome.Menu.Prompt.Data.PromptConfig (PromptConfig)
 import Ribosome.Menu.Prompt.Data.PromptEvent (PromptEvent)
 
 data MenuUi :: Effect where
-  RenderPrompt :: Prompt -> MenuUi m ()
+  RenderPrompt :: Bool -> Prompt -> MenuUi m ()
   PromptEvent :: Prompt -> MenuUi m PromptEvent
   Render :: Menu i -> MenuUi m ()
 
@@ -34,7 +34,8 @@ data EchoMenu =
 
 data WindowMenu =
   WindowMenu {
-    scratch :: ScratchState
+    itemsScratch :: ScratchState,
+    promptScratch :: ScratchState
   }
   deriving stock (Eq, Show)
 

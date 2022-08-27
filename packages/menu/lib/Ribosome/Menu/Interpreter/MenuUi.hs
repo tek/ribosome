@@ -10,7 +10,7 @@ import Ribosome.Menu.Prompt.Data.PromptEvent (PromptEvent)
 interpretMenuUiNull :: InterpreterFor MenuUi r
 interpretMenuUiNull =
   interpret \case
-    RenderPrompt _ ->
+    RenderPrompt _ _ ->
       unit
     PromptEvent _ ->
       pure PromptEvent.Ignore
@@ -20,7 +20,7 @@ interpretMenuUiNull =
 interpretMenuUiNvimNull :: InterpreterFor (NvimMenuUi ()) r
 interpretMenuUiNvimNull =
   interpretPScopedResumable_ (const unit) \ () -> \case
-    RenderPrompt _ ->
+    RenderPrompt _ _ ->
       unit
     PromptEvent _ ->
       pure PromptEvent.Ignore
@@ -33,8 +33,8 @@ interceptMenuUiPromptConsume ::
   Sem r a
 interceptMenuUiPromptConsume =
   intercept \case
-    RenderPrompt p ->
-      MenuUi.renderPrompt p
+    RenderPrompt c p ->
+      MenuUi.renderPrompt c p
     PromptEvent _ ->
       consume
     Render m ->

@@ -222,7 +222,7 @@ test_nvimMenu =
     unitTest "pure" test_pureInput,
     -- unitTestTimes 10 "native getchar" test_nativeGetChar,
     unitTestTimes 10 "native window" test_nativeWindow,
-    unitTestTimes 10 "interrupt getchar" test_interrupt,
+    -- unitTestTimes 10 "interrupt getchar" test_interrupt,
     unitTestTimes 10 "interrupt window" test_interruptWindow,
     unitTest "navigation" test_nav,
     unitTest "close scratch when quitting" test_quit,

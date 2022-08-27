@@ -58,8 +58,8 @@ interceptMenuUiQueue ::
   Sem r a
 interceptMenuUiQueue =
   interceptH \case
-    RenderPrompt prompt ->
-      pureT =<< MenuUi.renderPrompt prompt
+    RenderPrompt consumer prompt ->
+      pureT =<< MenuUi.renderPrompt consumer prompt
     PromptEvent _ -> do
       pureT =<< failQueue "MenuUi PromptEvent" Queue.read
     Render menu ->

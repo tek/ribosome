@@ -33,7 +33,7 @@ enqueueItems =
   intercept \case
     MenuUi.Render menu ->
       evalMaybe . resultToMaybe =<< Queue.writeTimeout (Seconds 5) (MenuItem.text . Entry.item <$> menu ^. #items . sortedEntries)
-    MenuUi.RenderPrompt _ ->
+    MenuUi.RenderPrompt _ _ ->
       unit
     MenuUi.PromptEvent _ ->
       pure PromptEvent.Ignore

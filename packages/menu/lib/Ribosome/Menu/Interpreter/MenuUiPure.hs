@@ -42,7 +42,7 @@ interpretMenuUiPureAtomic ::
   InterpreterFor (NvimMenuUi PureMenu) r
 interpretMenuUiPureAtomic =
   interpretPScopedResumable_ (const (pure PureMenu)) \ PureMenu -> \case
-    RenderPrompt _ ->
+    RenderPrompt _ _ ->
       unit
     PromptEvent _ -> do
       gate
