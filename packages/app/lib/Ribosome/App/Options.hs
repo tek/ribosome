@@ -45,7 +45,7 @@ import Ribosome.App.Data (
   SkipCachix (SkipCachix),
   )
 import qualified Ribosome.App.ProjectNames as ProjectNames
-import Ribosome.CliParser (dirPathOption)
+import Ribosome.Host.Optparse (dirPathOption)
 
 data ProjectOptions =
   ProjectOptions {

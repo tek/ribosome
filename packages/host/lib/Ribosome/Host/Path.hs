@@ -1,5 +1,5 @@
 -- |Path combinators.
-module Ribosome.Path where
+module Ribosome.Host.Path where
 
 import Path (Path, toFilePath)
 

@@ -30,7 +30,7 @@ import Ribosome.Host.Data.RpcError (RpcError)
 import qualified Ribosome.Host.Effect.Rpc as Rpc
 import Ribosome.Host.Effect.Rpc (Rpc)
 import Ribosome.Host.Modify (silentBang)
-import Ribosome.Path (pathText)
+import Ribosome.Host.Path (pathText)
 
 -- |Load a 'Path' into a buffer in the current window using @:edit@.
 edit ::

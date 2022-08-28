@@ -155,7 +155,28 @@ in {
         "tasty"
       ];
     };
-    executables.ribosome = exe "ribosome" "app" {};
+  };
+
+  ribosome-app = merge (project "ribosome-app" "Ribosome.App") {
+    synopsis = "CLI for Ribosome";
+    library.dependencies = [
+      "exon"
+      "optparse-applicative"
+      "path"
+      "path-io"
+      "polysemy-chronos"
+      "rainbow"
+      "ribosome-host"
+    ];
+    tests.ribosome-app-unit = exe "ribosome-app" "test" {
+      dependencies = [
+        "chronos"
+        "path"
+        "polysemy-test"
+        "tasty"
+      ];
+    };
+    executables.ribosome = exe "ribosome-app" "app" {};
   };
 
   ribosome-test = merge (project "ribosome-test" "Ribosome-Test") {

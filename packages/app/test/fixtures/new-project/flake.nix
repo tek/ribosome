@@ -16,6 +16,7 @@
     cachixName = "cach";
     cachixKey = "12345";
     depsFull = [ribosome];
+    devGhc.compiler = "ghc902";
     overrides = { buildInputs, pkgs, ... }: {
       test-project = buildInputs [pkgs.neovim pkgs.tmux pkgs.xterm];
     };

@@ -6,7 +6,7 @@ import Path (Abs, Dir, Path)
 import Polysemy.Log (Severity (Error))
 
 import Ribosome.Host.Data.Report (Report (Report), Reportable (toReport))
-import Ribosome.Path (pathText)
+import Ribosome.Host.Path (pathText)
 
 -- |The errors emitted by the effect 'Ribosome.PersistPath'.
 data PersistPathError =

@@ -1,4 +1,4 @@
-module Ribosome.Test.NewProjectTest where
+module Ribosome.App.Test.NewProjectTest where
 
 import qualified Chronos
 import Chronos (datetimeToTime)

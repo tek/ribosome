@@ -18,7 +18,7 @@ import Options.Applicative (
 import Path (Abs, Dir, Path)
 import Path.IO (getCurrentDir)
 
-import Ribosome.CliParser (filePathOption, severityOption)
+import Ribosome.Host.Optparse (filePathOption, severityOption)
 import Ribosome.Data.CliConfig (CliConfig (CliConfig), CliLogConfig (CliLogConfig))
 import Ribosome.Data.PluginName (PluginName (PluginName))
 import Ribosome.Host.Data.HostConfig (HostConfig (HostConfig), LogConfig (LogConfig))

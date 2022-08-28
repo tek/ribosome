@@ -10,7 +10,7 @@ let
     export RIBOSOME_FLAKE_URL='path:${self}'
     dir=$(mktemp --directory)
     cd $dir
-    nix run ''${RIBOSOME_FLAKE_URL}#new -- $name -a Author -m maint@ain.er -o org -r proj -b main
+    nix run ''${RIBOSOME_FLAKE_URL}#new -- $name -a Author -m maint@ain.er -o org -r proj -b main --skip-cachix
     cd $dir/$name
     nix build .#static
     if [[ ! -e result/bin/$name ]]

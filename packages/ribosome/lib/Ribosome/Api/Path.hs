@@ -8,7 +8,7 @@ import Ribosome.Host.Api.Effect (nvimCommand, vimCallFunction)
 import Ribosome.Host.Data.Report (Report)
 import Ribosome.Host.Effect.Rpc (Rpc)
 import Ribosome.Internal.Path (failInvalidPath)
-import Ribosome.Path (pathText)
+import Ribosome.Host.Path (pathText)
 
 -- |Get Neovim's current working directory.
 nvimCwd ::

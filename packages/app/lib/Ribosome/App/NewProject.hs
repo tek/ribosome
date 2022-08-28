@@ -10,7 +10,7 @@ import Ribosome.App.Error (RainbowError)
 import Ribosome.App.TemplateTree (writeTemplateTree)
 import Ribosome.App.Templates (newProjectTemplates)
 import Ribosome.App.UserInput (cmdColor, infoMessage, neovimChunk, pathChunk, pathColor, putStderr)
-import Ribosome.Path (pathText)
+import Ribosome.Host.Path (pathText)
 
 newProject ::
   Members [ChronosTime, Stop RainbowError, Embed IO] r =>

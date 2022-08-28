@@ -10,13 +10,13 @@ pingTestHs (ModuleName modName) =
 
 import Polysemy.Test (UnitTest, (===))
 import Ribosome.Api (nvimCallFunction)
-import Ribosome.Test (testHandlers)
+import Ribosome.Test (testPlugin)
 
 import #{modName}.Plugin (#{modName}Stack, handlers, interpret#{modName}Stack)
 
 test_ping :: UnitTest
 test_ping =
-  testHandlers @#{modName}Stack interpret#{modName}Stack handlers do
+  testPlugin @#{modName}Stack interpret#{modName}Stack handlers do
     r <- call *> call *> call
     (3 :: Int) === r
   where

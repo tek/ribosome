@@ -8,7 +8,7 @@ on:
 
 jobs:
   release:
-    name: 'Push to Cachix'
+    name: 'Test and push to Cachix'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2.4.0
@@ -24,3 +24,5 @@ jobs:
           signingKey: '${{ secrets.CACHIX_SIGNING_KEY }}'
       - name: 'build'
         run: nix build .#ribosome-menu
+      - name: 'template test'
+        run: nix run .#template-test

@@ -42,6 +42,7 @@
     packages = {
       integration = ./packages/integration;
       ribosome = ./packages/ribosome;
+      ribosome-app = ./packages/app;
       ribosome-host = ./packages/host;
       ribosome-host-test = ./packages/host-test;
       ribosome-menu = ./packages/menu;

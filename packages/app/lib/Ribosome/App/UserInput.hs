@@ -21,7 +21,7 @@ import Rainbow (
 import System.IO (getLine, stderr)
 
 import Ribosome.App.Error (RainbowError, appError, outputError)
-import Ribosome.Path (pathText)
+import Ribosome.Host.Path (pathText)
 
 color :: Radiant -> Word8 -> Chunk -> Chunk
 color r c =

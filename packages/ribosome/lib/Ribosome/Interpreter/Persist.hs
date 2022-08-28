@@ -15,7 +15,7 @@ import Ribosome.Effect.Persist (Persist)
 import Ribosome.Effect.PersistPath (PersistPath, persistRoot)
 import Ribosome.Host.Data.BootError (BootError (BootError))
 import Ribosome.Host.Interpret (with)
-import Ribosome.Path (pathText)
+import Ribosome.Host.Path (pathText)
 
 -- |Obtain the root directory or stop.
 persistBase ::

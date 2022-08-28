@@ -10,6 +10,7 @@ import Ribosome.App.Data (
   Project (..),
   ProjectName (ProjectName),
   ProjectNames,
+  SkipCachix (SkipCachix),
   )
 import Ribosome.App.Error (RainbowError, appError)
 import Ribosome.App.Options (ProjectOptions)
@@ -66,6 +67,18 @@ askCachix ::
 askCachix key =
   traverse (withCachixName key) =<< askUser "Cachix name? (Empty skips Cachix, ignore if unclear)"
 
+cachixOption ::
+  Members [Stop RainbowError, Embed IO] r =>
+  Maybe CachixKey ->
+  Maybe CachixName ->
+  SkipCachix ->
+  Sem r (Maybe Cachix)
+cachixOption cachixKey cachixName = \case
+  SkipCachix True ->
+    pure Nothing
+  SkipCachix False ->
+    maybe (askCachix cachixKey) (fmap Just . withCachixName cachixKey) cachixName
+
 projectOptions ::
   Members [Stop RainbowError, Embed IO] r =>
   Bool ->
@@ -76,12 +89,10 @@ projectOptions appendNameToCwd opts = do
   directory <- maybe (cwdProjectPath appendNameToCwd (names ^. #nameDir)) pure (opts ^. #directory)
   let name = names ^. #name
   github <- maybe (askGithub name repo) (fmap Just . withOrg name repo) (opts ^. #githubOrg)
-  cachix <- maybe (askCachix cachixKey) (fmap Just . withCachixName cachixKey) (opts ^. #cachixName)
+  cachix <- cachixOption (opts ^. #cachixKey) (opts ^. #cachixName) (opts ^. #skipCachix)
   pure Project {..}
   where
     repo =
       opts ^. #githubRepo
     branch =
       fromMaybe "master" (opts ^. #branch)
-    cachixKey =
-      opts ^. #cachixKey

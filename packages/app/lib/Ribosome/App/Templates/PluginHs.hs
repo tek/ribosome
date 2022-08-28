@@ -14,7 +14,7 @@ import Ribosome (
   Handler,
   RpcHandler,
   rpcFunction,
-  runNvimHandlersIO,
+  runNvimPluginIO,
   )
 
 type #{modName}Stack =
@@ -50,5 +50,5 @@ interpret#{modName}Stack sem =
 
 main :: IO ()
 main =
-  runNvimHandlersIO @#{modName}Stack "#{name}" interpret#{modName}Stack handlers
+  runNvimPluginIO @#{modName}Stack "#{name}" interpret#{modName}Stack handlers
 |]

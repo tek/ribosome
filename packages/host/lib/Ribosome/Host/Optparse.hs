@@ -1,5 +1,5 @@
 -- |Combinators for @optparse-applicative@.
-module Ribosome.CliParser where
+module Ribosome.Host.Optparse where
 
 import Exon (exon)
 import Log (Severity, parseSeverity)

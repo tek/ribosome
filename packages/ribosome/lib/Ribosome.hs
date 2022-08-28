@@ -329,6 +329,7 @@ import Ribosome.Host.Handler.Command (CommandHandler (commandOptions))
 import Ribosome.Host.Interpreter.Handlers (interpretHandlers, noHandlers, withHandlers)
 import Ribosome.Host.Interpreter.MState (evalMState, interpretMState, interpretMStates)
 import Ribosome.Host.Modify (bufdo, modifyCmd, noautocmd, silent, silentBang, windo)
+import Ribosome.Host.Path (pathText)
 import Ribosome.IOStack (BasicPluginStack, runBasicPluginStack, runCli)
 import Ribosome.Interpreter.Persist (interpretPersist, interpretPersistNull)
 import Ribosome.Interpreter.PersistPath (interpretPersistPath, interpretPersistPathAt, interpretPersistPathSetting)
@@ -337,7 +338,6 @@ import Ribosome.Interpreter.Settings (interpretSettingsRpc)
 import Ribosome.Interpreter.UserError (interpretUserErrorPrefixed)
 import Ribosome.Interpreter.VariableWatcher (watchVariables)
 import Ribosome.Mapping (activateBufferMapping, activateMapping, eventMapping, mappingFor)
-import Ribosome.Path (pathText)
 import Ribosome.Remote (
   RemoteStack,
   interpretPluginRemote,

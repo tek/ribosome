@@ -48,6 +48,7 @@ flakeNix (FlakeUrl flakeUrl) (ProjectName name) (Branch branch) github cachix =
     exe = "#{name}";
     branch = "#{branch}";#{foldMap githubAttrs github}#{foldMap cachixAttrs cachix}
     depsFull = [ribosome];
+    devGhc.compiler = "ghc902";
     overrides = { buildInputs, pkgs, ... }: {
       #{name} = buildInputs [pkgs.neovim pkgs.tmux pkgs.xterm];
     };
