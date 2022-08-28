@@ -12,3 +12,11 @@ import Ribosome.Effect.Settings (Settings, get, maybe, or, update)
 tmuxSocket :: Setting FilePath
 tmuxSocket =
   Setting "tmux_socket" True Nothing
+
+menuMarginVertical :: Setting Float
+menuMarginVertical =
+  Setting "ribosome_menu_margin_vertical" False (Just 0.2)
+
+menuMarginHorizontal :: Setting Float
+menuMarginHorizontal =
+  Setting "ribosome_menu_margin_horizontal" False (Just 0.1)

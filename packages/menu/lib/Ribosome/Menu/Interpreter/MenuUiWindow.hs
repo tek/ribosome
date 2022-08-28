@@ -8,13 +8,14 @@ import Polysemy.Conc.Gate (signal)
 import Prelude hiding (group)
 
 import qualified Ribosome.Api.Mode as Api
-import Ribosome.Api.Window (currentCursor, windowExec, setCursor)
+import Ribosome.Api.Window (currentCursor, setCursor, windowExec)
 import qualified Ribosome.Data.FloatOptions as FloatOptions
 import Ribosome.Data.FloatOptions (FloatAnchor (SW), FloatRelative (Editor))
 import Ribosome.Data.Mapping (Mapping, MappingId (MappingId), MappingLhs (MappingLhs), MappingSpec (MappingSpec))
 import Ribosome.Data.Mode (NvimMode (NvimMode))
 import Ribosome.Data.ScratchOptions (ScratchOptions, scratch)
 import qualified Ribosome.Data.ScratchState as Scratch
+import Ribosome.Data.ScratchState (ScratchState)
 import Ribosome.Data.SettingError (SettingError)
 import qualified Ribosome.Effect.Scratch as Scratch
 import Ribosome.Effect.Scratch (Scratch)
@@ -51,7 +52,7 @@ import qualified Ribosome.Menu.Prompt.Data.PromptEvent as PromptEvent
 import Ribosome.Menu.Prompt.Data.PromptEvent (PromptEvent)
 import qualified Ribosome.Menu.Prompt.Data.PromptMode as PromptMode
 import Ribosome.Menu.Prompt.Data.PromptMode (PromptMode)
-import Ribosome.Data.ScratchState (ScratchState)
+import qualified Ribosome.Settings as Settings
 
 pattern MenuMapping :: MappingId -> Event
 pattern MenuMapping {id} <- Event "menu-mapping" [Msgpack id]
@@ -146,20 +147,19 @@ promptMappings custom =
       eventMapping mappingEvent lhs mode (Just (MappingId (escapeLt mid))) (msgpackMap ("nowait", True))
 
 geometry ::
-  Member Rpc r =>
+  Members [Settings !! SettingError, Rpc] r =>
   Sem r (Int, Int, Int, Int)
 geometry = do
+  marginRatioV <- Settings.or 0.2 Settings.menuMarginVertical
+  marginRatioH <- Settings.or 0.1 Settings.menuMarginHorizontal
   width <- nvimGetOption "columns"
   height <- nvimGetOption "lines"
   let
     marginV =
-      round (fromIntegral height * marginRatio)
+      round (fromIntegral height * marginRatioV)
     marginH =
-      round (fromIntegral width * marginRatio)
+      round (fromIntegral width * marginRatioH)
   pure (height - marginV, marginH, height - 2 * marginV, width - 2 * marginH)
-  where
-    marginRatio =
-      0.05 :: Float
 
 itemsOptions :: (Int, Int, Int, Int) -> ScratchOptions -> ScratchOptions
 itemsOptions (row, col, height, width) =
