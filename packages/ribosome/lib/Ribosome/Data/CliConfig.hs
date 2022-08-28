@@ -1,7 +1,10 @@
+-- |Config data types for the CLI option parser.
 module Ribosome.Data.CliConfig where
-import Path (Path, Abs, File)
-import Log (Severity)
 
+import Log (Severity)
+import Path (Abs, File, Path)
+
+-- |Intermediate data type with optional fields for 'Ribosome.LogConfig'.
 data CliLogConfig =
   CliLogConfig {
     logFile :: Maybe (Path Abs File),
@@ -11,6 +14,7 @@ data CliLogConfig =
   }
   deriving stock (Eq, Show)
 
+-- |Intermediate data type with optional fields for 'Ribosome.HostConfig'.
 data CliConfig =
   CliConfig {
     log :: CliLogConfig

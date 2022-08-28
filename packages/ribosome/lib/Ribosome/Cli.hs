@@ -1,3 +1,4 @@
+-- |@optparse-applicative@ parsers for the Ribosome CLI.
 module Ribosome.Cli where
 
 import Exon (exon)
@@ -22,6 +23,7 @@ import Ribosome.Data.CliConfig (CliConfig (CliConfig), CliLogConfig (CliLogConfi
 import Ribosome.Data.PluginName (PluginName (PluginName))
 import Ribosome.Host.Data.HostConfig (HostConfig (HostConfig), LogConfig (LogConfig))
 
+-- |Parse the options related to logging.
 logParser ::
   Path Abs Dir ->
   Parser CliLogConfig
@@ -32,6 +34,7 @@ logParser cwd = do
   levelFile <- optional (option severityOption (long "log-level-file"))
   pure (CliLogConfig logFile levelEcho levelStderr levelFile)
 
+-- |Parse the host config as well as the arbitrary user defined config.
 confParser ::
   Path Abs Dir ->
   Parser c ->
@@ -41,6 +44,7 @@ confParser cwd customParser = do
   custom <- customParser
   pure (cli, custom)
 
+-- |Parse the host config as well as the arbitrary user defined config, in 'IO'.
 parseCli ::
   PluginName ->
   Parser c ->
@@ -54,6 +58,7 @@ parseCli (PluginName name) customParser = do
     desc =
       fullDesc <> header [exon|#{toString name} is a Neovim plugin.|]
 
+-- |Parse the CLI options for a plugin config and update a default 'HostConfig' with the CLI options.
 withDefault :: HostConfig -> CliConfig -> HostConfig
 withDefault (HostConfig defLog) cliConfig =
   HostConfig log
@@ -66,6 +71,7 @@ withDefault (HostConfig defLog) cliConfig =
       LogConfig (file <|> defFile) (fromMaybe defLevelEcho levelEcho) (fromMaybe defLevelStderr levelStderr)
       (fromMaybe defLevelFile levelFile) conc
 
+-- |Parse the CLI options for a plugin config and pass an updated default 'HostConfig' to a callback.
 withCli ::
   PluginName ->
   HostConfig ->

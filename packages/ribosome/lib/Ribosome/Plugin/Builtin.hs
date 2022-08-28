@@ -1,3 +1,4 @@
+-- |Interceptor that adds internal RPC handlers to the host.
 module Ribosome.Plugin.Builtin where
 
 import Exon (exon)
@@ -22,6 +23,7 @@ import Ribosome.Host.Handler (rpcAutocmd, rpcFunction)
 import Ribosome.Host.Interpreter.Handlers (withHandlers)
 import Ribosome.Text (capitalize)
 
+-- |The set of autocmds that should trigger an update in 'VariableWatcher'.
 watcherEvents :: [(Text, AutocmdPatterns)]
 watcherEvents =
   [
@@ -31,12 +33,14 @@ watcherEvents =
     ("User", "RibosomeUpdateVariables")
   ]
 
+-- |Run 'VariableWatcher.update' and restop errors.
 updateVar ::
   Member (VariableWatcher !! Report) r =>
   Handler r ()
 updateVar =
   restop VariableWatcher.update
 
+-- |Declare an autocmd that triggers the variable watcher.
 watcherRpc ::
   ∀ r .
   Member (VariableWatcher !! Report) r =>
@@ -51,25 +55,29 @@ watcherRpc (PluginName name) event pat =
     method =
       [exon|#{capitalize name}VariableChanged#{event}|]
 
+-- |Delete a scratch buffer.
 deleteScratch ::
   Member (Scratch !! RpcError) r =>
   ScratchId ->
   Handler r ()
 deleteScratch =
-  resumeReport . Scratch.kill
+  resumeReport . Scratch.delete
 
+-- |The name for the handler that is triggered by a scratch buffer being deleted.
 deleteName :: PluginName -> RpcName
 deleteName (PluginName name) =
   RpcName [exon|#{capitalize name}DeleteScratch|]
 
+-- |A set of 'RpcHandler's for internal tasks.
 builtinHandlers ::
   ∀ r .
   Members [Scratch !! RpcError, VariableWatcher !! Report] r =>
   PluginName ->
   [RpcHandler r]
 builtinHandlers name =
-    rpcFunction (deleteName name) Async deleteScratch : (uncurry (watcherRpc name) <$> watcherEvents)
+  rpcFunction (deleteName name) Async deleteScratch : (uncurry (watcherRpc name) <$> watcherEvents)
 
+-- |The dependencies of the builtin handlers.
 type BuiltinHandlersDeps =
   [
     VariableWatcher !! Report,
@@ -81,6 +89,7 @@ type BuiltinHandlersDeps =
     Log
   ]
 
+-- |Add builtin handlers to 'Handlers' without removing the effect from the stack.
 interceptHandlersBuiltin ::
   Members BuiltinHandlersDeps r =>
   Sem r a ->

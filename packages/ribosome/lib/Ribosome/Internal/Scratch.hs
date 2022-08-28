@@ -1,3 +1,6 @@
+{-# options_haddock prune #-}
+
+-- |Internal logic for 'Ribosome.Scratch'.
 module Ribosome.Internal.Scratch where
 
 import qualified Data.Map.Strict as Map
@@ -14,7 +17,7 @@ import Ribosome.Api.Window (closeWindow)
 import Ribosome.Data.FloatOptions (FloatOptions, enter)
 import Ribosome.Data.PluginName (PluginName (PluginName))
 import Ribosome.Data.ScratchId (ScratchId (ScratchId, unScratchId))
-import Ribosome.Data.ScratchOptions (ScratchOptions (ScratchOptions, filetype, name), syntax, mappings, focus)
+import Ribosome.Data.ScratchOptions (ScratchOptions (ScratchOptions, filetype, name), focus, mappings, syntax)
 import qualified Ribosome.Data.ScratchState as ScratchState
 import Ribosome.Data.ScratchState (ScratchState (ScratchState))
 import Ribosome.Host.Api.Data (Buffer, Tabpage, Window)
@@ -24,6 +27,7 @@ import Ribosome.Host.Api.Effect (
   bufferSetOption,
   nvimBufIsLoaded,
   nvimCreateBuf,
+  nvimDelAutocmd,
   nvimOpenWin,
   vimCommand,
   vimGetCurrentBuffer,
@@ -34,15 +38,15 @@ import Ribosome.Host.Api.Effect (
   windowIsValid,
   windowSetHeight,
   windowSetOption,
-  windowSetWidth, nvimDelAutocmd,
+  windowSetWidth,
   )
 import Ribosome.Host.Class.Msgpack.Decode (fromMsgpack)
 import Ribosome.Host.Class.Msgpack.Encode (toMsgpack)
 import Ribosome.Host.Data.RpcError (RpcError)
-import Ribosome.Host.Data.RpcType (group, AutocmdId (AutocmdId))
+import Ribosome.Host.Data.RpcType (AutocmdId (AutocmdId), group)
 import Ribosome.Host.Effect.Rpc (Rpc)
 import Ribosome.Mapping (activateBufferMapping)
-import Ribosome.PluginName (pluginNameCapitalized)
+import Ribosome.PluginName (pluginNamePascalCase)
 
 createScratchTab :: Member Rpc r => Sem r Tabpage
 createScratchTab = do
@@ -163,7 +167,7 @@ setupDeleteAutocmd ::
   Buffer ->
   Sem r AutocmdId
 setupDeleteAutocmd (ScratchId name) buffer = do
-  PluginName pname <- pluginNameCapitalized
+  PluginName pname <- pluginNamePascalCase
   bufferAutocmd buffer "BufDelete" def { group = Just "RibosomeScratch" } (deleteCall pname)
   where
     deleteCall pname =

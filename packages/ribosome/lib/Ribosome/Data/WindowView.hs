@@ -1,8 +1,10 @@
+-- |Codec data type for @winsaveview@.
 module Ribosome.Data.WindowView where
 
 import Ribosome.Host.Class.Msgpack.Decode (MsgpackDecode)
 import Ribosome.Host.Class.Msgpack.Encode (MsgpackEncode)
 
+-- |Codec data type for @winsaveview@.
 data WindowView =
   WindowView {
     lnum :: Int,
@@ -11,6 +13,7 @@ data WindowView =
   deriving stock (Eq, Show, Generic)
   deriving anyclass (MsgpackEncode, MsgpackDecode)
 
+-- |Codec data type for @winsaveview@.
 data PartialWindowView =
   PartialWindowView {
     lnum :: Maybe Int,

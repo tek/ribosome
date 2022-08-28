@@ -1,3 +1,4 @@
+-- |Data types for register-related API functions.
 module Ribosome.Data.Register where
 
 import Data.Char (isAlpha, isNumber)
@@ -8,6 +9,7 @@ import Prettyprinter (Pretty (pretty))
 import Ribosome.Host.Class.Msgpack.Decode (MsgpackDecode (..), msgpackFromString)
 import Ribosome.Host.Class.Msgpack.Encode (MsgpackEncode (..))
 
+-- |A Neovim register.
 data Register =
   Named Text
   |
@@ -43,10 +45,12 @@ instance MsgpackEncode Register where
   toMsgpack Empty =
     toMsgpack ("" :: Text)
 
+-- |Render a register name by prefixing it with @"@.
 quoted :: Text -> Text
 quoted a =
   [exon|"#{a}|]
 
+-- |Render a register name as is usual for Neovim.
 registerRepr :: Register -> Text
 registerRepr = \case
   Named a ->

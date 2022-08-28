@@ -71,7 +71,7 @@ withItemsScratch ::
   Sem r a
 withItemsScratch options use = do
   whenM (Settings.or True Settings.menuCloseFloats) closeFloats
-  bracket acquire (Scratch.kill . view #id) (interpretAtomic def . use)
+  bracket acquire (Scratch.delete . view #id) (interpretAtomic def . use)
   where
     acquire = do
       scratch <- Scratch.open (withSyntax options)

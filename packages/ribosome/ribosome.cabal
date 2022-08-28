@@ -1,6 +1,6 @@
 cabal-version: 2.2
 
--- This file has been generated from package.yaml by hpack version 0.34.6.
+-- This file has been generated from package.yaml by hpack version 0.34.7.
 --
 -- see: https://github.com/sol/hpack
 
@@ -37,7 +37,6 @@ library
       Ribosome.Api.Syntax
       Ribosome.Api.Tabpage
       Ribosome.Api.Undo
-      Ribosome.Api.Variable
       Ribosome.Api.Window
       Ribosome.App.Boot
       Ribosome.App.Cli
@@ -84,10 +83,8 @@ library
       Ribosome.Data.Setting
       Ribosome.Data.SettingError
       Ribosome.Data.Syntax
-      Ribosome.Data.WatchedVariable
       Ribosome.Data.WindowConfig
       Ribosome.Data.WindowView
-      Ribosome.Effect.BuiltinHandlers
       Ribosome.Effect.Persist
       Ribosome.Effect.PersistPath
       Ribosome.Effect.Scratch
@@ -99,7 +96,9 @@ library
       Ribosome.Examples.Example3
       Ribosome.Final
       Ribosome.Float
+      Ribosome.Internal.Path
       Ribosome.Internal.Scratch
+      Ribosome.Internal.Syntax
       Ribosome.Interpreter.Persist
       Ribosome.Interpreter.PersistPath
       Ribosome.Interpreter.PluginName
@@ -194,7 +193,6 @@ library
       aeson
     , base >=4.12 && <5
     , exon
-    , generic-lens
     , messagepack
     , optparse-applicative
     , path

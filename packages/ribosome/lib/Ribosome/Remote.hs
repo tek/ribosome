@@ -1,4 +1,4 @@
--- |Main function combinators for remote plugins
+-- |Main function combinators for remote plugins.
 module Ribosome.Remote where
 
 import Ribosome.Data.PluginConfig (PluginConfig)
@@ -139,7 +139,7 @@ runNvimPluginIO conf effs handlers =
 
 -- |Run a Neovim plugin using a set of handlers and configuration.
 --
--- This function does not allow additional effects to be used. See 'runNvimHandlersIO' for that purpose.
+-- This function does not allow additional effects to be used. See 'runNvimPluginIO' for that purpose.
 --
 -- This runs the entire stack to completion, so it can be used in the app's @main@ function.
 runNvimPluginIO_ ::

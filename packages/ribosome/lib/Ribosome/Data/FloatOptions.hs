@@ -1,8 +1,10 @@
+-- |Data types for floating window API codec.
 module Ribosome.Data.FloatOptions where
 
 import Ribosome.Host.Class.Msgpack.Encode (MsgpackEncode (toMsgpack))
 import Ribosome.Host.Class.Msgpack.Map (msgpackMap)
 
+-- |The reference point to which a floating window's position is defined.
 data FloatRelative =
   Editor
   |
@@ -19,6 +21,7 @@ instance MsgpackEncode FloatRelative where
 instance Default FloatRelative where
   def = Cursor
 
+-- |The corner of a floating window that is positioned at the specified coordinates.
 data FloatAnchor =
   NW
   |
@@ -38,6 +41,7 @@ instance MsgpackEncode FloatAnchor where
 instance Default FloatAnchor where
   def = NW
 
+-- |The border style of a floating window.
 data FloatBorder =
   None
   |
@@ -51,6 +55,8 @@ data FloatBorder =
   |
   Shadow
   |
+  -- |A list of characters that is drawn for the border, starting with the top left corner, going clockwise, repeating
+  -- if too short.
   Manual [Text]
   deriving stock (Eq, Show, Generic)
 
@@ -68,6 +74,7 @@ instance Default FloatBorder where
   def =
     Rounded
 
+-- |Neovim has a style option for floating windows that sets a few options in bulk, with only one possible value.
 data FloatStyle =
   FloatStyleMinimal
   deriving stock (Eq, Show)
@@ -80,6 +87,7 @@ instance MsgpackEncode FloatStyle where
   toMsgpack FloatStyleMinimal =
     toMsgpack @Text "minimal"
 
+-- |The z-index of a floating window, determining occlusion.
 newtype FloatZindex =
   FloatZindex { unFloatZindex :: Int }
   deriving stock (Eq, Show, Generic)
@@ -89,6 +97,8 @@ instance MsgpackEncode FloatZindex where
   toMsgpack (FloatZindex i) =
     toMsgpack i
 
+-- |The set of options accepted by the @float@ key of the argument to @nvim_open_win@, configuring the appearance and
+-- geometry of a floating window.
 data FloatOptions =
   FloatOptions {
     relative :: FloatRelative,

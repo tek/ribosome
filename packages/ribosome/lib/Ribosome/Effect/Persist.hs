@@ -22,7 +22,25 @@ data Persist a :: Effect where
   -- Returns 'Nothing' if the file doesn't exist.
   Load :: Maybe (Path Rel File) -> Persist a m (Maybe a)
 
-makeSem ''Persist
+makeSem_ ''Persist
+
+-- |Store a value in the persistence file or, if the first argument is 'Just', in that file in the persistence
+-- directory.
+store ::
+  ∀ a r .
+  Member (Persist a) r =>
+  Maybe (Path Rel File) ->
+  a ->
+  Sem r ()
+
+-- |Load a value from the persistence file or, if the first argument is 'Just', from that file in the persistence
+-- directory.
+-- Returns 'Nothing' if the file doesn't exist.
+load ::
+  ∀ a r .
+  Member (Persist a) r =>
+  Maybe (Path Rel File) ->
+  Sem r (Maybe a)
 
 -- |Load a value from the persistence file or, if the first argument is 'Just', from that file in the persistence
 -- directory.

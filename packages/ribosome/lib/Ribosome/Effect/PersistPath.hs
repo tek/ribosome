@@ -10,7 +10,14 @@ data PersistPath :: Effect where
   -- |Return the root if 'Nothing' is given, or the subdir of the root if 'Just' is given.
   PersistPath :: Maybe (Path Rel Dir) -> PersistPath m (Path Abs Dir)
 
-makeSem ''PersistPath
+makeSem_ ''PersistPath
+
+-- |Return the root if 'Nothing' is given, or the subdir of the root if 'Just' is given.
+persistPath ::
+  ∀ r .
+  Member PersistPath r =>
+  Maybe (Path Rel Dir) ->
+  Sem r (Path Abs Dir)
 
 -- |This setting may be used to specify the root directory for all plugins.
 -- The default is to use the XDG cache dir.

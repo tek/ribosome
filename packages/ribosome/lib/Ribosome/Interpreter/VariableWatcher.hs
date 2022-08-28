@@ -5,7 +5,7 @@ import Conc (interpretAtomic, interpretLockReentrant, lockOrSkip_)
 import qualified Data.Map.Strict as Map
 import Data.MessagePack (Object (ObjectNil))
 
-import Ribosome.Data.WatchedVariable (WatchedVariable (WatchedVariable))
+import Ribosome.Effect.VariableWatcher (WatchedVariable (WatchedVariable))
 import qualified Ribosome.Effect.VariableWatcher as VariableWatcher
 import Ribosome.Effect.VariableWatcher (VariableWatcher)
 import Ribosome.Host.Api.Effect (nvimGetVar)

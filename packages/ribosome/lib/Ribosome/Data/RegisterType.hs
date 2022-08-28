@@ -1,9 +1,11 @@
+-- |Codec data type for Neovim register types.
 module Ribosome.Data.RegisterType where
 
 import Ribosome.Host.Class.Msgpack.Decode (MsgpackDecode (..), msgpackFromString)
 import Ribosome.Host.Class.Msgpack.Encode (MsgpackEncode (..))
 import Prettyprinter (Pretty (pretty))
 
+-- |The type of a Neovim register, corresponding to concepts like line- or character-wise visual mode.
 data RegisterType =
   Character
   |

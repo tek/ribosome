@@ -1,3 +1,4 @@
+-- |API functions for obtaining Neovim's current mode.
 module Ribosome.Api.Mode where
 
 import Ribosome.Data.Mode (NvimMode)
@@ -5,6 +6,7 @@ import Ribosome.Host.Api.Effect (nvimGetMode, vimCallFunction)
 import Ribosome.Host.Class.Msgpack.Decode (MsgpackDecode (..), msgpackFromString)
 import Ribosome.Host.Effect.Rpc (Rpc)
 
+-- |An encoding of Neovim's mode for only the most basic variants.
 data SimpleMode =
   Normal
   |
@@ -27,18 +29,21 @@ instance MsgpackDecode SimpleMode where
   fromMsgpack =
     msgpackFromString "SimpleMode"
 
+-- |Get the current mode as a 'SimpleMode'.
 simpleMode ::
   Member Rpc r =>
   Sem r SimpleMode
 simpleMode =
   vimCallFunction "mode" []
 
+-- |Indicate whether Neovim is in visual mode.
 visualModeActive ::
   Member Rpc r =>
   Sem r Bool
 visualModeActive =
   (== Visual) <$> simpleMode
 
+-- |Get the current mode.
 mode ::
   Member Rpc r =>
   Sem r NvimMode

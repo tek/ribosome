@@ -244,11 +244,11 @@ import Ribosome.Data.ScratchOptions (ScratchOptions, scratch)
 import Ribosome.Data.ScratchState (ScratchState (ScratchState))
 import Ribosome.Data.Setting (Setting (Setting))
 import Ribosome.Data.SettingError (SettingError)
-import Ribosome.Data.WatchedVariable (WatchedVariable (..))
 import Ribosome.Effect.Persist (Persist)
 import Ribosome.Effect.PersistPath (PersistPath, persistPath)
 import Ribosome.Effect.Scratch (Scratch)
 import Ribosome.Effect.Settings (Settings)
+import Ribosome.Effect.VariableWatcher (WatchedVariable (..))
 import Ribosome.Embed (
   embedPlugin,
   interpretPluginEmbed,
@@ -561,7 +561,7 @@ import Ribosome.Run (NvimPlugin)
 --
 -- > restop @RpcError @Rpc (setScratchContent s text)
 --
--- The function 'setScratchContent' has a dependency on the bare effect 'Rpc'.
+-- The function @setScratchContent@ has a dependency on the bare effect 'Rpc'.
 -- The function 'restop' converts this dependency into @'Rpc' !! 'RpcError'@ /and/ @'Stop' 'RpcError'@, meaning that
 -- this expression acknowledges that 'Rpc' might fail with 'RpcError', and rethrows the error, which is then turned into
 -- @'Scratch' !! 'RpcError'@ by the special interpreter combinator 'interpretResumable'.

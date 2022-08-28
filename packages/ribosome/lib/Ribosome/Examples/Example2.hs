@@ -1,3 +1,4 @@
+-- |An example for the docs.
 module Ribosome.Examples.Example2 where
 
 import Data.MessagePack (Object)

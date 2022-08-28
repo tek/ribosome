@@ -15,7 +15,24 @@ data Settings :: Effect where
   -- |Set the value of the setting's Neovim variable.
   Update :: MsgpackEncode a => Setting a -> a -> Settings m ()
 
-makeSem ''Settings
+makeSem_ ''Settings
+
+-- |Get the value of the setting's Neovim variable or return the default if it is undefined.
+get ::
+  ∀ a r .
+  MsgpackDecode a =>
+  Member Settings r =>
+  Setting a ->
+  Sem r a
+
+-- |Set the value of the setting's Neovim variable.
+update ::
+  ∀ a r .
+  MsgpackEncode a =>
+  Member Settings r =>
+  Setting a ->
+  a ->
+  Sem r ()
 
 -- |Get the setting's value or return the supplied fallback value if the Neovim variable is undefined and the setting
 -- has no default value.

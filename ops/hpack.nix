@@ -132,7 +132,6 @@ in {
     library.dependencies = [
       "aeson"
       "exon"
-      "generic-lens"
       "messagepack"
       "optparse-applicative"
       "path"

@@ -1,4 +1,4 @@
--- |Interpreters for @'Reader' 'Plugin'@
+-- |Interpreters for @'Reader' ('PluginConfig' c)@
 module Ribosome.Interpreter.PluginName where
 
 import Ribosome.Data.PluginConfig (PluginConfig (PluginConfig, name))

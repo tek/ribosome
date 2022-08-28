@@ -1,3 +1,4 @@
+-- |Global configuration for a Ribosome plugin.
 module Ribosome.Data.PluginConfig where
 
 import Ribosome.Data.PluginName (PluginName)
@@ -7,6 +8,8 @@ import GHC.Show (showParen)
 import Text.Show (showsPrec)
 import Exon (exon)
 
+-- |The full configuration for a Ribosome plugin, consisting of the 'HostConfig', the plugin's name, and an arbitrary
+-- type for additional config defined by individual plugins.
 data PluginConfig c =
   PluginConfig {
     name :: PluginName,
@@ -23,6 +26,7 @@ instance Eq (PluginConfig c) where
   PluginConfig ln lh _ == PluginConfig rn rh _ =
     ln == rn && lh == rh
 
+-- |Construct a simple 'PluginConfig' with the default config for the host, given the plugin's name.
 pluginNamed :: PluginName -> PluginConfig ()
 pluginNamed name =
   PluginConfig name def unit

@@ -5,7 +5,7 @@ import Log (Severity (Trace))
 import Polysemy.Test (TestError (TestError), UnitTest)
 
 import Ribosome.Data.PluginName (PluginName)
-import Ribosome.Data.WatchedVariable (WatchedVariable)
+import Ribosome.Effect.VariableWatcher (WatchedVariable)
 import Ribosome.Effect.Scratch (Scratch)
 import Ribosome.Effect.Settings (Settings)
 import Ribosome.Embed (HandlerEffects, embedPlugin, interpretPluginEmbed)

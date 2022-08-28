@@ -76,7 +76,7 @@ warn ::
 warn user log =
   logReport Report {severity = Warn, ..}
 
--- |Send a 'Report' to the log given a user and log message, with serverity 'Error'.
+-- |Send a 'Report' to the log given a user and log message, with serverity 'Log.Error'.
 error ::
   Member (DataLog LogReport) r =>
   Text ->

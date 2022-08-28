@@ -8,7 +8,7 @@ import Exon (exon)
 import Ribosome.Data.PluginName (PluginName)
 import Ribosome.Data.ScratchId (ScratchId (ScratchId))
 import Ribosome.Data.ScratchState (ScratchState)
-import Ribosome.Effect.Scratch (Scratch (Find, Get, Kill, Show, Update))
+import Ribosome.Effect.Scratch (Scratch (Delete, Find, Get, Show, Update))
 import qualified Ribosome.Host.Data.RpcError as RpcError
 import Ribosome.Host.Data.RpcError (RpcError)
 import Ribosome.Host.Effect.Rpc (Rpc)
@@ -26,7 +26,7 @@ interpretScratchAtomic =
     Update i text -> do
       s <- stopNote (RpcError.Unexpected [exon|No scratch buffer named '#{coerce i}' exists|]) =<< lookupScratch i
       s <$ restop @_ @Rpc (setScratchContent s text)
-    Kill i ->
+    Delete i ->
       traverse_ killScratch =<< lookupScratch i
     Get ->
       atomicGets Map.elems

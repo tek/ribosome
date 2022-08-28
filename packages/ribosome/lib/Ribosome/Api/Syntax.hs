@@ -1,76 +1,16 @@
+-- |API functions for applying syntax rules to Neovim.
 module Ribosome.Api.Syntax where
 
-import qualified Data.Map.Strict as Map
-import qualified Data.Text as Text
-import Exon (exon)
-
-import Ribosome.Data.Syntax (
-  HiLink (HiLink),
-  Highlight (Highlight),
-  Syntax (Syntax),
-  SyntaxItem (SyntaxItem),
-  SyntaxItemDetail (Keyword, Match, Region, Verbatim),
-  )
-import qualified Ribosome.Host.Api.Data as Data
+import Ribosome.Data.Syntax (Syntax)
 import Ribosome.Host.Api.Data (Window)
 import Ribosome.Host.Api.Effect (vimCallFunction)
 import Ribosome.Host.Class.Msgpack.Encode (MsgpackEncode (toMsgpack))
-import Ribosome.Host.Data.RpcCall (RpcCall)
 import qualified Ribosome.Host.Effect.Rpc as Rpc
 import Ribosome.Host.Effect.Rpc (Rpc)
 import Ribosome.Host.Modify (windo)
+import Ribosome.Internal.Syntax (catCmds, syntaxCmds)
 
-joinEquals :: Map Text Text -> Text
-joinEquals =
-  unwords . fmap equals . Map.toList
-  where
-    equals (a, b) =
-      [exon|#{a}=#{b}|]
-
-synPattern :: Text -> Text
-synPattern pat =
-  [exon|/#{pat}/|]
-
-namedPattern :: Text -> Text -> Text -> Text
-namedPattern param pat offset =
-  [exon|#{param}=#{synPattern pat}#{offset}|]
-
-syntaxItemDetailCmd :: SyntaxItemDetail -> [Text]
-syntaxItemDetailCmd (Keyword group' keyword keywords) =
-  ["syntax", "keyword", group', keyword, unwords keywords]
-syntaxItemDetailCmd (Match group' pat) =
-  ["syntax", "match", group', synPattern pat]
-syntaxItemDetailCmd (Region group' start end skip ms me) =
-  ["syntax", "region", group', namedPattern "start" start ms] <> foldMap skipArg skip <> [namedPattern "end" end me]
-  where
-    skipArg a = [namedPattern "skip" a ""]
-syntaxItemDetailCmd (Verbatim cmd) =
-  [cmd]
-
-syntaxItemCmd :: SyntaxItem -> [Text]
-syntaxItemCmd (SyntaxItem detail options params) =
-  syntaxItemDetailCmd detail <> [unwords options, joinEquals params]
-
-highlightCmd :: Highlight -> [Text]
-highlightCmd (Highlight group' values) =
-  ["highlight", "default", group', joinEquals values]
-
-hilinkCmd :: HiLink -> [Text]
-hilinkCmd (HiLink group' target) =
-  ["highlight", "default", "link", group', target]
-
-syntaxCmds :: Syntax -> [[Text]]
-syntaxCmds (Syntax items highlights hilinks) =
-  (syntaxItemCmd <$> items) <> (highlightCmd <$> highlights) <> (hilinkCmd <$> hilinks)
-
-catCmd :: [Text] -> RpcCall ()
-catCmd =
-  Data.nvimCommand . Text.unwords
-
-catCmds :: [[Text]] -> RpcCall ()
-catCmds =
-  foldMap catCmd
-
+-- |Apply syntax rules to the current window.
 executeSyntax ::
   Member Rpc r =>
   Syntax ->
@@ -78,6 +18,7 @@ executeSyntax ::
 executeSyntax =
   Rpc.sync . catCmds . syntaxCmds
 
+-- |Apply syntax rules to a window.
 executeWindowSyntax ::
   Member Rpc r =>
   Window ->
@@ -86,6 +27,7 @@ executeWindowSyntax ::
 executeWindowSyntax win syntax =
   windo win (executeSyntax syntax)
 
+-- |Get the name of the syntax group at a given position.
 syntaxName ::
   Member Rpc r =>
   Int ->

@@ -2,7 +2,6 @@
 module Ribosome.Data.Mapping where
 
 import Data.MessagePack (Object)
-import Exon (exon)
 
 import Ribosome.Host.Class.Msgpack.Decode (MsgpackDecode)
 import Ribosome.Host.Class.Msgpack.Encode (MsgpackEncode)
@@ -83,10 +82,6 @@ mapModeShortName :: MapMode -> Text
 mapModeShortName m =
   mapModePrefix m <> mapModeSuffix m
 
-noremapCmd :: MapMode -> Text
-noremapCmd mm =
-  [exon|#{mapModePrefix mm}noremap#{mapModeSuffix mm}|]
-
 -- |The action that should be performed when a mapping is triggered.
 data MappingAction =
   -- |The name of the 'Ribosome.RpcHandler' that should be called when the mapping is triggered.
@@ -99,7 +94,7 @@ data MappingAction =
 -- |The configuration for a mapping that is specific to Neovim.
 data MappingSpec =
   MappingSpec {
-    -- |The key sequence that triggers the mapping, used with 'noremap'.
+    -- |The key sequence that triggers the mapping.
     lhs :: MappingLhs,
     -- |The modes in which the mapping should be installed.
     mode :: NonEmpty MapMode
@@ -120,7 +115,7 @@ data Mapping =
     spec :: MappingSpec,
     -- |An optional string identifying the source of the mapping, for example when adding it to multiple buffers.
     id :: Maybe MappingId,
-    -- |Options like @nowait@ or @desc@.
+    -- |Options like @remap@, @nowait@ or @desc@.
     opts :: Map Text Object
   }
   deriving stock (Eq, Show, Generic)

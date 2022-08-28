@@ -61,7 +61,8 @@ filepath singleFile dir subpath = do
 --
 -- - The value in the @name@ argument is appended to the root depending on the arguments to the effect constructors.
 --
--- - When 'store' or 'load' are invoked with 'Nothing' for the @subpath@ argument, a file named @<name>.json@ is used.
+-- - When 'Ribosome.Effect.Persist.store' or 'Ribosome.Effect.Persist.load' are invoked with 'Nothing' for the @subpath@
+-- argument, a file named @<name>.json@ is used.
 --
 -- - When invoked with 'Just' a subpath, a file named @<name>/<subpath>.json@ is used.
 --

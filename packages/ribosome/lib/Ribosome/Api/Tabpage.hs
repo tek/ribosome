@@ -1,3 +1,4 @@
+-- |API functions for tabpages.
 module Ribosome.Api.Tabpage where
 
 import Exon (exon)
@@ -7,6 +8,7 @@ import Ribosome.Host.Api.Effect (nvimTabpageGetNumber, tabpageIsValid, vimComman
 import Ribosome.Host.Effect.Rpc (Rpc)
 import Ribosome.Host.Modify (silentBang)
 
+-- |Close a tabpage.
 closeTabpage ::
   Member Rpc r =>
   Tabpage ->

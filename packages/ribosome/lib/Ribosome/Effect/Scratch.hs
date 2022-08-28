@@ -17,7 +17,7 @@ data Scratch :: Effect where
   -- |Find a previously defined scratch buffer, ensure it is open and set its content to the supplied text.
   Update :: Foldable t => ScratchId -> t Text -> Scratch m ScratchState
   -- |Close a scratch buffer.
-  Kill :: ScratchId -> Scratch m ()
+  Delete :: ScratchId -> Scratch m ()
   -- |Return the state of all currently managed scratch buffers.
   Get :: Scratch m [ScratchState]
   -- |Look up a scratch buffer by its ID.

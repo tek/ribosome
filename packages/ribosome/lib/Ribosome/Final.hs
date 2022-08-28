@@ -1,3 +1,6 @@
+{-# options_haddock prune, hide #-}
+
+-- |Combinators for using 'Final', used internally.
 module Ribosome.Final where
 
 import Polysemy.Final (withWeavingToFinal)

@@ -225,7 +225,7 @@ withPrompt pconf mappings geo use =
     acquire =
       Scratch.show @_ @[] [] (promptOptions geo mappings)
     release s = do
-      Scratch.kill (Scratch.id s)
+      Scratch.delete (Scratch.id s)
       key <- nvimReplaceTermcodes "<esc>" True False True
       nvimFeedkeys key "int" False
 
