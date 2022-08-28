@@ -107,7 +107,7 @@ redraw =
   silentBang do
     nvimCommand "redraw!"
 
--- |A main window means here any non-window that may be used to edit a file, i.e. one with an empty 'buftype'.
+-- |A main window means here any non-window that may be used to edit a file, i.e. one with an empty @buftype@.
 findMainWindow ::
   Member Rpc r =>
   Sem r (Maybe Window)

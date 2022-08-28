@@ -1,3 +1,4 @@
+-- |Combinators for creating and manipulating RPC handlers.
 module Ribosome.Host.Handler where
 
 import qualified Data.Text as Text
@@ -83,6 +84,7 @@ rpcCommand name execution h =
     (opts, args) =
       commandOptions @OptionStateZero @h
 
+-- |Add the given completion to an 'RpcHandler'.
 complete ::
   CommandCompletion ->
   RpcHandler r ->
@@ -93,6 +95,7 @@ complete c = \case
   h ->
     h
 
+-- |Configure the given 'RpcHandler' to use the specified builtin completion.
 completeBuiltin ::
   Text ->
   RpcHandler r ->
@@ -100,6 +103,8 @@ completeBuiltin ::
 completeBuiltin f =
   complete (CompleteBuiltin f)
 
+-- |Create a completion handler that can be used by another handler by wrapping it with 'complete', using the same
+-- 'RpcName'.
 completeCustom ::
   RpcName ->
   (Text -> Text -> Int -> Handler r [Text]) ->
@@ -114,6 +119,8 @@ completeCustom name f = \case
     cn =
       completionName name
 
+-- |Add command line completion to another 'RpcHandler' by creating a new handler that calls the given function to
+-- obtain possible completions.
 completeWith ::
   CompleteStyle ->
   (Text -> Text -> Int -> Handler r [Text]) ->

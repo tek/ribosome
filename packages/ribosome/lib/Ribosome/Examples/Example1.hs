@@ -1,3 +1,5 @@
+{-# options_haddock prune, hide #-}
+
 -- |An example for the docs.
 module Ribosome.Examples.Example1 where
 

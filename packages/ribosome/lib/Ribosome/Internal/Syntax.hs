@@ -1,3 +1,6 @@
+{-# options_haddock prune #-}
+
+-- |Internal combinators for syntax.
 module Ribosome.Internal.Syntax where
 
 import qualified Data.Map.Strict as Map

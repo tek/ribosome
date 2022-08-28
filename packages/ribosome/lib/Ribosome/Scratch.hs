@@ -1,4 +1,6 @@
--- A scratch buffer is what Neovim calls text not associated with a file, used for informational or interactive content.
+-- |A scratch buffer is what Neovim calls text not associated with a file, used for informational or interactive
+-- content.
+--
 -- Ribosome provides an interface for maintaining those, by associating a view configuration with an ID and allowing to
 -- update the text displayed in it.
 module Ribosome.Scratch (

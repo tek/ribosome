@@ -44,6 +44,7 @@ module Ribosome (
   sync,
   async,
   notify,
+  channelId,
   Buffer,
   Window,
   Tabpage,
@@ -313,7 +314,7 @@ import Ribosome.Host.Effect.MState (
   withMState,
   )
 import Ribosome.Host.Effect.Reports (Reports, storedReports)
-import Ribosome.Host.Effect.Rpc (Rpc, async, notify, sync)
+import Ribosome.Host.Effect.Rpc (Rpc, async, channelId, notify, sync)
 import Ribosome.Host.Effect.UserError (UserError)
 import Ribosome.Host.Error (ignoreRpcError, onRpcError)
 import Ribosome.Host.Handler (

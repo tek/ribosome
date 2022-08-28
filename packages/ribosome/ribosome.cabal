@@ -43,7 +43,6 @@ library
       Ribosome.Data.CustomConfig
       Ribosome.Data.FileBuffer
       Ribosome.Data.FloatOptions
-      Ribosome.Data.Locks
       Ribosome.Data.Mapping
       Ribosome.Data.Mode
       Ribosome.Data.PersistError
@@ -172,11 +171,9 @@ library
     , path
     , path-io
     , polysemy
-    , polysemy-chronos
     , polysemy-plugin
     , prelate >=0.1
     , prettyprinter
-    , rainbow
     , ribosome-host
   mixins:
       base hiding (Prelude)
@@ -269,7 +266,6 @@ test-suite ribosome-unit
   ghc-options: -Wall -Wredundant-constraints -Wincomplete-uni-patterns -Wmissing-deriving-strategies -Widentities -Wunused-packages -fplugin=Polysemy.Plugin -threaded -rtsopts -with-rtsopts=-N
   build-depends:
       base >=4.12 && <5
-    , chronos
     , exon
     , hedgehog
     , messagepack

@@ -1,3 +1,6 @@
+{-# options_haddock prune, hide #-}
+
+-- |Internal combinators for paths.
 module Ribosome.Internal.Path where
 
 import Exon (exon)

@@ -1,3 +1,4 @@
+-- |Convenience aliases for plugin effects.
 module Ribosome.Run where
 
 import Ribosome.Data.PluginName (PluginName)
@@ -10,6 +11,7 @@ import Ribosome.Host.Data.RpcError (RpcError)
 import Ribosome.Host.Effect.Handlers (Handlers)
 import Ribosome.Host.Effect.Rpc (Rpc)
 
+-- |The set of core effects that are intepreted by the main logic, minus what's in "Ribosome.Host".
 type PluginEffects =
   [
     Scratch !! RpcError,

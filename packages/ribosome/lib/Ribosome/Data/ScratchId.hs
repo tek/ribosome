@@ -1,3 +1,4 @@
+-- |The ID type used to store active scratch buffers.
 module Ribosome.Data.ScratchId where
 
 import Ribosome.Host.Class.Msgpack.Decode (MsgpackDecode)

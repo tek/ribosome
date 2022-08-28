@@ -1,3 +1,4 @@
+-- |All exports for the composite and atomic Neovim API functions.
 module Ribosome.Api (
   module Ribosome.Api.Autocmd,
   module Ribosome.Api.Buffer,

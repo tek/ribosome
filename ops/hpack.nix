@@ -136,14 +136,11 @@ in {
       "optparse-applicative"
       "path"
       "path-io"
-      "polysemy-chronos"
       "prettyprinter"
-      "rainbow"
       "ribosome-host"
     ];
     tests.ribosome-unit = exe "ribosome" "test" {
       dependencies = [
-        "chronos"
         "exon"
         "hedgehog"
         "messagepack"

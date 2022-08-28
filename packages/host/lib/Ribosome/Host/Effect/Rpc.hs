@@ -42,4 +42,32 @@ data Rpc :: Effect where
   -- |The Neovim RPC channel ID
   ChannelId :: Rpc m ChannelId
 
-makeSem ''Rpc
+makeSem_ ''Rpc
+
+-- |Block the current thread while sending an RPC request.
+sync ::
+  ∀ r a .
+  Member Rpc r =>
+  RpcCall a ->
+  Sem r a
+
+-- |Send an RPC request and pass the result to the continuation on a new thread.
+async ::
+  ∀ a r .
+  Member Rpc r =>
+  RpcCall a ->
+  (Either RpcError a -> Sem r ()) ->
+  Sem r ()
+
+-- |Send an RPC notification and return immediately.
+notify ::
+  ∀ a r .
+  Member Rpc r =>
+  RpcCall a ->
+  Sem r ()
+
+-- |The Neovim RPC channel ID
+channelId ::
+  ∀ r .
+  Member Rpc r =>
+  Sem r ChannelId
