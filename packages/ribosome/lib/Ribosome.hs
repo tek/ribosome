@@ -1,4 +1,4 @@
--- |Ribosome
+-- Description: The high-level API to Ribosome
 module Ribosome (
   -- * Introduction
   -- $intro
@@ -440,8 +440,7 @@ import Ribosome.Run (NvimPlugin)
 -- Passing these handlers to 'runNvimPluginIO_' starts a plugin that calls @echoHello@ when running @:call Hello()@,
 -- @:Hello@, or when entering a Haskell buffer.
 --
--- When the plugin's main loop starts, 'interpretHandlers' registers the triggers in Neovim by running vim code like
--- this:
+-- When the plugin's main loop starts, 'withHandlers' registers the triggers in Neovim by running vim code like this:
 --
 -- > function! Hello(...) range
 -- >   return call('rpcnotify', [1, 'function:Hello'] + a:000)
