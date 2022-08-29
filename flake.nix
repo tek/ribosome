@@ -53,7 +53,10 @@
     inherit overrides;
     depsFull = [chiasma];
     hpack.packages = import ./ops/hpack.nix { inherit config lib; };
-    hackage.versionFile = "ops/version.nix";
+    hackage = {
+      versionFile = "ops/version.nix";
+      packages = ["ribosome-host" "ribosome-host-test" "ribosome" "ribosome-test" "ribosome-app"];
+    };
     ghcid.shellConfig = {
       buildInputs = with config.pkgs; [pkgs.neovim pkgs.tmux pkgs.xterm];
       env = { inherit RIBOSOME_ROOT; };
