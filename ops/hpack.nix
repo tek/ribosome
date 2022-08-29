@@ -78,6 +78,7 @@ in {
 
   ribosome-host = merge (project "ribosome-host" "Ribosome-Host") {
     synopsis = "Neovim plugin host for Polysemy";
+    extra-source-files = ["changelog.md" "readme.md"];
     library.dependencies = [
       "aeson >= 2"
       "casing"
@@ -128,6 +129,7 @@ in {
 
   ribosome = merge (project "ribosome" "Ribosome") {
     synopsis = "Neovim plugin framework for Polysemy";
+    extra-source-files = ["changelog.md" "readme.md"];
     library.dependencies = [
       "aeson"
       "exon"
