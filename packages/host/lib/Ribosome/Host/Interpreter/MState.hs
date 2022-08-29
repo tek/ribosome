@@ -1,3 +1,4 @@
+-- |Interpreters for 'MState'.
 module Ribosome.Host.Interpreter.MState where
 
 import Conc (Lock, interpretAtomic, interpretLockReentrant, interpretPScopedWithH, lock)
@@ -6,6 +7,7 @@ import Polysemy.Internal.Tactics (liftT)
 import qualified Ribosome.Host.Effect.MState as MState
 import Ribosome.Host.Effect.MState (MState, ScopedMState)
 
+-- |Interpret 'MState' using 'AtomicState' and 'Lock'.
 interpretMState ::
   Members [Resource, Race, Mask mres, Embed IO] r =>
   s ->
@@ -24,6 +26,7 @@ interpretMState initial =
     MState.Read ->
       liftT atomicGet
 
+-- |Interpret 'MState' as 'State'.
 evalMState ::
   s ->
   InterpreterFor (MState s) r
@@ -39,6 +42,7 @@ evalMState initial =
     MState.Read ->
       liftT get
 
+-- |Internal combinator that runs the dependencies of the scope for 'MState'.
 scope ::
   Members [Mask mres, Resource, Race, Embed IO] r =>
   s ->
@@ -48,6 +52,7 @@ scope ::
 scope initial use =
   interpretLockReentrant $ interpretAtomic initial $ use ()
 
+-- |Interpret 'MState' as a scoped effect.
 interpretMStates ::
   ∀ s mres r .
   Members [Mask mres, Resource, Race, Embed IO] r =>

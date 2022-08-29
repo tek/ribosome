@@ -1,3 +1,4 @@
+-- |The basic error type for the plugin host.
 module Ribosome.Host.Data.RpcError where
 
 import Data.MessagePack (Object)
@@ -10,11 +11,15 @@ import Ribosome.Host.Class.Msgpack.Encode (MsgpackEncode)
 import Ribosome.Host.Data.Report (Report (Report), Reportable (toReport))
 import Ribosome.Host.Data.Request (RpcMethod (RpcMethod))
 
+-- |The basic error type for the plugin host, used by the listener, 'Rpc' and several other components.
 data RpcError =
+  -- |An error that is supposed to be prevented by the implementation.
   Unexpected Text
   |
+  -- |The Neovim API encountered a problem.
   Api RpcMethod [Object] Text
   |
+  -- |A request was instructed to use the wrong decoder or the remote data was invalid.
   Decode Text
   deriving stock (Eq, Show, Generic)
   deriving anyclass (MsgpackEncode, MsgpackDecode)
@@ -32,6 +37,7 @@ instance Reportable RpcError where
     Decode e ->
       Report "Msgpack decoding failed" [e] Error
 
+-- |Extract an error message from an 'RpcError'.
 rpcError :: RpcError -> Text
 rpcError = \case
   Unexpected e -> e

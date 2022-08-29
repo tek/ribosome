@@ -1,3 +1,4 @@
+-- |Ribosome
 module Ribosome (
   -- * Introduction
   -- $intro
@@ -334,7 +335,7 @@ import Ribosome.Host.Path (pathText)
 import Ribosome.IOStack (BasicPluginStack, runBasicPluginStack, runCli)
 import Ribosome.Interpreter.Persist (interpretPersist, interpretPersistNull)
 import Ribosome.Interpreter.PersistPath (interpretPersistPath, interpretPersistPathAt, interpretPersistPathSetting)
-import Ribosome.Interpreter.PluginName
+import Ribosome.Interpreter.PluginName (interpretPluginName)
 import Ribosome.Interpreter.Settings (interpretSettingsRpc)
 import Ribosome.Interpreter.UserError (interpretUserErrorPrefixed)
 import Ribosome.Interpreter.VariableWatcher (watchVariables)

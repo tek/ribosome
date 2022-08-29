@@ -15,19 +15,23 @@ newtype ReportContext =
   deriving stock (Eq, Show)
   deriving newtype (Ord, Semigroup, Monoid)
 
+-- |Render a 'ReportContext' by interspersing it with dots, returning 'Nothing' if it is empty.
 reportContext' :: ReportContext -> Maybe Text
 reportContext' = \case
   ReportContext [] -> Nothing
   ReportContext c -> Just (Text.intercalate "." c)
 
+-- |Render a 'ReportContext' by interspersing it with dots, followed by a colon, returning 'Nothing' if it is empty.
 prefixReportContext' :: ReportContext -> Maybe Text
 prefixReportContext' c =
   flip Text.snoc ':' <$> reportContext' c
 
+-- |Render a 'ReportContext' by interspersing it with dots, using @global@ if it is empty.
 reportContext :: ReportContext -> Text
 reportContext c =
   fromMaybe "global" (reportContext' c)
 
+-- |Render a 'ReportContext' by interspersing it with dots, followed by a colon, using @global@ if it is empty.
 prefixReportContext :: ReportContext -> Text
 prefixReportContext c =
   Text.snoc (reportContext c) ':'

@@ -193,7 +193,7 @@ setCurrentBuffer buf = do
   win <- vimGetCurrentWindow
   nvimWinSetBuf win buf
 
--- |Indicate whether the given buffer is a file, i.e. has empty @'buftype'@.
+-- |Indicate whether the given buffer is a file, i.e. has empty @buftype@.
 bufferIsFile ::
   Member Rpc r =>
   Buffer ->

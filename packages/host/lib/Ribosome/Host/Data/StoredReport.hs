@@ -1,3 +1,4 @@
+-- |Data type that attaches a time stamp to a 'Report'.
 module Ribosome.Host.Data.StoredReport where
 
 import qualified Chronos
@@ -6,6 +7,7 @@ import qualified Time
 
 import Ribosome.Host.Data.Report (Report)
 
+-- |Data type that attaches a time stamp to a 'Report'.
 data StoredReport =
   StoredReport {
     report :: Report,
@@ -13,6 +15,7 @@ data StoredReport =
   }
   deriving stock (Show)
 
+-- |Create a new 'StoredReport' by querying the current time from 'ChronosTime'.
 now ::
   Member ChronosTime r =>
   Report ->

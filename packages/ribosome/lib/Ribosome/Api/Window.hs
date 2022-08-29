@@ -118,7 +118,7 @@ findMainWindow =
       buf <- nvimWinGetBuf w
       (("" :: Text) ==) <$> nvimBufGetOption buf "buftype"
 
--- |Create a new window at the top if no existing window has empty 'buftype'.
+-- |Create a new window at the top if no existing window has empty @buftype@.
 -- Focuses the window.
 ensureMainWindow ::
   Member Rpc r =>

@@ -58,6 +58,7 @@ instance Show (RpcHandler m) where
   showsPrec p (RpcHandler t n e _) =
     showParen (p > 10) [exon|RpcHandler #{showsPrec 11 t} #{showsPrec 11 n} #{showsPrec 11 e}|]
 
+-- |Apply a stack-manipulating transformation to the handler function.
 hoistRpcHandler ::
   (∀ x . Sem (Stop Report : r) x -> Sem (Stop Report : r1) x) ->
   RpcHandler r ->
@@ -65,6 +66,7 @@ hoistRpcHandler ::
 hoistRpcHandler f RpcHandler {..} =
   RpcHandler {rpcHandler = f . rpcHandler, ..}
 
+-- |Apply a stack-manipulating transformation to the handler functions.
 hoistRpcHandlers ::
   (∀ x . Sem (Stop Report : r) x -> Sem (Stop Report : r1) x) ->
   [RpcHandler r] ->
@@ -72,6 +74,7 @@ hoistRpcHandlers ::
 hoistRpcHandlers f =
   fmap (hoistRpcHandler f)
 
+-- |Create an 'RpcMethod' by joining an 'RpcType' and an 'RpcName' with a colon.
 rpcMethod ::
   RpcType ->
   RpcName ->
@@ -79,10 +82,12 @@ rpcMethod ::
 rpcMethod rpcType (RpcName name) =
   RpcMethod [exon|#{RpcType.methodPrefix rpcType}:#{name}|]
 
+-- |Create an 'RpcMethod' by joining an 'RpcType' and an 'RpcName' with a colon, extracted from an 'RpcHandler'.
 rpcHandlerMethod :: RpcHandler r -> RpcMethod
 rpcHandlerMethod RpcHandler {rpcType, rpcName} =
   rpcMethod rpcType rpcName
 
+-- |Convert a handler using 'Rpc' without handling errors to the canonical 'Handler' type.
 simpleHandler ::
   Member (Rpc !! RpcError) r =>
   Sem (Rpc : Stop Report : r) a ->
