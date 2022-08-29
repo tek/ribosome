@@ -1,5 +1,6 @@
 module Integration.Test.PluginTest where
 
+import qualified Conc
 import qualified Data.Text as Text
 import qualified Data.Text.IO as Text
 import Exon (exon)
@@ -8,27 +9,27 @@ import Log (Severity (Trace))
 import Path (Abs, Dir, Path, reldir, relfile, toFilePath, (</>))
 import Path.IO (copyDirRecur)
 import Polysemy.Chronos (ChronosTime)
-import qualified Conc
 import qualified Polysemy.Test as Test
 import Polysemy.Test (UnitTest, assertEq, liftH)
 import qualified Polysemy.Time as Time
 import Polysemy.Time (MilliSeconds (MilliSeconds), Minutes (Minutes))
 import Ribosome.Data.PluginName (PluginName (PluginName))
-import Ribosome.Embed (embedPlugin, HandlerEffects)
+import Ribosome.Embed (HandlerEffects, embedPlugin)
 import Ribosome.Host.Api.Effect (nvimCallFunction)
 import Ribosome.Host.Data.HostConfig (LogConfig, hostLog, logLevelStderr)
 import Ribosome.Host.Data.RpcError (RpcError)
 import Ribosome.Host.Effect.Rpc (Rpc)
 import Ribosome.Host.Embed (interpretEmbedExtra)
 import Ribosome.Host.IOStack (IOStack)
+import Ribosome.Host.Interpreter.Handlers (interpretHandlersNull, noHandlers)
 import Ribosome.Host.Interpreter.Process.Embed (interpretProcessCerealNvimEmbed, nvimArgs)
 import Ribosome.Host.Run (interpretRpcStack)
 import Ribosome.Host.Test.Data.TestConfig (host)
 import Ribosome.Host.Test.Run (TestIOStack, TestStack, runTestConf)
-import Ribosome.Interpreter.NvimPlugin (noHandlers)
 import Ribosome.Interpreter.Scratch (interpretScratch)
 import Ribosome.Interpreter.Settings (interpretSettingsRpc)
 import Ribosome.Interpreter.UserError (interpretUserErrorPrefixed)
+import Ribosome.Interpreter.VariableWatcher (interpretVariableWatcherNull)
 import Ribosome.Test.Error (resumeTestError)
 import System.Environment (lookupEnv)
 import System.Process.Typed (ProcessConfig, proc)
@@ -51,6 +52,8 @@ interpretTestPluginEmbed target =
   interpretProcessCerealNvimEmbed Nothing (Just (nvimProc target)) .
   interpretEmbedExtra .
   interpretRpcStack .
+  interpretHandlersNull .
+  interpretVariableWatcherNull .
   interpretSettingsRpc .
   interpretScratch
 
