@@ -103,7 +103,6 @@ in {
         "chronos"
         "deepseq"
         "exon"
-        "generic-lens"
         "hedgehog"
         "messagepack"
         "optparse-applicative"
