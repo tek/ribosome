@@ -47,11 +47,11 @@ let
   ];
 
   dependencies = [
-      { name = "base"; version = ">= 4.12 && < 5"; mixin = "hiding (Prelude)"; }
-      { name = "prelate"; version = ">= 0.1"; mixin = ["(Prelate as Prelude)" "hiding (Prelate)"]; }
-      "polysemy"
-      "polysemy-plugin"
-    ];
+    { name = "base"; version = ">= 4.12 && < 5"; mixin = "hiding (Prelude)"; }
+    { name = "prelate"; version = ">= 0.1"; mixin = ["(Prelate as Prelude)" "hiding (Prelate)"]; }
+    "polysemy"
+    "polysemy-plugin"
+  ];
 
   project = name: doc: merge (meta // { library = paths name; } // options) {
     inherit name;

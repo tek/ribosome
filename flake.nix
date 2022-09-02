@@ -3,7 +3,7 @@
 
   inputs = {
     hix.url = git+https://git.tryp.io/tek/hix;
-    chiasma.url = git+https://git.tryp.io/tek/chiasma?ref=main;
+    chiasma.url = git+https://git.tryp.io/tek/chiasma;
     polysemy-log.url = git+https://git.tryp.io/tek/polysemy-log;
     polysemy-conc.url = git+https://git.tryp.io/tek/polysemy-conc;
     prelate.url = git+https://git.tryp.io/tek/prelate;
@@ -38,7 +38,6 @@
       unicode-data = hackage "0.2.0" "14crb68g79yyw87fgh49z2fn4glqx0zr53v6mapihaxzkikhkkc3";
     };
   in hix.lib.flake ({ config, lib, ...}: {
-    base = ./.;
     packages = {
       integration = ./packages/integration;
       ribosome = ./packages/ribosome;
