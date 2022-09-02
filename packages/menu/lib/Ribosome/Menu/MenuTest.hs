@@ -2,6 +2,7 @@ module Ribosome.Menu.MenuTest where
 
 import Conc (Consume, GatesIO, Restoration, timeout_, withAsync_)
 import qualified Data.Map.Strict as Map
+import qualified Log
 import qualified Streamly.Prelude as Stream
 import Streamly.Prelude (SerialT)
 import qualified Sync
@@ -26,16 +27,16 @@ import Ribosome.Menu.Interpreter.MenuLoop (MenuLoopDeps, interpretMenuLoopDeps, 
 import Ribosome.Menu.Interpreter.MenuTest (
   MenuTestResources,
   TestTimeout (TestTimeout),
+  WaitEvent,
   interpretMenuTest,
-  interpretMenuTestResources, WaitEvent,
+  interpretMenuTestResources,
   )
 import Ribosome.Menu.Interpreter.MenuUi (interpretMenuUiNvimNull)
 import Ribosome.Menu.Interpreter.MenuUiEcho (interpretMenuUiNvimEcho)
-import Ribosome.Menu.Loop (lookupMapping, menu', runMenu)
+import Ribosome.Menu.Loop (lookupMapping, menuLoop, runMenu)
 import Ribosome.Menu.Mappings (Mappings)
 import Ribosome.Menu.Prompt.Data.PromptConfig (PromptConfig)
 import Ribosome.Menu.Stream.Util (queueStream)
-import qualified Log
 
 type MenuTestDeps i result =
   [
@@ -123,7 +124,7 @@ testMenuRender pconf mappings sem = do
   TestTimeout timeout <- ask
   items <- ask
   interpretMenuLoopDeps $ interpretMenuLoops $ interpretMenuTest pconf $ runMenu items $ withEventLog do
-    withAsync_ (Sync.putWait timeout =<< menu' mappings) do
+    withAsync_ (Sync.putWait timeout =<< menuLoop mappings) do
       timeout_ (fail "prompt didn't start") timeout waitPrompt
       sem
 

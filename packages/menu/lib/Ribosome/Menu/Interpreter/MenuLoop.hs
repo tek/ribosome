@@ -28,7 +28,7 @@ import Ribosome.Effect.Scratch (Scratch)
 import Ribosome.Effect.Settings (Settings)
 import Ribosome.Host.Data.Event (Event)
 import Ribosome.Host.Data.RpcError (RpcError)
-import Ribosome.Host.Effect.MState (MState, ScopedMState, withMState)
+import Ribosome.Host.Effect.MState (ScopedMState)
 import Ribosome.Host.Effect.Rpc (Rpc)
 import Ribosome.Host.Interpret (type (|>))
 import Ribosome.Host.Interpreter.MState (interpretMStates)
@@ -47,7 +47,7 @@ import qualified Ribosome.Menu.Effect.MenuStream as MenuStream
 import Ribosome.Menu.Effect.MenuStream (MenuStream)
 import Ribosome.Menu.Effect.MenuUi (EchoMenu, NvimMenuUi, PureMenu, WindowMenu)
 import Ribosome.Menu.Interpreter.MenuFilter (interpretMenuFilterFuzzy)
-import Ribosome.Menu.Interpreter.MenuState (interpretMenuState, mcState, mcState')
+import Ribosome.Menu.Interpreter.MenuState (interpretMenuState, mcState')
 import Ribosome.Menu.Interpreter.MenuStream (interpretMenuStream)
 import Ribosome.Menu.Interpreter.MenuUiEcho (interpretMenuUiNvimEcho)
 import Ribosome.Menu.Interpreter.MenuUiPure (interpretMenuUiPure)
@@ -149,9 +149,8 @@ interpretMenus =
   interpretMenuUiWindow
 
 type MenuLoopScope i =
-  [Gate @@ "prompt", MenuState i, Sync MenuSync, MState Prompt, Queue Prompt, Queue RenderEvent]
+  [Gate @@ "prompt", MenuState i, Sync MenuSync, Queue Prompt, Queue RenderEvent]
 
--- TODO remove MState Prompt, use loop variable in menu'
 menuLoopScope ::
   Members MenuLoopIO r =>
   Members MenuLoopDeps r =>
@@ -161,7 +160,6 @@ menuLoopScope ::
 menuLoopScope items use =
   interpretQueueTBM 64 $
   interpretQueueTBM 64 $
-  withMState def $
   interpretSync $
   interpretMenuState $
   subscribeLoopAsync (\ event -> Log.debug [exon|menu event: #{show event}|]) $
@@ -179,8 +177,6 @@ interpretMenuLoops =
     let
       int :: ∀ r0 x . MenuLoop i (Sem r0) x -> Tactical (MenuLoop i) (Sem r0) (MenuLoopScope i ++ r) x
       int = \case
-        MenuLoop.UsePrompt f ->
-          mcState f
         MenuLoop.WithRender render ma -> do
           s <- getInitialStateT
           render' <- bindT render <&> \ f -> interpretH int . f

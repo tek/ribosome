@@ -1,6 +1,7 @@
 module Ribosome.Menu.Loop where
 
 import Conc (PScoped, pscoped)
+import Control.Monad.Extra (loopM)
 import qualified Data.Map.Strict as Map
 import Exon (exon)
 import qualified Log
@@ -95,28 +96,28 @@ consumerChangedPrompt new = \case
   PromptEvent.Update old -> new /= old
   _ -> True
 
-menu' ::
+menuLoop ::
   ∀ i a r .
   Members [MenuLoop i, MenuUi, Log] r =>
   (MappingLhs -> Maybe (MenuWidget i r a)) ->
   Sem r (MenuResult a)
-menu' mappings = do
+menuLoop mappings = do
   MenuLoop.withRender MenuUi.render do
     Log.debug "Starting prompt loop"
     MenuLoop.startPrompt
-    untilJustM $ MenuLoop.usePrompt \ old -> do
+    flip loopM def \ old -> do
       event <- MenuUi.promptEvent old
       Log.debug [exon|prompt: #{show event}|]
       action <- runReader old (interpretMenuStateMenuLoop (handlePromptEvent mappings event)) >>= \case
         PromptAction.Quit result -> do
           MenuLoop.promptQuit
-          pure (old, Just result)
+          pure (Right result)
         PromptAction.Update new -> do
           MenuLoop.promptUpdated new
           MenuUi.renderPrompt (consumerChangedPrompt new event) new
-          pure (new, Nothing)
+          pure (Left new)
         PromptAction.Continue ->
-          pure (old, Nothing)
+          pure (Left old)
       MenuLoop.promptLooped
       pure action
 
@@ -136,7 +137,7 @@ menuMaps ::
   Mappings i r result ->
   Sem r (MenuResult result)
 menuMaps mappings =
-  menu' (lookupMapping mappings)
+  menuLoop (lookupMapping mappings)
 
 runMenu ::
   Member (MenuLoops i) r =>

@@ -10,7 +10,6 @@ import Ribosome.Menu.Data.MenuItems (MenuItems)
 import Ribosome.Menu.Prompt.Data.Prompt (Prompt)
 
 data MenuLoop i :: Effect where
-  UsePrompt :: (Prompt -> m (Prompt, a)) -> MenuLoop i m a
   WithRender :: (Menu i -> m ()) -> m a -> MenuLoop i m a
   UseCursor :: (CursorIndex -> m (CursorIndex, a)) -> MenuLoop i m a
   ReadCursor :: MenuLoop i m CursorIndex

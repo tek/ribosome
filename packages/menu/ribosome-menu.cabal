@@ -154,6 +154,7 @@ library
       base >=4.12 && <5
     , bytestring-trie
     , exon
+    , extra
     , fuzzyfind
     , lens-regex-pcre
     , microlens-mtl

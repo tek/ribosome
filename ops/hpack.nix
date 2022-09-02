@@ -208,6 +208,7 @@ in {
     library.dependencies = [
       "bytestring-trie"
       "exon"
+      "extra"
       "fuzzyfind"
       "lens-regex-pcre"
       "microlens-mtl"
