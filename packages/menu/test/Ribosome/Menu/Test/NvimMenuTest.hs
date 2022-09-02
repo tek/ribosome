@@ -22,7 +22,7 @@ import qualified Ribosome.Menu.Effect.MenuTest as MenuTest
 import Ribosome.Menu.Effect.MenuTest (sendChar, sendCharWait, waitEvent)
 import Ribosome.Menu.Effect.MenuUi (EchoMenu, WindowMenu)
 import Ribosome.Menu.Interpreter.MenuLoop (interpretNvimMenu, promptInput)
-import Ribosome.Menu.Loop (nvimMenu, nvimMenu', runMenu)
+import Ribosome.Menu.Loop (nvimMenu, nvimMenuLoop, runMenu)
 import Ribosome.Menu.Mappings (Mappings)
 import Ribosome.Menu.MenuTest (testStaticNvimMenu)
 import Ribosome.Menu.NvimRenderer (computeView, entrySlice)
@@ -88,7 +88,7 @@ test_nativeGetChar :: UnitTest
 test_nativeGetChar =
   testEmbed_ $ interpretNvimMenu $ runMenu (menuItems items) do
     result <- withPromptInputSync nativeChars do
-      nvimMenu' @EchoMenu startInsert (menuScratchSized 4) mappings
+      nvimMenuLoop @EchoMenu startInsert (menuScratchSized 4) mappings
     MenuResult.Success "item4" === result
 
 nativeWindowChars :: [SyncChar]
@@ -99,7 +99,7 @@ test_nativeWindow :: UnitTest
 test_nativeWindow =
   testEmbed_ $ interpretNvimMenu $ runMenu (menuItems items) do
     result <- withPromptInputSync nativeWindowChars do
-      nvimMenu' @WindowMenu startInsert (menuScratchSized 4) mappings
+      nvimMenuLoop @WindowMenu startInsert (menuScratchSized 4) mappings
     MenuResult.Success "item4" === result
 
 test_interrupt :: UnitTest
@@ -107,7 +107,7 @@ test_interrupt =
   testEmbed_ do
     result <- interpretNvimMenu $ runMenu (menuItems items) do
       withPromptInput (Just (MilliSeconds 10)) ["i", "<c-c>", "<cr>"] do
-        nvimMenu' @EchoMenu startInsert def mappings
+        nvimMenuLoop @EchoMenu startInsert def mappings
     MenuResult.Aborted === result
     assertEq 1 . length =<< vimGetWindows
 
@@ -116,7 +116,7 @@ test_interruptWindow =
   testEmbed_ do
     result <- interpretNvimMenu $ runMenu (menuItems items) do
       withPromptInputSync ["i", "<c-c>", "<cr>"] do
-        nvimMenu' @WindowMenu startInsert def mappings
+        nvimMenuLoop @WindowMenu startInsert def mappings
     MenuResult.Aborted === result
     assertEq 1 . length =<< vimGetWindows
 
@@ -125,7 +125,7 @@ test_windowOnlyInsert =
   testEmbed_ do
     result <- interpretNvimMenu $ runMenu (menuItems items) do
       withPromptInputSync ["i", nosync "<esc>", "<cr>"] do
-        nvimMenu' @WindowMenu onlyInsert def mappings
+        nvimMenuLoop @WindowMenu onlyInsert def mappings
     MenuResult.Aborted === result
 
 navChars :: [Text]

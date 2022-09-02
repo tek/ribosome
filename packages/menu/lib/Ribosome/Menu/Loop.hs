@@ -155,14 +155,14 @@ menu ::
 menu items (fmap raise2Under -> mappings) = do
   runMenu items (menuMaps mappings)
 
-nvimMenu' ::
+nvimMenuLoop ::
   ∀ mres result i r .
   Members [NvimMenuUi mres, MenuLoop i, Log, Stop RpcError] r =>
   PromptConfig ->
   ScratchOptions ->
   Mappings i r result ->
   Sem r (MenuResult result)
-nvimMenu' pconf options consumerMappings =
+nvimMenuLoop pconf options consumerMappings =
   restop @_ @(PScoped _ _ MenuUi) $ withMenuUi (NvimMenuConfig pconf options maps) do
     menuMaps (insertAt @2 <$> mappings)
   where

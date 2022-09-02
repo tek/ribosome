@@ -123,7 +123,7 @@ import Ribosome.Menu.Items (
   withSelectionItems,
   )
 import Ribosome.Menu.Lens (use, (%=), (+=), (.=))
-import Ribosome.Menu.Loop (menu, menu', nvimMenu, nvimMenu', runMenu, staticNvimMenu)
+import Ribosome.Menu.Loop (menu, menuLoop, nvimMenu, nvimMenuLoop, runMenu, staticNvimMenu)
 import Ribosome.Menu.Mappings (Mappings, defaultMappings, insert)
 import Ribosome.Menu.Prompt.Data.Prompt (Prompt (Prompt), PromptText (PromptText))
 import Ribosome.Menu.Prompt.Data.PromptConfig

@@ -203,8 +203,6 @@ promptOptions (row, col, _, width) custom =
 type WindowScope =
   [Consume PromptEvent, AtomicState NvimMenuState]
 
--- TODO use @:mapclear@ before setting mappings, as a flag in ScratchOptions. @nowait@ works fine to force menu
--- mappings, so no need to clear?
 withPrompt ::
   Member (EventConsumer eres Event) r =>
   Members [Scratch, Rpc, Rpc !! RpcError, Stop RpcError, Log, Resource, GatesIO, Race, Async, Embed IO] r =>
