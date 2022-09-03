@@ -96,6 +96,7 @@ in {
       "polysemy-log"
       "polysemy-process"
       "template-haskell"
+      "text"
       "type-errors-pretty"
       "typed-process"
     ];

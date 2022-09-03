@@ -44,9 +44,9 @@ module Ribosome.Host (
   module Ribosome.Host.Api.Data,
 
   -- * Messagepack
-  module Ribosome.Host.Class.Msgpack.Array,
   module Ribosome.Host.Class.Msgpack.Decode,
   module Ribosome.Host.Class.Msgpack.Encode,
+  module Ribosome.Host.Class.Msgpack.Array,
   module Ribosome.Host.Class.Msgpack.Map,
 
   -- * Errors

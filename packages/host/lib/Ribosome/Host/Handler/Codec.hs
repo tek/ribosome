@@ -1,5 +1,6 @@
 {-# options_haddock prune #-}
 
+-- |Classes for converting functions to RPC handlers that may have special parameters.
 module Ribosome.Host.Handler.Codec where
 
 import Data.Aeson (eitherDecodeStrict')
@@ -10,12 +11,18 @@ import Exon (exon)
 import qualified Options.Applicative as Optparse
 import Options.Applicative (defaultPrefs, execParserPure, info, renderFailure)
 
-import Ribosome.Host.Class.Msgpack.Decode (MsgpackDecode (fromMsgpack))
+import Ribosome.Host.Class.Msgpack.Decode (MsgpackDecode (fromMsgpack), fromMsgpackText)
 import Ribosome.Host.Class.Msgpack.Encode (MsgpackEncode (toMsgpack))
-import Ribosome.Host.Data.Args (ArgList (ArgList), Args (Args), JsonArgs (JsonArgs), OptionParser (optionParser), Options (Options))
+import Ribosome.Host.Data.Args (
+  ArgList (ArgList),
+  Args (Args),
+  JsonArgs (JsonArgs),
+  OptionParser (optionParser),
+  Options (Options),
+  )
 import Ribosome.Host.Data.Bang (Bang (NoBang))
 import Ribosome.Host.Data.Bar (Bar (Bar))
-import Ribosome.Host.Data.Report (Report, basicReport)
+import Ribosome.Host.Data.Report (Report, basicReport, toReport)
 import Ribosome.Host.Data.RpcHandler (Handler, RpcHandlerFun)
 
 decodeArg ::
@@ -24,7 +31,7 @@ decodeArg ::
   Object ->
   Sem r a
 decodeArg =
-  stopEither . first fromText . fromMsgpack
+  stopEither . first toReport . fromMsgpack
 
 extraError ::
   Member (Stop Report) r =>
@@ -92,7 +99,7 @@ instance (
       Right a ->
         pure ([], Args (Text.unwords a))
       Left e ->
-        basicReport [exon|Invalid arguments: #{show os}|] ["Invalid type for Args", show os, e]
+        basicReport [exon|Invalid arguments: #{show os}|] ["Invalid type for Args", show os, show e]
 
 instance (
     Member (Stop Report) r
@@ -102,14 +109,14 @@ instance (
       Right a ->
         pure ([], ArgList a)
       Left e ->
-        basicReport [exon|Invalid arguments: #{show os}|] ["Invalid type for ArgList", show os, e]
+        basicReport [exon|Invalid arguments: #{show os}|] ["Invalid type for ArgList", show os, show e]
 
 instance (
     Member (Stop Report) r,
     FromJSON a
   ) => HandlerArg (JsonArgs a) r where
   handlerArg os =
-    case first toText . eitherDecodeStrict' . ByteString.concat =<< traverse fromMsgpack os of
+    case first toText . eitherDecodeStrict' . ByteString.concat =<< traverse fromMsgpackText os of
       Right a ->
         pure ([], JsonArgs a)
       Left e ->
@@ -120,7 +127,7 @@ instance (
     OptionParser a
   ) => HandlerArg (Options a) r where
   handlerArg os =
-    case result . execParserPure defaultPrefs (info (optionParser @a) mempty) =<< traverse fromMsgpack os of
+    case result . execParserPure defaultPrefs (info (optionParser @a) mempty) =<< traverse fromMsgpackText os of
       Right a ->
         pure ([], Options a)
       Left e ->

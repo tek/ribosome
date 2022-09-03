@@ -25,6 +25,7 @@ import Prelude hiding (optional, some, span, try, (<|>))
 import Text.Show (showsPrec)
 
 import Ribosome.Host.Class.Msgpack.Decode (MsgpackDecode (fromMsgpack))
+import Ribosome.Host.Class.Msgpack.Error (DecodeError, decodeError)
 
 -- TODO see if using GADT can move some TH stuff to type level
 data ApiPrim =
@@ -109,13 +110,13 @@ apiType :: Parser ApiType
 apiType =
   array <|> (Prim <$> prim) <|> ext
 
-parseApiType :: ByteString -> Either Text ApiType
+parseApiType :: ByteString -> Either DecodeError ApiType
 parseApiType =
   runParser apiType >>> \case
     OK a "" -> Right a
-    OK a u -> Left [exon|Parsed #{toText (showsPrec 11 a "")} but got leftovers: #{decodeUtf8 u}|]
-    Fail -> Left "fail"
-    Err e -> Left e
+    OK a u -> decodeError [exon|Parsed #{toText (showsPrec 11 a "")} but got leftovers: #{decodeUtf8 u}|]
+    Fail -> decodeError "fail"
+    Err e -> decodeError e
 
 instance MsgpackDecode ApiType where
   fromMsgpack =

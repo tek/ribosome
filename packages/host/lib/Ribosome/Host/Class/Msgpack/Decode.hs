@@ -1,260 +1,315 @@
 {-# options_haddock prune #-}
 
--- |Decoding values from MessagePack format
+-- |The class for decoding messagepack.
 module Ribosome.Host.Class.Msgpack.Decode where
 
-import qualified Data.Map.Strict as Map (empty, fromList, toList)
+import qualified Data.Map.Strict as Map
 import Data.MessagePack (Object (..))
 import Exon (exon)
-import GHC.Float (double2Float, float2Double)
-import GHC.Generics (
-  C1,
-  Constructor,
-  D1,
-  K1 (..),
-  M1 (..),
-  Rep,
-  S1,
-  Selector,
-  conIsRecord,
-  selName,
-  to,
-  (:*:) (..),
-  (:+:) (..),
+import Generics.SOP (I (I), NP (Nil, (:*)), NS (S, Z), SOP (SOP))
+import Generics.SOP.GGP (GCode, GDatatypeInfoOf, gto)
+import Generics.SOP.Type.Metadata (
+  ConstructorInfo (Constructor, Infix, Record),
+  DatatypeInfo (ADT, Newtype),
+  FieldInfo (FieldInfo),
   )
 import Path (Abs, Dir, File, Path, Rel, parseAbsDir, parseAbsFile, parseRelDir, parseRelFile)
-import Prelude hiding (to)
 import Time (MicroSeconds, MilliSeconds, NanoSeconds, Seconds (Seconds))
 
-import qualified Ribosome.Host.Class.Msgpack.Util as Util (illegalType, invalid, lookupObjectMap, missingRecordKey)
+import Ribosome.Host.Class.Msgpack.Error (
+  DecodeError,
+  FieldError (FieldError, NestedFieldError),
+  decodeIncompatible,
+  incompatible,
+  incompatibleCon,
+  incompatibleShape,
+  renderError,
+  symbolText,
+  toDecodeError,
+  utf8Error,
+  )
+import Ribosome.Host.Class.Msgpack.Util (
+  ReifySOP,
+  ValidUtf8 (ValidUtf8),
+  ValidUtf8String (ValidUtf8String),
+  decodeByteString,
+  decodeFractional,
+  decodeIntegral,
+  decodeUtf8Lenient,
+  )
+
+class GMsgpackDecode (dt :: DatatypeInfo) (ass :: [[Type]]) where
+  gfromMsgpack :: Object -> Either FieldError (SOP I ass)
 
 -- |Class of values that can be decoded from MessagePack 'Object's.
 class MsgpackDecode a where
-  -- |Attempt to decode an 'Object', returning an error message in a 'Left' if the data is incompatible.
-  --
+  -- |Decode a value from a MessagePack 'Object'.
+    --
   -- The default implementation uses generic derivation.
-  fromMsgpack :: Object -> Either Text a
-  default fromMsgpack :: (Generic a, GMsgpackDecode (Rep a)) => Object -> Either Text a
-  fromMsgpack = fmap to . gMsgpackDecode
+  fromMsgpack :: Object -> Either DecodeError a
+  default fromMsgpack ::
+    Typeable a =>
+    ReifySOP a ass =>
+    GMsgpackDecode (GDatatypeInfoOf a) (GCode a) =>
+    Object ->
+    Either DecodeError a
+  fromMsgpack =
+    toDecodeError . fmap gto . gfromMsgpack @(GDatatypeInfoOf a)
 
-  -- |Utility method called by the generic machinery when a record key is missing.
-  missingKey :: String -> Object -> Either Text a
-  missingKey = Util.missingRecordKey
-
--- |Pattern synonym for decoding an 'Object'.
-pattern Msgpack :: ∀ a . MsgpackDecode a => a -> Object
-pattern Msgpack a <- (fromMsgpack -> Right a)
-
-class GMsgpackDecode f where
-  gMsgpackDecode :: Object -> Either Text (f a)
-
-  gMissingKey :: String -> Object -> Either Text (f a)
-  gMissingKey = Util.missingRecordKey
-
-class MsgpackDecodeProd f where
-  msgpackDecodeRecord :: Map Object Object -> Either Text (f a)
-  msgpackDecodeProd :: [Object] -> Either Text ([Object], f a)
-
-instance (GMsgpackDecode f) => GMsgpackDecode (D1 c f) where
-  gMsgpackDecode =
-    fmap M1 . gMsgpackDecode @f
-
-instance (Constructor c, MsgpackDecodeProd f) => GMsgpackDecode (C1 c f) where
-  gMsgpackDecode =
-    fmap M1 . decode
-    where
-      isRec = conIsRecord (undefined :: t c f p)
-      decode o@(ObjectMap om) =
-        if isRec then msgpackDecodeRecord om else Util.invalid "illegal ObjectMap for product" o
-      decode o | isRec =
-        Util.invalid "illegal non-ObjectMap for record" o
-      decode o =
-        msgpackDecodeProd (prod o) >>= check
-        where
-          check ([], a) = Right a
-          check _ = Util.invalid "too many values for product" o
-          prod (ObjectArray oa) = oa
-          prod ob = [ob]
-
-instance (MsgpackDecodeProd f, MsgpackDecodeProd g) => MsgpackDecodeProd (f :*: g) where
-  msgpackDecodeRecord o = do
-    left <- msgpackDecodeRecord o
-    right <- msgpackDecodeRecord o
-    pure $ left :*: right
-  msgpackDecodeProd o = do
-    (rest, left) <- msgpackDecodeProd o
-    (rest1, right) <- msgpackDecodeProd rest
-    pure (rest1, left :*: right)
-
-instance (GMsgpackDecode f, GMsgpackDecode g) => GMsgpackDecode (f :+: g) where
-  gMsgpackDecode o = fromRight (L1 <$> gMsgpackDecode @f o) (Right . R1 <$> gMsgpackDecode @g o)
-
--- TODO use Proxy instead of undefined
-instance (Selector s, GMsgpackDecode f) => MsgpackDecodeProd (S1 s f) where
-  msgpackDecodeRecord o =
-    M1 <$> maybe (gMissingKey key (ObjectMap o)) gMsgpackDecode lookup
-    where
-      lookup =
-        Util.lookupObjectMap key o <|> lookupUnderscore
-      lookupUnderscore =
-        if hasUnderscore
-        then Util.lookupObjectMap (dropWhile ('_' ==) key) o
-        else Nothing
-      hasUnderscore =
-        take 1 key == "_"
-      key =
-        selName (undefined :: t s f p)
-  msgpackDecodeProd (cur:rest) = do
-    a <- gMsgpackDecode cur
-    pure (rest, M1 a)
-  msgpackDecodeProd [] = Util.invalid "too few values for product" ObjectNil
-
-instance MsgpackDecode a => GMsgpackDecode (K1 i a) where
-  gMsgpackDecode = fmap K1 . fromMsgpack
-
-  gMissingKey key =
-    fmap K1 . missingKey key
-
-instance (Ord k, MsgpackDecode k, MsgpackDecode v) => MsgpackDecode (Map k v) where
-  fromMsgpack (ObjectMap om) = do
-    m <- traverse decodePair $ Map.toList om
-    Right $ Map.fromList m
-    where
-      decodePair (k, v) = do
-        k1 <- fromMsgpack k
-        v1 <- fromMsgpack v
-        pure (k1, v1)
-  fromMsgpack o = Util.illegalType "Map" o
-  missingKey _ _ = Right Map.empty
-
-integralFromString ::
-  Read a =>
-  ByteString ->
-  Either Text a
-integralFromString =
-  readEither . decodeUtf8
-
-msgpackIntegral ::
-  Integral a =>
-  Read a =>
+nestedDecode ::
+  MsgpackDecode a =>
   Object ->
-  Either Text a
-msgpackIntegral (ObjectInt i) = Right $ fromIntegral i
-msgpackIntegral (ObjectUInt i) = Right $ fromIntegral i
-msgpackIntegral (ObjectString s) = integralFromString s
-msgpackIntegral (ObjectBinary s) = integralFromString s
-msgpackIntegral o = Util.illegalType "Integral" o
+  Either FieldError a
+nestedDecode o =
+  first NestedFieldError (fromMsgpack o)
 
-msgpackText :: ConvertUtf8 t ByteString => Text -> (t -> Either Text a) -> Object -> Either Text a
-msgpackText typeName decode =
-  run
-  where
-    run (ObjectString os) = decode $ decodeUtf8 os
-    run (ObjectBinary os) = decode $ decodeUtf8 os
-    run o = Util.illegalType typeName o
+class DecodeProd (as :: [Type]) where
+  decodeProd :: [Object] -> Either FieldError (NP I as)
+
+instance DecodeProd '[] where
+  decodeProd = \case
+    [] ->
+      Right Nil
+    o ->
+      incompatibleShape "product type" [exon|#{show (length o)} extra elements|]
+
+instance (
+    MsgpackDecode a,
+    DecodeProd as
+  ) => DecodeProd (a : as) where
+    decodeProd = \case
+      o : os -> do
+        a <- nestedDecode o
+        as <- decodeProd os
+        pure (I a :* as)
+      [] ->
+        incompatibleShape "product type" "too few elements"
+
+-- |This class decides what to return when a key in an 'ObjectMap' is missing for a corresponding record field.
+--
+-- Primarily used for 'Maybe' fields, since they should decode to 'Nothing' when the key is absent.
+class MissingKey a where
+  -- |Return a fallback value for a missing key in an 'ObjectMap'.
+  missingKey :: String -> Map String Object -> Either FieldError a
+
+instance {-# overlappable #-} MissingKey a where
+  missingKey name _ =
+    Left (FieldError [exon|Missing record field '#{toText name}'|])
+
+instance MissingKey (Maybe a) where
+  missingKey _ _ =
+    Right Nothing
+
+class DecodeRecord (fields :: [FieldInfo]) (as :: [Type]) where
+  decodeRecord :: Map String Object -> Either FieldError (NP I as)
+
+instance DecodeRecord '[] '[] where
+  decodeRecord _ =
+    Right Nil
+
+instance (
+    KnownSymbol name,
+    MsgpackDecode a,
+    MissingKey a,
+    DecodeRecord fields as
+  ) => DecodeRecord ('FieldInfo name : fields) (a : as) where
+  decodeRecord os = do
+    a <- lookupField
+    as <- decodeRecord @fields os
+    pure (I a :* as)
+    where
+      lookupField =
+        case Map.lookup name os of
+          Just o ->
+            nestedDecode o
+          Nothing ->
+            missingKey name os
+      name =
+        symbolVal (Proxy @name)
+
+class DecodeCtor (ctor :: ConstructorInfo) (as :: [Type]) where
+  decodeCtor :: Object -> Either FieldError (NP I as)
+
+instance (
+    KnownSymbol name,
+    DecodeProd as
+  ) => DecodeCtor ('Constructor name) as where
+    decodeCtor = \case
+      ObjectArray os ->
+        decodeProd @as os
+      o ->
+        incompatibleCon [exon|product constructor #{symbolText @name}|] o
+
+instance (
+    KnownSymbol name,
+    MsgpackDecode l,
+    MsgpackDecode r
+  ) => DecodeCtor ('Infix name assoc fixity) [l, r] where
+    decodeCtor = \case
+      ObjectArray [obl, obr] -> do
+        l <- nestedDecode obl
+        r <- nestedDecode obr
+        pure (I l :* I r :* Nil)
+      ObjectArray os ->
+        incompatibleShape desc [exon|Array with #{show (length os)} elements|]
+      o ->
+        incompatibleCon desc o
+      where
+        desc =
+          [exon|infix constructor #{symbolText @name}|]
+
+instance (
+    KnownSymbol name,
+    DecodeRecord fields as
+  ) => DecodeCtor ('Record name fields) as where
+    decodeCtor = \case
+      Msgpack fields ->
+        decodeRecord @fields @as fields
+      ObjectMap _ ->
+        incompatibleShape desc "Map with non-string keys"
+      o ->
+        incompatibleCon desc o
+      where
+        desc =
+          [exon|record constructor #{symbolText @name}|]
+
+class DecodeCtors (ctors :: [ConstructorInfo]) (ass :: [[Type]]) where
+  decodeCtors :: Object -> Either FieldError (NS (NP I) ass)
+
+instance (
+    DecodeCtor ctor as
+  ) => DecodeCtors '[ctor] '[as] where
+  decodeCtors o =
+    Z <$> decodeCtor @ctor @as o
+
+instance (
+    DecodeCtor ctor as,
+    DecodeCtors (ctor1 : ctors) (as1 : ass)
+  ) => DecodeCtors (ctor : ctor1 : ctors) (as : as1 : ass) where
+    decodeCtors o =
+      either (const (S <$> decodeCtors @(ctor1 : ctors) @(as1 : ass) o)) (Right . Z) (decodeCtor @ctor @as o)
+
+instance (
+    MsgpackDecode a
+  ) => GMsgpackDecode ('Newtype mod name ctor) '[ '[a]] where
+    gfromMsgpack o = do
+      a <- nestedDecode o
+      pure (SOP (Z (I a :* Nil)))
+
+instance (
+    DecodeCtors ctors ass
+  ) => GMsgpackDecode ('ADT mod name ctors strictness) ass where
+  gfromMsgpack =
+      fmap SOP . decodeCtors @ctors @ass
+
+instance (
+    Ord k,
+    Typeable k,
+    Typeable v,
+    MsgpackDecode k,
+    MsgpackDecode v
+  ) => MsgpackDecode (Map k v) where
+    fromMsgpack = \case
+      ObjectMap om -> do
+        Map.fromList <$> traverse decodePair (Map.toList om)
+        where
+          decodePair (k, v) = do
+            k1 <- fromMsgpack k
+            v1 <- fromMsgpack v
+            pure (k1, v1)
+      o ->
+        toDecodeError (incompatible o)
 
 instance MsgpackDecode Integer where
-  fromMsgpack = msgpackIntegral
+  fromMsgpack =
+    decodeIntegral
 
 instance MsgpackDecode Int where
-  fromMsgpack = msgpackIntegral
+  fromMsgpack =
+    decodeIntegral
 
 instance MsgpackDecode Int64 where
-  fromMsgpack = msgpackIntegral
+  fromMsgpack =
+    decodeIntegral
 
 instance MsgpackDecode Float where
-  fromMsgpack (ObjectFloat a) = Right a
-  fromMsgpack (ObjectDouble a) = Right (double2Float a)
-  fromMsgpack (ObjectInt a) = Right (fromIntegral a)
-  fromMsgpack (ObjectUInt a) = Right (fromIntegral a)
-  fromMsgpack o = Util.illegalType "Float" o
+  fromMsgpack =
+    decodeFractional
 
 instance MsgpackDecode Double where
-  fromMsgpack (ObjectFloat a) = Right (float2Double a)
-  fromMsgpack (ObjectDouble a) = Right a
-  fromMsgpack (ObjectInt a) = Right (fromIntegral a)
-  fromMsgpack (ObjectUInt a) = Right (fromIntegral a)
-  fromMsgpack o = Util.illegalType "Double" o
+  fromMsgpack =
+    decodeFractional
 
-instance {-# OVERLAPPING #-} MsgpackDecode String where
-  fromMsgpack = msgpackText "String" Right
+instance {-# overlapping #-} MsgpackDecode String where
+  fromMsgpack =
+    decodeUtf8Lenient
 
-instance {-# OVERLAPPABLE #-} MsgpackDecode a => MsgpackDecode [a] where
-  fromMsgpack (ObjectArray oa) = traverse fromMsgpack oa
-  fromMsgpack o = Util.illegalType "List" o
-  missingKey _ _ = Right []
+instance {-# overlappable #-} (
+    Typeable a,
+    MsgpackDecode a
+  ) => MsgpackDecode [a] where
+    fromMsgpack = \case
+      ObjectArray oa ->
+        traverse fromMsgpack oa
+      o ->
+        decodeIncompatible o
 
 instance MsgpackDecode Text where
   fromMsgpack =
-    msgpackText "Text" Right
+    decodeUtf8Lenient
+
+instance MsgpackDecode ValidUtf8 where
+  fromMsgpack =
+    decodeByteString (bimap utf8Error ValidUtf8 . decodeUtf8Strict)
+
+instance MsgpackDecode ValidUtf8String where
+  fromMsgpack =
+    decodeByteString (bimap utf8Error ValidUtf8String . decodeUtf8Strict)
 
 instance MsgpackDecode ByteString where
-  fromMsgpack (ObjectString os) = Right os
-  fromMsgpack (ObjectBinary os) = Right os
-  fromMsgpack o = Util.illegalType "ByteString" o
+  fromMsgpack =
+    decodeByteString Right
 
 instance MsgpackDecode Char where
   fromMsgpack o =
-    msgpackText "Char" check o
+    decodeByteString (check . decodeUtf8) o
     where
-      check :: [Char] -> Either Text Char
-      check [c] = Right c
-      check _ = Util.invalid "multiple characters when decoding Char" o
+      check :: [Char] -> Either FieldError Char
+      check = \case
+        [c] ->
+          Right c
+        _ ->
+          Left "Got multiple characters"
 
 instance MsgpackDecode a => MsgpackDecode (Maybe a) where
-  fromMsgpack ObjectNil = Right Nothing
-  fromMsgpack o = Just <$> fromMsgpack o
-  missingKey _ _ = Right Nothing
+  fromMsgpack = \case
+    ObjectNil ->
+      Right Nothing
+    o ->
+      Just <$> fromMsgpack o
 
 instance (MsgpackDecode a, MsgpackDecode b) => MsgpackDecode (Either a b) where
   fromMsgpack o =
     fromRight (Left <$> fromMsgpack o) (Right . Right <$> fromMsgpack o)
 
 instance MsgpackDecode Bool where
-  fromMsgpack (ObjectBool a) = Right a
-  fromMsgpack (ObjectInt 0) = Right False
-  fromMsgpack (ObjectInt 1) = Right True
-  fromMsgpack o = Util.illegalType "Bool" o
+  fromMsgpack = \case
+    ObjectBool a ->
+      Right a
+    ObjectInt 0 ->
+      Right False
+    ObjectInt 1 ->
+      Right True
+    o ->
+      decodeIncompatible o
 
 instance MsgpackDecode () where
-  fromMsgpack _ = Right ()
+  fromMsgpack _ =
+    Right ()
 
 instance MsgpackDecode Object where
-  fromMsgpack = Right
-
-decodeTuple :: Int -> ([Object] -> Either (Maybe Text) a) -> Object -> Either Text a
-decodeTuple i f = \case
-  o@(ObjectArray oa) ->
-    case f oa of
-      Right a -> pure a
-      Left Nothing -> Util.invalid [exon|invalid array length for #{show i}-tuple|] o
-      Left (Just err) -> Left err
-  o ->
-    Util.illegalType [exon|#{show i}-tuple|] o
-
-instance (MsgpackDecode a, MsgpackDecode b) => MsgpackDecode (a, b) where
   fromMsgpack =
-    decodeTuple 2 \case
-      [a, b] ->
-        first Just ((,) <$> fromMsgpack a <*> fromMsgpack b)
-      _ ->
-        Left Nothing
-
-instance (MsgpackDecode a, MsgpackDecode b, MsgpackDecode c) => MsgpackDecode (a, b, c) where
-  fromMsgpack =
-    decodeTuple 3 \case
-      [a, b, c] ->
-        first Just ((,,) <$> fromMsgpack a <*> fromMsgpack b <*> fromMsgpack c)
-      _ ->
-        Left Nothing
-
-instance (MsgpackDecode a, MsgpackDecode b, MsgpackDecode c, MsgpackDecode d) => MsgpackDecode (a, b, c, d) where
-  fromMsgpack =
-    decodeTuple 4 \case
-      [a, b, c, d] ->
-        first Just ((,,,) <$> fromMsgpack a <*> fromMsgpack b <*> fromMsgpack c <*> fromMsgpack d)
-      _ ->
-        Left Nothing
+    Right
 
 class DecodePath b t where
   decodePath :: FilePath -> Either SomeException (Path b t)
@@ -278,45 +333,132 @@ instance DecodePath Rel Dir where
 decodePathE ::
   ∀ b t .
   DecodePath b t =>
-  Text ->
-  Either Text (Path b t)
-decodePathE =
-  first show . decodePath . toString
+  Object ->
+  Either FieldError (Path b t)
+decodePathE o = do
+  ValidUtf8String s <- nestedDecode o
+  first (const (FieldError "Invalid path")) (decodePath s)
 
-instance DecodePath b t => MsgpackDecode (Path b t) where
-  fromMsgpack =
-    msgpackText "Path" decodePathE
+instance (
+    Typeable b,
+    Typeable t,
+    DecodePath b t
+  ) => MsgpackDecode (Path b t) where
+    fromMsgpack =
+      toDecodeError . decodePathE
 
 timeUnit ::
+  Typeable a =>
   Fractional a =>
-  Text ->
   Object ->
-  Either Text a
-timeUnit name = \case
-  Msgpack d -> Right (realToFrac @Double d)
-  Msgpack i -> Right (fromIntegral @Int64 i)
-  o -> Util.illegalType name o
+  Either DecodeError a
+timeUnit = \case
+  Msgpack d ->
+    Right (realToFrac @Double d)
+  Msgpack i ->
+    Right (fromIntegral @Int64 i)
+  o ->
+    decodeIncompatible o
 
 instance MsgpackDecode NanoSeconds where
   fromMsgpack =
-    timeUnit "NanoSeconds"
+    timeUnit
 
 instance MsgpackDecode MicroSeconds where
   fromMsgpack =
-    timeUnit "MicroSeconds"
+    timeUnit
 
 instance MsgpackDecode MilliSeconds where
   fromMsgpack =
-    timeUnit "MilliSeconds"
+    timeUnit
 
 instance MsgpackDecode Seconds where
   fromMsgpack =
     fmap Seconds . fromMsgpack
 
-msgpackFromString :: IsString a => Text -> Object -> Either Text a
-msgpackFromString name o =
-  case fromMsgpack o of
-    Right a ->
-      Right (fromString a)
-    Left _ ->
-      Util.illegalType name o
+fromMsgpackText ::
+  MsgpackDecode a =>
+  Object ->
+  Either Text a
+fromMsgpackText =
+  first renderError . fromMsgpack
+
+-- |Pattern synonym for decoding an 'Object'.
+pattern Msgpack :: ∀ a . MsgpackDecode a => a -> Object
+pattern Msgpack a <- (fromMsgpack -> Right a)
+
+deriving anyclass instance MsgpackDecode FieldError
+
+deriving anyclass instance MsgpackDecode DecodeError
+
+instance (
+    Typeable a,
+    Typeable b,
+    MsgpackDecode a,
+    MsgpackDecode b
+  ) => MsgpackDecode (a, b)
+
+instance (
+    Typeable a,
+    Typeable b,
+    Typeable c,
+    MsgpackDecode a,
+    MsgpackDecode b,
+    MsgpackDecode c
+  ) => MsgpackDecode (a, b, c)
+
+instance (
+    Typeable a,
+    Typeable b,
+    Typeable c,
+    Typeable d,
+    MsgpackDecode a,
+    MsgpackDecode b,
+    MsgpackDecode c,
+    MsgpackDecode d
+  ) => MsgpackDecode (a, b, c, d)
+
+instance (
+    Typeable a,
+    Typeable b,
+    Typeable c,
+    Typeable d,
+    Typeable e,
+    MsgpackDecode a,
+    MsgpackDecode b,
+    MsgpackDecode c,
+    MsgpackDecode d,
+    MsgpackDecode e
+  ) => MsgpackDecode (a, b, c, d, e)
+
+instance (
+    Typeable a,
+    Typeable b,
+    Typeable c,
+    Typeable d,
+    Typeable e,
+    Typeable f,
+    MsgpackDecode a,
+    MsgpackDecode b,
+    MsgpackDecode c,
+    MsgpackDecode d,
+    MsgpackDecode e,
+    MsgpackDecode f
+  ) => MsgpackDecode (a, b, c, d, e, f)
+
+instance (
+    Typeable a,
+    Typeable b,
+    Typeable c,
+    Typeable d,
+    Typeable e,
+    Typeable f,
+    Typeable g,
+    MsgpackDecode a,
+    MsgpackDecode b,
+    MsgpackDecode c,
+    MsgpackDecode d,
+    MsgpackDecode e,
+    MsgpackDecode f,
+    MsgpackDecode g
+  ) => MsgpackDecode (a, b, c, d, e, f, g)

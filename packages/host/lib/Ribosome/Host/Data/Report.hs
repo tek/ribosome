@@ -51,9 +51,9 @@ instance IsString ReportContext where
 -- The log message may span multiple lines.
 data Report where
   Report :: HasCallStack => {
-    user :: Text,
-    log :: [Text],
-    severity :: Severity
+    user :: !Text,
+    log :: ![Text],
+    severity :: !Severity
   } -> Report
 
 instance Show Report where

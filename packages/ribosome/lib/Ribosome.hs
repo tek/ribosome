@@ -528,6 +528,8 @@ import Ribosome.Run (NvimPlugin)
 -- >   deriving anyclass (MsgpackEncode, MsgpackDecode)
 -- >
 -- > nvimSetVar "cat" (Cat "Dr. Boots" 4)
+--
+-- The module [Ribosome.Msgpack]("Ribosome.Msgpack") contains tools for writing MessagePack instances for custom types.
 
 -- $util
 -- TODO

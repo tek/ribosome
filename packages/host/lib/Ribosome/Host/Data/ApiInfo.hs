@@ -4,7 +4,8 @@ import Data.MessagePack (Object)
 import qualified Data.Serialize as Serialize
 import System.Process.Typed (proc, readProcessStdout_)
 
-import Ribosome.Host.Class.Msgpack.Decode (MsgpackDecode (fromMsgpack))
+import Ribosome.Host.Class.Msgpack.Decode (MsgpackDecode, nestedDecode)
+import Ribosome.Host.Class.Msgpack.Error (DecodeError, FieldError, toDecodeError)
 import Ribosome.Host.Data.ApiType (ApiType)
 
 data RpcDecl =
@@ -40,9 +41,10 @@ data ApiInfo =
   deriving stock (Eq, Show, Generic)
   deriving anyclass (MsgpackDecode)
 
-msgpack :: IO (Either Text Object)
+msgpack :: IO (Either FieldError Object)
 msgpack =
-    first toText . Serialize.decode . toStrict <$> readProcessStdout_ (proc "nvim" ["--api-info"])
+    first fromString . Serialize.decode . toStrict <$> readProcessStdout_ (proc "nvim" ["--api-info"])
 
-apiInfo :: IO (Either Text ApiInfo)
-apiInfo = (fromMsgpack =<<) <$> msgpack
+apiInfo :: IO (Either DecodeError ApiInfo)
+apiInfo =
+  toDecodeError . (nestedDecode =<<) <$> msgpack

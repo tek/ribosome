@@ -10,8 +10,8 @@ import Ribosome.Host.Data.Report (Report)
 -- |Data type that attaches a time stamp to a 'Report'.
 data StoredReport =
   StoredReport {
-    report :: Report,
-    time :: Chronos.Time
+    report :: !Report,
+    time :: !Chronos.Time
   }
   deriving stock (Show)
 

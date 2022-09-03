@@ -24,7 +24,6 @@ import Language.Haskell.TH (
   listE,
   litP,
   mkName,
-  nameBase,
   normalB,
   normalC,
   sigD,
@@ -35,7 +34,7 @@ import Prelude hiding (Type)
 
 import Ribosome.Host.Class.Msgpack.Decode (MsgpackDecode (fromMsgpack))
 import Ribosome.Host.Class.Msgpack.Encode (MsgpackEncode (toMsgpack))
-import Ribosome.Host.Class.Msgpack.Util (illegalType)
+import Ribosome.Host.Class.Msgpack.Error (decodeIncompatible)
 import Ribosome.Host.Data.ApiInfo (ExtTypeMeta (ExtTypeMeta))
 import Ribosome.Host.Data.ApiType (ApiType, pattern PolyType)
 import Ribosome.Host.Data.Request (Request (Request), RpcMethod (RpcMethod))
@@ -111,7 +110,7 @@ decodeInstance name number =
       ObjectExt $(litP (integerL (fromIntegral number))) bytes ->
         pure ($(conE name) bytes)
       o ->
-        illegalType (toText (nameBase name)) o
+        decodeIncompatible o
   |]
 
 encodeInstance :: Name -> Int64 -> DecsQ

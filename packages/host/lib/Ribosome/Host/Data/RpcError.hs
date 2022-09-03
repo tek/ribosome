@@ -8,6 +8,7 @@ import Log (Severity (Error))
 
 import Ribosome.Host.Class.Msgpack.Decode (MsgpackDecode)
 import Ribosome.Host.Class.Msgpack.Encode (MsgpackEncode)
+import Ribosome.Host.Class.Msgpack.Error (DecodeError, renderError)
 import Ribosome.Host.Data.Report (Report (Report), Reportable (toReport))
 import Ribosome.Host.Data.Request (RpcMethod (RpcMethod))
 
@@ -20,7 +21,7 @@ data RpcError =
   Api RpcMethod [Object] Text
   |
   -- |A request was instructed to use the wrong decoder or the remote data was invalid.
-  Decode Text
+  Decode DecodeError
   deriving stock (Eq, Show, Generic)
   deriving anyclass (MsgpackEncode, MsgpackDecode)
 
@@ -35,11 +36,11 @@ instance Reportable RpcError where
     Api (RpcMethod m) args e ->
       Report "Nvim API failure" [m, show args, e] Error
     Decode e ->
-      Report "Msgpack decoding failed" [e] Error
+      toReport e
 
 -- |Extract an error message from an 'RpcError'.
 rpcError :: RpcError -> Text
 rpcError = \case
   Unexpected e -> e
   Api (RpcMethod m) args e -> [exon|#{m}: #{e}(#{Text.intercalate ", " (show <$> args)})|]
-  Decode e -> e
+  Decode e -> renderError e

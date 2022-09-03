@@ -16,6 +16,7 @@ import Ribosome.Host.Test.EventTest (test_errorEvent)
 import Ribosome.Host.Test.FunctionTest (test_function)
 import Ribosome.Host.Test.LogTest (test_logFile)
 import Ribosome.Host.Test.MaybeParamTest (test_maybeParams)
+import Ribosome.Host.Test.MsgpackTest (test_msgpack)
 import Ribosome.Host.Test.NotifyTest (test_notify)
 import Test.Tasty (TestTree, defaultMain, testGroup)
 
@@ -39,7 +40,8 @@ tests =
     unitTest "notify" test_notify,
     unitTest "error event" test_errorEvent,
     unitTest "atomic" test_atomic,
-    unitTest "log to file" test_logFile
+    unitTest "log to file" test_logFile,
+    test_msgpack
   ]
 
 main :: IO ()

@@ -2,6 +2,7 @@ module Ribosome.Host.Test.ApiInfoTest where
 
 import Polysemy.Test (Hedgehog, UnitTest, assertLeft, assertRight, evalEither, runTestAuto, (===))
 
+import Ribosome.Host.Class.Msgpack.Error (renderError)
 import Ribosome.Host.Data.ApiInfo (apiInfo, functions, types)
 import Ribosome.Host.Data.ApiType (
   ApiPrim (Boolean, Dictionary, Float, Integer, LuaRef, Object, String, Void),
@@ -30,7 +31,10 @@ test_parseType =
     checkType (Prim Object) "Object"
     checkType (Prim Void) "void"
     checkType (Prim LuaRef) "LuaRef"
-    assertLeft "Parsed (Prim Boolean) but got leftovers: s" (parseApiType "Booleans")
+    assertLeft err (first renderError (parseApiType "Booleans"))
     info <- evalEither =<< embed apiInfo
     246 === length (functions info)
     3 === length (types info)
+  where
+    err =
+      "Decoding ApiType: Parsed (Prim Boolean) but got leftovers: s"

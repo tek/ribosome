@@ -8,6 +8,7 @@ import Exon (exon)
 import Ribosome.Host.Class.Msgpack.Array (MsgpackArray (msgpackArray))
 import Ribosome.Host.Class.Msgpack.Decode (pattern Msgpack, MsgpackDecode (fromMsgpack))
 import Ribosome.Host.Class.Msgpack.Encode (MsgpackEncode (toMsgpack))
+import Ribosome.Host.Class.Msgpack.Error (decodeError)
 import qualified Ribosome.Host.Data.Request as Request
 import Ribosome.Host.Data.Request (Request, TrackedRequest (TrackedRequest), formatReq, formatTrackedReq)
 import qualified Ribosome.Host.Data.Response as Response
@@ -55,13 +56,13 @@ instance MsgpackDecode RpcMessage where
     ObjectArray [Msgpack (2 :: Int), Msgpack method, Msgpack payload] ->
       Right (Notification (Request.Request method payload))
     o ->
-      Left [exon|Invalid format for RpcMessage: #{show o}|]
+      decodeError [exon|Invalid format for RpcMessage: #{show o}|]
 
 instance Serialize RpcMessage where
   put =
     Serialize.put . toMsgpack
   get =
-    either (fail . toString) pure . fromMsgpack =<< Serialize.get
+    either (fail . show) pure . fromMsgpack =<< Serialize.get
 
 formatRpcMsg :: RpcMessage -> Text
 formatRpcMsg = \case

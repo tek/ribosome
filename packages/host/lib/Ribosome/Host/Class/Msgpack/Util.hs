@@ -1,42 +1,200 @@
+{-# options_haddock prune #-}
+
+-- |Utilities for writing messagepack codec instances.
 module Ribosome.Host.Class.Msgpack.Util where
 
-import Data.Map.Strict ((!?))
-import qualified Data.Map.Strict as Map (fromList)
 import Data.MessagePack (Object (..))
 import Exon (exon)
+import Generics.SOP (All2, Top)
+import Generics.SOP.GGP (GCode, GFrom, GTo)
+import Type.Reflection (typeRep)
 
-string :: ConvertUtf8 a ByteString => a -> Object
-string =
-  ObjectString . encodeUtf8
+import Ribosome.Host.Class.Msgpack.Error (
+  DecodeError,
+  FieldError (FieldError),
+  incompatible,
+  incompatibleCon,
+  toDecodeError,
+  )
 
-binary :: ConvertUtf8 a ByteString => a -> Object
-binary =
-  ObjectBinary . encodeUtf8
+type ReifySOP (d :: Type) (dss :: [[Type]]) =
+  (Generic d, GTo d, GCode d ~ dss, All2 Top dss)
 
-text :: Text -> Object
-text =
-  ObjectString . encodeUtf8
+type ConstructSOP (d :: Type) (dss :: [[Type]]) =
+  (Generic d, GFrom d, GCode d ~ dss, All2 Top dss)
 
-assembleMap :: [(String, Object)] -> Object
-assembleMap =
-  ObjectMap . Map.fromList . (fmap . first) string
+newtype ValidUtf8 =
+  ValidUtf8 { unValidUtf8 :: Text }
+  deriving stock (Eq, Show)
+  deriving newtype (IsString, Ord)
 
-invalid :: Text -> Object -> Either Text a
-invalid msg obj =
-  Left [exon|#{msg}: #{show obj}|]
+newtype ValidUtf8String =
+  ValidUtf8String { unValidUtf8String :: String }
+  deriving stock (Eq, Show)
+  deriving newtype (IsString, Ord)
 
-missingRecordKey :: String -> Object -> Either Text a
-missingRecordKey key =
-  invalid [exon|missing record key #{toText key} in ObjectMap|]
+maybeByteString :: Object -> Maybe ByteString
+maybeByteString = \case
+  ObjectString os ->
+    Just os
+  ObjectBinary os ->
+    Just os
+  _ ->
+    Nothing
 
-illegalType :: Text -> Object -> Either Text a
-illegalType tpe =
-  invalid [exon|illegal type for #{tpe}|]
+maybeString :: Object -> Maybe String
+maybeString =
+  fmap decodeUtf8 . maybeByteString
 
-lookupObjectMap ::
+-- |Extract a 'String' from an 'Object'.
+pattern MsgpackString :: String -> Object
+pattern MsgpackString s <- (maybeString -> Just s)
+
+-- |Call the continuation if the 'Object' contains a 'ByteString', or an error otherwise.
+byteStringField ::
+  Typeable a =>
+  (ByteString -> Either FieldError a) ->
+  Object ->
+  Either FieldError a
+byteStringField decode = \case
+  ObjectString os ->
+    decode os
+  ObjectBinary os ->
+    decode os
+  o ->
+    incompatible o
+
+-- |Decode a 'ByteString' field using 'IsString'.
+stringField ::
+  Typeable a =>
+  IsString a =>
+  Object ->
+  Either FieldError a
+stringField =
+  byteStringField (Right . fromString . decodeUtf8)
+
+-- |Decode a 'ByteString' type using 'IsString'.
+decodeString ::
+  Typeable a =>
+  IsString a =>
+  Object ->
+  Either DecodeError a
+decodeString =
+  toDecodeError . stringField
+
+-- |Decode a 'ByteString' type using 'IsString'.
+decodeByteString ::
+  Typeable a =>
+  (ByteString -> Either FieldError a) ->
+  Object ->
+  Either DecodeError a
+decodeByteString f =
+  toDecodeError . byteStringField f
+
+-- |Decode a 'ByteString' type using 'ConvertUtf8'.
+decodeUtf8Lenient ::
+  Typeable a =>
+  ConvertUtf8 a ByteString =>
+  Object ->
+  Either DecodeError a
+decodeUtf8Lenient =
+  decodeByteString (Right . decodeUtf8)
+
+-- |Decode a 'ByteString' field using 'Read'.
+readField ::
+  ∀ a .
+  Read a =>
+  Typeable a =>
+  String ->
+  Either FieldError a
+readField s =
+  first err (readEither s)
+  where
+    err _ =
+      FieldError [exon|Got #{toText s} for #{show (typeRep @a)}|]
+
+-- |Decode a numeric or string field using 'Integral' or 'Read'.
+integralField ::
+  ∀ a .
+  Read a =>
+  Integral a =>
+  Typeable a =>
+  Object ->
+  Either FieldError a
+integralField = \case
+  ObjectInt i ->
+    Right (fromIntegral i)
+  ObjectUInt i ->
+    Right (fromIntegral i)
+  MsgpackString s ->
+    readField s
+  o ->
+    incompatible o
+
+-- |Decode a numeric or string type using 'Integral' or 'Read'.
+decodeIntegral ::
+  ∀ a .
+  Read a =>
+  Integral a =>
+  Typeable a =>
+  Object ->
+  Either DecodeError a
+decodeIntegral =
+  toDecodeError . integralField
+
+-- |Decode a numeric or string field using 'Fractional' or 'Read'.
+fractionalField ::
+  Read a =>
+  Typeable a =>
+  Fractional a =>
+  Object ->
+  Either FieldError a
+fractionalField = \case
+  ObjectFloat a ->
+    Right (realToFrac a)
+  ObjectDouble a ->
+    Right (realToFrac a)
+  ObjectInt i ->
+    Right (fromIntegral i)
+  ObjectUInt i ->
+    Right (fromIntegral i)
+  MsgpackString s ->
+    readField s
+  o ->
+    incompatible o
+
+-- |Decode a numeric or string type using 'Fractional' or 'Read'.
+decodeFractional ::
+  ∀ a .
+  Read a =>
+  Fractional a =>
+  Typeable a =>
+  Object ->
+  Either DecodeError a
+decodeFractional =
+  toDecodeError . fractionalField
+
+withArray ::
+  Text ->
+  ([Object] -> Either FieldError a) ->
+  Object ->
+  Either FieldError a
+withArray target f = \case
+  ObjectArray elems ->
+    f elems
+  o ->
+    incompatibleCon target o
+
+encodeString ::
   ConvertUtf8 a ByteString =>
   a ->
-  Map Object Object ->
-  Maybe Object
-lookupObjectMap key o =
-  (o !? string key) <|> (o !? binary key)
+  Object
+encodeString =
+  ObjectString . encodeUtf8
+
+encodeBinary ::
+  ConvertUtf8 a ByteString =>
+  a ->
+  Object
+encodeBinary =
+  ObjectBinary . encodeUtf8

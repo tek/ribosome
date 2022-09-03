@@ -1,78 +1,106 @@
-{-# options_haddock prune #-}
-
--- |Encoding values to MessagePack format
 module Ribosome.Host.Class.Msgpack.Encode where
 
-import qualified Data.List.NonEmpty as NonEmpty (toList)
-import qualified Data.Map.Strict as Map (fromList, toList)
-import Data.MessagePack (Object (..))
-import GHC.Generics (
-  C1,
-  Constructor,
-  D1,
-  K1 (..),
-  M1 (..),
-  Rep,
-  S1,
-  Selector,
-  conIsRecord,
-  from,
-  selName,
-  (:*:) (..),
-  (:+:) (..),
+import qualified Data.Map.Strict as Map
+import Data.MessagePack (
+  Object (ObjectArray, ObjectBool, ObjectDouble, ObjectFloat, ObjectInt, ObjectMap, ObjectNil, ObjectString),
+  )
+import Generics.SOP (All, I (I), K (K), NP (Nil, (:*)), NS (S, Z), SOP (SOP), hcmap, hcollapse, unI, unSOP)
+import Generics.SOP.GGP (GCode, GDatatypeInfoOf, gfrom)
+import Generics.SOP.Type.Metadata (
+  ConstructorInfo (Constructor, Record),
+  DatatypeInfo (ADT, Newtype),
+  FieldInfo (FieldInfo),
   )
 import Path (Path, toFilePath)
-import Time (MicroSeconds, MilliSeconds (unMilliSeconds), NanoSeconds (unNanoSeconds), Seconds, unMicroSeconds, unSeconds)
+import Time (
+  MicroSeconds (unMicroSeconds),
+  MilliSeconds (unMilliSeconds),
+  NanoSeconds (unNanoSeconds),
+  Seconds (unSeconds),
+  )
 
-import qualified Ribosome.Host.Class.Msgpack.Util as Util (assembleMap, string, text)
+import Ribosome.Host.Class.Msgpack.Util (ConstructSOP, ValidUtf8, encodeString, unValidUtf8)
+import Ribosome.Host.Class.Msgpack.Error (DecodeError, FieldError)
+
+class EncodeRecord (fields :: [FieldInfo]) (as :: [Type]) where
+  encodeRecord :: NP I as -> [(Object, Object)]
+
+instance EncodeRecord '[] '[] where
+  encodeRecord Nil =
+    []
+
+instance (
+    KnownSymbol name,
+    MsgpackEncode a,
+    EncodeRecord fields as
+  ) => EncodeRecord ('FieldInfo name : fields) (a : as) where
+    encodeRecord (I a :* fields) =
+      (ObjectString (encodeUtf8 (symbolVal (Proxy @name))), toMsgpack a) : encodeRecord @fields fields
+
+class EncodeCtor (ctor :: ConstructorInfo) (as :: [Type]) where
+  encodeCtor :: NP I as -> Object
+
+instance (
+    All MsgpackEncode as
+  ) => EncodeCtor ('Constructor name) as where
+    encodeCtor ctor =
+      ObjectArray (hcollapse (hcmap (Proxy @MsgpackEncode) (K . toMsgpack . unI) ctor))
+
+instance (
+    EncodeRecord fields as
+  ) => EncodeCtor ('Record name fields) as where
+    encodeCtor ctor =
+      ObjectMap (Map.fromList (encodeRecord @fields ctor))
+
+class EncodeCtors (ctors :: [ConstructorInfo]) (ass :: [[Type]]) where
+  encodeCtors :: NS (NP I) ass -> Object
+
+instance (
+    EncodeCtor ctor as
+  ) => EncodeCtors '[ctor] '[as] where
+    encodeCtors = \case
+      Z ctor -> encodeCtor @ctor ctor
+      S ctors -> case ctors of
+
+instance (
+    EncodeCtor ctor as,
+    EncodeCtors (ctor1 : ctors) ass
+  ) => EncodeCtors (ctor : ctor1 : ctors) (as : ass) where
+    encodeCtors = \case
+      Z ctor -> encodeCtor @ctor ctor
+      S ctors -> encodeCtors @(ctor1 : ctors) ctors
+
+class GMsgpackEncode (dt :: DatatypeInfo) (ass :: [[Type]]) where
+  gtoMsgpack :: SOP I ass -> Object
+
+instance (
+    EncodeCtors ctors ass
+  ) => GMsgpackEncode ('ADT mod name ctors strictness) ass where
+  gtoMsgpack =
+      encodeCtors @ctors @ass . unSOP
+
+instance (
+    MsgpackEncode a
+  ) => GMsgpackEncode ('Newtype mod name ctor) '[ '[a]] where
+    gtoMsgpack (SOP (Z (I a :* Nil))) =
+      toMsgpack a
+    gtoMsgpack (SOP (S ns)) =
+      case ns of
 
 -- |Class of values that can be encoded to MessagePack 'Object's.
 class MsgpackEncode a where
-  -- |Convert a value to MessagePack.
-  --
+  -- |Encode a value to MessagePack.
+    --
   -- The default implementation uses generic derivation.
   toMsgpack :: a -> Object
-  default toMsgpack :: (Generic a, GMsgpackEncode (Rep a)) => a -> Object
-  toMsgpack = gMsgpackEncode . from
 
-class GMsgpackEncode f where
-  gMsgpackEncode :: f a -> Object
-
-class MsgpackEncodeProd f where
-  msgpackEncodeRecord :: f a -> [(String, Object)]
-  msgpackEncodeProd :: f a -> [Object]
-
-instance GMsgpackEncode f => GMsgpackEncode (D1 c f) where
-  gMsgpackEncode = gMsgpackEncode . unM1
-
-prodOrNewtype :: MsgpackEncodeProd f => f a -> Object
-prodOrNewtype =
-  wrap . msgpackEncodeProd
-  where
-    wrap [a] = a
-    wrap as = ObjectArray as
-
-instance (Constructor c, MsgpackEncodeProd f) => GMsgpackEncode (C1 c f) where
-  gMsgpackEncode c =
-    f $ unM1 c
-    where
-      f = if conIsRecord c then Util.assembleMap . msgpackEncodeRecord else prodOrNewtype
-
-instance (MsgpackEncodeProd f, MsgpackEncodeProd g) => MsgpackEncodeProd (f :*: g) where
-  msgpackEncodeRecord (f :*: g) = msgpackEncodeRecord f <> msgpackEncodeRecord g
-  msgpackEncodeProd (f :*: g) = msgpackEncodeProd f <> msgpackEncodeProd g
-
-instance (GMsgpackEncode f, GMsgpackEncode g) => GMsgpackEncode (f :+: g) where
-  gMsgpackEncode (L1 a) = gMsgpackEncode a
-  gMsgpackEncode (R1 a) = gMsgpackEncode a
-
-instance (Selector s, GMsgpackEncode f) => MsgpackEncodeProd (S1 s f) where
-  msgpackEncodeRecord s@(M1 f) =
-    [(dropWhile ('_' ==) (selName s), gMsgpackEncode f), (selName s, gMsgpackEncode f)]
-  msgpackEncodeProd (M1 f) = [gMsgpackEncode f]
-
-instance MsgpackEncode a => GMsgpackEncode (K1 i a) where
-  gMsgpackEncode = toMsgpack . unK1
+  default toMsgpack ::
+    ConstructSOP a ass =>
+    GMsgpackEncode (GDatatypeInfoOf a) (GCode a) =>
+    a ->
+    Object
+  toMsgpack =
+    gtoMsgpack @(GDatatypeInfoOf a) . gfrom
 
 instance (
     MsgpackEncode k,
@@ -81,49 +109,68 @@ instance (
   toMsgpack = ObjectMap . Map.fromList . fmap (bimap toMsgpack toMsgpack) . Map.toList
 
 instance MsgpackEncode Integer where
-  toMsgpack = ObjectInt . fromInteger
+  toMsgpack =
+    ObjectInt . fromInteger
 
 instance MsgpackEncode Int where
-  toMsgpack = ObjectInt . fromIntegral
+  toMsgpack =
+    ObjectInt . fromIntegral
 
 instance MsgpackEncode Int64 where
-  toMsgpack = ObjectInt
+  toMsgpack =
+    ObjectInt
 
 instance MsgpackEncode Float where
-  toMsgpack = ObjectFloat
+  toMsgpack =
+    ObjectFloat
 
 instance MsgpackEncode Double where
-  toMsgpack = ObjectDouble
+  toMsgpack =
+    ObjectDouble
 
 instance {-# overlapping #-} MsgpackEncode String where
-  toMsgpack = Util.string
+  toMsgpack =
+    encodeString
 
 instance {-# overlappable #-} MsgpackEncode a => MsgpackEncode [a] where
-  toMsgpack = ObjectArray . fmap toMsgpack
+  toMsgpack =
+    ObjectArray . fmap toMsgpack
 
 instance MsgpackEncode a => MsgpackEncode (NonEmpty a) where
-  toMsgpack = toMsgpack . NonEmpty.toList
+  toMsgpack =
+    toMsgpack . toList
 
 instance MsgpackEncode a => MsgpackEncode (Seq a) where
-  toMsgpack = toMsgpack . toList
+  toMsgpack =
+    toMsgpack . toList
 
 instance MsgpackEncode Text where
-  toMsgpack = Util.text
+  toMsgpack =
+    encodeString
+
+instance MsgpackEncode ValidUtf8 where
+  toMsgpack =
+    toMsgpack . unValidUtf8
 
 instance MsgpackEncode a => MsgpackEncode (Maybe a) where
-  toMsgpack = maybe ObjectNil toMsgpack
+  toMsgpack =
+    maybe ObjectNil toMsgpack
 
 instance MsgpackEncode Bool where
-  toMsgpack = ObjectBool
+  toMsgpack =
+    ObjectBool
 
 instance MsgpackEncode () where
-  toMsgpack _ = ObjectNil
+  toMsgpack _ =
+    ObjectNil
 
 instance MsgpackEncode Object where
-  toMsgpack = id
+  toMsgpack =
+    id
 
 instance MsgpackEncode ByteString where
-  toMsgpack = ObjectString
+  toMsgpack =
+    ObjectString
 
 instance (MsgpackEncode a, MsgpackEncode b) => MsgpackEncode (a, b) where
   toMsgpack (a, b) =
@@ -134,7 +181,8 @@ instance (MsgpackEncode a, MsgpackEncode b, MsgpackEncode c) => MsgpackEncode (a
     ObjectArray [toMsgpack a, toMsgpack b, toMsgpack c]
 
 instance MsgpackEncode (Path b t) where
-  toMsgpack = ObjectString . encodeUtf8 . toFilePath
+  toMsgpack =
+    ObjectString . encodeUtf8 . toFilePath
 
 instance MsgpackEncode NanoSeconds where
   toMsgpack =
@@ -151,3 +199,7 @@ instance MsgpackEncode MilliSeconds where
 instance MsgpackEncode Seconds where
   toMsgpack =
     toMsgpack . unSeconds
+
+deriving anyclass instance MsgpackEncode FieldError
+
+deriving anyclass instance MsgpackEncode DecodeError

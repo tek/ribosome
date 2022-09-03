@@ -5,20 +5,27 @@ import Exon (exon)
 
 import Ribosome.Host.Class.Msgpack.Decode (pattern Msgpack, MsgpackDecode (fromMsgpack))
 import Ribosome.Host.Class.Msgpack.Encode (toMsgpack)
+import Ribosome.Host.Class.Msgpack.Error (DecodeError (DecodeError), FieldError (FieldError))
 import Ribosome.Host.Data.Request (Request (Request))
 import Ribosome.Host.Data.RpcCall (RpcCall (RpcAtomic, RpcCallRequest, RpcFmap, RpcPure))
+
+atomicError ::
+  Text ->
+  Either DecodeError a
+atomicError msg =
+  Left (DecodeError "atomic call response" (FieldError msg))
 
 decodeAtom ::
   MsgpackDecode a =>
   [Object] ->
-  Either Text ([Object], a)
+  Either DecodeError ([Object], a)
 decodeAtom = \case
   o : rest ->
     (rest,) <$> fromMsgpack o
   [] ->
-    Left "Too few results in atomic call response"
+    Left (DecodeError "atomic call response" "Too few results")
 
-foldAtomic :: RpcCall a -> ([Request], [Object] -> Either Text ([Object], a))
+foldAtomic :: RpcCall a -> ([Request], [Object] -> Either DecodeError ([Object], a))
 foldAtomic = \case
   RpcCallRequest req ->
     ([coerce req], decodeAtom)
@@ -37,28 +44,30 @@ foldAtomic = \case
       (reqsA, decodeA) =
         foldAtomic aa
 
-checkLeftovers :: ([Object], a) -> Either Text a
+checkLeftovers :: ([Object], a) -> Either DecodeError a
 checkLeftovers = \case
-  ([], a) -> Right a
-  (res, _) -> Left [exon|Excess results in atomic call response: #{show res}|]
+  ([], a) ->
+    Right a
+  (res, _) ->
+    atomicError [exon|Excess results: #{show res}|]
 
 atomicRequest :: [Request] -> Request
 atomicRequest reqs =
   Request "nvim_call_atomic" [toMsgpack reqs]
 
 atomicResult ::
-  ([Object] -> Either Text ([Object], a)) ->
+  ([Object] -> Either DecodeError ([Object], a)) ->
   Object ->
-  Either Text a
+  Either DecodeError a
 atomicResult decode = \case
   ObjectArray [Msgpack res, ObjectNil] ->
     checkLeftovers =<< decode res
   ObjectArray [_, errs] ->
-    Left (show errs)
+    atomicError (show errs)
   o ->
-    Left ("Bad atomic result: " <> show o)
+    atomicError [exon|Not an array: #{show o}|]
 
-cata :: RpcCall a -> Either a (Request, Object -> Either Text a)
+cata :: RpcCall a -> Either a (Request, Object -> Either DecodeError a)
 cata = \case
   RpcCallRequest req ->
     Right (req, fromMsgpack)

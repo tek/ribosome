@@ -28,7 +28,6 @@ library
       Ribosome.Host.Api.Event
       Ribosome.Host.Class.Msgpack.Array
       Ribosome.Host.Class.Msgpack.Decode
-      Ribosome.Host.Class.Msgpack.DecodeSOP
       Ribosome.Host.Class.Msgpack.Encode
       Ribosome.Host.Class.Msgpack.Error
       Ribosome.Host.Class.Msgpack.Map
@@ -191,6 +190,7 @@ library
     , polysemy-process
     , prelate >=0.1
     , template-haskell
+    , text
     , type-errors-pretty
     , typed-process
   mixins:

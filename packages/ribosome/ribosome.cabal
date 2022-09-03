@@ -86,6 +86,7 @@ library
       Ribosome.IOStack
       Ribosome.Lens
       Ribosome.Mapping
+      Ribosome.Msgpack
       Ribosome.Persist
       Ribosome.Plugin.Builtin
       Ribosome.PluginName

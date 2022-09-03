@@ -6,6 +6,7 @@ import qualified Polysemy.Log as Log
 import qualified Polysemy.Process as Process
 import Polysemy.Process (Process)
 
+import Ribosome.Host.Class.Msgpack.Error (DecodeError)
 import Ribosome.Host.Data.ChannelId (ChannelId)
 import Ribosome.Host.Data.Request (
   Request (Request, method),
@@ -33,7 +34,7 @@ request ::
   Members [Process RpcMessage o, Responses RequestId Response !! RpcError, Log, Stop RpcError] r =>
   Text ->
   Request ->
-  (Object -> Either Text a) ->
+  (Object -> Either DecodeError a) ->
   Sem r a
 request exec req@Request {method, arguments} decode = do
   reqId <- restop Responses.add
@@ -48,7 +49,7 @@ request exec req@Request {method, arguments} decode = do
 
 handleCall ::
   RpcCall a ->
-  (Request -> (Object -> Either Text a) -> Sem r a) ->
+  (Request -> (Object -> Either DecodeError a) -> Sem r a) ->
   Sem r a
 handleCall call handle =
   RpcCall.cata call & \case

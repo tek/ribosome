@@ -6,8 +6,9 @@ import qualified Data.Text as Text
 import Exon (exon)
 import Prettyprinter (Pretty (pretty))
 
-import Ribosome.Host.Class.Msgpack.Decode (MsgpackDecode (..), msgpackFromString)
+import Ribosome.Host.Class.Msgpack.Decode (MsgpackDecode (..))
 import Ribosome.Host.Class.Msgpack.Encode (MsgpackEncode (..))
+import Ribosome.Host.Class.Msgpack.Util (decodeString)
 
 -- |A Neovim register.
 data Register =
@@ -33,7 +34,7 @@ instance IsString Register where
 
 instance MsgpackDecode Register where
   fromMsgpack =
-    msgpackFromString "Register"
+    decodeString
 
 instance MsgpackEncode Register where
   toMsgpack (Named a) =

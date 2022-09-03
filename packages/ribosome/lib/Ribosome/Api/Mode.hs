@@ -3,7 +3,8 @@ module Ribosome.Api.Mode where
 
 import Ribosome.Data.Mode (NvimMode)
 import Ribosome.Host.Api.Effect (nvimGetMode, vimCallFunction)
-import Ribosome.Host.Class.Msgpack.Decode (MsgpackDecode (..), msgpackFromString)
+import Ribosome.Host.Class.Msgpack.Decode (MsgpackDecode (..))
+import Ribosome.Host.Class.Msgpack.Util (decodeString)
 import Ribosome.Host.Effect.Rpc (Rpc)
 
 -- |An encoding of Neovim's mode for only the most basic variants.
@@ -27,7 +28,7 @@ instance IsString SimpleMode where
 
 instance MsgpackDecode SimpleMode where
   fromMsgpack =
-    msgpackFromString "SimpleMode"
+    decodeString
 
 -- |Get the current mode as a 'SimpleMode'.
 simpleMode ::

@@ -8,6 +8,7 @@ import Exon (exon)
 
 import Ribosome.Host.Class.Msgpack.Decode (pattern Msgpack, MsgpackDecode (fromMsgpack))
 import Ribosome.Host.Class.Msgpack.Encode (toMsgpack)
+import Ribosome.Host.Class.Msgpack.Error (FieldError(FieldError), toDecodeError)
 
 -- |Neovim offers different semantics for the command range (see @:help :command-range@).
 --
@@ -41,14 +42,16 @@ data Range (style :: RangeStyle) =
   }
   deriving stock (Eq, Show)
 
-instance MsgpackDecode (Range style) where
+instance (
+    Typeable style
+  ) => MsgpackDecode (Range style) where
   fromMsgpack = \case
     ObjectArray [Msgpack low, Msgpack high] ->
       Right (Range low (Just high))
     ObjectArray [Msgpack low] ->
       Right (Range low Nothing)
     o ->
-      Left [exon|Range must be an array with one or two elements: #{show o}|]
+      toDecodeError (Left (FieldError [exon|Range must be an array with one or two elements: #{show o}|]))
 
 class RangeStyleOpt (s :: RangeStyle) where
   rangeStyleOpt :: Map Text Object
