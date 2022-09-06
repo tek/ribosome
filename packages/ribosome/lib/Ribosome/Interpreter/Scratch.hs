@@ -15,7 +15,7 @@ import Ribosome.Host.Effect.Rpc (Rpc)
 import Ribosome.Internal.Scratch (killScratch, lookupScratch, setScratchContent, showInScratch)
 
 -- |Interpret 'Scratch' by storing the Neovim UI handles in 'AtomicState'.
--- This uses 'Resumable', see [Errors]("Ribosome#errors").
+-- This uses 'Resumable', see [Errors]("Ribosome#g:errors").
 interpretScratchAtomic ::
   Members [Rpc !! RpcError, AtomicState (Map ScratchId ScratchState), Reader PluginName, Log, Resource] r =>
   InterpreterFor (Scratch !! RpcError) r
@@ -34,7 +34,7 @@ interpretScratchAtomic =
       atomicGets (Map.lookup i)
 
 -- |Interpret 'Scratch' by storing the Neovim UI handles in 'AtomicState'.
--- This uses 'Resumable', see [Errors]("Ribosome#errors").
+-- This uses 'Resumable', see [Errors]("Ribosome#g:errors").
 interpretScratch ::
   Members [Rpc !! RpcError, Reader PluginName, Log, Resource, Embed IO] r =>
   InterpreterFor (Scratch !! RpcError) r

@@ -32,7 +32,7 @@ data ScratchOptions =
     maxSize :: Maybe Int,
     -- |A set of syntax rules to apply to the buffer.
     syntax :: [Syntax],
-    -- |A set of key mappings to define buffer-locally. See [Ribosome.Mappings]("Ribosome#mappings").
+    -- |A set of key mappings to define buffer-locally. See [Ribosome.Mappings]("Ribosome#g:mappings").
     mappings :: [Mapping],
     -- |The value for the @filetype@ option.
     filetype :: Maybe Text,

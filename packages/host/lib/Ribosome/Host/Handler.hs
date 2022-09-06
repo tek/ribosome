@@ -63,7 +63,7 @@ rpcFunction name execution h =
 --
 -- Commands have an (open) family of special parameter types that will be translated into command options, like
 -- 'Ribosome.Range' for the line range specified to the command.
--- See [command params]("Ribosome#command-params").
+-- See [command params]("Ribosome#g:command-params").
 --
 -- For easier type inference, it is advisable to use @'Handler' r a@ for the return type of the handler instead of using
 -- @'Member' ('Stop' 'Report') r@.

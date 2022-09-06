@@ -31,7 +31,7 @@ import Ribosome.Host.Data.RpcError (RpcError)
 --
 -- RPC calls may be batched and sent via @nvim_call_atomic@, see 'RpcCall'.
 --
--- This effect's default interpreter uses 'Resumable' for error tracking. See [Errors]("Ribosome#errors").
+-- This effect's default interpreter uses 'Resumable' for error tracking. See [Errors]("Ribosome#g:errors").
 data Rpc :: Effect where
   -- |Block the current thread while sending an RPC request.
   Sync :: RpcCall a -> Rpc m a

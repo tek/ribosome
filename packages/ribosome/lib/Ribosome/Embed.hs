@@ -109,7 +109,7 @@ runEmbedPluginCli conf effs handlers =
 -- [polysemy-test](https://hackage.haskell.org/package/polysemy-test/docs/Polysemy-Test.html) and
 -- [hedgehog](https://hackage.haskell.org/package/hedgehog) for a comprehensive testing framework.
 --
--- The parameters have the same meaning as for [remote plugins]("Ribosome#execution").
+-- The parameters have the same meaning as for [remote plugins]("Ribosome#g:execution").
 runEmbedPluginIO ::
   HigherOrder r (EmbedStack ()) =>
   PluginConfig () ->

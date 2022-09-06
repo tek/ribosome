@@ -120,7 +120,7 @@ runNvimPluginCli conf effs handlers =
 --
 -- - @CustomStack@ has to be specified as a type application, because GHC cannot figure it out on its own.
 --
--- - For an explanation of @Rpc !! RpcError@, see [Errors]("Ribosome#errors")
+-- - For an explanation of @Rpc !! RpcError@, see [Errors]("Ribosome#g:errors")
 --
 -- This runs the entire stack to completion, so it can be used in the app's @main@ function.
 --

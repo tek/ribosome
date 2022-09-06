@@ -24,7 +24,7 @@ import Ribosome.Host.Effect.Rpc (Rpc)
 -- If the plugin was started with @--log-file@, it is also written to the file log.
 -- Additionally, reports are stored in memory by the effect 'Ribosome.Reports'.
 --
--- For an explanation of 'Stop', see [Errors]("Ribosome#errors").
+-- For an explanation of 'Stop', see [Errors]("Ribosome#g:errors").
 type Handler r a =
   Sem (Stop Report : r) a
 

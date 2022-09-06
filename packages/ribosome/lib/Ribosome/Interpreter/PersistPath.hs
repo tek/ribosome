@@ -75,7 +75,7 @@ interpretPersistPathSetting create fallback name =
 --
 -- The plugin name is used as a subdir of the root.
 --
--- This uses 'Resumable', see [Errors]("Ribosome#errors").
+-- This uses 'Resumable', see [Errors]("Ribosome#g:errors").
 interpretPersistPath ::
   Members [Settings !! SettingError, Reader PluginName, Error BootError, Embed IO] r =>
   Bool ->

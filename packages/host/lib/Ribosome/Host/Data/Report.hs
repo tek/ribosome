@@ -110,7 +110,7 @@ instance IsString LogReport where
 -- This is used to create a uniform format for handlers, since control flow is passed on to the internal machinery when
 -- they return.
 -- If an error would be thrown that is not caught by the request dispatcher, the entire plugin would stop, so all 'Stop'
--- and 'Resumable' effects need to be converted to 'Report' before returning (see [Errors]("Ribosome#errors")).
+-- and 'Resumable' effects need to be converted to 'Report' before returning (see [Errors]("Ribosome#g:errors")).
 --
 -- The combinators associated with this class make this task a little less arduous:
 --

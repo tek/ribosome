@@ -60,7 +60,7 @@ type family CommandSpecial (a :: Type) :: Bool where
 -- |Determine the command options and arguments that need to be specified when registering a command, for a special
 -- command option parameter.
 --
--- See [Command params]("Ribosome#command-params") for the list of supported special types.
+-- See [Command params]("Ribosome#g:command-params") for the list of supported special types.
 class SpecialParam (state :: OptionState) (a :: Type) where
   type TransSpecial state a :: OptionState
   type TransSpecial s _ =
@@ -204,7 +204,7 @@ instance (
 -- |Derive the command options and arguments that should be used when registering the Neovim command, from the
 -- parameters of the handler function.
 --
--- See [Command params]("Ribosome#command-params") for the list of supported special types.
+-- See [Command params]("Ribosome#g:command-params") for the list of supported special types.
 --
 -- The parameter @state@ is a type level value that determines which parameter types may be used after another and
 -- counts the number of command arguments that are required or allowed.

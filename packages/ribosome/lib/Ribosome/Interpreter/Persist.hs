@@ -66,7 +66,7 @@ filepath singleFile dir subpath = do
 --
 -- - When invoked with 'Just' a subpath, a file named @<name>/<subpath>.json@ is used.
 --
--- This uses 'Resumable', see [Errors]("Ribosome#errors").
+-- This uses 'Resumable', see [Errors]("Ribosome#g:errors").
 interpretPersist ::
   ToJSON a =>
   FromJSON a =>
