@@ -126,11 +126,11 @@
         "prelate": "prelate"
       },
       "locked": {
-        "lastModified": 1661099601,
-        "narHash": "sha256-87rKnvViIUqCECgDm2feSdhTiMdPJyHzllUGnyFFBHc=",
+        "lastModified": 1662498564,
+        "narHash": "sha256-8cbwGDvKjySf+ODELKL8xeiLgDKnSBGJ1ikyxJu3Yjw=",
         "ref": "refs/heads/main",
-        "rev": "5b3fe014dd76b85e0c4eb464cb641e073f3f7b89",
-        "revCount": 163,
+        "rev": "d278f6850bbcba005aca383e4ac74bf08dae3f04",
+        "revCount": 165,
         "type": "git",
         "url": "https://git.tryp.io/tek/chiasma"
       },
