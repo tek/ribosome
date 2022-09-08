@@ -17,11 +17,11 @@ import Ribosome.Host.Class.Msgpack.Error (
   toDecodeError,
   )
 
-type ReifySOP (d :: Type) (dss :: [[Type]]) =
-  (Generic d, GTo d, GCode d ~ dss, All2 Top dss)
+type ReifySOP (a :: Type) (ass :: [[Type]]) =
+  (Generic a, GTo a, GCode a ~ ass, All2 Top ass)
 
-type ConstructSOP (d :: Type) (dss :: [[Type]]) =
-  (Generic d, GFrom d, GCode d ~ dss, All2 Top dss)
+type ConstructSOP (a :: Type) (ass :: [[Type]]) =
+  (Generic a, GFrom a, GCode a ~ ass, All2 Top ass)
 
 newtype ValidUtf8 =
   ValidUtf8 { unValidUtf8 :: Text }

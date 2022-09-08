@@ -3,12 +3,13 @@ module Main where
 import Conc (
   Restoration,
   consumeElem,
-  interpretAtomic,
   interpretEventsChan,
   interpretGate,
   interpretGates,
   interpretMaskFinal,
+  interpretQueueTBM,
   interpretRace,
+  interpretSync,
   subscribeAsync,
   )
 import qualified Control.Exception as Base
@@ -18,31 +19,27 @@ import Lens.Micro.Extras (view)
 import Log (Severity (Warn), interpretLogStderrLevelConc)
 import Path (relfile)
 import Polysemy.Conc.Gate (gate, signal)
-import Polysemy.Input (Input (Input))
 import qualified Polysemy.Test as Test
 import Polysemy.Test (Test, TestError, interpretTestInSubdir)
 import Prelude hiding (consume)
+import qualified Queue
 import Ribosome.Embed (EmbedStack, runEmbedPluginIO_)
-import Ribosome.Host.Interpreter.MState (interpretMState)
 import Ribosome.Menu.Combinators (sortedEntries)
-import Ribosome.Menu.Data.MenuEvent (MenuEvent (Refined))
-import qualified Ribosome.Menu.Data.MenuAction as MenuAction
-import Ribosome.Menu.Data.MenuAction (MenuAction)
-import Ribosome.Menu.Data.MenuConfig (MenuConfig (MenuConfig))
-import Ribosome.Menu.Data.IMenuEvent (IMenuEvent (Exhausted, Rendered))
+import Ribosome.Menu.Data.MenuEvent (MenuEvent (Exhausted, Query, Rendered), QueryEvent (Refined))
 import Ribosome.Menu.Data.MenuItem (simpleMenuItem)
-import Ribosome.Menu.Data.MenuResult (MenuResult)
+import Ribosome.Menu.Data.RenderEvent (RenderEvent)
+import Ribosome.Menu.Effect.MenuLoop (readItems)
 import Ribosome.Menu.Effect.MenuState (readMenu)
-import Ribosome.Menu.Interpreter.Menu (interpretNvimMenusFinal, runNvimMenu)
-import Ribosome.Menu.Interpreter.MenuApp (basic)
 import Ribosome.Menu.Interpreter.MenuFilter (interpretMenuFilterFuzzy)
-import Ribosome.Menu.Interpreter.MenuState (interpretMenuState, interpretMenuStates)
+import Ribosome.Menu.Interpreter.MenuLoop (interpretMenuLoops, interpretMenus, menuStream)
+import Ribosome.Menu.Interpreter.MenuState (interpretMenuState)
 import Ribosome.Menu.Interpreter.MenuStream (interpretMenuStream)
-import Ribosome.Menu.Interpreter.MenuUi (interceptMenuUiPromptEvents, interpretMenuUiNvimEcho)
-import Ribosome.Menu.Loop (menu, menuStream)
+import Ribosome.Menu.Interpreter.MenuUi (interceptMenuUiPromptEvents, interpretMenuUiNull)
+import Ribosome.Menu.Loop (menuMaps, runMenu)
+import Ribosome.Menu.Mappings (defaultMappings)
 import Ribosome.Menu.Prompt.Data.Prompt (Prompt (Prompt))
-import Ribosome.Menu.Prompt.Data.PromptConfig (PromptConfig (PromptConfig), PromptStyle (OnlyInsert))
 import qualified Ribosome.Menu.Prompt.Data.PromptEvent as PromptEvent
+import Ribosome.Menu.Prompt.Data.PromptEvent (PromptEvent)
 import qualified Ribosome.Menu.Prompt.Data.PromptMode as PromptMode
 import qualified Streamly.Prelude as Stream
 import System.IO.Error (userError)
@@ -68,30 +65,6 @@ fileList =
   runTest do
     lines <$> Test.fixture [relfile|menu/nixpkgs-files|]
 
-outAct ::
-  MenuAction a ->
-  Sem r (Maybe (MenuResult a))
-outAct = \case
-  MenuAction.Continue ->
-    pure Nothing
-  MenuAction.Render ->
-    pure Nothing
-  MenuAction.UpdatePrompt _ ->
-    pure Nothing
-  MenuAction.Quit result ->
-    pure (Just result)
-
-runInputListAtomic ::
-  Member (Embed IO) r =>
-  [a] ->
-  InterpreterFor (Input (Maybe a)) r
-runInputListAtomic as =
-  interpretAtomic as .
-  reinterpret \ Input ->
-    atomicState' \case
-      [] -> ([], Nothing)
-      h : t -> (t, Just h)
-
 -- time                 1.388 s    (1.375 s .. 1.408 s)
 --                      1.000 R²   (1.000 R² .. 1.000 R²)
 -- mean                 1.415 s    (1.401 s .. 1.426 s)
@@ -103,30 +76,29 @@ appendBench ::
   [Text] ->
   Sem r ()
 appendBench files =
+  interpretQueueTBM @RenderEvent 64 $
+  interpretQueueTBM @Prompt 64 $
+  interpretSync $
   interpretGates $
   interpretEventsChan @MenuEvent $
-  interpretEventsChan @IMenuEvent $
-  interpretEventsChan @(Maybe Prompt) $
   interpretMenuFilterFuzzy @'True $
-  interpretMState def $
   interpretMenuState $
-  runReader (MenuConfig items) $
   interpretMenuStream do
-    subscribe @IMenuEvent $ subscribe @MenuEvent $ subscribeAsync (menuStream *> publish Rendered) do
+    subscribe @MenuEvent $ subscribeAsync (menuStream items *> publish Rendered) do
       consumeElem Exhausted
       publishPrompt 1 "a"
-      consumeElem Refined
+      consumeElem (Query Refined)
       publishPrompt 2 "as"
-      consumeElem Refined
+      consumeElem (Query Refined)
       publishPrompt 3 "ase"
-      consumeElem Refined
+      consumeElem (Query Refined)
       publishPrompt 4 "ased"
-      consumeElem Refined
+      consumeElem (Query Refined)
       publishPrompt 5 "asedo"
-      consumeElem Refined
-      publish Nothing
+      consumeElem (Query Refined)
+      Queue.close
       consumeElem Rendered
-      len <- length . view sortedEntries <$> readMenu
+      len <- length . view (#items . sortedEntries) <$> readMenu
       if len == 1401
       then unit
       else Base.throw (userError [exon|length is #{show len}|])
@@ -134,42 +106,41 @@ appendBench files =
     items =
       simpleMenuItem () <$> Stream.fromList files
     publishPrompt i t =
-      publish (Just (Prompt i PromptMode.Insert t))
+      Queue.write (Prompt i PromptMode.Insert t)
 
--- time                 1.661 s    (1.482 s .. 1.800 s)
---                      0.999 R²   (0.995 R² .. 1.000 R²)
--- mean                 1.613 s    (1.572 s .. 1.653 s)
--- std dev              47.18 ms   (27.92 ms .. 65.86 ms)
+-- time                 1.569 s    (1.357 s .. 1.695 s)
+--                      0.998 R²   (0.994 R² .. 1.000 R²)
+-- mean                 1.464 s    (1.406 s .. 1.503 s)
+-- std dev              58.12 ms   (22.92 ms .. 74.51 ms)
 -- variance introduced by outliers: 19% (moderately inflated)
 menuBench ::
   [Text] ->
   Sem (EmbedStack ()) ()
 menuBench files =
   interpretGate $
-  interpretEventsChan $
-  interpretNvimMenusFinal $
-  interpretMenuStates $
-  interpretMenuUiNvimEcho do
-    r <- runStop $ runNvimMenu items (PromptConfig OnlyInsert) def $ basic $ interceptMenuUiPromptEvents do
-      subscribe @IMenuEvent $ subscribe @MenuEvent $ subscribeAsync (menu *> signal) do
+  interpretEventsChan @PromptEvent $
+  interpretMenuUiNull $
+  interpretMenus $
+  interpretMenuLoops do
+    runMenu items $ interceptMenuUiPromptEvents do
+      subscribe @MenuEvent $ subscribeAsync (menuMaps defaultMappings *> signal) do
         consumeElem Exhausted
         publishPrompt 1 "a"
-        consumeElem Refined
+        consumeElem (Query Refined)
         publishPrompt 2 "as"
-        consumeElem Refined
+        consumeElem (Query Refined)
         publishPrompt 3 "ase"
-        consumeElem Refined
+        consumeElem (Query Refined)
         publishPrompt 4 "ased"
-        consumeElem Refined
+        consumeElem (Query Refined)
         publishPrompt 5 "asedo"
-        consumeElem Refined
+        consumeElem (Query Refined)
         publish (PromptEvent.Quit Nothing)
         gate
-        len <- length . view sortedEntries <$> readMenu
+        len <- length . view sortedEntries <$> readItems
         if len == 1401
         then unit
         else Base.throw (userError [exon|length is #{show len}|])
-    either (Base.throw . userError . show) pure r
   where
     items =
       simpleMenuItem () <$> Stream.fromList files
@@ -186,12 +157,13 @@ runBench =
   interpretRace .
   interpretLogStderrLevelConc (Just Warn)
 
+-- TODO move runEmbedPluginIO_ out of the benchmark
 main :: IO ()
 main =
   defaultMainWith conf [
     env fileList \ fs ->
       bgroup "menu" [
-        -- bench "prompt updates with 29k items" (whnfIO (runBench (appendBench fs))),
+        bench "prompt updates with 29k items" (whnfIO (runBench (appendBench fs))),
         bench "nvim menu with rendering" (whnfIO (runEmbedPluginIO_ "bench" mempty (menuBench fs)))
       ]
   ]
