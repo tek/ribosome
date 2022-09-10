@@ -1,26 +1,28 @@
 module Ribosome.Menu.Interpreter.MenuState where
 
-import Conc (Lock, interpretScopedWithH, lock)
+import Conc (Lock, lock)
 
 import Ribosome.Host.Effect.MState (MState, mread, muse)
 import Ribosome.Host.Interpreter.MState (interpretMState)
 import Ribosome.Menu.Data.CursorIndex (CursorIndex)
+import qualified Ribosome.Menu.Data.MenuItems as MenuItems
 import Ribosome.Menu.Data.MenuItems (MenuItems)
-import Ribosome.Menu.Effect.MenuState (MenuState (..), ScopedMenuState)
+import Ribosome.Menu.Effect.MenuState (MenuState (..))
 
-type MenuStateDeps i =
+type MenuStateDeps f i =
   [
-    MState (MenuItems i),
+    MState (MenuItems f i),
     MState CursorIndex
   ]
 
 interpretMenuStateDeps ::
-  ∀ i mres r .
+  ∀ f i mres r .
   Members [Resource, Race, Mask mres, Embed IO] r =>
-  InterpretersFor (MenuStateDeps i) r
-interpretMenuStateDeps =
+  f ->
+  InterpretersFor (MenuStateDeps f i) r
+interpretMenuStateDeps initialFilter =
   interpretMState def .
-  interpretMState def
+  interpretMState (MenuItems.cons initialFilter)
 
 itemsLock ::
   Members [Lock @@ "items", Resource] r =>
@@ -36,59 +38,46 @@ cursorLock ::
 cursorLock =
   tag . lock . raise
 
-mcState' ::
+mstateT ::
   Functor f =>
   (s -> m (s, a)) ->
   s ->
   Sem (WithTactics e f m r) (s, f a)
-mcState' f s = do
+mstateT f s = do
   res <- runTSimple (f s)
   Inspector ins <- getInspectorT
   let newS = fromMaybe s (fst <$> ins res)
   pure (newS, snd <$> res)
 
-mcState ::
-  Functor f =>
-  Member (MState s) r =>
-  (s -> m (s, a)) ->
-  Sem (WithTactics e f m r) (f a)
-mcState f =
-  muse (mcState' f)
-
 handleMenuState ::
-  Members (MenuStateDeps i) r =>
-  MenuState i m x ->
-  Tactical (MenuState i) m r x
+  Members (MenuStateDeps f i) r =>
+  MenuState f i m x ->
+  Tactical (MenuState f i) m r x
 handleMenuState = \case
   UseCursor f ->
-    mcState f
+    muse (mstateT f)
   ReadCursor ->
     pureT =<< mread
   UseItems f ->
-    mcState f
+    muse (mstateT f)
   ReadItems ->
     pureT =<< mread
 
 interpretMenuState ::
-  ∀ i mres r .
+  ∀ f i mres r .
   Members [Resource, Race, Mask mres, Embed IO] r =>
-  InterpreterFor (MenuState i) r
-interpretMenuState =
-  interpretMenuStateDeps .
+  f ->
+  InterpreterFor (MenuState f i) r
+interpretMenuState initialFilter =
+  interpretMenuStateDeps initialFilter .
   interpretH handleMenuState .
   insertAt @1
 
 scope ::
   Members [Resource, Race, Mask mres, Embed IO] r =>
-  (() -> Sem (MenuStateDeps i ++ r) a) ->
+  f ->
+  (() -> Sem (MenuStateDeps f i ++ r) a) ->
   Sem r a
-scope use =
-  interpretMenuStateDeps do
+scope initialFilter use =
+  interpretMenuStateDeps initialFilter do
     use ()
-
-interpretMenuStates ::
-  ∀ i mres r .
-  Members [Resource, Race, Mask mres, Embed IO] r =>
-  InterpreterFor (ScopedMenuState i) r
-interpretMenuStates =
-  interpretScopedWithH @(MenuStateDeps i) scope \ () e -> handleMenuState e

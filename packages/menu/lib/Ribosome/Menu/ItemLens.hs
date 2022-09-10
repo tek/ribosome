@@ -13,23 +13,23 @@ import qualified Ribosome.Menu.Data.MenuItem as MenuItem
 import Ribosome.Menu.Data.MenuItem (Items, MenuItem)
 import Ribosome.Menu.Data.MenuItems (MenuQuery)
 
-entries :: Lens' (Menu i) (Entries i)
+entries :: Lens' (Menu f i) (Entries i)
 entries =
   #items . #entries
 
-history :: Lens' (Menu i) (Trie (Entries i))
+history :: Lens' (Menu f i) (Map f (Trie (Entries i)))
 history =
   #items . #history
 
-items :: Lens' (Menu i) (Items i)
+items :: Lens' (Menu f i) (Items i)
 items =
   #items . #items
 
-currentQuery :: Lens' (Menu i) MenuQuery
+currentQuery :: Lens' (Menu f i) MenuQuery
 currentQuery =
   #items . #currentQuery
 
-itemCount :: Lens' (Menu i) Int
+itemCount :: Lens' (Menu f i) Int
 itemCount =
   #items . #itemCount
 
@@ -61,59 +61,59 @@ filterIndexes indexes m =
 
 entriesByIndex ::
   [Int] ->
-  Menu i ->
+  Menu f i ->
   [Entry i]
 entriesByIndex indexes menu =
   filterIndexesFlat indexes (menu ^. #items . sortedEntries)
 
 itemsByEntryIndex ::
   [Int] ->
-  Menu i ->
+  Menu f i ->
   Maybe (NonEmpty (MenuItem i))
 itemsByEntryIndex indexes menu =
   nonEmpty (Entry.item <$> entriesByIndex indexes menu)
 
 getFocus ::
-  Menu i ->
+  Menu f i ->
   Maybe (MenuItem i)
 getFocus menu =
   menu ^? #items . sortedEntries . ix (fromIntegral (menu ^. #cursor)) . #item
 
 focus ::
-  SimpleGetter (Menu i) (Maybe (MenuItem i))
+  SimpleGetter (Menu f i) (Maybe (MenuItem i))
 focus =
   to getFocus
 
 selectedItemsOnly ::
-  Menu i ->
+  Menu f i ->
   Maybe (NonEmpty (MenuItem i))
 selectedItemsOnly =
   nonEmpty . fmap Entry.item . view (#items . #entries . to (filterEntries (const Entry.selected)))
 
 selectedOnly ::
-  SimpleGetter (Menu i) (Maybe (NonEmpty (MenuItem i)))
+  SimpleGetter (Menu f i) (Maybe (NonEmpty (MenuItem i)))
 selectedOnly =
   to selectedItemsOnly
 
 selectedItems ::
-  Menu i ->
+  Menu f i ->
   Maybe (NonEmpty (MenuItem i))
 selectedItems m =
   selectedItemsOnly m <|> (pure <$> getFocus m)
 
 selected' ::
-  SimpleGetter (Menu i) (Maybe (NonEmpty (MenuItem i)))
+  SimpleGetter (Menu f i) (Maybe (NonEmpty (MenuItem i)))
 selected' =
   to selectedItems
 
 selected ::
-  SimpleGetter (Menu i) (Maybe (NonEmpty i))
+  SimpleGetter (Menu f i) (Maybe (NonEmpty i))
 selected =
   to (fmap (fmap MenuItem.meta) . selectedItems)
 
 menuItemsByIndexes ::
   [Int] ->
-  Menu i ->
+  Menu f i ->
   [MenuItem i]
 menuItemsByIndexes indexes =
   maybe [] toList . itemsByEntryIndex indexes
@@ -122,7 +122,7 @@ menuItemsByIndexes indexes =
 -- This needs two passes since the result should be sorted and it's impossible to know whether the focus should be
 -- included or not before the entire dataset was traversed.
 unselectedItems ::
-  Menu i ->
+  Menu f i ->
   [MenuItem i]
 unselectedItems menu =
   Entry.item <$> view (#items . #entries . to filterUnselected) menu
@@ -144,6 +144,6 @@ unselectedItems menu =
       menu ^. #cursor
 
 unselected ::
-  SimpleGetter (Menu i) [MenuItem i]
+  SimpleGetter (Menu f i) [MenuItem i]
 unselected =
   to unselectedItems

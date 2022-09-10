@@ -3,8 +3,8 @@ module Ribosome.Menu.Mappings where
 import Ribosome.Data.Mapping (MapMode (MapInsert), MappingSpec)
 import Ribosome.Menu.Action (MenuWidget, menuCycle, menuQuit, menuToggle, menuToggleAll)
 
-type Mappings i r a =
-  Map MappingSpec (MenuWidget i r a)
+type Mappings f i r a =
+  Map MappingSpec (MenuWidget f i r a)
 
 insert :: MappingSpec -> MappingSpec
 insert =
@@ -14,7 +14,7 @@ insertMapping :: MappingSpec -> MappingSpec
 insertMapping =
   #mode .~ [MapInsert]
 
-defaultMappings :: Mappings i r a
+defaultMappings :: Mappings f i r a
 defaultMappings =
   [
     ("k", menuCycle 1),

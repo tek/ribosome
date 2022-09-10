@@ -17,7 +17,7 @@ pristinePrompt conf =
   Prompt 0 (if (isStartInsert conf) then PromptMode.Insert else PromptMode.Normal) ""
 
 withPromptInput ::
-  Members [MenuLoop i, Rpc, Resource, Race, Async, Time t d] r =>
+  Members [MenuLoop f i, Rpc, Resource, Race, Async, Time t d] r =>
   Maybe MilliSeconds ->
   [Text] ->
   Sem r a ->
@@ -41,7 +41,7 @@ nosync =
   #sync .~ False
 
 withPromptInputSync ::
-  Members [Reader MenuConfig, MenuLoop i] r =>
+  Members [Reader MenuConfig, MenuLoop f i] r =>
   Members [Rpc, GatesIO, EventConsumer mres MenuEvent, Resource, Race, Async, Time t d] r =>
   [SyncChar] ->
   Sem r a ->
@@ -54,7 +54,7 @@ withPromptInputSync chrs =
       when sync (consumeElem PromptLoop)
 
 withPromptInputFk ::
-  Members [MenuLoop i, Rpc, Resource, Race, Async, Time t d] r =>
+  Members [MenuLoop f i, Rpc, Resource, Race, Async, Time t d] r =>
   Maybe MilliSeconds ->
   [Text] ->
   Sem r a ->

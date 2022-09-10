@@ -10,20 +10,29 @@ import Ribosome.Menu.Data.Entry (Entries, Entry)
 import Ribosome.Menu.Data.MenuItems (MenuItems, MenuQuery (MenuQuery))
 import Ribosome.Menu.Lens (use, (%=), (.=))
 
+addHistory ::
+  Ord filter =>
+  Member (State (MenuItems filter i)) r =>
+  Sem r ()
+addHistory = do
+  MenuQuery oldQuery <- use #currentQuery
+  filt <- use #currentFilter
+  old <- use #entries
+  #history . ix filt %= Trie.insert (encodeUtf8 oldQuery) old
+
 push ::
-  Member (State (MenuItems i)) r =>
+  Ord filter =>
+  Member (State (MenuItems filter i)) r =>
   MenuQuery ->
   Entries i ->
   Sem r ()
 push newQuery new = do
-  MenuQuery oldQuery <- use #currentQuery
-  old <- use #entries
+  addHistory
   #entries .= new
-  #history %= Trie.insert (encodeUtf8 oldQuery) old
   #currentQuery .= newQuery
 
 numVisible ::
-  MenuItems i ->
+  MenuItems filter i ->
   Int
 numVisible =
   sum . fmap length . view #entries
@@ -33,7 +42,7 @@ sortEntries =
   concatMap (toList . snd) . IntMap.toDescList
 
 sortedEntries ::
-  SimpleGetter (MenuItems i) [Entry i]
+  SimpleGetter (MenuItems filter i) [Entry i]
 sortedEntries =
   #entries . to sortEntries
 

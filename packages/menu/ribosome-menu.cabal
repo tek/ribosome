@@ -24,6 +24,7 @@ library
       Ribosome.Menu.Data.CursorIndex
       Ribosome.Menu.Data.CursorLine
       Ribosome.Menu.Data.Entry
+      Ribosome.Menu.Data.Filter
       Ribosome.Menu.Data.Menu
       Ribosome.Menu.Data.MenuAction
       Ribosome.Menu.Data.MenuConfig
@@ -36,13 +37,13 @@ library
       Ribosome.Menu.Data.PromptAction
       Ribosome.Menu.Data.QuitReason
       Ribosome.Menu.Data.RenderEvent
+      Ribosome.Menu.Data.RenderMenu
       Ribosome.Menu.Effect.MenuFilter
       Ribosome.Menu.Effect.MenuLoop
       Ribosome.Menu.Effect.MenuState
       Ribosome.Menu.Effect.MenuStream
       Ribosome.Menu.Effect.MenuTest
       Ribosome.Menu.Effect.MenuUi
-      Ribosome.Menu.Effect.PromptEvents
       Ribosome.Menu.Filters
       Ribosome.Menu.Interpreter.MenuFilter
       Ribosome.Menu.Interpreter.MenuLoop
@@ -50,10 +51,8 @@ library
       Ribosome.Menu.Interpreter.MenuStream
       Ribosome.Menu.Interpreter.MenuTest
       Ribosome.Menu.Interpreter.MenuUi
-      Ribosome.Menu.Interpreter.MenuUiEcho
       Ribosome.Menu.Interpreter.MenuUiPure
       Ribosome.Menu.Interpreter.MenuUiWindow
-      Ribosome.Menu.Interpreter.PromptEvents
       Ribosome.Menu.ItemLens
       Ribosome.Menu.Items
       Ribosome.Menu.Lens
@@ -64,7 +63,6 @@ library
       Ribosome.Menu.Prompt
       Ribosome.Menu.Prompt.Data.Codes
       Ribosome.Menu.Prompt.Data.CursorUpdate
-      Ribosome.Menu.Prompt.Data.InputEvent
       Ribosome.Menu.Prompt.Data.Prompt
       Ribosome.Menu.Prompt.Data.PromptConfig
       Ribosome.Menu.Prompt.Data.PromptEvent
@@ -73,7 +71,6 @@ library
       Ribosome.Menu.Prompt.Data.PromptMode
       Ribosome.Menu.Prompt.Data.PromptUpdate
       Ribosome.Menu.Prompt.Data.TextUpdate
-      Ribosome.Menu.Prompt.GetChar
       Ribosome.Menu.Prompt.Nvim
       Ribosome.Menu.Prompt.Run
       Ribosome.Menu.Scratch

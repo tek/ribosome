@@ -1,14 +1,17 @@
 module Ribosome.Menu.Interpreter.MenuUiWindow where
 
-import Conc (Consume, Gate, GatesIO, interpretEventsChan, interpretPScopedResumableWith, withAsyncGated_)
+import Conc (Consume, Gate, GatesIO, interpretAtomic, interpretEventsChan, interpretPScopedResumableWith, withAsyncGated_)
 import Control.Lens.Regex.Text (group, match, regex)
+import qualified Data.Text as Text
 import Exon (exon)
+import Lens.Micro.Mtl (view)
 import qualified Log
 import Polysemy.Conc.Gate (signal)
 import Prelude hiding (group)
 
+import Ribosome.Api.Data (Window)
 import qualified Ribosome.Api.Mode as Api
-import Ribosome.Api.Window (currentCursor, setCursor, windowExec)
+import Ribosome.Api.Window (closeWindow, currentCursor, setCursor, windowExec)
 import qualified Ribosome.Data.FloatOptions as FloatOptions
 import Ribosome.Data.FloatOptions (FloatAnchor (SW), FloatRelative (Editor))
 import Ribosome.Data.Mapping (Mapping, MappingId (MappingId), MappingLhs (MappingLhs), MappingSpec (MappingSpec))
@@ -17,6 +20,7 @@ import Ribosome.Data.ScratchOptions (ScratchOptions, scratch)
 import qualified Ribosome.Data.ScratchState as Scratch
 import Ribosome.Data.ScratchState (ScratchState)
 import Ribosome.Data.SettingError (SettingError)
+import Ribosome.Data.WindowConfig (WindowConfig (WindowConfig))
 import qualified Ribosome.Effect.Scratch as Scratch
 import Ribosome.Effect.Scratch (Scratch)
 import Ribosome.Effect.Settings (Settings)
@@ -26,6 +30,8 @@ import Ribosome.Host.Api.Effect (
   nvimFeedkeys,
   nvimGetOption,
   nvimReplaceTermcodes,
+  nvimWinGetConfig,
+  vimGetWindows,
   windowSetOption,
   )
 import qualified Ribosome.Host.Api.Event as Event
@@ -43,16 +49,17 @@ import Ribosome.Menu.Effect.MenuUi (
   WindowMenu (WindowMenu),
   WindowMenuUi,
   )
-import Ribosome.Menu.Interpreter.MenuUiEcho (withItemsScratch)
 import qualified Ribosome.Menu.Mappings as Mappings
-import Ribosome.Menu.NvimRenderer (renderNvimMenu)
+import Ribosome.Menu.NvimRenderer (menuSyntax, renderNvimMenu)
 import Ribosome.Menu.Prompt.Data.Prompt (Prompt (Prompt), PromptText (PromptText))
 import Ribosome.Menu.Prompt.Data.PromptConfig (PromptConfig (OnlyInsert), isStartInsert)
 import qualified Ribosome.Menu.Prompt.Data.PromptEvent as PromptEvent
 import Ribosome.Menu.Prompt.Data.PromptEvent (PromptEvent)
 import qualified Ribosome.Menu.Prompt.Data.PromptMode as PromptMode
 import Ribosome.Menu.Prompt.Data.PromptMode (PromptMode)
+import qualified Ribosome.Menu.Settings as Settings
 import qualified Ribosome.Settings as Settings
+import Ribosome.Lens ((<|>~))
 
 pattern MenuMapping :: MappingId -> Event
 pattern MenuMapping {id} <- Event "menu-mapping" [Msgpack id]
@@ -165,7 +172,7 @@ itemsOptions :: (Int, Int, Int, Int) -> ScratchOptions -> ScratchOptions
 itemsOptions (row, col, height, width) =
   (#float .~ Just floatOptions)
   .
-  (#maxSize .~ Just (height - 3))
+  (#maxSize <|>~ Just (height - 3))
   where
     floatOptions =
       def
@@ -199,6 +206,38 @@ promptOptions (row, col, _, width) custom =
       & #width .~ width
       & #height .~ 1
       & #border .~ FloatOptions.Manual ["│", "─", "│", "│", "╯", "─", "╰", "│"]
+
+isFloat ::
+  Member (Rpc !! RpcError) r =>
+  Window ->
+  Sem r Bool
+isFloat win =
+  False <! (check <$> nvimWinGetConfig win)
+  where
+    check (WindowConfig relative _ _) =
+      not (Text.null relative)
+
+closeFloats ::
+  Members [Rpc, Rpc !! RpcError] r =>
+  Sem r ()
+closeFloats = do
+  traverse_ closeWindow =<< filterM isFloat =<< vimGetWindows
+
+withItemsScratch ::
+  Members [Settings !! SettingError, Rpc, Rpc !! RpcError, Scratch, Stop RpcError, Log, Resource, Embed IO] r =>
+  ScratchOptions ->
+  (ScratchState -> Sem (AtomicState NvimMenuState : r) a) ->
+  Sem r a
+withItemsScratch options use = do
+  whenM (Settings.or True Settings.menuCloseFloats) closeFloats
+  bracket acquire (Scratch.delete . view #id) (interpretAtomic def . use)
+  where
+    acquire = do
+      scr <- Scratch.open (withSyntax options)
+      windowSetOption (scr ^. #window) "cursorline" True !>> Log.debug "Failed to set cursorline"
+      pure scr
+    withSyntax =
+      #syntax <>~ [menuSyntax]
 
 type WindowScope =
   [Consume PromptEvent, AtomicState NvimMenuState]
@@ -238,7 +277,7 @@ windowResources (NvimMenuConfig pconf options mappings) use =
   restop @_ @Rpc $ restop @_ @Scratch do
     geo <- geometry
     withItemsScratch (itemsOptions geo options) \ itemsScratch ->
-      withPrompt pconf mappings geo \ promptScratch ->
+      withPrompt pconf mappings geo \ promptScratch -> do
         insertAt @2 (use (WindowMenu itemsScratch promptScratch))
 
 -- TODO see how a 'buftype=prompt' looks

@@ -1,5 +1,6 @@
 module Ribosome.Menu (
   module Ribosome.Menu.Action,
+  module Ribosome.Menu.Data.Filter,
   module Ribosome.Menu.Data.MenuAction,
   module Ribosome.Menu.Data.MenuEvent,
   module Ribosome.Menu.Data.MenuItem,
@@ -9,7 +10,6 @@ module Ribosome.Menu (
   module Ribosome.Menu.Effect.MenuState,
   module Ribosome.Menu.Effect.MenuStream,
   module Ribosome.Menu.Effect.MenuUi,
-  module Ribosome.Menu.Effect.PromptEvents,
   module Ribosome.Menu.Interpreter.MenuLoop,
   module Ribosome.Menu.Interpreter.MenuFilter,
   module Ribosome.Menu.Interpreter.MenuState,
@@ -44,6 +44,7 @@ import Ribosome.Menu.Action (
   menuToggleAll,
   menuUpdatePrompt,
   )
+import Ribosome.Menu.Data.Filter
 import Ribosome.Menu.Data.MenuAction
 import Ribosome.Menu.Data.MenuEvent (MenuEvent (..), QueryEvent (..))
 import Ribosome.Menu.Data.MenuItem (MenuItem (MenuItem), simpleMenuItem)
@@ -65,8 +66,6 @@ import Ribosome.Menu.Effect.MenuState (
   )
 import Ribosome.Menu.Effect.MenuStream (MenuStream)
 import Ribosome.Menu.Effect.MenuUi (
-  EchoMenu,
-  EchoMenuUi,
   MenuUi,
   NvimMenuConfig (NvimMenuConfig),
   NvimMenuUi,
@@ -75,12 +74,7 @@ import Ribosome.Menu.Effect.MenuUi (
   WindowMenu,
   WindowMenuUi,
   )
-import Ribosome.Menu.Effect.PromptEvents (PromptEvents (..))
-import Ribosome.Menu.Interpreter.MenuFilter (
-  BoolVal,
-  interpretMenuFilterFuzzy,
-  interpretMenuFilterSubstring,
-  )
+import Ribosome.Menu.Interpreter.MenuFilter (defaultFilter)
 import Ribosome.Menu.Interpreter.MenuLoop (
   MenuLoopDeps,
   MenuLoopIO,
@@ -92,7 +86,7 @@ import Ribosome.Menu.Interpreter.MenuLoop (
   interpretNvimMenu,
   promptInput,
   )
-import Ribosome.Menu.Interpreter.MenuState (interpretMenuState, interpretMenuStateDeps, interpretMenuStates)
+import Ribosome.Menu.Interpreter.MenuState (interpretMenuState, interpretMenuStateDeps)
 import Ribosome.Menu.Interpreter.MenuStream (interpretMenuStream)
 import Ribosome.Menu.Interpreter.MenuUi (
   interpretMenuUiNull,

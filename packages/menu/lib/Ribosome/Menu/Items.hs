@@ -23,7 +23,7 @@ import Ribosome.Menu.Lens (use, (%=), (.=))
 
 -- |Run an action with the focused entry if the menu is non-empty.
 withFocusItem ::
-  Member (MenuState i) r =>
+  Member (MenuState f i) r =>
   (MenuItem i -> Sem r a) ->
   Sem r (Maybe a)
 withFocusItem f =
@@ -31,7 +31,7 @@ withFocusItem f =
 
 -- |Run an action with the focused entry if the menu is non-empty, extracting the item payload.
 withFocus' ::
-  Member (MenuState i) r =>
+  Member (MenuState f i) r =>
   (i -> Sem r a) ->
   Sem r (Maybe a)
 withFocus' f =
@@ -40,15 +40,15 @@ withFocus' f =
 -- |Run an action with the focused entry and quit the menu with the returned value.
 -- If the menu was empty, do nothing (i.e. skip the event).
 withFocus ::
-  Member (MenuState i) r =>
+  Member (MenuState f i) r =>
   (i -> Sem r a) ->
-  Sem r (Maybe (MenuAction a))
+  Sem r (Maybe (MenuAction f a))
 withFocus f =
   Just . maybe MenuAction.Continue MenuAction.success <$> withFocus' f
 
 -- |Run an action with the selection or the focused entry if the menu is non-empty.
 withSelectionItems ::
-  Member (MenuState i) r =>
+  Member (MenuState f i) r =>
   (NonEmpty (MenuItem i) -> Sem r a) ->
   Sem r (Maybe a)
 withSelectionItems f =
@@ -56,7 +56,7 @@ withSelectionItems f =
 
 -- |Run an action with the selection or the focused entry if the menu is non-empty, extracting the item payloads.
 withSelection' ::
-  Member (MenuState i) r =>
+  Member (MenuState f i) r =>
   (NonEmpty i -> Sem r a) ->
   Sem r (Maybe a)
 withSelection' f =
@@ -65,18 +65,18 @@ withSelection' f =
 -- |Run an action with the selection or the focused entry and quit the menu with the returned value.
 -- If the menu was empty, do nothing (i.e. skip the event).
 withSelection ::
-  Member (MenuState i) r =>
+  Member (MenuState f i) r =>
   (NonEmpty i -> Sem r a) ->
-  Sem r (Maybe (MenuAction a))
+  Sem r (Maybe (MenuAction f a))
 withSelection f =
   Just . maybe MenuAction.Continue MenuAction.success <$> withSelection' f
 
 -- |Run an action with each entry in the selection or the focused entry and quit the menu with '()'.
 -- If the menu was empty, do nothing (i.e. skip the event).
 traverseSelection_ ::
-  Member (MenuState i) r =>
+  Member (MenuState f i) r =>
   (i -> Sem r ()) ->
-  Sem r (Maybe (MenuAction ()))
+  Sem r (Maybe (MenuAction f ()))
 traverseSelection_ f =
   withSelection (traverse_ f)
 
@@ -144,12 +144,14 @@ popSelection curs initial =
         (([curs], [i]), IntMap.update (Just . Seq.deleteAt si) score initial)
 
 deleteSelected ::
-  Member (State (Menu i)) r =>
+  Ord f =>
+  Member (State (Menu f i)) r =>
   Sem r ()
 deleteSelected = do
   CursorIndex curs <- use #cursor
   ((deletedEntries, deletedItems), kept) <- use (entries . to (popSelection curs))
   entries .= kept
-  history .= mempty
+  filt <- use (#items . #currentFilter)
+  history . ix filt .= mempty
   items %= flip IntMap.withoutKeys (IntSet.fromList deletedItems)
   #cursor %= adaptCursorAfterDeletion deletedEntries

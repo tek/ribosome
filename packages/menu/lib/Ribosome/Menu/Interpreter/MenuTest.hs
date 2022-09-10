@@ -14,13 +14,10 @@ import Ribosome.Menu.Data.MenuResult (MenuResult)
 import Ribosome.Menu.Effect.MenuTest (MenuTest (..))
 import qualified Ribosome.Menu.Effect.MenuUi as MenuUi
 import Ribosome.Menu.Effect.MenuUi (MenuUi (PromptEvent, Render, RenderPrompt))
-import Ribosome.Menu.Effect.PromptEvents (PromptEvents)
-import Ribosome.Menu.Interpreter.PromptEvents (interpretPromptEventsDefault)
 import Ribosome.Menu.Prompt.Data.Prompt (Prompt)
 import Ribosome.Menu.Prompt.Data.PromptConfig (PromptConfig)
 import qualified Ribosome.Menu.Prompt.Data.PromptEvent as PromptEvent
 import Ribosome.Menu.Prompt.Data.PromptEvent (PromptEvent)
-import Ribosome.Menu.Prompt.GetChar (processChar)
 import Ribosome.Menu.Prompt.Run (pristinePrompt)
 
 newtype TestTimeout =
@@ -69,6 +66,8 @@ data WaitEvent =
   Requested Text
   |
   Received MenuEvent
+  |
+  Satisfied Text
   deriving stock (Eq, Show)
 
 waitEventPredM ::
@@ -79,6 +78,7 @@ waitEventPredM ::
 waitEventPredM desc match = do
   atomicModify (Requested desc :)
   failTimeout [exon|MenuEvent not published: #{desc}|] spin
+  atomicModify (Satisfied desc :)
   where
     spin = do
       e <- consume
@@ -165,7 +165,7 @@ interpretMenuTestQueuesWith ::
   ∀ i a r .
   Show i =>
   Members [Queue PromptEvent, Queue (MenuItem i), Sync (MenuResult a), Reader TestTimeout, Fail] r =>
-  Members [PromptEvents, AtomicState Prompt, AtomicState [WaitEvent], Consume MenuEvent, Race, Log] r =>
+  Members [AtomicState Prompt, AtomicState [WaitEvent], Consume MenuEvent, Race, Log] r =>
   InterpreterFor (MenuTest i a) r
 interpretMenuTestQueuesWith =
   withPromptInit .
@@ -179,10 +179,6 @@ interpretMenuTestQueuesWith =
       waitItemsDone [exon|WaitItemsDone (#{desc})|]
     SendPromptEvent wait e ->
       sendPromptEvent wait e
-    SendCharEvent wait c -> do
-      old <- atomicGet
-      event <- processChar c old
-      sendPromptEvent wait event
     WaitEventPred desc f ->
       waitEventPred desc f
     WaitEvent desc e ->
@@ -191,6 +187,8 @@ interpretMenuTestQueuesWith =
       failTimeout "menu result" Sync.block
     NextEvent ->
       failTimeout "next event" consume
+    Quit ->
+      sendPromptEvent False (PromptEvent.Quit Nothing)
 
 interpretMenuTestQueues ::
   ∀ i a ires r .
@@ -202,8 +200,6 @@ interpretMenuTestQueues ::
 interpretMenuTestQueues pconf =
   subscribe @MenuEvent .
   runReader pconf .
-  interpretPromptEventsDefault .
-  raiseUnder .
   interpretMenuTestQueuesWith .
   raiseUnder
 

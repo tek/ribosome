@@ -32,12 +32,14 @@ import Ribosome.Host.Effect.MState (ScopedMState)
 import Ribosome.Host.Effect.Rpc (Rpc)
 import Ribosome.Host.Interpret (type (|>))
 import Ribosome.Host.Interpreter.MState (interpretMStates)
+import Ribosome.Menu.Data.Filter (Filter)
 import Ribosome.Menu.Data.Menu (Menu)
 import Ribosome.Menu.Data.MenuConfig (MenuConfig, menuSync)
 import qualified Ribosome.Menu.Data.MenuEvent as MenuEvent
 import Ribosome.Menu.Data.MenuEvent (MenuEvent (Inserted, PromptLoop, Rendered))
 import Ribosome.Menu.Data.MenuItem (MenuItem)
 import Ribosome.Menu.Data.RenderEvent (RenderEvent (RenderEvent))
+import Ribosome.Menu.Data.RenderMenu (fromMenu)
 import Ribosome.Menu.Effect.MenuFilter (MenuFilter)
 import qualified Ribosome.Menu.Effect.MenuLoop as MenuLoop
 import Ribosome.Menu.Effect.MenuLoop (MenuLoop, MenuLoops)
@@ -45,25 +47,24 @@ import qualified Ribosome.Menu.Effect.MenuState as MenuState
 import Ribosome.Menu.Effect.MenuState (MenuState, itemsState, readMenu)
 import qualified Ribosome.Menu.Effect.MenuStream as MenuStream
 import Ribosome.Menu.Effect.MenuStream (MenuStream)
-import Ribosome.Menu.Effect.MenuUi (EchoMenu, NvimMenuUi, PureMenu, WindowMenu)
-import Ribosome.Menu.Interpreter.MenuFilter (interpretMenuFilterFuzzy)
-import Ribosome.Menu.Interpreter.MenuState (interpretMenuState, mcState')
+import Ribosome.Menu.Effect.MenuUi (NvimMenuUi, PureMenu, WindowMenu)
+import Ribosome.Menu.Interpreter.MenuFilter (defaultFilter)
+import Ribosome.Menu.Interpreter.MenuState (interpretMenuState, mstateT)
 import Ribosome.Menu.Interpreter.MenuStream (interpretMenuStream)
-import Ribosome.Menu.Interpreter.MenuUiEcho (interpretMenuUiNvimEcho)
 import Ribosome.Menu.Interpreter.MenuUiPure (interpretMenuUiPure)
 import Ribosome.Menu.Interpreter.MenuUiWindow (interpretMenuUiWindow)
 import qualified Ribosome.Menu.Prompt.Data.Prompt as Prompt
 import Ribosome.Menu.Prompt.Data.Prompt (Prompt)
 import Ribosome.Menu.Prompt.Data.PromptEvent (PromptEvent)
-import Ribosome.Menu.UpdateState (insertItems, queryUpdate)
+import Ribosome.Menu.UpdateState (changeFilter, insertItems, queryUpdate)
 
 data MenuSync =
   MenuSync
   deriving stock (Eq, Show)
 
 renderEvent ::
-  Members [MenuState i, Events eres MenuEvent, Log] r =>
-  (Menu i -> Sem r ()) ->
+  Members [MenuState f i, Events eres MenuEvent, Log] r =>
+  (Menu f i -> Sem r ()) ->
   RenderEvent ->
   Sem r ()
 renderEvent render (RenderEvent desc) = do
@@ -84,8 +85,9 @@ renderEvent render (RenderEvent desc) = do
 --
 -- - @publish@ sends 'MenuEvent's to consumers of 'Events'.
 menuStream ::
+  Ord f =>
   Members [Queue Prompt, Queue RenderEvent, Events ires MenuEvent] r =>
-  Members [MenuStream, MenuFilter, MenuState i, Sync MenuSync, Log] r =>
+  Members [MenuStream, MenuFilter f, MenuState f i, Sync MenuSync, Log] r =>
   SerialT IO (MenuItem i) ->
   Sem r ()
 menuStream items = do
@@ -97,7 +99,7 @@ menuStream items = do
       itemsState (insertItems new)
       publish Inserted
     update p = do
-      queryUpdate (Prompt.text p)
+      itemsState (queryUpdate (Prompt.text p))
       RenderEvent "query update" <$ Sync.putTry MenuSync
 
 type MenuLoopIO =
@@ -113,7 +115,6 @@ type MenuLoopIO =
 type MenuLoopDeps =
   [
     MenuStream,
-    MenuFilter,
     Reader MenuConfig,
     ScopedMState Prompt,
     ChanEvents MenuEvent,
@@ -130,14 +131,13 @@ interpretMenuLoopDeps =
   interpretEventsChan .
   interpretMStates .
   runReader def .
-  interpretMenuFilterFuzzy @'True .
   interpretMenuStream
 
 type NvimMenus =
-  NvimMenuUi WindowMenu : NvimMenuUi EchoMenu : MenuLoopDeps
+  NvimMenuUi WindowMenu : MenuLoopDeps
 
-type NvimMenu i =
-  MenuLoops i : NvimMenus
+type NvimMenu f i =
+  MenuLoops f i : NvimMenus
 
 interpretMenus ::
   Members MenuLoopIO r =>
@@ -145,51 +145,58 @@ interpretMenus ::
   InterpretersFor NvimMenus r
 interpretMenus =
   interpretMenuLoopDeps .
-  interpretMenuUiNvimEcho .
   interpretMenuUiWindow
 
-type MenuLoopScope i =
-  [Gate @@ "prompt", MenuState i, Sync MenuSync, Queue Prompt, Queue RenderEvent]
+type MenuLoopScope f i =
+  [Gate @@ "prompt", MenuState f i, Sync MenuSync, Queue Prompt, Queue RenderEvent]
 
 menuLoopScope ::
+  Ord f =>
   Members MenuLoopIO r =>
   Members MenuLoopDeps r =>
+  Member (MenuFilter f) r =>
   SerialT IO (MenuItem i) ->
-  (() -> Sem (MenuLoopScope i ++ r) a) ->
+  f ->
+  (() -> Sem (MenuLoopScope f i ++ r) a) ->
   Sem r a
-menuLoopScope items use =
+menuLoopScope items initialFilter use =
   interpretQueueTBM 64 $
   interpretQueueTBM 64 $
   interpretSync $
-  interpretMenuState $
+  interpretMenuState initialFilter $
   subscribeLoopAsync (\ event -> Log.debug [exon|menu event: #{show event}|]) $
   withAsync_ (menuStream items) $
   withGate $ untag $
   use ()
 
 interpretMenuLoops ::
-  ∀ i r .
+  ∀ i f r .
+  Ord f =>
+  Show f =>
   Members MenuLoopIO r =>
   Members MenuLoopDeps r =>
-  InterpreterFor (MenuLoops i) r
+  Member (MenuFilter f) r =>
+  InterpreterFor (MenuLoops f i) r
 interpretMenuLoops =
-  interpretPScopedWithH @(MenuLoopScope i) menuLoopScope \ () ->
+  interpretPScopedWithH @(MenuLoopScope f i) (uncurry menuLoopScope) \ () ->
     let
-      int :: ∀ r0 x . MenuLoop i (Sem r0) x -> Tactical (MenuLoop i) (Sem r0) (MenuLoopScope i ++ r) x
+      int :: ∀ r0 x . MenuLoop f i (Sem r0) x -> Tactical (MenuLoop f i) (Sem r0) (MenuLoopScope f i ++ r) x
       int = \case
         MenuLoop.WithRender render ma -> do
           s <- getInitialStateT
           render' <- bindT render <&> \ f -> interpretH int . f
           ma' <- interpretH int <$> runT ma
-          raise (withAsync_ (Queue.loop (renderEvent \ m -> void (render' (m <$ s)))) ma')
+          raise (withAsync_ (Queue.loop (renderEvent \ m -> void (render' (fromMenu m <$ s)))) ma')
         MenuLoop.ReadCursor ->
           pureT =<< MenuState.readCursor
         MenuLoop.UseCursor f ->
-          MenuState.useCursor (mcState' f)
+          MenuState.useCursor (mstateT f)
         MenuLoop.ReadItems ->
           pureT =<< MenuState.readItems
         MenuLoop.UseItems f ->
-          MenuState.useItems (mcState' f)
+          MenuState.useItems (mstateT f)
+        MenuLoop.ChangeFilter f ->
+          pureT =<< itemsState (changeFilter f)
         MenuLoop.StartPrompt ->
           pureT =<< tag @"prompt" signal
         MenuLoop.WaitPrompt ->
@@ -211,20 +218,39 @@ type NvimMenuIO eres =
   [Settings !! SettingError, Rpc !! RpcError, Scratch !! RpcError, EventConsumer eres Event, Final IO]
 
 interpretNvimMenu ::
+  Ord f =>
+  Show f =>
   Members MenuLoopIO r =>
+  Member (MenuFilter f) r =>
   Members (NvimMenuIO eres) r =>
-  InterpretersFor (NvimMenu i) r
+  InterpretersFor (NvimMenu f i) r
 interpretNvimMenu =
   interpretMenus .
   interpretMenuLoops
+
+promptInputFilter ::
+  Ord f =>
+  Show f =>
+  Members MenuLoopIO r =>
+  Members (NvimMenuIO eres) r =>
+  Member (MenuFilter f) r =>
+  [PromptEvent] ->
+  InterpretersFor (NvimMenuUi PureMenu : MenuLoops f i : MenuLoopDeps |> ChronosTime) r
+promptInputFilter events =
+  interpretTimeChronos .
+  interpretMenuLoopDeps .
+  interpretMenuLoops .
+  interpretMenuUiPure True events .
+  menuSync
 
 promptInput ::
   Members MenuLoopIO r =>
   Members (NvimMenuIO eres) r =>
   [PromptEvent] ->
-  InterpretersFor (NvimMenuUi PureMenu : MenuLoops i : MenuLoopDeps |> ChronosTime) r
+  InterpretersFor (NvimMenuUi PureMenu : MenuLoops Filter i : MenuLoopDeps ++ [MenuFilter Filter, ChronosTime]) r
 promptInput events =
   interpretTimeChronos .
+  defaultFilter .
   interpretMenuLoopDeps .
   interpretMenuLoops .
   interpretMenuUiPure True events .

@@ -1,6 +1,6 @@
 module Ribosome.Menu.MenuTest where
 
-import Conc (Consume, GatesIO, Restoration, timeout_, withAsync_)
+import Conc (ChanConsumer, Consume, GatesIO, Restoration, timeout_, withAsync_)
 import qualified Data.Map.Strict as Map
 import qualified Log
 import qualified Streamly.Prelude as Stream
@@ -13,6 +13,7 @@ import Ribosome.Data.ScratchOptions (ScratchOptions)
 import Ribosome.Data.SettingError (SettingError)
 import Ribosome.Effect.Scratch (Scratch)
 import Ribosome.Effect.Settings (Settings)
+import Ribosome.Host.Data.Event (Event)
 import Ribosome.Host.Data.Report (resumeReportFail)
 import Ribosome.Host.Data.RpcError (RpcError)
 import Ribosome.Host.Effect.Rpc (Rpc)
@@ -20,8 +21,9 @@ import Ribosome.Host.Interpret (type (|>))
 import Ribosome.Menu.Action (MenuWidget)
 import Ribosome.Menu.Data.MenuEvent (MenuEvent)
 import Ribosome.Menu.Data.MenuItem (MenuItem)
+import Ribosome.Menu.Effect.MenuFilter (MenuFilter)
 import Ribosome.Menu.Effect.MenuLoop (MenuLoop, MenuLoops, waitPrompt)
-import Ribosome.Menu.Effect.MenuTest (MenuTest)
+import Ribosome.Menu.Effect.MenuTest (MenuTest, itemsDone)
 import Ribosome.Menu.Effect.MenuUi (MenuUi, NvimMenuConfig (NvimMenuConfig), withMenuUi)
 import Ribosome.Menu.Interpreter.MenuLoop (MenuLoopDeps, interpretMenuLoopDeps, interpretMenuLoops)
 import Ribosome.Menu.Interpreter.MenuTest (
@@ -32,7 +34,7 @@ import Ribosome.Menu.Interpreter.MenuTest (
   interpretMenuTestResources,
   )
 import Ribosome.Menu.Interpreter.MenuUi (interpretMenuUiNvimNull)
-import Ribosome.Menu.Interpreter.MenuUiEcho (interpretMenuUiNvimEcho)
+import Ribosome.Menu.Interpreter.MenuUiWindow (interpretMenuUiWindow)
 import Ribosome.Menu.Loop (lookupMapping, menuLoop, runMenu)
 import Ribosome.Menu.Mappings (Mappings)
 import Ribosome.Menu.Prompt.Data.PromptConfig (PromptConfig)
@@ -57,11 +59,11 @@ type MenuTestIOStack =
     Final IO
   ]
 
-type MenuRenderEffects i result =
-  [MenuLoop i, MenuTest i result, Consume MenuEvent] ++ MenuLoops i : MenuLoopDeps
+type MenuRenderEffects f i result =
+  [MenuLoop f i, MenuTest i result, Consume MenuEvent] ++ MenuLoops f i : MenuLoopDeps
 
-type MenuTestEffects i result =
-  MenuRenderEffects i result |> MenuUi
+type MenuTestEffects f i result =
+  MenuRenderEffects f i result |> MenuUi
 
 type MenuTestStack i result =
   Reader (SerialT IO (MenuItem i)) : MenuTestResources i result
@@ -113,64 +115,94 @@ withEventLog =
   flip onException (Log.crit . show =<< atomicGet)
 
 testMenuRender ::
+  Ord f =>
+  Show f =>
   Show i =>
   Members MenuTestIOStack r =>
   Members (MenuTestResources i result) r =>
-  Members [Reader (SerialT IO (MenuItem i)), MenuUi, Stop RpcError] r =>
+  Members [MenuFilter f, Reader (SerialT IO (MenuItem i)), MenuUi, Stop RpcError] r =>
   PromptConfig ->
-  (MappingLhs -> Maybe (MenuWidget i (MenuRenderEffects i result ++ r) result)) ->
-  InterpretersFor (MenuRenderEffects i result) r
-testMenuRender pconf mappings sem = do
+  f ->
+  (MappingLhs -> Maybe (MenuWidget f i (MenuRenderEffects f i result ++ r) result)) ->
+  InterpretersFor (MenuRenderEffects f i result) r
+testMenuRender pconf initialFilter mappings sem = do
   TestTimeout timeout <- ask
   items <- ask
-  interpretMenuLoopDeps $ interpretMenuLoops $ interpretMenuTest pconf $ runMenu items $ withEventLog do
+  interpretMenuLoopDeps $ interpretMenuLoops $ interpretMenuTest pconf $ runMenu items initialFilter $ withEventLog do
     withAsync_ (Sync.putWait timeout =<< menuLoop mappings) do
       timeout_ (fail "prompt didn't start") timeout waitPrompt
       sem
 
 testMenu ::
+  Ord f =>
+  Show f =>
   Show i =>
   Members MenuTestIOStack r =>
-  Member (Reader (SerialT IO (MenuItem i))) r =>
+  Members [MenuFilter f, Reader (SerialT IO (MenuItem i))] r =>
   Members (MenuTestDeps i result) r =>
   PromptConfig ->
-  Mappings i (MenuRenderEffects i result ++ MenuUi : r) result ->
-  InterpretersFor (MenuTestEffects i result) r
-testMenu pconf maps =
+  f ->
+  Mappings f i (MenuRenderEffects f i result ++ MenuUi : r) result ->
+  InterpretersFor (MenuTestEffects f i result) r
+testMenu pconf initialFilter maps =
   interpretMenuUiNvimNull .
   resumeReportFail .
   withMenuUi def .
   raiseUnder2 .
-  testMenuRender pconf (lookupMapping maps)
+  testMenuRender pconf initialFilter (lookupMapping maps)
+
+testStaticMenu ::
+  Ord f =>
+  Show f =>
+  Show i =>
+  Members MenuTestIOStack r =>
+  Member (MenuFilter f) r =>
+  Members (MenuTestDeps i result) r =>
+  [MenuItem i] ->
+  PromptConfig ->
+  f ->
+  Mappings f i (MenuRenderEffects f i result ++ MenuUi : MenuTestStack i result ++ r) result ->
+  InterpretersFor (MenuTestEffects f i result ++ MenuTestStack i result) r
+testStaticMenu items pconf initialFilter maps sem =
+  runStaticTestMenu pconf items $
+  testMenu pconf initialFilter maps do
+    itemsDone "testStaticMenu"
+    sem
 
 testNvimMenu ::
-  ∀ i result r .
+  ∀ i result f r .
+  Ord f =>
+  Show f =>
   Show i =>
   Member (Reader (SerialT IO (MenuItem i))) r =>
   Members MenuTestIOStack r =>
   Members (MenuTestDeps i result) r =>
-  Members [Rpc, Rpc !! RpcError, Settings !! SettingError, Scratch !! RpcError] r =>
+  Members [ChanConsumer Event, MenuFilter f, Rpc, Rpc !! RpcError, Settings !! SettingError, Scratch !! RpcError] r =>
   PromptConfig ->
+  f ->
   ScratchOptions ->
-  Mappings i (MenuRenderEffects i result ++ MenuUi : r) result ->
-  InterpretersFor (MenuTestEffects i result) r
-testNvimMenu pconf options maps =
-  interpretMenuUiNvimEcho .
+  Mappings f i (MenuRenderEffects f i result ++ MenuUi : r) result ->
+  InterpretersFor (MenuTestEffects f i result) r
+testNvimMenu pconf initialFilter options maps =
+  interpretMenuUiWindow .
   resumeReportFail .
   withMenuUi (NvimMenuConfig pconf options (Map.keys maps)) .
   raiseUnder2 .
-  testMenuRender pconf (lookupMapping maps)
+  testMenuRender pconf initialFilter (lookupMapping maps)
 
 testStaticNvimMenu ::
-  ∀ i result r .
+  ∀ i result f r .
+  Ord f =>
+  Show f =>
   Show i =>
   Members MenuTestIOStack r =>
-  Members [Rpc, Rpc !! RpcError, Settings !! SettingError, Scratch !! RpcError, Stop RpcError] r =>
+  Members [ChanConsumer Event, MenuFilter f, Rpc, Rpc !! RpcError, Settings !! SettingError, Scratch !! RpcError, Stop RpcError] r =>
   [MenuItem i] ->
   PromptConfig ->
+  f ->
   ScratchOptions ->
-  Mappings i (MenuRenderEffects i result ++ MenuUi : MenuTestStack i result ++ r) result ->
-  InterpretersFor (MenuTestEffects i result ++ MenuTestStack i result) r
-testStaticNvimMenu items pconf options maps =
+  Mappings f i (MenuRenderEffects f i result ++ MenuUi : MenuTestStack i result ++ r) result ->
+  InterpretersFor (MenuTestEffects f i result ++ MenuTestStack i result) r
+testStaticNvimMenu items pconf initialFilter options maps =
   runStaticTestMenu pconf items .
-  testNvimMenu pconf options maps
+  testNvimMenu pconf initialFilter options maps

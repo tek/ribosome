@@ -1,13 +1,10 @@
 module Ribosome.Menu.NvimRenderer where
 
-import Control.Monad.Trans.Reader (ReaderT, runReaderT)
-import Control.Monad.Trans.State.Strict (StateT (runStateT))
 import qualified Data.IntMap.Strict as IntMap
 import qualified Data.Map.Strict as Map
 import Data.Monoid (Sum (Sum, getSum))
 import qualified Data.Sequence as Seq
 import qualified Data.Text as Text (cons, snoc)
-import Lens.Micro.Mtl (use, view, (%=), (.=), (<.=))
 import qualified Polysemy.Log as Log
 
 import Ribosome.Api.Window (redraw, setLine, windowExec)
@@ -19,11 +16,11 @@ import Ribosome.Host.Data.RpcError (RpcError)
 import Ribosome.Host.Effect.Rpc (Rpc)
 import Ribosome.Menu.Data.CursorIndex (CursorIndex (CursorIndex))
 import Ribosome.Menu.Data.Entry (Entries, Entry (Entry))
-import Ribosome.Menu.Data.Menu (Menu)
 import Ribosome.Menu.Data.MenuItem (MenuItem (MenuItem))
 import Ribosome.Menu.Data.MenuView (MenuView (MenuView))
 import Ribosome.Menu.Data.NvimMenuState (NvimMenuState, botIndex, cursorLine, topIndex)
-import Ribosome.Menu.ItemLens (entries)
+import Ribosome.Menu.Data.RenderMenu (RenderMenu)
+import Ribosome.Menu.Lens (use, view, (%=), (.=), (<.=))
 import Ribosome.Syntax (HiLink (..), Syntax (Syntax), SyntaxItem (..), syntaxMatch)
 
 -- TODO use signs instead of this
@@ -81,11 +78,12 @@ entrySlice ents bot top =
           i  + length a
 
 newEntrySlice ::
-  StateT NvimMenuState (ReaderT (Menu i) Identity) [Entry i]
+  Members [State NvimMenuState, Reader (RenderMenu i)] r =>
+  Sem r [Entry i]
 newEntrySlice = do
   bot <- use (#view . #botIndex)
   top <- use (#view . #topIndex)
-  ents <- view entries
+  ents <- view #entries
   pure (toList (entrySlice ents bot top))
 
 scrollDown ::
@@ -146,12 +144,13 @@ entryId (Entry _ i s) =
   (i, s)
 
 updateMenuState ::
+  Members [State NvimMenuState, Reader (RenderMenu i)] r =>
   Int ->
-  StateT NvimMenuState (ReaderT (Menu i) Identity) ([Entry i], Bool)
+  Sem r ([Entry i], Bool)
 updateMenuState scratchMax = do
   oldIndexes <- use #indexes
   newCursor <- view #cursor
-  count <- view (entries . to (getSum . foldMap (Sum . Seq.length)))
+  count <- view (#entries . to (getSum . foldMap (Sum . Seq.length)))
   #view %= computeView newCursor (min count scratchMax) count
   #cursorIndex .= newCursor
   visible <- newEntrySlice
@@ -159,36 +158,34 @@ updateMenuState scratchMax = do
   pure (visible, newIndexes /= oldIndexes)
 
 windowLine ::
-  Monad m =>
-  StateT NvimMenuState m Int
+  Members [State NvimMenuState, Reader (RenderMenu i)] r =>
+  Sem r Int
 windowLine = do
   top <- use topIndex
   bot <- use botIndex
   curLine <- use cursorLine
   pure (top - bot - fromIntegral curLine)
 
-runSR ::
-  Members [AtomicState s, Reader e] r =>
-  StateT s (ReaderT e Identity) a ->
-  Sem r a
-runSR ma = do
-  e <- ask
+runS ::
+  Member (AtomicState s) r =>
+  InterpreterFor (State s) r
+runS ma = do
   s <- atomicGet
-  let (a, s') = runIdentity (runReaderT (runStateT ma s) e)
-  atomicPut s'
-  pure a
+  (s', a) <- runState s ma
+  a <$ atomicPut s'
 
 updateMenu ::
-  Members [Scratch, AtomicState NvimMenuState, Reader (Menu i), Rpc, Rpc !! RpcError, Log] r =>
+  Members [Scratch, AtomicState NvimMenuState, Reader (RenderMenu i), Rpc, Rpc !! RpcError, Log] r =>
   ScratchState ->
   Sem r ()
-updateMenu scratch = do
-  (visible, changed) <- runSR (updateMenuState (fromMaybe 30 (scratch ^. #options . #maxSize)))
-  when changed do
-    void (Scratch.update (scratch ^. #id) (reverse (toList (withMark <$> visible))))
-  windowExec win "call winrestview({'topline': 1})"
-  targetLine <- runSR windowLine
-  setLine win targetLine !>> Log.debug "menu cursor line invalid"
+updateMenu scratch =
+  runS do
+    (visible, changed) <- updateMenuState (fromMaybe 30 (scratch ^. #options . #maxSize))
+    when changed do
+      void (Scratch.update (scratch ^. #id) (reverse (toList (withMark <$> visible))))
+    windowExec win "call winrestview({'topline': 1})"
+    targetLine <- windowLine
+    setLine win targetLine !>> Log.debug "menu cursor line invalid"
   where
     win =
       window scratch
@@ -196,7 +193,7 @@ updateMenu scratch = do
 renderNvimMenu ::
   ∀ i r .
   Member (AtomicState NvimMenuState) r =>
-  Members [Reader (Menu i), Rpc !! RpcError, Scratch !! RpcError, Log, Stop RpcError, Embed IO] r =>
+  Members [Reader (RenderMenu i), Rpc !! RpcError, Scratch !! RpcError, Log, Stop RpcError, Embed IO] r =>
   ScratchState ->
   Sem r ()
 renderNvimMenu scratch =

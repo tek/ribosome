@@ -9,18 +9,22 @@ import Time (Seconds (Seconds))
 
 import Ribosome.Host.Data.RpcError (RpcError)
 import Ribosome.Menu.Action (MenuWidget, menuIgnore)
-import Ribosome.Menu.Combinators (sortedEntries)
+import Ribosome.Menu.Combinators (sortEntries)
 import qualified Ribosome.Menu.Data.Entry as Entry
+import Ribosome.Menu.Data.Filter (Filter, fuzzyMono)
 import qualified Ribosome.Menu.Data.MenuEvent as MenuEvent
 import Ribosome.Menu.Data.MenuEvent (MenuEvent (Rendered))
 import qualified Ribosome.Menu.Data.MenuItem as MenuItem
-import Ribosome.Menu.Effect.MenuTest (waitEvent)
+import Ribosome.Menu.Effect.MenuFilter (MenuFilter)
+import qualified Ribosome.Menu.Effect.MenuTest as MenuTest
+import Ribosome.Menu.Effect.MenuTest (MenuTest, waitEvent)
 import qualified Ribosome.Menu.Effect.MenuUi as MenuUi
 import Ribosome.Menu.Effect.MenuUi (MenuUi)
+import Ribosome.Menu.Interpreter.MenuFilter (defaultFilter)
 import Ribosome.Menu.Interpreter.MenuTest (TestTimeout, failTimeout)
 import Ribosome.Menu.Interpreter.MenuUi (interpretMenuUiNull)
 import Ribosome.Menu.MenuTest (MenuRenderEffects, MenuTestIOStack, MenuTestStack, runTestMenu, testMenuRender)
-import Ribosome.Menu.Prompt.Data.Prompt (Prompt)
+import Ribosome.Menu.Prompt.Data.Prompt (Prompt (Prompt), PromptText)
 import Ribosome.Menu.Prompt.Data.PromptConfig (startInsert)
 import qualified Ribosome.Menu.Prompt.Data.PromptEvent as PromptEvent
 import Ribosome.Test.Error (testError)
@@ -32,7 +36,7 @@ enqueueItems ::
 enqueueItems =
   intercept \case
     MenuUi.Render menu ->
-      evalMaybe . resultToMaybe =<< Queue.writeTimeout (Seconds 5) (MenuItem.text . Entry.item <$> menu ^. #items . sortedEntries)
+      evalMaybe . resultToMaybe =<< Queue.writeTimeout (Seconds 5) (MenuItem.text . Entry.item <$> menu ^. #entries . to sortEntries)
     MenuUi.RenderPrompt _ _ ->
       unit
     MenuUi.PromptEvent _ ->
@@ -41,7 +45,7 @@ enqueueItems =
 enqueuePrompt ::
   ∀ i r a .
   Members [Hedgehog IO, Queue Prompt, Resource, Embed IO] r =>
-  MenuWidget i r a
+  MenuWidget Filter i r a
 enqueuePrompt = do
   Queue.write =<< ask
   menuIgnore
@@ -65,7 +69,7 @@ runSimpleTestMenu =
   enqueueItems
 
 type PromptTest i =
-  Consume MenuEvent : MenuRenderEffects i () ++ Stop RpcError : SimpleTestMenu ++ MenuTestStack i ()
+  Consume MenuEvent : MenuRenderEffects Filter i () ++ MenuFilter Filter : Stop RpcError : SimpleTestMenu ++ MenuTestStack i ()
 
 promptTest ::
   Show i =>
@@ -76,7 +80,8 @@ promptTest sem =
   runTestMenu startInsert $
   runSimpleTestMenu $
   testError $
-  testMenuRender startInsert (const (Just enqueuePrompt)) $
+  defaultFilter $
+  testMenuRender startInsert fuzzyMono (const (Just enqueuePrompt)) $
   subscribe @MenuEvent do
     waitEvent "initial render" Rendered
     assertItems []
@@ -93,6 +98,29 @@ assertPrompt desc p =
     void $ failTimeout [exon|prompt #{desc}|] $ consumeFind \case
       MenuEvent.PromptUpdated newP | newP == p -> pure True
       _ -> pure False
+
+assertPromptText ::
+  HasCallStack =>
+  Members [Hedgehog IO, Reader TestTimeout, Fail, Consume MenuEvent, Race] r =>
+  Text ->
+  PromptText ->
+  Sem r ()
+assertPromptText desc p =
+  withFrozenCallStack do
+    void $ failTimeout [exon|prompt #{desc}|] $ consumeFind \case
+      MenuEvent.PromptUpdated (Prompt _ _ newP) | newP == p -> pure True
+      _ -> pure False
+
+setPrompt ::
+  HasCallStack =>
+  Members [MenuTest i a, Hedgehog IO, Reader TestTimeout, Fail, Consume MenuEvent, Race] r =>
+  Text ->
+  PromptText ->
+  Sem r ()
+setPrompt desc p =
+  withFrozenCallStack do
+    MenuTest.setPrompt p
+    assertPromptText desc p
 
 currentItems ::
   HasCallStack =>

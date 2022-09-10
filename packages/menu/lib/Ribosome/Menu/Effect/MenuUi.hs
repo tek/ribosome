@@ -6,7 +6,7 @@ import Ribosome.Data.Mapping (MappingSpec)
 import Ribosome.Data.ScratchOptions (ScratchOptions)
 import Ribosome.Data.ScratchState (ScratchState)
 import Ribosome.Host.Data.RpcError (RpcError)
-import Ribosome.Menu.Data.Menu (Menu)
+import Ribosome.Menu.Data.RenderMenu (RenderMenu)
 import Ribosome.Menu.Prompt.Data.Prompt (Prompt)
 import Ribosome.Menu.Prompt.Data.PromptConfig (PromptConfig)
 import Ribosome.Menu.Prompt.Data.PromptEvent (PromptEvent)
@@ -14,7 +14,7 @@ import Ribosome.Menu.Prompt.Data.PromptEvent (PromptEvent)
 data MenuUi :: Effect where
   RenderPrompt :: Bool -> Prompt -> MenuUi m ()
   PromptEvent :: Prompt -> MenuUi m PromptEvent
-  Render :: Menu i -> MenuUi m ()
+  Render :: RenderMenu i -> MenuUi m ()
 
 makeSem ''MenuUi
 
@@ -24,13 +24,6 @@ withMenuUi ::
   InterpreterFor MenuUi r
 withMenuUi =
   pscoped
-
-data EchoMenu =
-  EchoMenu {
-    prompt :: PromptConfig,
-    scratch :: ScratchState
-  }
-  deriving stock (Eq, Show)
 
 data WindowMenu =
   WindowMenu {
@@ -54,9 +47,6 @@ data NvimMenuConfig =
 
 type NvimMenuUi res =
   PScoped NvimMenuConfig res MenuUi !! RpcError
-
-type EchoMenuUi =
-  NvimMenuUi EchoMenu
 
 type WindowMenuUi =
   NvimMenuUi WindowMenu
