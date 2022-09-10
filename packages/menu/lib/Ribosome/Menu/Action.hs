@@ -1,10 +1,14 @@
 module Ribosome.Menu.Action where
 
+import Lens.Micro.Mtl (view)
+
+import qualified Ribosome.Menu.Class.FilterEnum as FilterEnum
+import Ribosome.Menu.Class.FilterEnum (FilterEnum)
 import Ribosome.Menu.Combinators (numVisible, overEntries)
 import Ribosome.Menu.Data.CursorIndex (CursorIndex (CursorIndex))
 import qualified Ribosome.Menu.Data.MenuAction as MenuAction
 import Ribosome.Menu.Data.MenuAction (MenuAction)
-import Ribosome.Menu.Effect.MenuState (MenuState, itemsState, modifyCursor, readCursor, viewItems)
+import Ribosome.Menu.Effect.MenuState (MenuState, itemsState, modifyCursor, readCursor, readItems, viewItems)
 import Ribosome.Menu.Lens ((%=))
 import Ribosome.Menu.Prompt.Data.Prompt (Prompt)
 
@@ -102,3 +106,10 @@ menuChangeFilter ::
   MenuWidget f i r a
 menuChangeFilter f =
   act (MenuAction.ChangeFilter f)
+
+menuCycleFilter ::
+  FilterEnum f =>
+  MenuWidget f i r a
+menuCycleFilter = do
+  cur <- view #currentFilter <$> readItems
+  act (MenuAction.ChangeFilter (FilterEnum.cycle cur))

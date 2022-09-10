@@ -195,8 +195,10 @@ interpretMenuLoops =
           pureT =<< MenuState.readItems
         MenuLoop.UseItems f ->
           MenuState.useItems (mstateT f)
-        MenuLoop.ChangeFilter f ->
-          pureT =<< itemsState (changeFilter f)
+        MenuLoop.ChangeFilter f -> do
+          itemsState (changeFilter f)
+          Queue.write (RenderEvent "change filter")
+          unitT
         MenuLoop.StartPrompt ->
           pureT =<< tag @"prompt" signal
         MenuLoop.WaitPrompt ->

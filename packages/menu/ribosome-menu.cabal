@@ -20,6 +20,7 @@ library
   exposed-modules:
       Ribosome.Menu
       Ribosome.Menu.Action
+      Ribosome.Menu.Class.FilterEnum
       Ribosome.Menu.Combinators
       Ribosome.Menu.Data.CursorIndex
       Ribosome.Menu.Data.CursorLine

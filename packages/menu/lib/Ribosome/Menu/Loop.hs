@@ -32,6 +32,7 @@ import Ribosome.Menu.Prompt.Data.Prompt (Prompt)
 import Ribosome.Menu.Prompt.Data.PromptConfig (PromptConfig)
 import qualified Ribosome.Menu.Prompt.Data.PromptEvent as PromptEvent
 import Ribosome.Menu.Prompt.Data.PromptEvent (PromptEvent)
+import Ribosome.Menu.Class.FilterEnum (FilterEnum)
 
 interpretMenuStateMenuLoop ::
   Member (MenuLoop f i) r =>
@@ -170,6 +171,7 @@ menu items initialFilter (fmap raise2Under -> mappings) =
 nvimMenuLoop ::
   ∀ mres result f i r .
   Show f =>
+  FilterEnum f =>
   Members [NvimMenuUi mres, MenuLoop f i, Log, Stop RpcError] r =>
   PromptConfig ->
   ScratchOptions ->
@@ -187,6 +189,7 @@ nvimMenuLoop pconf options consumerMappings =
 nvimMenu ::
   ∀ mres result f i r .
   Show f =>
+  FilterEnum f =>
   Members [NvimMenuUi mres, MenuLoops f i, Log, Stop RpcError] r =>
   SerialT IO (MenuItem i) ->
   f ->
@@ -206,6 +209,7 @@ nvimMenu items initialFilter pconf options consumerMappings =
 staticNvimMenu ::
   ∀ mres result f i r .
   Show f =>
+  FilterEnum f =>
   Members [NvimMenuUi mres, MenuLoops f i, Log, Stop RpcError] r =>
   [MenuItem i] ->
   f ->

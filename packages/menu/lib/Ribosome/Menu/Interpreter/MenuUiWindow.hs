@@ -1,6 +1,14 @@
 module Ribosome.Menu.Interpreter.MenuUiWindow where
 
-import Conc (Consume, Gate, GatesIO, interpretAtomic, interpretEventsChan, interpretPScopedResumableWith, withAsyncGated_)
+import Conc (
+  Consume,
+  Gate,
+  GatesIO,
+  interpretAtomic,
+  interpretEventsChan,
+  interpretPScopedResumableWith,
+  withAsyncGated_,
+  )
 import Control.Lens.Regex.Text (group, match, regex)
 import qualified Data.Text as Text
 import Exon (exon)
