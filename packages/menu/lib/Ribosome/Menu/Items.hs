@@ -10,7 +10,6 @@ import Data.Sequence ((|>))
 import Prelude hiding (unify)
 
 import Ribosome.Menu.Data.CursorIndex (CursorIndex (CursorIndex))
-import qualified Ribosome.Menu.Data.Entry as Entry
 import Ribosome.Menu.Data.Entry (Entries, Entry)
 import Ribosome.Menu.Data.Menu (Menu)
 import qualified Ribosome.Menu.Data.MenuAction as MenuAction
@@ -135,8 +134,8 @@ popSelection curs initial =
   unify (popEntriesFallback check initial)
   where
     check i e =
-      justIf (Entry.selected e) (Right (i, Entry.index e)) <|>
-      justIf (curs == i) (Left (Entry.index e))
+      justIf (e ^. #selected) (Right (i, e ^. #index)) <|>
+      justIf (curs == i) (Left (e ^. #index))
     unify = \case
       Right (is, ent) ->
         (unzip is, ent)

@@ -36,7 +36,6 @@ import Ribosome.Menu.Action (
   menuCycle,
   menuIgnore,
   menuModify,
-  menuNavigate,
   menuOk,
   menuQuit,
   menuRender,

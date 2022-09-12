@@ -12,6 +12,9 @@ import Ribosome.Menu.Effect.MenuState (MenuState, itemsState, modifyCursor, read
 import Ribosome.Menu.Lens ((%=))
 import Ribosome.Menu.Prompt.Data.Prompt (Prompt)
 
+type MenuActionSem f r a =
+  Sem r (Maybe (MenuAction f a))
+
 type MenuSem f i r a =
   Sem (MenuState f i : Reader Prompt : r) a
 
@@ -53,25 +56,12 @@ cycleMenu offset = do
   count <- viewItems (to numVisible)
   modifyCursor \ current -> fromMaybe 0 ((current + fromIntegral offset) `mod` fromIntegral count)
 
-menuModify ::
-  MenuSem f i r () ->
-  MenuWidget f i r a
-menuModify action = do
-  action
-  menuRender
-
-menuNavigate ::
-  MenuSem f i r () ->
-  MenuWidget f i r a
-menuNavigate action = do
-  action
-  menuRender
-
 menuCycle ::
   Int ->
   MenuWidget f i r a
-menuCycle offset =
-  menuNavigate (cycleMenu offset)
+menuCycle offset = do
+  cycleMenu offset
+  menuRender
 
 toggleSelected ::
   MenuSem f i r ()
@@ -86,24 +76,26 @@ toggleSelected = do
 
 menuToggle ::
   MenuWidget f i r a
-menuToggle =
-  menuModify toggleSelected
+menuToggle = do
+  toggleSelected
+  menuRender
 
 menuToggleAll ::
   MenuWidget f i r a
-menuToggleAll =
-  menuModify $ itemsState do
+menuToggleAll = do
+  itemsState do
     #entries %= overEntries (const (#selected %~ not))
+  menuRender
 
 menuUpdatePrompt ::
   Prompt ->
-  MenuWidget f i r a
+  MenuActionSem f r a
 menuUpdatePrompt prompt =
   act (MenuAction.UpdatePrompt prompt)
 
 menuChangeFilter ::
   f ->
-  MenuWidget f i r a
+  MenuActionSem f r a
 menuChangeFilter f =
   act (MenuAction.ChangeFilter f)
 
