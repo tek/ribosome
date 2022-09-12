@@ -11,13 +11,13 @@ import Ribosome.Host.Data.RpcError (RpcError)
 import Ribosome.Menu.Action (MenuWidget, menuIgnore)
 import Ribosome.Menu.Combinators (sortEntries)
 import qualified Ribosome.Menu.Data.Entry as Entry
-import Ribosome.Menu.Data.Filter (Filter, fuzzyMono)
+import Ribosome.Menu.Data.Filter (Filter (Fuzzy))
 import qualified Ribosome.Menu.Data.MenuEvent as MenuEvent
-import Ribosome.Menu.Data.MenuEvent (MenuEvent (Rendered))
+import Ribosome.Menu.Data.MenuEvent (MenuEvent)
 import qualified Ribosome.Menu.Data.MenuItem as MenuItem
 import Ribosome.Menu.Effect.MenuFilter (MenuFilter)
 import qualified Ribosome.Menu.Effect.MenuTest as MenuTest
-import Ribosome.Menu.Effect.MenuTest (MenuTest, waitEvent)
+import Ribosome.Menu.Effect.MenuTest (MenuTest)
 import qualified Ribosome.Menu.Effect.MenuUi as MenuUi
 import Ribosome.Menu.Effect.MenuUi (MenuUi)
 import Ribosome.Menu.Interpreter.MenuFilter (defaultFilter)
@@ -81,9 +81,8 @@ promptTest sem =
   runSimpleTestMenu $
   testError $
   defaultFilter $
-  testMenuRender startInsert fuzzyMono (const (Just enqueuePrompt)) $
+  testMenuRender startInsert Fuzzy (const (Just enqueuePrompt)) $
   subscribe @MenuEvent do
-    waitEvent "initial render" Rendered
     assertItems []
     sem
 

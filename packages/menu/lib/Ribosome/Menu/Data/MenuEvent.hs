@@ -8,7 +8,7 @@ data QueryEvent =
   Reset
   |
   History
-  deriving stock (Eq, Show)
+  deriving stock (Eq, Show, Ord)
 
 data MenuEvent =
   Query QueryEvent
@@ -22,4 +22,4 @@ data MenuEvent =
   Rendered
   |
   Exhausted
-  deriving stock (Eq, Show)
+  deriving stock (Eq, Show, Ord)

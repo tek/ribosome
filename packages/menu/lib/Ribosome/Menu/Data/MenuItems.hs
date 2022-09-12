@@ -20,6 +20,7 @@ data MenuItems filter a =
     entries :: Entries a,
     history :: Map filter (Trie (Entries a)),
     itemCount :: Int,
+    entryCount :: Int,
     currentQuery :: MenuQuery,
     currentFilter :: filter
   }
@@ -29,10 +30,10 @@ instance (
     Default filter
   ) => Default (MenuItems filter a) where
   def =
-    MenuItems mempty mempty Map.empty 0 mempty def
+    MenuItems mempty mempty Map.empty 0 0 mempty def
 
 cons ::
   filter ->
   MenuItems filter a
 cons =
-  MenuItems mempty mempty Map.empty 0 mempty
+  MenuItems mempty mempty Map.empty 0 0 mempty

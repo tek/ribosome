@@ -25,12 +25,13 @@ import Prelude hiding (consume)
 import qualified Queue
 import Ribosome.Embed (EmbedStack, runEmbedPluginIO_)
 import Ribosome.Menu.Combinators (sortedEntries)
+import Ribosome.Menu.Data.Filter (Filter (Fuzzy))
 import Ribosome.Menu.Data.MenuEvent (MenuEvent (Exhausted, Query, Rendered), QueryEvent (Refined))
 import Ribosome.Menu.Data.MenuItem (simpleMenuItem)
 import Ribosome.Menu.Data.RenderEvent (RenderEvent)
 import Ribosome.Menu.Effect.MenuLoop (readItems)
 import Ribosome.Menu.Effect.MenuState (readMenu)
-import Ribosome.Menu.Interpreter.MenuFilter (interpretMenuFilterFuzzy)
+import Ribosome.Menu.Interpreter.MenuFilter (defaultFilter)
 import Ribosome.Menu.Interpreter.MenuLoop (interpretMenuLoops, interpretMenus, menuStream)
 import Ribosome.Menu.Interpreter.MenuState (interpretMenuState)
 import Ribosome.Menu.Interpreter.MenuStream (interpretMenuStream)
@@ -81,8 +82,8 @@ appendBench files =
   interpretSync $
   interpretGates $
   interpretEventsChan @MenuEvent $
-  interpretMenuFilterFuzzy @'True $
-  interpretMenuState $
+  defaultFilter $
+  interpretMenuState Fuzzy $
   interpretMenuStream do
     subscribe @MenuEvent $ subscribeAsync (menuStream items *> publish Rendered) do
       consumeElem Exhausted
@@ -119,10 +120,11 @@ menuBench ::
 menuBench files =
   interpretGate $
   interpretEventsChan @PromptEvent $
+  defaultFilter $
   interpretMenuUiNull $
   interpretMenus $
   interpretMenuLoops do
-    runMenu items $ interceptMenuUiPromptEvents do
+    runMenu items Fuzzy $ interceptMenuUiPromptEvents do
       subscribe @MenuEvent $ subscribeAsync (menuMaps defaultMappings *> signal) do
         consumeElem Exhausted
         publishPrompt 1 "a"

@@ -1,4 +1,8 @@
 module Ribosome.Menu.Class.FilterEnum where
 
-class FilterEnum a where
+class (
+    Show a,
+    Ord a
+  ) => FilterEnum a where
   cycle :: a -> a
+  describe :: a -> Text

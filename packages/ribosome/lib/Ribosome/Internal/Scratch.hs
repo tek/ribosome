@@ -20,6 +20,7 @@ import Ribosome.Data.ScratchId (ScratchId (ScratchId, unScratchId))
 import Ribosome.Data.ScratchOptions (ScratchOptions (ScratchOptions, filetype, name), focus, mappings, syntax)
 import qualified Ribosome.Data.ScratchState as ScratchState
 import Ribosome.Data.ScratchState (ScratchState (ScratchState))
+import qualified Ribosome.Host.Api.Data as Data
 import Ribosome.Host.Api.Data (Buffer, Tabpage, Window)
 import Ribosome.Host.Api.Effect (
   bufferGetName,
@@ -37,13 +38,13 @@ import Ribosome.Host.Api.Effect (
   windowGetBuffer,
   windowIsValid,
   windowSetHeight,
-  windowSetOption,
   windowSetWidth,
   )
 import Ribosome.Host.Class.Msgpack.Decode (fromMsgpack)
 import Ribosome.Host.Class.Msgpack.Encode (toMsgpack)
 import Ribosome.Host.Data.RpcError (RpcError)
 import Ribosome.Host.Data.RpcType (AutocmdId (AutocmdId), group)
+import qualified Ribosome.Host.Effect.Rpc as Rpc
 import Ribosome.Host.Effect.Rpc (Rpc)
 import Ribosome.Mapping (activateBufferMapping)
 import Ribosome.PluginName (pluginNamePascalCase)
@@ -104,13 +105,15 @@ createScratchWindow ::
   Sem r (Buffer, Window)
 createScratchWindow vertical wrap bottom float size = do
   (buffer, win) <- createWindow
-  windowSetOption win "wrap" (toMsgpack wrap)
-  windowSetOption win "number" (toMsgpack False)
-  windowSetOption win "cursorline" (toMsgpack True)
-  windowSetOption win "colorcolumn" (toMsgpack ("" :: Text))
-  windowSetOption win "foldmethod" (toMsgpack ("manual" :: Text))
-  windowSetOption win "conceallevel" (toMsgpack (2 :: Int))
-  windowSetOption win "concealcursor" (toMsgpack ("nvic" :: Text))
+  Rpc.sync do
+    Data.windowSetOption win "wrap" (toMsgpack wrap)
+    Data.windowSetOption win "number" (toMsgpack False)
+    Data.windowSetOption win "cursorline" (toMsgpack True)
+    Data.windowSetOption win "colorcolumn" (toMsgpack ("" :: Text))
+    Data.windowSetOption win "foldmethod" (toMsgpack ("manual" :: Text))
+    Data.windowSetOption win "conceallevel" (toMsgpack (2 :: Int))
+    Data.windowSetOption win "concealcursor" (toMsgpack ("nvic" :: Text))
+    pure ()
   pure (buffer, win)
   where
     createWindow =

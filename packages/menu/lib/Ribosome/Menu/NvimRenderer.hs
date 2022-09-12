@@ -2,21 +2,23 @@ module Ribosome.Menu.NvimRenderer where
 
 import qualified Data.IntMap.Strict as IntMap
 import qualified Data.Map.Strict as Map
-import Data.Monoid (Sum (Sum, getSum))
 import qualified Data.Sequence as Seq
-import qualified Data.Text as Text (cons, snoc)
+import qualified Data.Text as Text
+import Exon (exon)
 import qualified Polysemy.Log as Log
 
 import Ribosome.Api.Window (redraw, setLine, windowExec)
 import Ribosome.Data.ScratchState (ScratchState (buffer, window))
 import qualified Ribosome.Effect.Scratch as Scratch
 import Ribosome.Effect.Scratch (Scratch)
-import Ribosome.Host.Api.Effect (nvimBufIsLoaded)
+import Ribosome.Host.Api.Effect (nvimBufIsLoaded, windowGetWidth)
 import Ribosome.Host.Data.RpcError (RpcError)
 import Ribosome.Host.Effect.Rpc (Rpc)
 import Ribosome.Menu.Data.CursorIndex (CursorIndex (CursorIndex))
-import Ribosome.Menu.Data.Entry (Entries, Entry (Entry))
+import Ribosome.Menu.Data.Entry (Entries, Entry (Entry), entriesLength)
 import Ribosome.Menu.Data.MenuItem (MenuItem (MenuItem))
+import qualified Ribosome.Menu.Data.MenuStatus as MenuStatus
+import Ribosome.Menu.Data.MenuStatus (MenuStatus (MenuStatus))
 import Ribosome.Menu.Data.MenuView (MenuView (MenuView))
 import Ribosome.Menu.Data.NvimMenuState (NvimMenuState, botIndex, cursorLine, topIndex)
 import Ribosome.Menu.Data.RenderMenu (RenderMenu)
@@ -150,7 +152,7 @@ updateMenuState ::
 updateMenuState scratchMax = do
   oldIndexes <- use #indexes
   newCursor <- view #cursor
-  count <- view (#entries . to (getSum . foldMap (Sum . Seq.length)))
+  count <- view (#entries . to entriesLength)
   #view %= computeView newCursor (min count scratchMax) count
   #cursorIndex .= newCursor
   visible <- newEntrySlice
@@ -190,14 +192,38 @@ updateMenu scratch =
     win =
       window scratch
 
+updateStatus ::
+  Members [Reader (RenderMenu i), Scratch !! RpcError, Rpc, Stop RpcError] r =>
+  ScratchState ->
+  Sem r ()
+updateStatus scr = do
+  width <- windowGetWidth (scr ^. #window)
+  view #status >>= \ MenuStatus {filter = f, ..} -> do
+    let
+      filterSegment =
+        [exon|🔎 #{f}|]
+      countSegment =
+        [exon|#{show (cursor + 1)}/#{show entryCount}/#{show itemCount}|]
+      gutter =
+        width - (Text.length filterSegment + Text.length countSegment) - 2
+      segments =
+        if gutter <= 0
+        then countSegment
+        else filterSegment <> Text.replicate gutter " " <> countSegment
+    void $ restop $ Scratch.update (scr ^. #id) ([segments] :: [Text])
+
 renderNvimMenu ::
   ∀ i r .
   Member (AtomicState NvimMenuState) r =>
   Members [Reader (RenderMenu i), Rpc !! RpcError, Scratch !! RpcError, Log, Stop RpcError, Embed IO] r =>
   ScratchState ->
+  Maybe ScratchState ->
   Sem r ()
-renderNvimMenu scratch =
+renderNvimMenu itemsScratch statusScratch =
   restop @_ @Rpc $ restop @_ @Scratch do
-    whenM (nvimBufIsLoaded (buffer scratch)) do
-      updateMenu scratch
+    whenM (nvimBufIsLoaded (buffer itemsScratch)) do
+      updateMenu itemsScratch
+      for_ statusScratch \ s ->
+        whenM (nvimBufIsLoaded (s ^. #buffer)) do
+          updateStatus s
       redraw

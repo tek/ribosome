@@ -4,4 +4,4 @@ data PromptMode =
   Insert
   |
   Normal
-  deriving stock (Eq, Show)
+  deriving stock (Eq, Show, Ord)

@@ -17,7 +17,7 @@ instance Default PromptChange where
 
 newtype PromptText =
   PromptText { unPromptText :: Text }
-  deriving stock (Eq, Show, Generic)
+  deriving stock (Eq, Show, Ord, Generic)
   deriving newtype (IsString)
 
 data Prompt =
@@ -26,7 +26,7 @@ data Prompt =
      state :: PromptMode,
      text :: PromptText
   }
-  deriving stock (Eq, Show, Generic)
+  deriving stock (Eq, Show, Ord, Generic)
 
 instance Default Prompt where
   def =

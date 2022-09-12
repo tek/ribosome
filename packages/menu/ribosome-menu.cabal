@@ -33,12 +33,14 @@ library
       Ribosome.Menu.Data.MenuItem
       Ribosome.Menu.Data.MenuItems
       Ribosome.Menu.Data.MenuResult
+      Ribosome.Menu.Data.MenuStatus
       Ribosome.Menu.Data.MenuView
       Ribosome.Menu.Data.NvimMenuState
       Ribosome.Menu.Data.PromptAction
       Ribosome.Menu.Data.QuitReason
       Ribosome.Menu.Data.RenderEvent
       Ribosome.Menu.Data.RenderMenu
+      Ribosome.Menu.Data.WindowConfig
       Ribosome.Menu.Effect.MenuFilter
       Ribosome.Menu.Effect.MenuLoop
       Ribosome.Menu.Effect.MenuState
@@ -164,7 +166,6 @@ library
     , ribosome
     , ribosome-host
     , streamly
-    , transformers
   mixins:
       base hiding (Prelude)
     , prelate (Prelate as Prelude)

@@ -6,7 +6,7 @@ import Data.Sequence ((|>))
 import qualified Data.Trie as Trie
 import Lens.Micro.Mtl (view)
 
-import Ribosome.Menu.Data.Entry (Entries, Entry)
+import Ribosome.Menu.Data.Entry (Entries, Entry, entriesLength)
 import Ribosome.Menu.Data.MenuItems (MenuItems, MenuQuery (MenuQuery))
 import Ribosome.Menu.Lens (use, (%=), (.=))
 
@@ -20,6 +20,16 @@ addHistory = do
   old <- use #entries
   #history . ix filt %= Trie.insert (encodeUtf8 oldQuery) old
 
+updateEntries ::
+  Member (State (MenuItems filter i)) r =>
+  MenuQuery ->
+  Entries i ->
+  Sem r ()
+updateEntries newQuery new = do
+  #entries .= new
+  #currentQuery .= newQuery
+  #entryCount .= entriesLength new
+
 push ::
   Ord filter =>
   Member (State (MenuItems filter i)) r =>
@@ -28,8 +38,7 @@ push ::
   Sem r ()
 push newQuery new = do
   addHistory
-  #entries .= new
-  #currentQuery .= newQuery
+  updateEntries newQuery new
 
 numVisible ::
   MenuItems filter i ->

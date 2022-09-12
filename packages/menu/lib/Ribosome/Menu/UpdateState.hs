@@ -6,8 +6,8 @@ import qualified Data.Trie as Trie
 import Exon (exon)
 import qualified Log
 
-import Ribosome.Menu.Combinators (addHistory, push)
-import Ribosome.Menu.Data.Entry (Entries)
+import Ribosome.Menu.Combinators (addHistory, push, updateEntries)
+import Ribosome.Menu.Data.Entry (Entries, entriesLength)
 import qualified Ribosome.Menu.Data.MenuEvent as MenuEvent
 import Ribosome.Menu.Data.MenuEvent (MenuEvent, QueryEvent (History, Refined, Reset))
 import Ribosome.Menu.Data.MenuItem (MenuItem)
@@ -37,8 +37,7 @@ resetFiltered query = do
   filt <- use #currentFilter
   its <- use #items
   new <- MenuFilter.initial filt query its
-  #entries .= new
-  #currentQuery .= query
+  updateEntries query new
   pure Reset
 
 popFiltered ::
@@ -51,12 +50,11 @@ popFiltered query@(MenuQuery (encodeUtf8 -> queryBs)) = do
   maybe (resetFiltered query) matching =<< use (#history . ix filt . to (`Trie.match` queryBs))
   where
     matching = \case
-      (_, f, "") -> do
-        #entries .= f
-        #currentQuery .= query
+      (_, ents, "") -> do
+        updateEntries query ents
         pure History
-      (_, f, _) ->
-        refineFiltered query f
+      (_, ents, _) ->
+        refineFiltered query ents
 
 -- TODO why does this not use popFiltered when entries are empty?
 -- Also why does it not skip the action instead? Is there a situation in which there might have been added new items
@@ -97,6 +95,7 @@ insertItems new = do
   query <- use #currentQuery
   ents <- MenuFilter.initial filt query newI
   #entries %= IntMap.unionWith (<>) ents
+  #entryCount += entriesLength ents
   unless (null ents) do
     #history . ix filt .= mempty
 

@@ -32,6 +32,7 @@ import Ribosome.Host.Effect.MState (ScopedMState)
 import Ribosome.Host.Effect.Rpc (Rpc)
 import Ribosome.Host.Interpret (type (|>))
 import Ribosome.Host.Interpreter.MState (interpretMStates)
+import Ribosome.Menu.Class.FilterEnum (FilterEnum)
 import Ribosome.Menu.Data.Filter (Filter)
 import Ribosome.Menu.Data.Menu (Menu)
 import Ribosome.Menu.Data.MenuConfig (MenuConfig, menuSync)
@@ -171,8 +172,7 @@ menuLoopScope items initialFilter use =
 
 interpretMenuLoops ::
   ∀ i f r .
-  Ord f =>
-  Show f =>
+  FilterEnum f =>
   Members MenuLoopIO r =>
   Members MenuLoopDeps r =>
   Member (MenuFilter f) r =>
@@ -220,8 +220,7 @@ type NvimMenuIO eres =
   [Settings !! SettingError, Rpc !! RpcError, Scratch !! RpcError, EventConsumer eres Event, Final IO]
 
 interpretNvimMenu ::
-  Ord f =>
-  Show f =>
+  FilterEnum f =>
   Members MenuLoopIO r =>
   Member (MenuFilter f) r =>
   Members (NvimMenuIO eres) r =>
@@ -231,8 +230,7 @@ interpretNvimMenu =
   interpretMenuLoops
 
 promptInputFilter ::
-  Ord f =>
-  Show f =>
+  FilterEnum f =>
   Members MenuLoopIO r =>
   Members (NvimMenuIO eres) r =>
   Member (MenuFilter f) r =>

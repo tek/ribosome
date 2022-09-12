@@ -17,6 +17,7 @@ data MenuTest i a :: Effect where
   SendPromptEvent :: Bool -> PromptEvent -> MenuTest i a m ()
   WaitEventPred :: Text -> (MenuEvent -> Bool) -> MenuTest i a m ()
   WaitEvent :: Text -> MenuEvent -> MenuTest i a m ()
+  WaitEvents :: Text -> Set MenuEvent -> MenuTest i a m ()
   Result :: MenuTest i a m (MenuResult a)
   NextEvent :: MenuTest i a m MenuEvent
   Quit :: MenuTest i a m ()

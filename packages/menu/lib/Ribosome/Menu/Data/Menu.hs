@@ -20,9 +20,10 @@ consMenu ::
   Entries i ->
   Map filter (Trie (Entries i)) ->
   Int ->
+  Int ->
   MenuQuery ->
   filter ->
   CursorIndex ->
   Menu filter i
-consMenu it en hist cnt curr currF curs =
-  Menu (MenuItems it en hist cnt curr currF) curs
+consMenu it en hist cnt ecnt curr currF curs =
+  Menu (MenuItems it en hist cnt ecnt curr currF) curs

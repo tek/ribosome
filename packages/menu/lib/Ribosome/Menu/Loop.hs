@@ -10,9 +10,9 @@ import Streamly.Prelude (SerialT)
 
 import qualified Ribosome.Data.Mapping as Mapping
 import Ribosome.Data.Mapping (MappingLhs (MappingLhs))
-import Ribosome.Data.ScratchOptions (ScratchOptions)
 import Ribosome.Host.Data.RpcError (RpcError)
 import Ribosome.Menu.Action (MenuWidget)
+import Ribosome.Menu.Class.FilterEnum (FilterEnum)
 import qualified Ribosome.Menu.Data.MenuAction as MenuAction
 import Ribosome.Menu.Data.MenuAction (MenuAction)
 import Ribosome.Menu.Data.MenuItem (MenuItem)
@@ -20,19 +20,18 @@ import qualified Ribosome.Menu.Data.MenuResult as MenuResult
 import Ribosome.Menu.Data.MenuResult (MenuResult)
 import qualified Ribosome.Menu.Data.PromptAction as PromptAction
 import Ribosome.Menu.Data.PromptAction (PromptAction)
+import Ribosome.Menu.Data.WindowConfig (WindowOptions, toWindowConfig)
 import qualified Ribosome.Menu.Effect.MenuLoop as MenuLoop
 import Ribosome.Menu.Effect.MenuLoop (MenuLoop, MenuLoops)
 import qualified Ribosome.Menu.Effect.MenuState as MenuState
 import Ribosome.Menu.Effect.MenuState (MenuState)
 import qualified Ribosome.Menu.Effect.MenuUi as MenuUi
-import Ribosome.Menu.Effect.MenuUi (MenuUi, NvimMenuConfig (NvimMenuConfig), NvimMenuUi, withMenuUi)
+import Ribosome.Menu.Effect.MenuUi (MenuUi, NvimMenuUi, withMenuUi)
 import Ribosome.Menu.Interpreter.MenuState (mstateT)
 import Ribosome.Menu.Mappings (Mappings, defaultMappings)
 import Ribosome.Menu.Prompt.Data.Prompt (Prompt)
-import Ribosome.Menu.Prompt.Data.PromptConfig (PromptConfig)
 import qualified Ribosome.Menu.Prompt.Data.PromptEvent as PromptEvent
 import Ribosome.Menu.Prompt.Data.PromptEvent (PromptEvent)
-import Ribosome.Menu.Class.FilterEnum (FilterEnum)
 
 interpretMenuStateMenuLoop ::
   Member (MenuLoop f i) r =>
@@ -168,53 +167,44 @@ menu ::
 menu items initialFilter (fmap raise2Under -> mappings) =
   runMenu items initialFilter (menuMaps mappings)
 
+-- TODO MenuUi is executed async for Render, so its errors are lost. Resumable should be caught by the loop
 nvimMenuLoop ::
   ∀ mres result f i r .
-  Show f =>
   FilterEnum f =>
   Members [NvimMenuUi mres, MenuLoop f i, Log, Stop RpcError] r =>
-  PromptConfig ->
-  ScratchOptions ->
+  WindowOptions ->
   Mappings f i r result ->
   Sem r (MenuResult result)
-nvimMenuLoop pconf options consumerMappings =
-  restop @_ @(PScoped _ _ MenuUi) $ withMenuUi (NvimMenuConfig pconf options maps) do
+nvimMenuLoop options consumerMappings =
+  restop @_ @(PScoped _ _ MenuUi) $ withMenuUi (toWindowConfig options mappings) do
     menuMaps (insertAt @2 <$> mappings)
   where
-    maps =
-      Map.keys mappings
     mappings =
       defaultMappings <> consumerMappings
 
 nvimMenu ::
   ∀ mres result f i r .
-  Show f =>
   FilterEnum f =>
   Members [NvimMenuUi mres, MenuLoops f i, Log, Stop RpcError] r =>
   SerialT IO (MenuItem i) ->
   f ->
-  PromptConfig ->
-  ScratchOptions ->
+  WindowOptions ->
   Mappings f i r result ->
   Sem r (MenuResult result)
-nvimMenu items initialFilter pconf options consumerMappings =
-  restop @_ @(PScoped _ _ MenuUi) $ withMenuUi (NvimMenuConfig pconf options maps) do
+nvimMenu items initialFilter options consumerMappings =
+  restop @_ @(PScoped _ _ MenuUi) $ withMenuUi (toWindowConfig options mappings) do
     menu items initialFilter (insertAt @2 <$> mappings)
   where
-    maps =
-      Map.keys mappings
     mappings =
       defaultMappings <> consumerMappings
 
 staticNvimMenu ::
   ∀ mres result f i r .
-  Show f =>
   FilterEnum f =>
   Members [NvimMenuUi mres, MenuLoops f i, Log, Stop RpcError] r =>
   [MenuItem i] ->
   f ->
-  PromptConfig ->
-  ScratchOptions ->
+  WindowOptions ->
   Mappings f i r result ->
   Sem r (MenuResult result)
 staticNvimMenu items =

@@ -9,19 +9,31 @@ import Polysemy.Test (UnitTest, assertEq, runTestAuto, unitTest, (===))
 import Test.Tasty (TestTree, testGroup)
 
 import Ribosome.Host.Test.Run (runTest, runUnitTest)
-import Ribosome.Menu (MenuEvent (Query), QueryEvent (Refined, Reset))
 import Ribosome.Menu.Action (MenuWidget, menuChangeFilter, menuQuit, menuSuccess)
 import Ribosome.Menu.Combinators (sortEntries, sortedEntries)
 import qualified Ribosome.Menu.Data.Entry as Entry
 import Ribosome.Menu.Data.Entry (Entries, Entry (Entry), simpleIntEntries)
-import Ribosome.Menu.Data.Filter (Filter (Substring), fuzzyMono)
+import Ribosome.Menu.Data.Filter (Filter (Fuzzy, Prefix, Substring))
 import Ribosome.Menu.Data.Menu (consMenu)
+import Ribosome.Menu.Data.MenuEvent (
+  MenuEvent (Query),
+  QueryEvent (Refined, Reset),
+  )
 import qualified Ribosome.Menu.Data.MenuItem as MenuItem
 import Ribosome.Menu.Data.MenuItem (Items, simpleMenuItem)
 import Ribosome.Menu.Data.MenuResult (MenuResult (Success))
 import Ribosome.Menu.Effect.MenuLoop (readItems)
 import Ribosome.Menu.Effect.MenuState (menuState)
-import Ribosome.Menu.Effect.MenuTest (quit, result, sendMappingWait, sendPrompt, sendPromptEvent, sendStaticItems, waitEvent, sendMapping)
+import Ribosome.Menu.Effect.MenuTest (
+  quit,
+  result,
+  sendMapping,
+  sendMappingWait,
+  sendPrompt,
+  sendPromptEvent,
+  sendStaticItems,
+  waitEvent,
+  )
 import Ribosome.Menu.Interpreter.MenuFilter (defaultFilter)
 import Ribosome.Menu.ItemLens (items, selected', selectedOnly, unselected)
 import Ribosome.Menu.Items (deleteSelected, popSelection)
@@ -35,6 +47,7 @@ import Ribosome.Menu.Prompt.Data.PromptMode (PromptMode (Insert))
 import Ribosome.Menu.Test.Menu (assertItems, promptTest, setPrompt)
 import Ribosome.Menu.Test.Run (unitTestTimes)
 import Ribosome.Test.Error (testError)
+import Ribosome.Test.Wait (assertWait)
 
 items1 :: [Text]
 items1 =
@@ -87,7 +100,7 @@ test_pureMenuExecute :: UnitTest
 test_pureMenuExecute = do
   runUnitTest do
     runTestMenu def $ defaultFilter do
-      r <- testError $ testMenu def fuzzyMono [("<cr>", exec)] do
+      r <- testError $ testMenu def Fuzzy [("<cr>", exec)] do
         sendStaticItems "exec initial" (simpleMenuItem () <$> items3)
         sendMappingWait "<cr>"
         result
@@ -118,7 +131,7 @@ test_menuMultiMark :: UnitTest
 test_menuMultiMark = do
   runTest do
     runTestMenu startInsert $ defaultFilter do
-      r <- testError $ testMenu def fuzzyMono (defaultMappings <> [("<cr>", execMulti)]) do
+      r <- testError $ testMenu def Fuzzy (defaultMappings <> [("<cr>", execMulti)]) do
         sendStaticItems "initial" (simpleMenuItem () <$> itemsMulti)
         traverse_ sendMapping charsMulti
         result
@@ -128,7 +141,7 @@ itemsChangeFilter :: [Text]
 itemsChangeFilter =
   [
     "xaxbx",
-    "abc",
+    "xabc",
     "xaxbxcx",
     "ab"
   ]
@@ -138,29 +151,35 @@ test_changeFilter =
   runTest do
     runTestMenu startInsert $ defaultFilter do
       testError $ testStaticMenu its def Substring maps do
-        waitEvent "initial refined" (Query Refined)
         sendPrompt (Prompt 1 Insert "abc")
         waitEvent "substring refined" (Query Refined)
-        assertCurrent ["abc"]
+        awaitCurrent ["xabc"]
         sendPromptEvent False (Mapping "f")
         waitEvent "fuzzy reset" (Query Reset)
-        assertCurrent ["abc", "xaxbxcx"]
+        awaitCurrent ["xabc", "xaxbxcx"]
         sendPrompt (Prompt 1 Insert "ab")
         waitEvent "delete c reset" (Query Reset)
-        assertCurrent itemsChangeFilter
+        awaitCurrent itemsChangeFilter
         sendPromptEvent False (Mapping "s")
         waitEvent "substring reset" (Query Reset)
-        assertCurrent ["abc", "ab"]
+        awaitCurrent ["xabc", "ab"]
+        sendPromptEvent False (Mapping "p")
+        waitEvent "prefix reset" (Query Reset)
+        awaitCurrent ["ab"]
         quit
   where
-    assertCurrent target =
-      assertEq target =<< current
+    awaitCurrent target =
+      assertWait current (assertEq target)
     current =
       toListOf (sortedEntries . each . #item . #text) <$> readItems
     its =
       simpleMenuItem () <$> itemsChangeFilter
     maps =
-      defaultMappings <> [("f", menuChangeFilter fuzzyMono), ("s", menuChangeFilter Substring)]
+      defaultMappings <> [
+        ("f", menuChangeFilter Fuzzy),
+        ("s", menuChangeFilter Substring),
+        ("p", menuChangeFilter Prefix)
+      ]
 
 charsToggle :: [PromptEvent]
 charsToggle =
@@ -190,7 +209,7 @@ test_menuToggle :: UnitTest
 test_menuToggle = do
   runUnitTest do
     runTestMenu startInsert $ defaultFilter do
-      r <- testError $ testMenu startInsert fuzzyMono (defaultMappings <> [("<cr>", execToggle)]) do
+      r <- testError $ testMenu startInsert Fuzzy (defaultMappings <> [("<cr>", execToggle)]) do
         sendStaticItems "initial" (simpleMenuItem () <$> itemsToggle)
         traverse_ (sendPromptEvent True) charsToggle
         result
@@ -238,7 +257,7 @@ test_menuDeleteSelected = do
       targetFoc =
         ["0", "1", "2", "3", "5", "6", "7"]
       menu ent =
-        consMenu its ent mempty 7 mempty fuzzyMono 3
+        consMenu its ent mempty 7 0 mempty Fuzzy 3
       its =
         IntMap.fromList [(n, simpleMenuItem () (show n)) | n <- [0..7]]
       entriesSel =
@@ -265,7 +284,7 @@ test_menuUnselectedCursor =
     [2, 4] === (MenuItem.meta <$> MTL.evalState (Lens.use unselected) menu)
   where
     menu =
-      consMenu mempty entries mempty 0 mempty fuzzyMono 1
+      consMenu mempty entries mempty 0 0 mempty Fuzzy 1
     entries =
       simpleIntEntries [2, 3, 4]
 
@@ -275,7 +294,7 @@ test_menu =
     unitTestTimes 100 "filter items" test_pureMenuFilter,
     unitTestTimes 100 "execute an action" test_pureMenuExecute,
     unitTestTimes 100 "mark multiple items" test_menuMultiMark,
-    unitTest "change filter" test_changeFilter,
+    unitTestTimes 100 "change filter" test_changeFilter,
     -- TODO flaky
     -- unitTestTimes 100 "toggle selection items" test_menuToggle,
     unitTest "delete selected" test_menuDeleteSelected,

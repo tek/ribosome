@@ -2,6 +2,7 @@ module Ribosome.Menu.MenuTest where
 
 import Conc (ChanConsumer, Consume, GatesIO, Restoration, timeout_, withAsync_)
 import qualified Data.Map.Strict as Map
+import qualified Data.Text as Text
 import qualified Log
 import qualified Streamly.Prelude as Stream
 import Streamly.Prelude (SerialT)
@@ -19,12 +20,14 @@ import Ribosome.Host.Data.RpcError (RpcError)
 import Ribosome.Host.Effect.Rpc (Rpc)
 import Ribosome.Host.Interpret (type (|>))
 import Ribosome.Menu.Action (MenuWidget)
-import Ribosome.Menu.Data.MenuEvent (MenuEvent)
+import Ribosome.Menu.Class.FilterEnum (FilterEnum)
+import Ribosome.Menu.Data.MenuEvent (MenuEvent (Query))
 import Ribosome.Menu.Data.MenuItem (MenuItem)
+import Ribosome.Menu.Data.WindowConfig (WindowConfig (WindowConfig))
 import Ribosome.Menu.Effect.MenuFilter (MenuFilter)
 import Ribosome.Menu.Effect.MenuLoop (MenuLoop, MenuLoops, waitPrompt)
-import Ribosome.Menu.Effect.MenuTest (MenuTest, itemsDone)
-import Ribosome.Menu.Effect.MenuUi (MenuUi, NvimMenuConfig (NvimMenuConfig), withMenuUi)
+import Ribosome.Menu.Effect.MenuTest (MenuTest, waitEventPred)
+import Ribosome.Menu.Effect.MenuUi (MenuUi, withMenuUi)
 import Ribosome.Menu.Interpreter.MenuLoop (MenuLoopDeps, interpretMenuLoopDeps, interpretMenuLoops)
 import Ribosome.Menu.Interpreter.MenuTest (
   MenuTestResources,
@@ -112,12 +115,14 @@ withEventLog ::
   Sem r a ->
   Sem r a
 withEventLog =
-  flip onException (Log.crit . show =<< atomicGet)
+  flip onException (Log.crit . format =<< atomicGet)
+  where
+    format evs =
+      Text.unlines ("wait events:" : (("  " <>) . show <$> reverse evs))
 
 testMenuRender ::
-  Ord f =>
-  Show f =>
   Show i =>
+  FilterEnum f =>
   Members MenuTestIOStack r =>
   Members (MenuTestResources i result) r =>
   Members [MenuFilter f, Reader (SerialT IO (MenuItem i)), MenuUi, Stop RpcError] r =>
@@ -131,12 +136,14 @@ testMenuRender pconf initialFilter mappings sem = do
   interpretMenuLoopDeps $ interpretMenuLoops $ interpretMenuTest pconf $ runMenu items initialFilter $ withEventLog do
     withAsync_ (Sync.putWait timeout =<< menuLoop mappings) do
       timeout_ (fail "prompt didn't start") timeout waitPrompt
+      waitEventPred "initial prompt update" \case
+        Query _ -> True
+        _ -> False
       sem
 
 testMenu ::
-  Ord f =>
-  Show f =>
   Show i =>
+  FilterEnum f =>
   Members MenuTestIOStack r =>
   Members [MenuFilter f, Reader (SerialT IO (MenuItem i))] r =>
   Members (MenuTestDeps i result) r =>
@@ -152,9 +159,8 @@ testMenu pconf initialFilter maps =
   testMenuRender pconf initialFilter (lookupMapping maps)
 
 testStaticMenu ::
-  Ord f =>
-  Show f =>
   Show i =>
+  FilterEnum f =>
   Members MenuTestIOStack r =>
   Member (MenuFilter f) r =>
   Members (MenuTestDeps i result) r =>
@@ -163,17 +169,14 @@ testStaticMenu ::
   f ->
   Mappings f i (MenuRenderEffects f i result ++ MenuUi : MenuTestStack i result ++ r) result ->
   InterpretersFor (MenuTestEffects f i result ++ MenuTestStack i result) r
-testStaticMenu items pconf initialFilter maps sem =
-  runStaticTestMenu pconf items $
-  testMenu pconf initialFilter maps do
-    itemsDone "testStaticMenu"
-    sem
+testStaticMenu items pconf initialFilter maps =
+  runStaticTestMenu pconf items .
+  testMenu pconf initialFilter maps
 
 testNvimMenu ::
   ∀ i result f r .
-  Ord f =>
-  Show f =>
   Show i =>
+  FilterEnum f =>
   Member (Reader (SerialT IO (MenuItem i))) r =>
   Members MenuTestIOStack r =>
   Members (MenuTestDeps i result) r =>
@@ -186,15 +189,14 @@ testNvimMenu ::
 testNvimMenu pconf initialFilter options maps =
   interpretMenuUiWindow .
   resumeReportFail .
-  withMenuUi (NvimMenuConfig pconf options (Map.keys maps)) .
+  withMenuUi (WindowConfig pconf options (Just def) (Map.keys maps)) .
   raiseUnder2 .
   testMenuRender pconf initialFilter (lookupMapping maps)
 
 testStaticNvimMenu ::
   ∀ i result f r .
-  Ord f =>
-  Show f =>
   Show i =>
+  FilterEnum f =>
   Members MenuTestIOStack r =>
   Members [ChanConsumer Event, MenuFilter f, Rpc, Rpc !! RpcError, Settings !! SettingError, Scratch !! RpcError, Stop RpcError] r =>
   [MenuItem i] ->

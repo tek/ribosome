@@ -6,7 +6,7 @@ data MenuItem a =
   MenuItem {
     meta :: a,
     text :: Text,
-    truncated :: Text
+    render :: Text
   }
   deriving stock (Eq, Show, Ord, Functor, Generic)
 

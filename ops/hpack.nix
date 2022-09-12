@@ -218,7 +218,6 @@ in {
       "ribosome"
       "ribosome-host"
       "streamly"
-      "transformers"
     ];
     tests.ribosome-menu-unit = exe "ribosome-menu" "test" {
       dependencies = [

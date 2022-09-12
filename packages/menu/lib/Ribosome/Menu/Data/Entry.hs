@@ -1,9 +1,10 @@
 module Ribosome.Menu.Data.Entry where
 
 import qualified Data.IntMap.Strict as IntMap
+import Data.Semigroup (Sum (Sum, getSum))
 
 import Ribosome.Host.Data.Tuple (dup)
-import Ribosome.Menu.Data.MenuItem (MenuItem (truncated), simpleMenuItem)
+import Ribosome.Menu.Data.MenuItem (MenuItem (render), simpleMenuItem)
 
 data Entry a =
   Entry {
@@ -15,7 +16,7 @@ data Entry a =
 
 instance Eq a => Ord (Entry a) where
   compare =
-    comparing index <> comparing (truncated . item)
+    comparing index <> comparing (render . item)
 
 type Entries a =
   IntMap (Seq (Entry a))
@@ -39,3 +40,7 @@ intEntries nums =
 simpleIntEntries :: [Int] -> Entries Int
 simpleIntEntries =
   intEntries . fmap dup
+
+entriesLength :: Entries a -> Int
+entriesLength =
+  getSum . foldMap (Sum . length)

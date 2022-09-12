@@ -12,7 +12,7 @@ import Ribosome.Menu.Action (MenuWidget, menuOk, menuSuccess)
 import Ribosome.Menu.Combinators (sortEntries)
 import Ribosome.Menu.Data.CursorIndex (CursorIndex (CursorIndex))
 import Ribosome.Menu.Data.Entry (intEntries)
-import Ribosome.Menu.Data.Filter (Filter, fuzzyMono)
+import Ribosome.Menu.Data.Filter (Filter (Fuzzy))
 import Ribosome.Menu.Data.MenuEvent (MenuEvent (Rendered))
 import Ribosome.Menu.Data.MenuItem (MenuItem, simpleMenuItem)
 import qualified Ribosome.Menu.Data.MenuResult as MenuResult
@@ -78,8 +78,13 @@ mappings =
 test_pureInput :: UnitTest
 test_pureInput =
   testEmbed_ $ promptInput pureEvents do
-    result <- nvimMenu (menuItems items) fuzzyMono startInsert (menuScratchSized 4) mappings
+    result <- nvimMenu (menuItems items) Fuzzy opts mappings
     MenuResult.Success "item4" === result
+  where
+    opts =
+      def
+      & #prompt .~ startInsert
+      & #items .~ menuScratchSized 4
 
 nativeChars :: [SyncChar]
 nativeChars =
@@ -91,32 +96,43 @@ nativeWindowChars =
 
 test_nativeWindow :: UnitTest
 test_nativeWindow =
-  testEmbed_ $ defaultFilter $ interpretNvimMenu $ runMenu (menuItems items) fuzzyMono do
+  testEmbed_ $ defaultFilter $ interpretNvimMenu $ runMenu (menuItems items) Fuzzy do
     result <- withPromptInputSync nativeWindowChars do
-      nvimMenuLoop @WindowMenu startInsert (menuScratchSized 4) mappings
+      nvimMenuLoop @WindowMenu opts mappings
     MenuResult.Success "item4" === result
+  where
+    opts =
+      def
+      & #prompt .~ startInsert
+      & #items .~ menuScratchSized 4
 
 test_interruptWindow :: UnitTest
 test_interruptWindow =
   testEmbed_ $ defaultFilter do
-    result <- interpretNvimMenu $ runMenu (menuItems items) fuzzyMono do
+    result <- interpretNvimMenu $ runMenu (menuItems items) Fuzzy do
       withPromptInputSync ["i", "<c-c>", "<cr>"] do
-        nvimMenuLoop @WindowMenu startInsert def mappings
+        nvimMenuLoop @WindowMenu opts mappings
     MenuResult.Aborted === result
     assertEq 1 . length =<< vimGetWindows
+  where
+    opts =
+      def & #prompt .~ startInsert
 
 test_windowOnlyInsert :: UnitTest
 test_windowOnlyInsert =
   testEmbed_ $ defaultFilter do
-    result <- interpretNvimMenu $ runMenu (menuItems items) fuzzyMono do
+    result <- interpretNvimMenu $ runMenu (menuItems items) Fuzzy do
       withPromptInputSync ["i", nosync "<esc>", "<cr>"] do
-        nvimMenuLoop @WindowMenu onlyInsert def mappings
+        nvimMenuLoop @WindowMenu opts mappings
     MenuResult.Aborted === result
+  where
+    opts =
+      def & #prompt .~ onlyInsert
 
 test_quit :: UnitTest
 test_quit =
   testEmbed_ $ defaultFilter do
-    result <- testStaticNvimMenu @() @Text [] def fuzzyMono (menuScratchSized 4) defaultMappings do
+    result <- testStaticNvimMenu @() @Text [] def Fuzzy (menuScratchSized 4) defaultMappings do
       sendMapping "<esc>"
       MenuTest.result
     MenuResult.Aborted === result
@@ -125,7 +141,7 @@ test_quit =
 test_scrollUp :: UnitTest
 test_scrollUp =
   testEmbed_ $ defaultFilter do
-    MenuResult.Success a <- testStaticNvimMenu its def fuzzyMono (menuScratch & #maxSize ?~ 4) maps do
+    MenuResult.Success a <- testStaticNvimMenu its def Fuzzy (menuScratch & #maxSize ?~ 4) maps do
       waitEvent "initial render" Rendered
       traverse_ sendMappingWait (replicate 20 "k" <> ["<cr>"])
       MenuTest.result
@@ -134,8 +150,8 @@ test_scrollUp =
     maps =
       defaultMappings <> [("<cr>", content)]
     content = do
-      [_, mb, _] <- vimGetBuffers
-      menuSuccess =<< bufferContent mb
+      [_, itemsBuffer, _, _] <- vimGetBuffers
+      menuSuccess =<< bufferContent itemsBuffer
     its =
       staticMenuItems (replicate 100 "item")
 

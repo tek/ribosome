@@ -4,6 +4,7 @@ module Ribosome.Menu (
   module Ribosome.Menu.Data.MenuAction,
   module Ribosome.Menu.Data.MenuEvent,
   module Ribosome.Menu.Data.MenuItem,
+  module Ribosome.Menu.Data.WindowConfig,
   module Ribosome.Menu.Effect.MenuFilter,
   module Ribosome.Menu.Data.MenuResult,
   module Ribosome.Menu.Effect.MenuLoop,
@@ -49,6 +50,7 @@ import Ribosome.Menu.Data.MenuAction
 import Ribosome.Menu.Data.MenuEvent (MenuEvent (..), QueryEvent (..))
 import Ribosome.Menu.Data.MenuItem (MenuItem (MenuItem), simpleMenuItem)
 import Ribosome.Menu.Data.MenuResult (MenuResult (..))
+import Ribosome.Menu.Data.WindowConfig (WindowConfig (WindowConfig), WindowOptions (WindowOptions), toWindowConfig)
 import Ribosome.Menu.Effect.MenuFilter (MenuFilter (..))
 import Ribosome.Menu.Effect.MenuLoop (MenuLoop, MenuLoops)
 import Ribosome.Menu.Effect.MenuState (
@@ -67,7 +69,6 @@ import Ribosome.Menu.Effect.MenuState (
 import Ribosome.Menu.Effect.MenuStream (MenuStream)
 import Ribosome.Menu.Effect.MenuUi (
   MenuUi,
-  NvimMenuConfig (NvimMenuConfig),
   NvimMenuUi,
   PureMenu,
   PureMenuUi,
@@ -116,7 +117,7 @@ import Ribosome.Menu.Items (
   withSelection',
   withSelectionItems,
   )
-import Ribosome.Menu.Lens (use, (%=), (+=), (.=))
+import Ribosome.Menu.Lens (use, view, (%=), (+=), (.=), (<.=))
 import Ribosome.Menu.Loop (menu, menuLoop, nvimMenu, nvimMenuLoop, runMenu, staticNvimMenu)
 import Ribosome.Menu.Mappings (Mappings, defaultMappings, insert)
 import Ribosome.Menu.Prompt.Data.Prompt (Prompt (Prompt), PromptText (PromptText))
