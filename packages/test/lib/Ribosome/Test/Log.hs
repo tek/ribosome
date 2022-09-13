@@ -5,16 +5,14 @@ import Log (Severity)
 import Ribosome.Test.Data.TestConfig (TestConfig)
 
 testLogLevelConf ::
-  HasCallStack =>
   Severity ->
   (TestConfig -> a) ->
   TestConfig ->
   a
-testLogLevelConf =
-  undefined
+testLogLevelConf level f conf =
+  f (conf & #plugin . #host . #hostLog . #logLevelStderr .~ level)
 
 testLogLevel ::
-  HasCallStack =>
   Severity ->
   (TestConfig -> a) ->
   a

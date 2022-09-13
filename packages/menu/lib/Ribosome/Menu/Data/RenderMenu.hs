@@ -1,13 +1,13 @@
 module Ribosome.Menu.Data.RenderMenu where
 
-import Ribosome.Menu.Class.FilterEnum (FilterEnum (describe))
+import Ribosome.Menu.Class.MenuMode (MenuMode (renderExtra, renderFilter))
+import Ribosome.Menu.Class.MenuState (MenuState (Item, core, mode))
 import Ribosome.Menu.Data.CursorIndex (CursorIndex (CursorIndex))
 import Ribosome.Menu.Data.Entry (Entries)
-import qualified Ribosome.Menu.Data.Menu as Menu
-import Ribosome.Menu.Data.Menu (Menu (Menu))
-import qualified Ribosome.Menu.Data.MenuItems as MenuItems
-import Ribosome.Menu.Data.MenuItems (MenuItems (MenuItems))
 import Ribosome.Menu.Data.MenuStatus (MenuStatus (MenuStatus))
+import qualified Ribosome.Menu.Data.State as Modal
+import Ribosome.Menu.Data.State (Core (Core))
+import Ribosome.Menu.Data.WithCursor (WithCursor (WithCursor))
 
 data RenderMenu i =
   RenderMenu {
@@ -18,18 +18,23 @@ data RenderMenu i =
   deriving stock (Eq, Show, Generic)
 
 menuStatus ::
-  FilterEnum filter =>
+  ∀ i mode .
+  MenuMode i mode =>
   Int ->
   Int ->
   CursorIndex ->
-  filter ->
+  mode ->
   MenuStatus
-menuStatus itemCount entryCount (CursorIndex cursor) f =
-  MenuStatus (describe f) itemCount entryCount cursor
+menuStatus itemCount entryCount (CursorIndex cursor) md =
+  MenuStatus (renderFilter @i md) (renderExtra @i md) itemCount entryCount cursor
 
-fromMenu ::
-  FilterEnum filter =>
-  Menu filter i ->
-  RenderMenu i
-fromMenu Menu {items = MenuItems {entries, itemCount, entryCount, currentFilter}, cursor} =
-  RenderMenu {status = menuStatus itemCount entryCount cursor currentFilter, ..}
+fromState ::
+  ∀ s .
+  MenuState s =>
+  WithCursor s ->
+  RenderMenu (Item s)
+fromState (WithCursor s cursor) =
+  RenderMenu {status = menuStatus @(Item s) itemCount entryCount cursor (s ^. mode), ..}
+  where
+    Core {entries, itemCount, entryCount} =
+      s ^. core

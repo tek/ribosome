@@ -6,54 +6,62 @@ import Data.Sequence ((|>))
 import qualified Data.Trie as Trie
 import Lens.Micro.Mtl (view)
 
+import Ribosome.Menu.Class.MenuState (MenuState (Item, history, mode), entries, entryCount, query)
 import Ribosome.Menu.Data.Entry (Entries, Entry, entriesLength)
-import Ribosome.Menu.Data.MenuItems (MenuItems, MenuQuery (MenuQuery))
+import Ribosome.Menu.Data.State (MenuQuery (MenuQuery))
 import Ribosome.Menu.Lens (use, (%=), (.=))
 
 addHistory ::
-  Ord filter =>
-  Member (State (MenuItems filter i)) r =>
+  MenuState s =>
+  Member (State s) r =>
   Sem r ()
 addHistory = do
-  MenuQuery oldQuery <- use #currentQuery
-  filt <- use #currentFilter
-  old <- use #entries
-  #history . ix filt %= Trie.insert (encodeUtf8 oldQuery) old
+  MenuQuery oldQuery <- use query
+  m <- use mode
+  old <- use entries
+  history m %= Trie.insert (encodeUtf8 oldQuery) old
 
 updateEntries ::
-  Member (State (MenuItems filter i)) r =>
+  MenuState s =>
+  Member (State s) r =>
   MenuQuery ->
-  Entries i ->
+  Entries (Item s) ->
   Sem r ()
 updateEntries newQuery new = do
-  #entries .= new
-  #currentQuery .= newQuery
-  #entryCount .= entriesLength new
+  entries .= new
+  query .= newQuery
+  entryCount .= entriesLength new
 
 push ::
-  Ord filter =>
-  Member (State (MenuItems filter i)) r =>
+  MenuState s =>
+  Member (State s) r =>
   MenuQuery ->
-  Entries i ->
+  Entries (Item s) ->
   Sem r ()
 push newQuery new = do
   addHistory
   updateEntries newQuery new
 
 numVisible ::
-  MenuItems filter i ->
+  MenuState s =>
+  s ->
   Int
 numVisible =
-  sum . fmap length . view #entries
+  sum . fmap length . view entries
 
 sortEntries :: Entries i -> [Entry i]
 sortEntries =
   concatMap (toList . snd) . IntMap.toDescList
 
+sortEntriesText :: Entries i -> [Text]
+sortEntriesText =
+  fmap (view (#item . #text)) . sortEntries
+
 sortedEntries ::
-  SimpleGetter (MenuItems filter i) [Entry i]
+  MenuState s =>
+  SimpleGetter s [Entry (Item s)]
 sortedEntries =
-  #entries . to sortEntries
+  entries . to sortEntries
 
 overEntries ::
   (Int -> Entry i -> Entry i) ->

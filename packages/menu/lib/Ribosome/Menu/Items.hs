@@ -9,29 +9,32 @@ import qualified Data.Sequence as Seq
 import Data.Sequence ((|>))
 import Prelude hiding (unify)
 
+import Ribosome.Menu.Class.MenuState (MenuState (Item, history, mode), entries, items)
 import Ribosome.Menu.Data.CursorIndex (CursorIndex (CursorIndex))
 import Ribosome.Menu.Data.Entry (Entries, Entry)
-import Ribosome.Menu.Data.Menu (Menu)
 import qualified Ribosome.Menu.Data.MenuAction as MenuAction
 import Ribosome.Menu.Data.MenuAction (MenuAction)
 import qualified Ribosome.Menu.Data.MenuItem as MenuItem
 import Ribosome.Menu.Data.MenuItem (MenuItem)
-import Ribosome.Menu.Effect.MenuState (MenuState, viewMenu)
-import Ribosome.Menu.ItemLens (entries, focus, history, items, selected, selected')
+import Ribosome.Menu.Data.WithCursor (WithCursor)
+import Ribosome.Menu.Effect.Menu (Menu, viewMenu)
+import Ribosome.Menu.ItemLens (focus, selected, selected')
 import Ribosome.Menu.Lens (use, (%=), (.=))
 
 -- |Run an action with the focused entry if the menu is non-empty.
 withFocusItem ::
-  Member (MenuState f i) r =>
-  (MenuItem i -> Sem r a) ->
+  MenuState s =>
+  Member (Menu s) r =>
+  (MenuItem (Item s) -> Sem r a) ->
   Sem r (Maybe a)
 withFocusItem f =
   traverse f =<< viewMenu focus
 
 -- |Run an action with the focused entry if the menu is non-empty, extracting the item payload.
 withFocus' ::
-  Member (MenuState f i) r =>
-  (i -> Sem r a) ->
+  MenuState s =>
+  Member (Menu s) r =>
+  (Item s -> Sem r a) ->
   Sem r (Maybe a)
 withFocus' f =
   withFocusItem (f . MenuItem.meta)
@@ -39,24 +42,27 @@ withFocus' f =
 -- |Run an action with the focused entry and quit the menu with the returned value.
 -- If the menu was empty, do nothing (i.e. skip the event).
 withFocus ::
-  Member (MenuState f i) r =>
-  (i -> Sem r a) ->
-  Sem r (Maybe (MenuAction f a))
+  MenuState s =>
+  Member (Menu s) r =>
+  (Item s -> Sem r a) ->
+  Sem r (Maybe (MenuAction a))
 withFocus f =
   Just . maybe MenuAction.Continue MenuAction.success <$> withFocus' f
 
 -- |Run an action with the selection or the focused entry if the menu is non-empty.
 withSelectionItems ::
-  Member (MenuState f i) r =>
-  (NonEmpty (MenuItem i) -> Sem r a) ->
+  MenuState s =>
+  Member (Menu s) r =>
+  (NonEmpty (MenuItem (Item s)) -> Sem r a) ->
   Sem r (Maybe a)
 withSelectionItems f =
   traverse f =<< viewMenu selected'
 
 -- |Run an action with the selection or the focused entry if the menu is non-empty, extracting the item payloads.
 withSelection' ::
-  Member (MenuState f i) r =>
-  (NonEmpty i -> Sem r a) ->
+  MenuState s =>
+  Member (Menu s) r =>
+  (NonEmpty (Item s) -> Sem r a) ->
   Sem r (Maybe a)
 withSelection' f =
   traverse f =<< viewMenu selected
@@ -64,18 +70,20 @@ withSelection' f =
 -- |Run an action with the selection or the focused entry and quit the menu with the returned value.
 -- If the menu was empty, do nothing (i.e. skip the event).
 withSelection ::
-  Member (MenuState f i) r =>
-  (NonEmpty i -> Sem r a) ->
-  Sem r (Maybe (MenuAction f a))
+  MenuState s =>
+  Member (Menu s) r =>
+  (NonEmpty (Item s) -> Sem r a) ->
+  Sem r (Maybe (MenuAction a))
 withSelection f =
   Just . maybe MenuAction.Continue MenuAction.success <$> withSelection' f
 
 -- |Run an action with each entry in the selection or the focused entry and quit the menu with '()'.
 -- If the menu was empty, do nothing (i.e. skip the event).
 traverseSelection_ ::
-  Member (MenuState f i) r =>
-  (i -> Sem r ()) ->
-  Sem r (Maybe (MenuAction f ()))
+  MenuState s =>
+  Member (Menu s) r =>
+  ((Item s) -> Sem r ()) ->
+  Sem r (Maybe (MenuAction ()))
 traverseSelection_ f =
   withSelection (traverse_ f)
 
@@ -107,8 +115,8 @@ popEntriesFallback f ents =
     trans =
       IntMap.mapAccumRWithKey \ z score ->
         (\ (z1, _, r) -> (z1, r)) . foldl' (transSeq score) (z, 0, Seq.empty)
-    transSeq score ((i, z), si, r) e =
-      ((i + 1, res), si + 1, if consumed then r else r |> e)
+    transSeq score ((i, z), scoreIndex, r) e =
+      ((i + 1, res), scoreIndex + 1, if consumed then r else r |> e)
       where
         (res, consumed) =
           case z of
@@ -116,7 +124,7 @@ popEntriesFallback f ents =
               case f i e of
                 Nothing -> (Left a, False)
                 Just (Right b) -> (Right [b], True)
-                Just (Left b) -> (Left (Just (b, (score, si))), False)
+                Just (Left b) -> (Left (Just (b, (score, scoreIndex))), False)
             Right bs ->
               case f i e of
                 Just (Right b) -> (Right (b : bs), True)
@@ -137,20 +145,20 @@ popSelection curs initial =
       justIf (e ^. #selected) (Right (i, e ^. #index)) <|>
       justIf (curs == i) (Left (e ^. #index))
     unify = \case
-      Right (is, ent) ->
-        (unzip is, ent)
-      Left (i, (score, si)) ->
-        (([curs], [i]), IntMap.update (Just . Seq.deleteAt si) score initial)
+      Right (entryAndItemIndexes, ent) ->
+        (unzip entryAndItemIndexes, ent)
+      Left (itemIndex, (score, scoreIndex)) ->
+        (([curs], [itemIndex]), IntMap.update (Just . Seq.deleteAt scoreIndex) score initial)
 
 deleteSelected ::
-  Ord f =>
-  Member (State (Menu f i)) r =>
+  MenuState s =>
+  Member (State (WithCursor s)) r =>
   Sem r ()
 deleteSelected = do
   CursorIndex curs <- use #cursor
   ((deletedEntries, deletedItems), kept) <- use (entries . to (popSelection curs))
   entries .= kept
-  filt <- use (#items . #currentFilter)
-  history . ix filt .= mempty
+  m <- use mode
+  history m .= mempty
   items %= flip IntMap.withoutKeys (IntSet.fromList deletedItems)
   #cursor %= adaptCursorAfterDeletion deletedEntries

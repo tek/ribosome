@@ -2,6 +2,7 @@ module Ribosome.Menu.Test.Menu where
 
 import Conc (Consume, Restoration, consumeFind, interpretQueueTBM, resultToMaybe)
 import Exon (exon)
+import Hedgehog.Internal.Property (Failure)
 import Polysemy.Chronos (ChronosTime, interpretTimeChronos)
 import Polysemy.Test (Hedgehog, TestError, assertEq, evalMaybe)
 import qualified Queue
@@ -9,12 +10,16 @@ import Time (Seconds (Seconds))
 
 import Ribosome.Host.Data.RpcError (RpcError)
 import Ribosome.Menu.Action (MenuWidget, menuIgnore)
-import Ribosome.Menu.Combinators (sortEntries)
+import Ribosome.Menu.Class.MenuState (MenuState)
+import Ribosome.Menu.Combinators (sortEntries, sortedEntries)
 import qualified Ribosome.Menu.Data.Entry as Entry
 import Ribosome.Menu.Data.Filter (Filter (Fuzzy))
+import Ribosome.Menu.Data.FilterMode (FilterMode)
+import Ribosome.Menu.Data.State (Modal, modal)
 import qualified Ribosome.Menu.Data.MenuEvent as MenuEvent
 import Ribosome.Menu.Data.MenuEvent (MenuEvent)
 import qualified Ribosome.Menu.Data.MenuItem as MenuItem
+import Ribosome.Menu.Effect.Menu (Menu, readState)
 import Ribosome.Menu.Effect.MenuFilter (MenuFilter)
 import qualified Ribosome.Menu.Effect.MenuTest as MenuTest
 import Ribosome.Menu.Effect.MenuTest (MenuTest)
@@ -28,6 +33,7 @@ import Ribosome.Menu.Prompt.Data.Prompt (Prompt (Prompt), PromptText)
 import Ribosome.Menu.Prompt.Data.PromptConfig (startInsert)
 import qualified Ribosome.Menu.Prompt.Data.PromptEvent as PromptEvent
 import Ribosome.Test.Error (testError)
+import Ribosome.Test.Wait (assertWait)
 
 enqueueItems ::
   Members [MenuUi, Hedgehog IO, Queue [Text]] r =>
@@ -43,9 +49,9 @@ enqueueItems =
       pure PromptEvent.Ignore
 
 enqueuePrompt ::
-  ∀ i r a .
+  ∀ s r a .
   Members [Hedgehog IO, Queue Prompt, Resource, Embed IO] r =>
-  MenuWidget Filter i r a
+  MenuWidget s r a
 enqueuePrompt = do
   Queue.write =<< ask
   menuIgnore
@@ -69,19 +75,20 @@ runSimpleTestMenu =
   enqueueItems
 
 type PromptTest i =
-  Consume MenuEvent : MenuRenderEffects Filter i () ++ MenuFilter Filter : Stop RpcError : SimpleTestMenu ++ MenuTestStack i ()
+  Consume MenuEvent : MenuRenderEffects (Modal Filter i) () ++ MenuFilter (FilterMode Filter) : Stop RpcError : SimpleTestMenu ++ MenuTestStack i ()
 
 promptTest ::
+  ∀ i r .
   Show i =>
   Members MenuTestIOStack r =>
   Members [Hedgehog IO, Error TestError, Fail, Log, Resource, Race, Mask Restoration, Async, Embed IO, Final IO] r =>
   InterpretersFor (PromptTest i) r
 promptTest sem =
-  runTestMenu startInsert $
+  runTestMenu @_ @i startInsert $
   runSimpleTestMenu $
   testError $
   defaultFilter $
-  testMenuRender startInsert Fuzzy (const (Just enqueuePrompt)) $
+  testMenuRender @_ @(Modal Filter i) startInsert (modal Fuzzy) (const (Just enqueuePrompt)) $
   subscribe @MenuEvent do
     assertItems []
     sem
@@ -137,3 +144,20 @@ assertItems ::
 assertItems i =
   withFrozenCallStack do
     assertEq i =<< currentItems
+
+currentEntries ::
+  MenuState s =>
+  Members [Hedgehog IO, Menu s] r =>
+  Sem r [Text]
+currentEntries =
+  toListOf (sortedEntries . each . #item . #text) <$> readState
+
+awaitCurrent ::
+  MenuState s =>
+  HasCallStack =>
+  Members [Menu s, Hedgehog IO, ChronosTime, Error Failure, Race, Async, Embed IO] r =>
+  [Text] ->
+  Sem r ()
+awaitCurrent target =
+  withFrozenCallStack do
+    assertWait currentEntries (assertEq target)

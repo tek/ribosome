@@ -6,53 +6,64 @@ import qualified Data.Trie as Trie
 import Exon (exon)
 import qualified Log
 
-import Ribosome.Menu.Combinators (addHistory, push, updateEntries)
+import qualified Ribosome.Menu.Class.MenuState as MenuState
+import Ribosome.Menu.Class.MenuState (
+  Filter,
+  MenuState,
+  MenuState (Item, history, mode),
+  entries,
+  entryCount,
+  filterMode,
+  itemCount,
+  items,
+  )
+import Ribosome.Menu.Combinators (push, updateEntries)
 import Ribosome.Menu.Data.Entry (Entries, entriesLength)
+import Ribosome.Menu.Data.State (MenuQuery (MenuQuery))
 import qualified Ribosome.Menu.Data.MenuEvent as MenuEvent
-import Ribosome.Menu.Data.MenuEvent (MenuEvent, QueryEvent (History, Refined, Reset))
+import Ribosome.Menu.Data.MenuEvent (MenuEvent, QueryEvent (Modal, Refined, Reset))
 import Ribosome.Menu.Data.MenuItem (MenuItem)
-import Ribosome.Menu.Data.MenuItems (MenuItems, MenuQuery (MenuQuery))
-import qualified Ribosome.Menu.Effect.MenuFilter as MenuFilter
-import Ribosome.Menu.Effect.MenuFilter (MenuFilter)
+import Ribosome.Menu.Effect.MenuFilter (FilterJob (Initial, Refine), MenuFilter, menuFilter)
 import Ribosome.Menu.Lens (use, (%=), (+=), (.=))
 import qualified Ribosome.Menu.Prompt.Data.Prompt as Prompt
 import Ribosome.Menu.Prompt.Data.Prompt (PromptChange, PromptText (PromptText), unPromptText)
 
 refineFiltered ::
-  Ord filter =>
-  Members [MenuFilter filter, State (MenuItems filter i)] r =>
+  MenuState s =>
+  Members [MenuFilter (Filter s), State s] r =>
   MenuQuery ->
-  Entries i ->
+  Entries (Item s) ->
   Sem r QueryEvent
 refineFiltered query ents = do
-  filt <- use #currentFilter
-  push query =<< MenuFilter.refine filt query ents
+  fm <- use filterMode
+  push query =<< menuFilter fm query (Refine ents)
   pure Refined
 
 resetFiltered ::
-  Members [MenuFilter filter, State (MenuItems filter i)] r =>
+  MenuState s =>
+  Members [MenuFilter (Filter s), State s] r =>
   MenuQuery ->
   Sem r QueryEvent
 resetFiltered query = do
-  filt <- use #currentFilter
-  its <- use #items
-  new <- MenuFilter.initial filt query its
+  fm <- use filterMode
+  its <- use items
+  new <- menuFilter fm query (Initial its)
   updateEntries query new
   pure Reset
 
 popFiltered ::
-  Ord filter =>
-  Members [MenuFilter filter, State (MenuItems filter i)] r =>
+  MenuState s =>
+  Members [MenuFilter (Filter s), State s] r =>
   MenuQuery ->
   Sem r QueryEvent
 popFiltered query@(MenuQuery (encodeUtf8 -> queryBs)) = do
-  filt <- use #currentFilter
-  maybe (resetFiltered query) matching =<< use (#history . ix filt . to (`Trie.match` queryBs))
+  m <- use mode
+  maybe (resetFiltered query) matching =<< use (history m . to (`Trie.match` queryBs))
   where
     matching = \case
       (_, ents, "") -> do
         updateEntries query ents
-        pure History
+        pure Modal
       (_, ents, _) ->
         refineFiltered query ents
 
@@ -60,16 +71,18 @@ popFiltered query@(MenuQuery (encodeUtf8 -> queryBs)) = do
 -- Also why does it not skip the action instead? Is there a situation in which there might have been added new items
 -- without the insertion function updating entries?
 appendFilter ::
-  Ord filter =>
-  Members [MenuFilter filter, State (MenuItems filter i)] r =>
+  MenuState s =>
+  Members [MenuFilter (Filter s), State s] r =>
   MenuQuery ->
   Sem r QueryEvent
 appendFilter query =
-  ifM (use (#entries . to null)) (resetFiltered query) (refineFiltered query =<< use #entries)
+  ifM (use (entries . to null)) (resetFiltered query) (refineFiltered query =<< use entries)
 
+-- TODO all changes should check the history. deleting a character and adding it again does not change the result, but
+-- refine will be called unconditionally. furthermore, unappend and random are identical.
 promptChange ::
-  Ord filter =>
-  Members [MenuFilter filter, State (MenuItems filter i)] r =>
+  MenuState s =>
+  Members [MenuFilter (Filter s), State s] r =>
   PromptChange ->
   MenuQuery ->
   Sem r QueryEvent
@@ -79,29 +92,30 @@ promptChange = \case
   Prompt.Unappend ->
     popFiltered
   Prompt.Random ->
-    resetFiltered
+    popFiltered
 
 insertItems ::
-  Ord filter =>
-  Members [MenuFilter filter, State (MenuItems filter i)] r =>
-  [MenuItem i] ->
+  MenuState s =>
+  Members [MenuFilter (Filter s), State s] r =>
+  [MenuItem (Item s)] ->
   Sem r ()
 insertItems new = do
-  index <- use #itemCount
-  #itemCount += length new
+  index <- use itemCount
+  itemCount += length new
   let newI = IntMap.fromList (zip [index..] new)
-  #items %= IntMap.union newI
-  filt <- use #currentFilter
-  query <- use #currentQuery
-  ents <- MenuFilter.initial filt query newI
-  #entries %= IntMap.unionWith (<>) ents
-  #entryCount += entriesLength ents
+  items %= IntMap.union newI
+  m <- use mode
+  fm <- use filterMode
+  query <- use MenuState.query
+  ents <- menuFilter fm query (Initial newI)
+  entries %= IntMap.unionWith (<>) ents
+  entryCount += entriesLength ents
   unless (null ents) do
-    #history . ix filt .= mempty
+    history m .= mempty
 
 promptItemUpdate ::
-  Ord filter =>
-  Members [MenuFilter filter, State (MenuItems filter i)] r =>
+  MenuState s =>
+  Members [MenuFilter (Filter s), State s] r =>
   PromptChange ->
   PromptText ->
   Sem r MenuEvent
@@ -114,27 +128,16 @@ diffPrompt (PromptText new) (MenuQuery old)
   | Text.isPrefixOf new old = Prompt.Unappend
   | otherwise = Prompt.Random
 
-queryUpdate ::
-  Ord filter =>
-  Members [MenuFilter filter, State (MenuItems filter i), Events res MenuEvent, Log] r =>
-  PromptText ->
+queryEvent ::
+  MenuState s =>
+  Members [MenuFilter (Filter s), State s, Events res MenuEvent, Log] r =>
+  Maybe PromptText ->
   Sem r ()
-queryUpdate prompt = do
-  Log.debug [exon|query update: #{unPromptText prompt}|]
-  change <- use (#currentQuery . to (diffPrompt prompt))
-  publish =<< promptItemUpdate change prompt
-
-changeFilter ::
-  Ord filter =>
-  Show filter =>
-  Members [MenuFilter filter, State (MenuItems filter i), Events res MenuEvent, Log] r =>
-  filter ->
-  Sem r ()
-changeFilter new = do
-  old <- use #currentFilter
-  when (new /= old) do
-    Log.debug [exon|change filter: #{show new}|]
-    addHistory
-    #currentFilter .= new
-    query <- use #currentQuery
+queryEvent = \case
+  Just prompt -> do
+    Log.debug [exon|query update: #{unPromptText prompt}|]
+    change <- use (MenuState.query . to (diffPrompt prompt))
+    publish =<< promptItemUpdate change prompt
+  Nothing -> do
+    query <- use MenuState.query
     publish . MenuEvent.Query =<< popFiltered query

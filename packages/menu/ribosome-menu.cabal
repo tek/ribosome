@@ -20,18 +20,19 @@ library
   exposed-modules:
       Ribosome.Menu
       Ribosome.Menu.Action
-      Ribosome.Menu.Class.FilterEnum
+      Ribosome.Menu.Class.MenuMode
+      Ribosome.Menu.Class.MenuState
       Ribosome.Menu.Combinators
       Ribosome.Menu.Data.CursorIndex
       Ribosome.Menu.Data.CursorLine
       Ribosome.Menu.Data.Entry
       Ribosome.Menu.Data.Filter
+      Ribosome.Menu.Data.FilterMode
       Ribosome.Menu.Data.Menu
       Ribosome.Menu.Data.MenuAction
       Ribosome.Menu.Data.MenuConfig
       Ribosome.Menu.Data.MenuEvent
       Ribosome.Menu.Data.MenuItem
-      Ribosome.Menu.Data.MenuItems
       Ribosome.Menu.Data.MenuResult
       Ribosome.Menu.Data.MenuStatus
       Ribosome.Menu.Data.MenuView
@@ -40,17 +41,17 @@ library
       Ribosome.Menu.Data.QuitReason
       Ribosome.Menu.Data.RenderEvent
       Ribosome.Menu.Data.RenderMenu
+      Ribosome.Menu.Data.State
       Ribosome.Menu.Data.WindowConfig
+      Ribosome.Menu.Data.WithCursor
+      Ribosome.Menu.Effect.Menu
       Ribosome.Menu.Effect.MenuFilter
-      Ribosome.Menu.Effect.MenuLoop
-      Ribosome.Menu.Effect.MenuState
       Ribosome.Menu.Effect.MenuStream
       Ribosome.Menu.Effect.MenuTest
       Ribosome.Menu.Effect.MenuUi
       Ribosome.Menu.Filters
+      Ribosome.Menu.Interpreter.Menu
       Ribosome.Menu.Interpreter.MenuFilter
-      Ribosome.Menu.Interpreter.MenuLoop
-      Ribosome.Menu.Interpreter.MenuState
       Ribosome.Menu.Interpreter.MenuStream
       Ribosome.Menu.Interpreter.MenuTest
       Ribosome.Menu.Interpreter.MenuUi
@@ -61,6 +62,7 @@ library
       Ribosome.Menu.Lens
       Ribosome.Menu.Loop
       Ribosome.Menu.Mappings
+      Ribosome.Menu.MenuState
       Ribosome.Menu.MenuTest
       Ribosome.Menu.NvimRenderer
       Ribosome.Menu.Prompt
@@ -156,8 +158,10 @@ library
     , exon
     , extra
     , fuzzyfind
+    , generic-lens
     , lens-regex-pcre
     , microlens-mtl
+    , pcre-light
     , polysemy
     , polysemy-chronos
     , polysemy-conc
@@ -176,6 +180,7 @@ test-suite ribosome-menu-unit
   type: exitcode-stdio-1.0
   main-is: Main.hs
   other-modules:
+      Ribosome.Menu.Test.FilterTest
       Ribosome.Menu.Test.Menu
       Ribosome.Menu.Test.MenuTest
       Ribosome.Menu.Test.NvimMenuTest

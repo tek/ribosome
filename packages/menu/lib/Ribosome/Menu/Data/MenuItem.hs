@@ -17,6 +17,10 @@ simpleMenuItem :: a -> Text -> MenuItem a
 simpleMenuItem a t =
   MenuItem a t t
 
+simpleItems :: [Text] -> Items ()
+simpleItems =
+  IntMap.fromList . zip [0..] . fmap (simpleMenuItem ())
+
 intItems :: [Int] -> Items Int
 intItems nums =
   IntMap.fromList [(i, simpleMenuItem i (show i)) | i <- nums]

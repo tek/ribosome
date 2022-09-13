@@ -2,10 +2,10 @@ module Ribosome.Menu.Mappings where
 
 import Ribosome.Data.Mapping (MapMode (MapInsert), MappingSpec)
 import Ribosome.Menu.Action (MenuWidget, menuCycle, menuCycleFilter, menuQuit, menuToggle, menuToggleAll)
-import Ribosome.Menu.Class.FilterEnum (FilterEnum)
+import Ribosome.Menu.Class.MenuState (MenuState)
 
-type Mappings f i r a =
-  Map MappingSpec (MenuWidget f i r a)
+type Mappings s r a =
+  Map MappingSpec (MenuWidget s r a)
 
 withInsert :: MappingSpec -> MappingSpec
 withInsert =
@@ -16,8 +16,8 @@ insert =
   #mode .~ [MapInsert]
 
 defaultMappings ::
-  FilterEnum f =>
-  Mappings f i r a
+  MenuState s =>
+  Mappings s r a
 defaultMappings =
   [
     ("k", menuCycle 1),

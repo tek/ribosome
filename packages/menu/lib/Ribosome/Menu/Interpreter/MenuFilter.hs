@@ -1,42 +1,58 @@
 module Ribosome.Menu.Interpreter.MenuFilter where
 
-import qualified Data.IntMap.Strict as IntMap
+import Text.Regex.PCRE.Light.Char8 (caseless, compileM, utf8)
 
-import Ribosome.Menu.Data.Filter (Filter (Fuzzy, Prefix, Substring))
-import Ribosome.Menu.Data.MenuItems (MenuQuery (MenuQuery))
-import Ribosome.Menu.Effect.MenuFilter (MenuFilter (Initial, Match, Refine))
+import Ribosome.Menu.Data.Entry (Entry (Entry))
+import Ribosome.Menu.Data.Filter (Filter (Fuzzy, Prefix, Regex, Substring))
+import Ribosome.Menu.Data.FilterMode (FilterMode (FilterMode))
+import Ribosome.Menu.Data.State (MenuQuery (MenuQuery))
+import Ribosome.Menu.Data.MenuItem (MenuItem)
+import Ribosome.Menu.Effect.MenuFilter (
+  FilterJob (Initial, Match, Refine),
+  MenuFilter (MenuFilter),
+  )
 import Ribosome.Menu.Filters (
-  filterFuzzy,
-  initialPrefix,
-  initialSubstring,
+  Matcher,
+  initPar,
+  matchAll,
   matchFuzzy,
   matchPrefix,
+  matchRegex,
   matchSubstring,
-  refineFuzzy,
-  refinePrefix,
-  refineSubstring,
+  refinePar,
   )
+
+execute ::
+  (MenuItem i -> Text) ->
+  Matcher i ->
+  FilterJob i a ->
+  IO a
+execute extract m = \case
+  Match index item ->
+    pure (m extract (Entry item index False))
+  Initial items ->
+    initPar extract m items
+  Refine entries ->
+    refinePar extract m entries
+
+-- TODO this probably needs an error type that is displayed in the status window or echoed
+matcher :: MenuQuery -> Filter -> Matcher i
+matcher "" =
+  const matchAll
+matcher (MenuQuery query) = \case
+  Substring ->
+    matchSubstring query
+  Fuzzy ->
+    matchFuzzy True (toString query)
+  Prefix ->
+    matchPrefix query
+  Regex ->
+    either (const matchAll) matchRegex (compileM (toString query) [caseless, utf8])
 
 defaultFilter ::
   Member (Embed IO) r =>
-  InterpreterFor (MenuFilter Filter) r
+  InterpreterFor (MenuFilter (FilterMode Filter)) r
 defaultFilter =
   interpret \case
-    Match Substring query index item ->
-      pure (matchSubstring query index item)
-    Initial Substring query items ->
-      pure (initialSubstring query items)
-    Refine Substring query items ->
-      pure (refineSubstring query items)
-    Match Fuzzy query index item ->
-      pure (matchFuzzy False query index item)
-    Initial Fuzzy (MenuQuery (toString -> query)) items ->
-      embed (filterFuzzy True query (IntMap.toList items))
-    Refine Fuzzy (MenuQuery (toString -> query)) items ->
-      embed (refineFuzzy query (concatMap toList (IntMap.elems items)))
-    Match Prefix query index item ->
-      pure (matchPrefix query index item)
-    Initial Prefix query items ->
-      pure (initialPrefix query items)
-    Refine Prefix query items ->
-      pure (refinePrefix query items)
+    MenuFilter (FilterMode f ex) query job ->
+      embed (execute ex (matcher query f) job)

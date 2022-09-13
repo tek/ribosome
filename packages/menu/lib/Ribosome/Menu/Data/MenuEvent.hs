@@ -7,7 +7,7 @@ data QueryEvent =
   |
   Reset
   |
-  History
+  Modal
   deriving stock (Eq, Show, Ord)
 
 data MenuEvent =

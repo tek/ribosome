@@ -9,20 +9,22 @@ import Test.Tasty (TestTree, testGroup)
 import Ribosome.Api.Buffer (bufferContent, buflisted)
 import Ribosome.Host.Api.Effect (bufferGetName, vimGetBuffers, vimGetWindows)
 import Ribosome.Menu.Action (MenuWidget, menuOk, menuSuccess)
+import Ribosome.Menu.Class.MenuState (MenuState, entries)
 import Ribosome.Menu.Combinators (sortEntries)
 import Ribosome.Menu.Data.CursorIndex (CursorIndex (CursorIndex))
 import Ribosome.Menu.Data.Entry (intEntries)
 import Ribosome.Menu.Data.Filter (Filter (Fuzzy))
+import Ribosome.Menu.Data.State (Modal, modal)
 import Ribosome.Menu.Data.MenuEvent (MenuEvent (Rendered))
 import Ribosome.Menu.Data.MenuItem (MenuItem, simpleMenuItem)
 import qualified Ribosome.Menu.Data.MenuResult as MenuResult
 import Ribosome.Menu.Data.MenuView (MenuView (MenuView))
-import Ribosome.Menu.Effect.MenuState (readCursor, readItems)
+import Ribosome.Menu.Effect.Menu (readCursor, readState)
 import qualified Ribosome.Menu.Effect.MenuTest as MenuTest
 import Ribosome.Menu.Effect.MenuTest (sendMapping, sendMappingWait, waitEvent)
 import Ribosome.Menu.Effect.MenuUi (WindowMenu)
 import Ribosome.Menu.Interpreter.MenuFilter (defaultFilter)
-import Ribosome.Menu.Interpreter.MenuLoop (interpretNvimMenu, promptInput)
+import Ribosome.Menu.Interpreter.Menu (interpretNvimMenu, promptInput)
 import Ribosome.Menu.Loop (nvimMenu, nvimMenuLoop, runMenu)
 import Ribosome.Menu.Mappings (Mappings, defaultMappings)
 import Ribosome.Menu.MenuTest (testStaticNvimMenu)
@@ -42,10 +44,10 @@ staticMenuItems ::
 staticMenuItems =
   fmap (simpleMenuItem "name")
 
-menuItems ::
+mkItems ::
   [Text] ->
   SerialT IO (MenuItem Text)
-menuItems =
+mkItems =
   Stream.fromList . fmap (simpleMenuItem "name")
 
 pureEvents :: [PromptEvent]
@@ -65,20 +67,24 @@ items =
   <>
   (mappend "item" . show <$> [(1 :: Int)..8])
 
-currentEntries :: MenuWidget Filter i r Text
+currentEntries ::
+  MenuState s =>
+  MenuWidget s r Text
 currentEntries = do
   CursorIndex s <- readCursor
-  fs <- sortEntries . view #entries <$> readItems
+  fs <- sortEntries . view entries <$> readState
   maybe menuOk menuSuccess (fs ^? ix s . #item . #text)
 
-mappings :: Mappings Filter i r Text
+mappings ::
+  MenuState s =>
+  Mappings s r Text
 mappings =
   [("<cr>", currentEntries)]
 
 test_pureInput :: UnitTest
 test_pureInput =
   testEmbed_ $ promptInput pureEvents do
-    result <- nvimMenu (menuItems items) Fuzzy opts mappings
+    result <- nvimMenu (mkItems items) (modal Fuzzy) opts mappings
     MenuResult.Success "item4" === result
   where
     opts =
@@ -96,7 +102,7 @@ nativeWindowChars =
 
 test_nativeWindow :: UnitTest
 test_nativeWindow =
-  testEmbed_ $ defaultFilter $ interpretNvimMenu $ runMenu (menuItems items) Fuzzy do
+  testEmbed_ $ defaultFilter $ interpretNvimMenu $ runMenu (mkItems items) (modal Fuzzy) do
     result <- withPromptInputSync nativeWindowChars do
       nvimMenuLoop @WindowMenu opts mappings
     MenuResult.Success "item4" === result
@@ -109,7 +115,7 @@ test_nativeWindow =
 test_interruptWindow :: UnitTest
 test_interruptWindow =
   testEmbed_ $ defaultFilter do
-    result <- interpretNvimMenu $ runMenu (menuItems items) Fuzzy do
+    result <- interpretNvimMenu $ runMenu (mkItems items) (modal Fuzzy) do
       withPromptInputSync ["i", "<c-c>", "<cr>"] do
         nvimMenuLoop @WindowMenu opts mappings
     MenuResult.Aborted === result
@@ -121,7 +127,7 @@ test_interruptWindow =
 test_windowOnlyInsert :: UnitTest
 test_windowOnlyInsert =
   testEmbed_ $ defaultFilter do
-    result <- interpretNvimMenu $ runMenu (menuItems items) Fuzzy do
+    result <- interpretNvimMenu $ runMenu (mkItems items) (modal Fuzzy) do
       withPromptInputSync ["i", nosync "<esc>", "<cr>"] do
         nvimMenuLoop @WindowMenu opts mappings
     MenuResult.Aborted === result
@@ -132,7 +138,7 @@ test_windowOnlyInsert =
 test_quit :: UnitTest
 test_quit =
   testEmbed_ $ defaultFilter do
-    result <- testStaticNvimMenu @() @Text [] def Fuzzy (menuScratchSized 4) defaultMappings do
+    result <- testStaticNvimMenu @() @(Modal Filter Text) [] def (modal Fuzzy) (menuScratchSized 4) defaultMappings do
       sendMapping "<esc>"
       MenuTest.result
     MenuResult.Aborted === result
@@ -141,7 +147,7 @@ test_quit =
 test_scrollUp :: UnitTest
 test_scrollUp =
   testEmbed_ $ defaultFilter do
-    MenuResult.Success a <- testStaticNvimMenu its def Fuzzy (menuScratch & #maxSize ?~ 4) maps do
+    MenuResult.Success a <- testStaticNvimMenu its def (modal Fuzzy) (menuScratch & #maxSize ?~ 4) maps do
       waitEvent "initial render" Rendered
       traverse_ sendMappingWait (replicate 20 "k" <> ["<cr>"])
       MenuTest.result

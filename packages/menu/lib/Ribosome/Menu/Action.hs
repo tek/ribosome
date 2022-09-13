@@ -1,72 +1,77 @@
 module Ribosome.Menu.Action where
 
-import Lens.Micro.Mtl (view)
-
-import qualified Ribosome.Menu.Class.FilterEnum as FilterEnum
-import Ribosome.Menu.Class.FilterEnum (FilterEnum)
+import Ribosome.Menu.Class.MenuState (MenuState, MenuState (Item, Mode, mode))
+import qualified Ribosome.Menu.Class.MenuMode as MenuMode
 import Ribosome.Menu.Combinators (numVisible, overEntries)
 import Ribosome.Menu.Data.CursorIndex (CursorIndex (CursorIndex))
 import qualified Ribosome.Menu.Data.MenuAction as MenuAction
 import Ribosome.Menu.Data.MenuAction (MenuAction)
-import Ribosome.Menu.Effect.MenuState (MenuState, itemsState, modifyCursor, readCursor, readItems, viewItems)
-import Ribosome.Menu.Lens ((%=))
+import Ribosome.Menu.Effect.Menu (Menu, basicState, menuState, modifyCursor, readCursor, viewState)
+import Ribosome.Menu.Lens (use, (%=), (.=))
 import Ribosome.Menu.Prompt.Data.Prompt (Prompt)
 
-type MenuActionSem f r a =
-  Sem r (Maybe (MenuAction f a))
+type MenuActionSem r a =
+  Sem r (Maybe (MenuAction a))
 
-type MenuSem f i r a =
-  Sem (MenuState f i : Reader Prompt : r) a
+type MenuSem s r a =
+  Sem (Menu s : Reader Prompt : r) a
 
-type MenuWidget f i r a =
-  MenuSem f i r (Maybe (MenuAction f a))
+type MenuWidget s r a =
+  MenuSem s r (Maybe (MenuAction a))
 
 act ::
-  MenuAction f a ->
-  Sem r (Maybe (MenuAction f a))
+  MenuAction a ->
+  Sem r (Maybe (MenuAction a))
 act =
   pure . Just
 
-menuIgnore :: MenuWidget f i r a
+menuIgnore :: MenuWidget s r a
 menuIgnore =
   pure Nothing
 
-menuOk :: Sem r (Maybe (MenuAction f a))
+menuOk :: Sem r (Maybe (MenuAction a))
 menuOk =
   pure (Just MenuAction.Continue)
 
-menuRender :: Sem r (Maybe (MenuAction f a))
+menuRender :: Sem r (Maybe (MenuAction a))
 menuRender =
   act MenuAction.Render
 
-menuQuit :: Sem r (Maybe (MenuAction f a))
+menuQuit :: Sem r (Maybe (MenuAction a))
 menuQuit =
   act MenuAction.abort
 
 menuSuccess ::
   a ->
-  Sem r (Maybe (MenuAction f a))
+  Sem r (Maybe (MenuAction a))
 menuSuccess ma =
   act (MenuAction.success ma)
 
 cycleMenu ::
+  MenuState s =>
   Int ->
-  MenuSem f i r ()
+  MenuSem s r ()
 cycleMenu offset = do
-  count <- viewItems (to numVisible)
+  count <- viewState (to numVisible)
   modifyCursor \ current -> fromMaybe 0 ((current + fromIntegral offset) `mod` fromIntegral count)
 
 menuCycle ::
+  MenuState s =>
   Int ->
-  MenuWidget f i r a
+  MenuWidget s r a
 menuCycle offset = do
   cycleMenu offset
   menuRender
 
+-- TODO this can:
+-- - Return when the focus was found
+-- - Skip over entries in the map that are shorter than (cursor - acc)
+-- - be refactored into @overFocus@
 toggleSelected ::
-  MenuSem f i r ()
+  MenuState s =>
+  MenuSem s r ()
 toggleSelected = do
-  itemsState do
+  basicState do
     CursorIndex cur <- readCursor
     #entries %= overEntries \ index ->
       if index == cur
@@ -75,33 +80,43 @@ toggleSelected = do
   cycleMenu 1
 
 menuToggle ::
-  MenuWidget f i r a
+  MenuState s =>
+  MenuWidget s r a
 menuToggle = do
   toggleSelected
   menuRender
 
 menuToggleAll ::
-  MenuWidget f i r a
+  MenuState s =>
+  MenuWidget s r a
 menuToggleAll = do
-  itemsState do
+  basicState do
     #entries %= overEntries (const (#selected %~ not))
   menuRender
 
 menuUpdatePrompt ::
   Prompt ->
-  MenuActionSem f r a
+  MenuActionSem r a
 menuUpdatePrompt prompt =
   act (MenuAction.UpdatePrompt prompt)
 
-menuChangeFilter ::
-  f ->
-  MenuActionSem f r a
-menuChangeFilter f =
-  act (MenuAction.ChangeFilter f)
+menuChangeMode ::
+  MenuState s =>
+  Mode s ->
+  MenuWidget s r a
+menuChangeMode m = do
+  menuState do
+    mode .= m
+  menuRender
 
+-- TODO menuState's underlying constructor must be changed to inspect the new state and trigger a refilter if the mode
+-- has been modified
 menuCycleFilter ::
-  FilterEnum f =>
-  MenuWidget f i r a
+  ∀ s r a .
+  MenuState s =>
+  MenuWidget s r a
 menuCycleFilter = do
-  cur <- view #currentFilter <$> readItems
-  act (MenuAction.ChangeFilter (FilterEnum.cycle cur))
+  menuState do
+    cur <- use mode
+    mode .= (MenuMode.cycleFilter @(Item s) cur)
+  menuRender

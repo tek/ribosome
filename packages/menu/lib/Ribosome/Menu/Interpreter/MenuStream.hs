@@ -6,8 +6,6 @@ import qualified Streamly.Data.Fold as Fold
 import qualified Streamly.Internal.Data.Stream.IsStream as Stream
 import Streamly.Internal.Data.Stream.IsStream (after_)
 
-import qualified Ribosome.Menu.Data.MenuEvent as MenuEvent
-import Ribosome.Menu.Data.RenderEvent (RenderEvent (RenderEvent))
 import Ribosome.Menu.Effect.MenuStream (MenuStream (MenuStream))
 import Ribosome.Menu.Stream.Accumulate (mapMAcc)
 import Ribosome.Menu.Stream.Util (repeatUntilNothing)
@@ -22,14 +20,14 @@ interpretMenuStream ::
   InterpreterFor MenuStream r
 interpretMenuStream =
   interpretFinal \case
-    MenuStream items promptEventsM queryUpdateM insertM renderEventM menuEventM -> do
+    MenuStream items promptEventsM queryUpdateM insertM renderEventM exhaustedM -> do
       s <- getInitialStateS
       Inspector (ins :: ∀ y . f y -> Maybe y) <- getInspectorS
       promptEvents <- runS promptEventsM
       queryUpdate <- bindS queryUpdateM
       insertItems <- bindS insertM
       renderEvent <- bindS renderEventM
-      menuEvent <- bindS menuEventM
+      exhausted <- runS exhaustedM
       let
         pureS :: ∀ b . b -> f b
         pureS =
@@ -41,13 +39,13 @@ interpretMenuStream =
           mapMAcc (pure . Left) (queryUpdate . NonEmpty.last) $
           repeatUntilNothing (maybeF <$> promptEvents)
         menuItems =
-          after_ (menuEvent (pureS MenuEvent.Exhausted)) $
+          after_ exhausted $
           Stream.mapM insert $
           Stream.foldIterateM chunker (pure []) $
           Stream.fromSerial items
           where
             insert new =
-              pureS (RenderEvent "new items") <$ insertItems (pureS new)
+              insertItems (pureS new)
             chunker = pure . \case
               [] ->
                 Fold.take 100 Fold.toList

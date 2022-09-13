@@ -1,6 +1,9 @@
 module Ribosome.Menu.Data.Filter where
 
-import Ribosome.Menu.Class.FilterEnum (FilterEnum (cycle, describe))
+import qualified Ribosome.Menu.Class.MenuMode as MenuMode
+import Ribosome.Menu.Class.MenuMode (MenuMode (cycleFilter, renderExtra, renderFilter))
+import Ribosome.Menu.Data.FilterMode (FilterMode (FilterMode))
+import qualified Ribosome.Menu.Data.MenuItem as MenuItem
 
 data Filter =
   Substring
@@ -8,16 +11,33 @@ data Filter =
   Fuzzy
   |
   Prefix
+  |
+  Regex
   deriving stock (Eq, Show, Ord)
 
-instance FilterEnum Filter where
+instance Default Filter where
+  def =
+    Fuzzy
 
-  cycle = \case
+instance MenuMode i Filter where
+
+  type Filter Filter =
+    FilterMode Filter
+
+  cycleFilter = \case
     Substring -> Fuzzy
     Fuzzy -> Prefix
-    Prefix -> Substring
+    Prefix -> Regex
+    Regex -> Substring
 
-  describe = \case
+  renderFilter = \case
     Substring -> "substring"
     Fuzzy -> "fuzzy"
     Prefix -> "prefix"
+    Regex -> "regex"
+
+  renderExtra =
+    const Nothing
+
+  filterMode f =
+    FilterMode f MenuItem.text

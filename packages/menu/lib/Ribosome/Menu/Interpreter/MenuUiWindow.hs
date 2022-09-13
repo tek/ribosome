@@ -18,6 +18,7 @@ import Prelude hiding (group)
 
 import Ribosome.Api.Data (Window)
 import qualified Ribosome.Api.Mode as Api
+import Ribosome.Api.Option (withOption)
 import Ribosome.Api.Window (closeWindow, currentCursor, setCursor, windowExec)
 import qualified Ribosome.Data.FloatOptions as FloatOptions
 import Ribosome.Data.FloatOptions (FloatAnchor (SW), FloatRelative (Editor))
@@ -333,7 +334,8 @@ windowResources (WindowConfig pconf itemsOpt statusOpt mappings) use =
     geo <- geometry
     withMainScratch (itemsOptions geo itemsOpt) (statusOptions geo <$> statusOpt) \ (itemsScratch, statusScratch) ->
       withPrompt pconf mappings geo \ promptScratch ->
-        insertAt @2 (use (WindowMenu itemsScratch statusScratch promptScratch))
+        withOption "hlsearch" False do
+          insertAt @2 (use (WindowMenu itemsScratch statusScratch promptScratch))
 
 -- TODO see how a 'buftype=prompt' looks
 interpretMenuUiWindow ::

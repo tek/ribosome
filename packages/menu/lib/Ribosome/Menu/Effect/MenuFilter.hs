@@ -1,12 +1,15 @@
 module Ribosome.Menu.Effect.MenuFilter where
 
 import Ribosome.Menu.Data.Entry (Entries, Entry)
-import Ribosome.Menu.Data.MenuItems (MenuQuery)
 import Ribosome.Menu.Data.MenuItem (Items, MenuItem)
+import Ribosome.Menu.Data.State (MenuQuery)
 
-data MenuFilter (style :: Type) :: Effect where
-  Match :: style -> Text -> Int -> MenuItem i -> MenuFilter style m (Maybe (Int, Entry i))
-  Initial :: style -> MenuQuery -> Items i -> MenuFilter style m (Entries i)
-  Refine :: style -> MenuQuery -> Entries i -> MenuFilter style m (Entries i)
+data FilterJob i :: Type -> Type where
+  Match :: Int -> MenuItem i -> FilterJob i (Maybe (Int, Entry i))
+  Initial :: Items i -> FilterJob i (Entries i)
+  Refine :: Entries i -> FilterJob i (Entries i)
+
+data MenuFilter (mode :: Type -> Type) :: Effect where
+  MenuFilter :: mode i -> MenuQuery -> FilterJob i a -> MenuFilter mode m a
 
 makeSem ''MenuFilter
