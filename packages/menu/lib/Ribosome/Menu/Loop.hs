@@ -1,6 +1,5 @@
 module Ribosome.Menu.Loop where
 
-import Conc (PScoped, pscoped)
 import Control.Monad.Extra (loopM)
 import qualified Data.Map.Strict as Map
 import Exon (exon)
@@ -10,9 +9,10 @@ import Streamly.Prelude (SerialT)
 
 import qualified Ribosome.Data.Mapping as Mapping
 import Ribosome.Data.Mapping (MappingLhs (MappingLhs))
+import Ribosome.Host.Data.Report (ReportLog, Reportable)
 import Ribosome.Host.Data.RpcError (RpcError)
 import Ribosome.Menu.Action (MenuWidget)
-import Ribosome.Menu.Class.MenuState (MenuState, MenuState (Item))
+import Ribosome.Menu.Class.MenuState (MenuState (Item))
 import qualified Ribosome.Menu.Data.MenuAction as MenuAction
 import Ribosome.Menu.Data.MenuAction (MenuAction)
 import Ribosome.Menu.Data.MenuItem (MenuItem)
@@ -29,6 +29,7 @@ import Ribosome.Menu.Mappings (Mappings, defaultMappings)
 import Ribosome.Menu.Prompt.Data.Prompt (Prompt)
 import qualified Ribosome.Menu.Prompt.Data.PromptEvent as PromptEvent
 import Ribosome.Menu.Prompt.Data.PromptEvent (PromptEvent)
+import Ribosome.Report (logReport)
 
 menuAction ::
   Member (Menu s) r =>
@@ -80,16 +81,17 @@ consumerChangedPrompt new = \case
   _ -> True
 
 menuLoop ::
-  ∀ s a r .
-  Members [Menu s, MenuUi, Log] r =>
-  (MappingLhs -> Maybe (MenuWidget s r a)) ->
-  Sem r (MenuResult a)
+  ∀ s e result r .
+  Reportable e =>
+  Members [Menu s, MenuUi !! e, Log, ReportLog, Stop e] r =>
+  (MappingLhs -> Maybe (MenuWidget s r result)) ->
+  Sem r (MenuResult result)
 menuLoop mappings =
-  Menu.withRender MenuUi.render do
+  Menu.withRender (resuming logReport . MenuUi.render) do
     Log.debug "Starting prompt loop"
     Menu.startPrompt
     flip loopM def \ old -> do
-      event <- MenuUi.promptEvent old
+      event <- restop (MenuUi.promptEvent old)
       Log.debug [exon|prompt: #{show event}|]
       action <- runReader old (subsume (handlePromptEvent mappings event)) >>= \case
         PromptAction.Quit result -> do
@@ -97,7 +99,7 @@ menuLoop mappings =
           pure (Right result)
         PromptAction.Update new -> do
           Menu.promptUpdated new
-          MenuUi.renderPrompt (consumerChangedPrompt new event) new
+          restop (MenuUi.renderPrompt (consumerChangedPrompt new event) new)
           pure (Left new)
         PromptAction.Continue ->
           pure (Left old)
@@ -115,8 +117,9 @@ lookupMapping mappings i =
       Map.mapKeys Mapping.lhs mappings
 
 menuMaps ::
-  ∀ s result r .
-  Members [Menu s, MenuUi, Log] r =>
+  ∀ s result e r .
+  Reportable e =>
+  Members [Menu s, MenuUi !! e, Log, ReportLog, Stop e] r =>
   Mappings s r result ->
   Sem r (MenuResult result)
 menuMaps mappings =
@@ -128,11 +131,12 @@ runMenu ::
   s ->
   InterpreterFor (Menu s) r
 runMenu items initial =
-  pscoped (items, initial)
+  scoped (items, initial)
 
 menu ::
-  ∀ s a r .
-  Members [Menus s, MenuUi, Log] r =>
+  ∀ s e a r .
+  Reportable e =>
+  Members [Menus s, MenuUi !! e, Log, ReportLog, Stop e] r =>
   SerialT IO (MenuItem (Item s)) ->
   s ->
   Mappings s r a ->
@@ -140,16 +144,15 @@ menu ::
 menu items initial (fmap raise2Under -> mappings) =
   runMenu items initial (menuMaps mappings)
 
--- TODO MenuUi is executed async for Render, so its errors are lost. Resumable should be caught by the loop
 nvimMenuLoop ::
   ∀ mres result s r .
   MenuState s =>
-  Members [NvimMenuUi mres, Menu s, Log, Stop RpcError] r =>
+  Members [NvimMenuUi mres, Menu s, Log, ReportLog, Stop RpcError] r =>
   WindowOptions ->
   Mappings s r result ->
   Sem r (MenuResult result)
 nvimMenuLoop options consumerMappings =
-  restop @_ @(PScoped _ _ MenuUi) $ withMenuUi (toWindowConfig options mappings) do
+  restop @_ @(Scoped _ _ (MenuUi !! RpcError)) $ withMenuUi (toWindowConfig options mappings) do
     menuMaps (insertAt @2 <$> mappings)
   where
     mappings =
@@ -158,14 +161,14 @@ nvimMenuLoop options consumerMappings =
 nvimMenu ::
   ∀ mres result s r .
   MenuState s =>
-  Members [NvimMenuUi mres, Menus s, Log, Stop RpcError] r =>
+  Members [NvimMenuUi mres, Menus s, Log, ReportLog, Stop RpcError] r =>
   SerialT IO (MenuItem (Item s)) ->
   s ->
   WindowOptions ->
   Mappings s r result ->
   Sem r (MenuResult result)
 nvimMenu items initial options consumerMappings =
-  restop @_ @(PScoped _ _ MenuUi) $ withMenuUi (toWindowConfig options mappings) do
+  restop @_ @(Scoped _ _ (MenuUi !! RpcError)) $ withMenuUi (toWindowConfig options mappings) do
     menu items initial (insertAt @2 <$> mappings)
   where
     mappings =
@@ -174,7 +177,7 @@ nvimMenu items initial options consumerMappings =
 staticNvimMenu ::
   ∀ mres result s r .
   MenuState s =>
-  Members [NvimMenuUi mres, Menus s, Log, Stop RpcError] r =>
+  Members [NvimMenuUi mres, Menus s, Log, ReportLog, Stop RpcError] r =>
   [MenuItem (Item s)] ->
   s ->
   WindowOptions ->

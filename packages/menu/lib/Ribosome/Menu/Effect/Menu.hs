@@ -1,14 +1,13 @@
 module Ribosome.Menu.Effect.Menu where
 
-import Conc (PScoped)
 import Lens.Micro.Mtl (view)
 import Streamly.Prelude (SerialT)
 
 import Ribosome.Menu.Class.MenuState (Item, MenuState (core))
 import Ribosome.Menu.Data.CursorIndex (CursorIndex)
 import Ribosome.Menu.Data.MenuItem (MenuItem)
-import Ribosome.Menu.Data.State (Core, ModalState)
 import Ribosome.Menu.Data.RenderMenu (RenderMenu)
+import Ribosome.Menu.Data.State (Core, ModalState)
 import Ribosome.Menu.Data.WithCursor (WithCursor (WithCursor))
 import Ribosome.Menu.Prompt.Data.Prompt (Prompt)
 
@@ -31,7 +30,7 @@ type ModalMenu i =
   Menu (ModalState i)
 
 type Menus s =
-  PScoped (SerialT IO (MenuItem (Item s)), s) () (Menu s)
+  Scoped (SerialT IO (MenuItem (Item s)), s) () (Menu s)
 
 type ModalMenus i =
   Menus (ModalState i)

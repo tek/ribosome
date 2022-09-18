@@ -25,7 +25,7 @@ import Ribosome.Host.Api.Effect (nvimEcho)
 import Ribosome.Host.Class.Msgpack.Encode (toMsgpack)
 import qualified Ribosome.Host.Data.HostConfig as HostConfig
 import Ribosome.Host.Data.HostConfig (LogConfig (LogConfig))
-import Ribosome.Host.Data.Report (LogReport (LogReport), Report (Report), prefixReportContext')
+import Ribosome.Host.Data.Report (LogReport (LogReport), Report (Report), ReportLog, prefixReportContext', report, reportMessages, severity)
 import Ribosome.Host.Effect.Log (FileLog, StderrLog, fileLog, stderrLog)
 import qualified Ribosome.Host.Effect.Reports as Reports
 import Ribosome.Host.Effect.Reports (Reports)
@@ -58,16 +58,22 @@ logLogReport minSeverity (LogReport msg@(Report user log severity) echo store co
     when store (Reports.storeReport context msg)
     when echo (echoError minSeverity user severity)
 
-interpretDataLogRpc ::
+interpretReportLogRpc ::
   Show e =>
   Members [Reader LogConfig, Rpc !! e, Reports, UserError, Log, Resource, Race, Async, Embed IO] r =>
-  InterpreterFor (DataLog LogReport) r
-interpretDataLogRpc sem = do
+  InterpreterFor ReportLog r
+interpretReportLogRpc sem = do
   LogConfig {..} <- ask
   interpretDataLog (logLogReport logLevelEcho) ((if dataLogConc then interceptDataLogConc 64 else id) sem)
 
+interpretReportLogLog ::
+  Member Log r =>
+  InterpreterFor ReportLog r
+interpretReportLogLog =
+  interpretDataLog \ LogReport {report} -> Log.log (severity report) (reportMessages report)
+
 interpretLogRpc ::
-  Members [Log, DataLog LogReport] r =>
+  Members [Log, ReportLog] r =>
   InterpreterFor Log r
 interpretLogRpc =
   interpret \case

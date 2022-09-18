@@ -37,7 +37,7 @@
       type-errors-pretty = notest jailbreak;
       unicode-data = hackage "0.2.0" "14crb68g79yyw87fgh49z2fn4glqx0zr53v6mapihaxzkikhkkc3";
     };
-  in hix.lib.flake ({ config, lib, ...}: {
+  in hix.lib.pro ({ config, lib, ...}: {
     packages = {
       integration = ./packages/integration;
       ribosome = ./packages/ribosome;

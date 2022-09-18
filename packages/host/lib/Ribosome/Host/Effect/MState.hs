@@ -1,8 +1,6 @@
 -- |A state effect that allows atomic updates with monadic actions.
 module Ribosome.Host.Effect.MState where
 
-import Conc (PScoped, pscoped)
-
 -- |A state effect that allows atomic updates with monadic actions.
 --
 -- The constructor 'muse' is analogous to the usual @state@ combinator, in that it transforms the state monadically
@@ -81,14 +79,14 @@ stateToMState sem =
   muse \ s ->
     runState s sem
 
--- |A 'PScoped' alias for 'MState' that allows running it on a local region without having to involve `IO` in the stack.
+-- |A 'Scoped' alias for 'MState' that allows running it on a local region without having to involve `IO` in the stack.
 type ScopedMState s =
-  PScoped s () (MState s)
+  Scoped s () (MState s)
 
--- |Run a 'PScoped' 'MState' on a local region without having to involve `IO` in the stack.
+-- |Run a 'Scoped' 'MState' on a local region without having to involve `IO` in the stack.
 withMState ::
   Member (ScopedMState s) r =>
   s ->
   InterpreterFor (MState s) r
 withMState =
-  pscoped
+  scoped

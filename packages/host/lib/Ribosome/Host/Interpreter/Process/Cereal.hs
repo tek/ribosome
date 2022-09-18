@@ -62,10 +62,10 @@ interpretProcessInputCereal =
 interpretProcessCereal ::
   ∀ resource a r .
   Serialize a =>
-  Member (Scoped resource (SystemProcess !! SystemProcessError) !! SystemProcessScopeError) r =>
+  Member (Scoped_ resource (SystemProcess !! SystemProcessError) !! SystemProcessScopeError) r =>
   Members [Log, Resource, Race, Async, Embed IO] r =>
   ProcessOptions ->
-  InterpreterFor (Scoped () (Process a (Either Text a)) !! ProcessError) r
+  InterpreterFor (Scoped_ () (Process a (Either Text a)) !! ProcessError) r
 interpretProcessCereal options =
   interpretProcessOutputLog @'Stderr .
   interpretProcessOutputCereal .
@@ -79,7 +79,7 @@ interpretProcessCerealNative ::
   Members [Log, Resource, Race, Async, Embed IO] r =>
   ProcessOptions ->
   ProcessConfig () () () ->
-  InterpreterFor (Scoped () (Process a (Either Text a)) !! ProcessError) r
+  InterpreterFor (Scoped_ () (Process a (Either Text a)) !! ProcessError) r
 interpretProcessCerealNative options conf =
   interpretSystemProcessNative_ conf .
   interpretProcessCereal @PipesProcess @a options .

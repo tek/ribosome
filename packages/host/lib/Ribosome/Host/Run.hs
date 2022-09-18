@@ -15,7 +15,7 @@ import Ribosome.Host.Effect.Responses (Responses)
 import Ribosome.Host.Effect.Rpc (Rpc)
 import Ribosome.Host.Effect.UserError (UserError)
 import Ribosome.Host.IOStack (IOStack)
-import Ribosome.Host.Interpreter.Log (interpretDataLogRpc, interpretLogRpc)
+import Ribosome.Host.Interpreter.Log (interpretReportLogRpc, interpretLogRpc)
 import Ribosome.Host.Interpreter.Reports (interpretReports)
 import Ribosome.Host.Interpreter.Responses (interpretResponses)
 import Ribosome.Host.Interpreter.Rpc (interpretRpc)
@@ -52,5 +52,5 @@ interpretRpcStack =
   interpretAtomic Nothing .
   interpretRpc .
   raiseUnder .
-  interpretDataLogRpc .
+  interpretReportLogRpc .
   interpretLogRpc

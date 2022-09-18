@@ -14,8 +14,7 @@ import Ribosome.Menu.Class.MenuState (MenuState)
 import Ribosome.Menu.Combinators (sortEntries, sortedEntries)
 import qualified Ribosome.Menu.Data.Entry as Entry
 import Ribosome.Menu.Data.Entry (Entries, Entry (Entry), simpleIntEntries)
-import Ribosome.Menu.Data.Filter (Filter (Fuzzy, Prefix, Substring, Regex))
-import Ribosome.Menu.Data.State (Core (Core), Modal (Modal), modal)
+import Ribosome.Menu.Data.Filter (Filter (Fuzzy, Prefix, Regex, Substring))
 import Ribosome.Menu.Data.MenuEvent (
   MenuEvent (Query),
   QueryEvent (Refined, Reset),
@@ -23,6 +22,7 @@ import Ribosome.Menu.Data.MenuEvent (
 import qualified Ribosome.Menu.Data.MenuItem as MenuItem
 import Ribosome.Menu.Data.MenuItem (Items, simpleMenuItem)
 import Ribosome.Menu.Data.MenuResult (MenuResult (Success))
+import Ribosome.Menu.Data.State (Core (Core), Modal (Modal), modal)
 import Ribosome.Menu.Data.WithCursor (WithCursor (WithCursor))
 import Ribosome.Menu.Effect.Menu (menuState)
 import Ribosome.Menu.Effect.MenuTest (
@@ -212,7 +212,7 @@ execToggle =
 
 test_menuToggle :: UnitTest
 test_menuToggle = do
-  runUnitTest do
+  runTest do
     runTestMenu startInsert $ defaultFilter do
       r <- testError $ testMenu startInsert (modal Fuzzy) (defaultMappings <> [("<cr>", execToggle)]) do
         sendStaticItems "initial" (simpleMenuItem () <$> itemsToggle)

@@ -45,6 +45,8 @@ library
   hs-source-dirs:
       lib
   default-extensions:
+      StandaloneKindSignatures
+      OverloadedLabels
       AllowAmbiguousTypes
       ApplicativeDo
       BangPatterns
@@ -106,8 +108,6 @@ library
       UndecidableInstances
       UnicodeSyntax
       ViewPatterns
-      StandaloneKindSignatures
-      OverloadedLabels
   ghc-options: -Wall -Wredundant-constraints -Wincomplete-uni-patterns -Wmissing-deriving-strategies -Widentities -Wunused-packages -fplugin=Polysemy.Plugin
   build-depends:
       base >=4.12 && <5
@@ -132,6 +132,8 @@ executable ribosome
   hs-source-dirs:
       app
   default-extensions:
+      StandaloneKindSignatures
+      OverloadedLabels
       AllowAmbiguousTypes
       ApplicativeDo
       BangPatterns
@@ -193,8 +195,6 @@ executable ribosome
       UndecidableInstances
       UnicodeSyntax
       ViewPatterns
-      StandaloneKindSignatures
-      OverloadedLabels
   ghc-options: -Wall -Wredundant-constraints -Wincomplete-uni-patterns -Wmissing-deriving-strategies -Widentities -Wunused-packages -fplugin=Polysemy.Plugin -threaded -rtsopts -with-rtsopts=-N
   build-depends:
       base >=4.12 && <5
@@ -216,6 +216,8 @@ test-suite ribosome-app-unit
   hs-source-dirs:
       test
   default-extensions:
+      StandaloneKindSignatures
+      OverloadedLabels
       AllowAmbiguousTypes
       ApplicativeDo
       BangPatterns
@@ -277,8 +279,6 @@ test-suite ribosome-app-unit
       UndecidableInstances
       UnicodeSyntax
       ViewPatterns
-      StandaloneKindSignatures
-      OverloadedLabels
   ghc-options: -Wall -Wredundant-constraints -Wincomplete-uni-patterns -Wmissing-deriving-strategies -Widentities -Wunused-packages -fplugin=Polysemy.Plugin -threaded -rtsopts -with-rtsopts=-N
   build-depends:
       base >=4.12 && <5

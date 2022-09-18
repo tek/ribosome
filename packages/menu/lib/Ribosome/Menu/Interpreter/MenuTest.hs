@@ -21,6 +21,7 @@ import Ribosome.Menu.Prompt.Data.PromptConfig (PromptConfig)
 import qualified Ribosome.Menu.Prompt.Data.PromptEvent as PromptEvent
 import Ribosome.Menu.Prompt.Data.PromptEvent (PromptEvent)
 import Ribosome.Menu.Prompt.Run (pristinePrompt)
+import Ribosome.Host.Data.RpcError (RpcError)
 
 newtype TestTimeout =
   TestTimeout { unTestTimeout :: NanoSeconds }
@@ -52,17 +53,17 @@ failQueue desc =
   noteFail desc . resultToMaybe <=< failTimeout desc
 
 interceptMenuUiQueue ::
-  Members [MenuUi, Queue PromptEvent, Reader TestTimeout, Fail, Race] r =>
+  Members [MenuUi !! RpcError, Queue PromptEvent, Reader TestTimeout, Fail, Race] r =>
   Sem r a ->
   Sem r a
 interceptMenuUiQueue =
-  interceptH \case
+  interceptResumableH \case
     RenderPrompt consumer prompt ->
-      pureT =<< MenuUi.renderPrompt consumer prompt
+      pureT =<< restop (MenuUi.renderPrompt consumer prompt)
     PromptEvent _ -> do
       pureT =<< failQueue "MenuUi PromptEvent" Queue.read
     Render menu ->
-      pureT =<< MenuUi.render menu
+      pureT =<< restop (MenuUi.render menu)
 
 data WaitEvent =
   Requested Text
@@ -238,7 +239,7 @@ interpretMenuTestResources timeout pconf =
 interpretMenuTest ::
   Show i =>
   Members (MenuTestResources i result) r =>
-  Members [MenuUi, Log, Fail, Resource, Race, Embed IO] r =>
+  Members [MenuUi !! RpcError, Log, Fail, Resource, Race, Embed IO] r =>
   Member (EventConsumer ires MenuEvent) r =>
   PromptConfig ->
   InterpretersFor [MenuTest i result, Consume MenuEvent] r

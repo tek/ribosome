@@ -8,8 +8,8 @@ import Conc (
   MaskIO,
   interpretEventsChan,
   interpretGates,
-  interpretPScopedWithH,
   interpretQueueTBM,
+  interpretScopedWithH,
   interpretSync,
   withAsync_,
   )
@@ -32,7 +32,7 @@ import Ribosome.Host.Effect.Rpc (Rpc)
 import Ribosome.Host.Interpret (type (|>))
 import Ribosome.Host.Interpreter.MState (interpretMState, interpretMStates)
 import qualified Ribosome.Menu.Class.MenuState as MenuState
-import Ribosome.Menu.Class.MenuState (Filter, MenuState, MenuState (Item, mode))
+import Ribosome.Menu.Class.MenuState (Filter, MenuState (Item, mode))
 import Ribosome.Menu.Data.CursorIndex (CursorIndex)
 import qualified Ribosome.Menu.Data.Filter as Filter
 import Ribosome.Menu.Data.FilterMode (FilterMode)
@@ -211,7 +211,7 @@ interpretMenuLoops ::
   Member (MenuFilter (Filter s)) r =>
   InterpreterFor (Menus s) r
 interpretMenuLoops =
-  interpretPScopedWithH @(MenuLoopScope s) (uncurry menuLoopScope) \ () ->
+  interpretScopedWithH @(MenuLoopScope s) (uncurry menuLoopScope) \ () ->
     let
       handle :: ∀ r0 x . Menu s (Sem r0) x -> Tactical (Menu s) (Sem r0) (MenuLoopScope s ++ r) x
       handle = \case

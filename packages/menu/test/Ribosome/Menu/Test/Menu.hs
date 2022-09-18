@@ -8,17 +8,19 @@ import Polysemy.Test (Hedgehog, TestError, assertEq, evalMaybe)
 import qualified Queue
 import Time (Seconds (Seconds))
 
+import Ribosome.Host.Data.Report (ReportLog)
 import Ribosome.Host.Data.RpcError (RpcError)
+import Ribosome.Host.Interpreter.Log (interpretReportLogLog)
 import Ribosome.Menu.Action (MenuWidget, menuIgnore)
 import Ribosome.Menu.Class.MenuState (MenuState)
 import Ribosome.Menu.Combinators (sortEntries, sortedEntries)
 import qualified Ribosome.Menu.Data.Entry as Entry
 import Ribosome.Menu.Data.Filter (Filter (Fuzzy))
 import Ribosome.Menu.Data.FilterMode (FilterMode)
-import Ribosome.Menu.Data.State (Modal, modal)
 import qualified Ribosome.Menu.Data.MenuEvent as MenuEvent
 import Ribosome.Menu.Data.MenuEvent (MenuEvent)
 import qualified Ribosome.Menu.Data.MenuItem as MenuItem
+import Ribosome.Menu.Data.State (Modal, modal)
 import Ribosome.Menu.Effect.Menu (Menu, readState)
 import Ribosome.Menu.Effect.MenuFilter (MenuFilter)
 import qualified Ribosome.Menu.Effect.MenuTest as MenuTest
@@ -36,11 +38,11 @@ import Ribosome.Test.Error (testError)
 import Ribosome.Test.Wait (assertWait)
 
 enqueueItems ::
-  Members [MenuUi, Hedgehog IO, Queue [Text]] r =>
+  Members [MenuUi !! RpcError, Hedgehog IO, Queue [Text]] r =>
   Sem r a ->
   Sem r a
 enqueueItems =
-  intercept \case
+  interceptResumable \case
     MenuUi.Render menu ->
       evalMaybe . resultToMaybe =<< Queue.writeTimeout (Seconds 5) (MenuItem.text . Entry.item <$> menu ^. #entries . to sortEntries)
     MenuUi.RenderPrompt _ _ ->
@@ -58,7 +60,8 @@ enqueuePrompt = do
 
 type SimpleTestMenu =
   [
-    MenuUi,
+    MenuUi !! RpcError,
+    ReportLog,
     ChronosTime,
     Queue [Text],
     Queue Prompt
@@ -71,7 +74,8 @@ runSimpleTestMenu =
   interpretQueueTBM @Prompt 64 .
   interpretQueueTBM @[Text] 64 .
   interpretTimeChronos .
-  interpretMenuUiNull .
+  interpretReportLogLog .
+  raiseResumable interpretMenuUiNull .
   enqueueItems
 
 type PromptTest i =

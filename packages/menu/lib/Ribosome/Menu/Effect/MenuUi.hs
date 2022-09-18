@@ -1,7 +1,5 @@
 module Ribosome.Menu.Effect.MenuUi where
 
-import Conc (PScoped, pscoped)
-
 import Ribosome.Data.ScratchState (ScratchState)
 import Ribosome.Host.Data.RpcError (RpcError)
 import Ribosome.Menu.Data.RenderMenu (RenderMenu)
@@ -17,11 +15,11 @@ data MenuUi :: Effect where
 makeSem ''MenuUi
 
 withMenuUi ::
-  Member (PScoped par res MenuUi) r =>
+  Member (Scoped par res (MenuUi !! e)) r =>
   par ->
-  InterpreterFor MenuUi r
+  InterpreterFor (MenuUi !! e) r
 withMenuUi =
-  pscoped
+  scoped
 
 data WindowMenu =
   WindowMenu {
@@ -36,7 +34,7 @@ data PureMenu =
   deriving stock (Eq, Show)
 
 type NvimMenuUi res =
-  PScoped WindowConfig res MenuUi !! RpcError
+  Scoped WindowConfig res (MenuUi !! RpcError) !! RpcError
 
 type WindowMenuUi =
   NvimMenuUi WindowMenu

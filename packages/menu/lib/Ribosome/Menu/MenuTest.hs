@@ -15,17 +15,17 @@ import Ribosome.Data.SettingError (SettingError)
 import Ribosome.Effect.Scratch (Scratch)
 import Ribosome.Effect.Settings (Settings)
 import Ribosome.Host.Data.Event (Event)
-import Ribosome.Host.Data.Report (resumeReportFail)
+import Ribosome.Host.Data.Report (ReportLog, resumeReportFail)
 import Ribosome.Host.Data.RpcError (RpcError)
 import Ribosome.Host.Effect.Rpc (Rpc)
-import Ribosome.Host.Interpret (type (|>))
+import Ribosome.Host.Interpreter.Log (interpretReportLogLog)
 import Ribosome.Menu.Action (MenuWidget)
-import Ribosome.Menu.Class.MenuState (Filter, MenuState, MenuState (Item))
+import Ribosome.Menu.Class.MenuState (Filter, MenuState (Item))
 import Ribosome.Menu.Data.MenuEvent (MenuEvent (Query))
 import Ribosome.Menu.Data.MenuItem (MenuItem)
 import Ribosome.Menu.Data.WindowConfig (WindowConfig (WindowConfig))
-import Ribosome.Menu.Effect.MenuFilter (MenuFilter)
 import Ribosome.Menu.Effect.Menu (Menu, Menus, waitPrompt)
+import Ribosome.Menu.Effect.MenuFilter (MenuFilter)
 import Ribosome.Menu.Effect.MenuTest (MenuTest, waitEventPred)
 import Ribosome.Menu.Effect.MenuUi (MenuUi, withMenuUi)
 import Ribosome.Menu.Interpreter.Menu (MenuLoopDeps, interpretMenuLoopDeps, interpretMenuLoops)
@@ -66,7 +66,7 @@ type MenuRenderEffects s result =
   [Menu s, MenuTest (Item s) result, Consume MenuEvent] ++ Menus s : MenuLoopDeps
 
 type MenuTestEffects s result =
-  MenuRenderEffects s result |> MenuUi
+  MenuRenderEffects s result ++ [MenuUi !! RpcError, ReportLog]
 
 type MenuTestStack i result =
   Reader (SerialT IO (MenuItem i)) : MenuTestResources i result
@@ -128,7 +128,7 @@ testMenuRender ::
   Show (Item s) =>
   Members MenuTestIOStack r =>
   Members (MenuTestResources (Item s) result) r =>
-  Members [MenuFilter (Filter s), Reader (SerialT IO (MenuItem (Item s))), MenuUi, Stop RpcError] r =>
+  Members [MenuFilter (Filter s), Reader (SerialT IO (MenuItem (Item s))), MenuUi !! RpcError, ReportLog, Stop RpcError] r =>
   PromptConfig ->
   s ->
   (MappingLhs -> Maybe (MenuWidget s (MenuRenderEffects s result ++ r) result)) ->
@@ -153,9 +153,10 @@ testMenu ::
   Members (MenuTestDeps s result) r =>
   PromptConfig ->
   s ->
-  Mappings s (MenuRenderEffects s result ++ MenuUi : r) result ->
+  Mappings s (MenuTestEffects s result ++ r) result ->
   InterpretersFor (MenuTestEffects s result) r
 testMenu pconf initial maps =
+  interpretReportLogLog .
   interpretMenuUiNvimNull .
   resumeReportFail .
   withMenuUi def .
@@ -172,7 +173,7 @@ testStaticMenu ::
   [MenuItem (Item s)] ->
   PromptConfig ->
   s ->
-  Mappings s (MenuRenderEffects s result ++ MenuUi : MenuTestStack (Item s) result ++ r) result ->
+  Mappings s (MenuTestEffects s result ++ MenuTestStack (Item s) result ++ r) result ->
   InterpretersFor (MenuTestEffects s result ++ MenuTestStack (Item s) result) r
 testStaticMenu items pconf initial maps =
   runStaticTestMenu @(Item s) pconf items .
@@ -189,9 +190,10 @@ testNvimMenu ::
   PromptConfig ->
   s ->
   ScratchOptions ->
-  Mappings s (MenuRenderEffects s result ++ MenuUi : r) result ->
+  Mappings s (MenuTestEffects s result ++ r) result ->
   InterpretersFor (MenuTestEffects s result) r
 testNvimMenu pconf initial options maps =
+  interpretReportLogLog .
   interpretMenuUiWindow .
   resumeReportFail .
   withMenuUi (WindowConfig pconf options (Just def) (Map.keys maps)) .
@@ -208,7 +210,7 @@ testStaticNvimMenu ::
   PromptConfig ->
   s ->
   ScratchOptions ->
-  Mappings s (MenuRenderEffects s result ++ MenuUi : MenuTestStack (Item s) result ++ r) result ->
+  Mappings s (MenuTestEffects s result ++ MenuTestStack (Item s) result ++ r) result ->
   InterpretersFor (MenuTestEffects s result ++ MenuTestStack (Item s) result) r
 testStaticNvimMenu items pconf initial options maps =
   runStaticTestMenu @(Item s) pconf items .

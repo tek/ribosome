@@ -79,6 +79,9 @@ data LogReport =
   }
   deriving stock (Show, Generic)
 
+type ReportLog =
+  DataLog LogReport
+
 -- |Construct a 'LogReport' error from a single 'Text'.
 simple ::
   HasCallStack =>

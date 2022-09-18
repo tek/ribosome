@@ -1,8 +1,9 @@
 module Ribosome.Menu.Interpreter.MenuUiPure where
 
-import Conc (Gate, interpretAtomic, interpretGate, interpretPScopedResumable_, subscribeWhile, withAsync_)
+import Conc (Gate, interpretAtomic, interpretGate, subscribeWhile, withAsync_)
 import Polysemy.Chronos (ChronosTime)
 import Polysemy.Conc.Gate (gate, signal)
+import Polysemy.Conc.Interpreter.Scoped (interpretScopedR_)
 import qualified Time
 import Time (MilliSeconds (MilliSeconds))
 
@@ -41,7 +42,7 @@ interpretMenuUiPureAtomic ::
   Members [Gate, AtomicState [PromptEvent], ChronosTime] r =>
   InterpreterFor (NvimMenuUi PureMenu) r
 interpretMenuUiPureAtomic =
-  interpretPScopedResumable_ (const (pure PureMenu)) \ PureMenu -> \case
+  interpretScopedR_ (const (pure PureMenu)) \ PureMenu -> \case
     RenderPrompt _ _ ->
       unit
     PromptEvent _ -> do
