@@ -1,39 +1,90 @@
 module Ribosome.Menu.Effect.Menu where
 
 import Lens.Micro.Mtl (view)
+import Polysemy.Bundle (Bundle, sendBundle)
 import Streamly.Prelude (SerialT)
 
 import Ribosome.Menu.Class.MenuState (Item, MenuState (core))
 import Ribosome.Menu.Data.CursorIndex (CursorIndex)
 import Ribosome.Menu.Data.MenuItem (MenuItem)
-import Ribosome.Menu.Data.RenderMenu (RenderMenu)
 import Ribosome.Menu.Data.State (Core, ModalState)
+import Ribosome.Menu.Data.WindowConfig (WindowConfig)
 import Ribosome.Menu.Data.WithCursor (WithCursor (WithCursor))
+import Ribosome.Menu.Effect.MenuUi (MenuUi)
 import Ribosome.Menu.Prompt.Data.Prompt (Prompt)
 
 data Menu s :: Effect where
-  WithRender :: (RenderMenu (Item s) -> m ()) -> m a -> Menu s m a
   UseCursor :: (CursorIndex -> m (CursorIndex, a)) -> Menu s m a
   ReadCursor :: Menu s m CursorIndex
   UseState :: (s -> m (s, a)) -> Menu s m a
   ReadState :: Menu s m s
-  StartPrompt :: Menu s m ()
-  WaitPrompt :: Menu s m ()
-  PromptQuit :: Menu s m ()
-  PromptUpdated :: Prompt -> Menu s m ()
-  PromptLooped :: Menu s m ()
-  Render :: Menu s m ()
 
 makeSem ''Menu
+
+data MenuCore :: Effect where
+  StartPrompt :: MenuCore m ()
+  WaitPrompt :: MenuCore m ()
+  PromptQuit :: MenuCore m ()
+  PromptUpdated :: Prompt -> MenuCore m ()
+  PromptLooped :: MenuCore m ()
+  Render :: MenuCore m ()
+
+makeSem ''MenuCore
+
+type MenuEngineStack s =
+  [Menu s, MenuUi, MenuCore]
+
+newtype MenuEngine s m a =
+  MenuEngine { unMenuEngine :: Bundle (MenuEngineStack s) m a }
+
+menuEngine ::
+  ∀ e s r .
+  Member (MenuEngine s) r =>
+  Member e (MenuEngineStack s) =>
+  InterpreterFor e r
+menuEngine =
+  transform MenuEngine .
+  sendBundle .
+  raiseUnder @(Bundle (MenuEngineStack s))
+
+bundleMenuEngine ::
+  ∀ s r .
+  Member (MenuEngine s) r =>
+  InterpretersFor (MenuEngineStack s) r
+bundleMenuEngine =
+  menuEngine @MenuCore .
+  menuEngine @MenuUi .
+  menuEngine @(Menu s)
 
 type ModalMenu i =
   Menu (ModalState i)
 
-type Menus s =
-  Scoped (SerialT IO (MenuItem (Item s)), s) () (Menu s)
+type ItemStream s =
+  SerialT IO (MenuItem (Item s))
 
-type ModalMenus i =
-  Menus (ModalState i)
+data MenuParams s =
+  MenuParams {
+    items :: ItemStream s,
+    initialState :: s
+  }
+
+type Menus res s =
+  Scoped (MenuParams s) res (MenuEngine s)
+
+data UiMenuParams ui s =
+  UiMenuParams {
+    basic :: MenuParams s,
+    ui :: ui
+  }
+
+type UiMenus ui res s =
+  Scoped (UiMenuParams ui s) res (MenuEngine s)
+
+type WindowMenus res s =
+  UiMenus WindowConfig res s
+
+type ModalMenus res i =
+  Menus res (ModalState i)
 
 putCursor ::
   Member (Menu s) r =>
@@ -115,8 +166,7 @@ viewMenu g =
 basicState ::
   MenuState s =>
   Member (Menu s) r =>
-  Sem (State (Core (Item s)) : r) a ->
-  Sem r a
+  InterpreterFor (State (Core (Item s))) r
 basicState action =
   useState \ s -> do
     (new, a) <- runState (s ^. core) action

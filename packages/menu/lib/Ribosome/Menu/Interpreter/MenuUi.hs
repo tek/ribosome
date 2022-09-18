@@ -1,10 +1,9 @@
 module Ribosome.Menu.Interpreter.MenuUi where
 
-import Conc (Consume)
-import Polysemy.Conc.Interpreter.Scoped (interpretScopedR_)
+import Conc (Consume, interpretScopedResumable_)
 
 import qualified Ribosome.Menu.Effect.MenuUi as MenuUi
-import Ribosome.Menu.Effect.MenuUi (MenuUi (PromptEvent, Render, RenderPrompt), NvimMenuUi)
+import Ribosome.Menu.Effect.MenuUi (MenuUi (PromptEvent, Render, RenderPrompt), ScopedMenuUi)
 import qualified Ribosome.Menu.Prompt.Data.PromptEvent as PromptEvent
 import Ribosome.Menu.Prompt.Data.PromptEvent (PromptEvent)
 
@@ -13,17 +12,17 @@ interpretMenuUiNull =
   interpret \case
     RenderPrompt _ _ ->
       unit
-    PromptEvent _ ->
+    PromptEvent ->
       pure PromptEvent.Ignore
     Render _ ->
       unit
 
-interpretMenuUiNvimNull :: InterpreterFor (NvimMenuUi ()) r
+interpretMenuUiNvimNull :: InterpreterFor (ScopedMenuUi p ()) r
 interpretMenuUiNvimNull =
-  interpretScopedR_ (const unit) \ () -> \case
+  interpretScopedResumable_ (const unit) \ () -> \case
     RenderPrompt _ _ ->
       unit
-    PromptEvent _ ->
+    PromptEvent ->
       pure PromptEvent.Ignore
     Render _ ->
       unit
@@ -36,7 +35,7 @@ interceptMenuUiPromptConsume =
   intercept \case
     RenderPrompt c p ->
       MenuUi.renderPrompt c p
-    PromptEvent _ ->
+    PromptEvent ->
       consume
     Render m ->
       MenuUi.render m

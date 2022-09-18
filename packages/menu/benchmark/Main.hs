@@ -15,7 +15,6 @@ import Conc (
 import qualified Control.Exception as Base
 import Criterion.Main (bench, bgroup, defaultConfig, defaultMainWith, env, whnfIO)
 import Exon (exon)
-import Lens.Micro.Extras (view)
 import Log (Severity (Warn), interpretLogStderrLevelConc)
 import Path (relfile)
 import Polysemy.Conc.Gate (gate, signal)
@@ -24,19 +23,22 @@ import Polysemy.Test (Test, TestError, interpretTestInSubdir)
 import Prelude hiding (consume)
 import qualified Queue
 import Ribosome.Embed (EmbedStack, runEmbedPluginIO_)
+import Ribosome.Host.Effect.MState (mread)
+import Ribosome.Host.Error (resumeBootError)
+import Ribosome.Host.Interpreter.MState (interpretMState)
 import Ribosome.Menu.Combinators (sortedEntries)
 import Ribosome.Menu.Data.Filter (Filter (Fuzzy))
 import Ribosome.Menu.Data.MenuEvent (MenuEvent (Exhausted, Query, Rendered), QueryEvent (Refined))
 import Ribosome.Menu.Data.MenuItem (simpleMenuItem)
 import Ribosome.Menu.Data.RenderEvent (RenderEvent)
-import Ribosome.Menu.Effect.Menu (readItems)
-import Ribosome.Menu.Effect.MenuState (readMenu)
+import Ribosome.Menu.Data.State (ModalState, modal)
+import Ribosome.Menu.Effect.Menu (Menu, bundleMenuEngine, menuEngine)
+import Ribosome.Menu.Interpreter.Menu (MS (MS), interpretMenuLoopDeps, interpretMenus, menuStream, unMS)
 import Ribosome.Menu.Interpreter.MenuFilter (defaultFilter)
-import Ribosome.Menu.Interpreter.Menu (interpretMenuLoops, interpretMenus, menuStream)
-import Ribosome.Menu.Interpreter.MenuState (interpretMenuState)
 import Ribosome.Menu.Interpreter.MenuStream (interpretMenuStream)
-import Ribosome.Menu.Interpreter.MenuUi (interceptMenuUiPromptEvents, interpretMenuUiNull)
-import Ribosome.Menu.Loop (menuMaps, runMenu)
+import Ribosome.Menu.Interpreter.MenuUi (interceptMenuUiPromptEvents, interpretMenuUiNvimNull)
+import Ribosome.Menu.Items (currentEntries)
+import Ribosome.Menu.Loop (addMenuUi, lookupMapping, menuLoop', runMenu)
 import Ribosome.Menu.Mappings (defaultMappings)
 import Ribosome.Menu.Prompt.Data.Prompt (Prompt (Prompt))
 import qualified Ribosome.Menu.Prompt.Data.PromptEvent as PromptEvent
@@ -78,14 +80,14 @@ appendBench ::
   Sem r ()
 appendBench files =
   interpretQueueTBM @RenderEvent 64 $
-  interpretQueueTBM @Prompt 64 $
+  interpretQueueTBM @(Maybe Prompt) 64 $
   interpretSync $
   interpretGates $
   interpretEventsChan @MenuEvent $
   defaultFilter $
-  interpretMenuState Fuzzy $
+  interpretMState (MS (modal Fuzzy)) $
   interpretMenuStream do
-    subscribe @MenuEvent $ subscribeAsync (menuStream items *> publish Rendered) do
+    subscribe @MenuEvent $ subscribeAsync (menuStream @(ModalState ()) items *> publish Rendered) do
       consumeElem Exhausted
       publishPrompt 1 "a"
       consumeElem (Query Refined)
@@ -99,7 +101,7 @@ appendBench files =
       consumeElem (Query Refined)
       Queue.close
       consumeElem Rendered
-      len <- length . view (#items . sortedEntries) <$> readMenu
+      len <- length <$> toListOf (sortedEntries . each . #item . #text) . unMS <$> mread
       if len == 1401
       then unit
       else Base.throw (userError [exon|length is #{show len}|])
@@ -107,7 +109,7 @@ appendBench files =
     items =
       simpleMenuItem () <$> Stream.fromList files
     publishPrompt i t =
-      Queue.write (Prompt i PromptMode.Insert t)
+      Queue.write (Just (Prompt i PromptMode.Insert t))
 
 -- time                 1.569 s    (1.357 s .. 1.695 s)
 --                      0.998 R²   (0.994 R² .. 1.000 R²)
@@ -121,11 +123,11 @@ menuBench files =
   interpretGate $
   interpretEventsChan @PromptEvent $
   defaultFilter $
-  interpretMenuUiNull $
-  interpretMenus $
-  interpretMenuLoops do
-    runMenu items Fuzzy $ interceptMenuUiPromptEvents do
-      subscribe @MenuEvent $ subscribeAsync (menuMaps defaultMappings *> signal) do
+  interpretMenuLoopDeps $
+  interpretMenuUiNvimNull $
+  interpretMenus do
+    resumeBootError $ addMenuUi () $ runMenu items (modal Fuzzy) $ bundleMenuEngine $ interceptMenuUiPromptEvents do
+      subscribe @MenuEvent $ subscribeAsync (menuLoop' (lookupMapping defaultMappings) *> signal) do
         consumeElem Exhausted
         publishPrompt 1 "a"
         consumeElem (Query Refined)
@@ -139,7 +141,7 @@ menuBench files =
         consumeElem (Query Refined)
         publish (PromptEvent.Quit Nothing)
         gate
-        len <- length . view sortedEntries <$> readItems
+        len <- length <$> menuEngine @(Menu _) currentEntries
         if len == 1401
         then unit
         else Base.throw (userError [exon|length is #{show len}|])
@@ -159,14 +161,19 @@ runBench =
   interpretRace .
   interpretLogStderrLevelConc (Just Warn)
 
--- TODO move runEmbedPluginIO_ out of the benchmark
+menuBenchIO ::
+  [Text] ->
+  IO ()
+menuBenchIO fs =
+  runEmbedPluginIO_ "bench" mempty (menuBench fs)
+
 main :: IO ()
 main =
   defaultMainWith conf [
     env fileList \ fs ->
       bgroup "menu" [
         bench "prompt updates with 29k items" (whnfIO (runBench (appendBench fs))),
-        bench "nvim menu with rendering" (whnfIO (runEmbedPluginIO_ "bench" mempty (menuBench fs)))
+        bench "nvim menu with rendering" (whnfIO (menuBenchIO fs))
       ]
   ]
   where

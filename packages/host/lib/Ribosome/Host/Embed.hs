@@ -23,7 +23,7 @@ publishRequests ::
   Sem r a ->
   Sem r a
 publishRequests =
-  intercept @(Process i o) \case
+  intercept \case
     Process.Send msg -> do
       publish msg
       Process.send msg

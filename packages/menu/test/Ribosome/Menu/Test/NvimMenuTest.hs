@@ -14,18 +14,17 @@ import Ribosome.Menu.Combinators (sortEntries)
 import Ribosome.Menu.Data.CursorIndex (CursorIndex (CursorIndex))
 import Ribosome.Menu.Data.Entry (intEntries)
 import Ribosome.Menu.Data.Filter (Filter (Fuzzy))
-import Ribosome.Menu.Data.State (Modal, modal)
 import Ribosome.Menu.Data.MenuEvent (MenuEvent (Rendered))
 import Ribosome.Menu.Data.MenuItem (MenuItem, simpleMenuItem)
 import qualified Ribosome.Menu.Data.MenuResult as MenuResult
 import Ribosome.Menu.Data.MenuView (MenuView (MenuView))
+import Ribosome.Menu.Data.State (Modal, modal)
 import Ribosome.Menu.Effect.Menu (readCursor, readState)
 import qualified Ribosome.Menu.Effect.MenuTest as MenuTest
 import Ribosome.Menu.Effect.MenuTest (sendMapping, sendMappingWait, waitEvent)
-import Ribosome.Menu.Effect.MenuUi (WindowMenu)
+import Ribosome.Menu.Interpreter.Menu (interpretSingleNvimMenu, promptInput)
 import Ribosome.Menu.Interpreter.MenuFilter (defaultFilter)
-import Ribosome.Menu.Interpreter.Menu (interpretNvimMenu, promptInput)
-import Ribosome.Menu.Loop (nvimMenu, nvimMenuLoop, runMenu)
+import Ribosome.Menu.Loop (menuMaps, runMenuUi, windowMenu, withMenuUi)
 import Ribosome.Menu.Mappings (Mappings, defaultMappings)
 import Ribosome.Menu.MenuTest (testStaticNvimMenu)
 import Ribosome.Menu.NvimRenderer (computeView, entrySlice)
@@ -67,10 +66,10 @@ items =
   <>
   (mappend "item" . show <$> [(1 :: Int)..8])
 
-currentEntries ::
+currentEntry ::
   MenuState s =>
   MenuWidget s r Text
-currentEntries = do
+currentEntry = do
   CursorIndex s <- readCursor
   fs <- sortEntries . view entries <$> readState
   maybe menuOk menuSuccess (fs ^? ix s . #item . #text)
@@ -79,12 +78,12 @@ mappings ::
   MenuState s =>
   Mappings s r Text
 mappings =
-  [("<cr>", currentEntries)]
+  [("<cr>", currentEntry)]
 
 test_pureInput :: UnitTest
 test_pureInput =
   testEmbed_ $ promptInput pureEvents do
-    result <- nvimMenu (mkItems items) (modal Fuzzy) opts mappings
+    result <- windowMenu (mkItems items) (modal Fuzzy) opts mappings
     MenuResult.Success "item4" === result
   where
     opts =
@@ -102,9 +101,10 @@ nativeWindowChars =
 
 test_nativeWindow :: UnitTest
 test_nativeWindow =
-  testEmbed_ $ defaultFilter $ interpretNvimMenu $ runMenu (mkItems items) (modal Fuzzy) do
-    result <- withPromptInputSync nativeWindowChars do
-      nvimMenuLoop @WindowMenu opts mappings
+  testEmbed_ $ defaultFilter $ interpretSingleNvimMenu $ runMenuUi (mkItems items) (modal Fuzzy) do
+    result <- flip (withMenuUi opts) mappings \ m -> do
+      withPromptInputSync nativeWindowChars do
+        menuMaps (insertAt @2 <$> m)
     MenuResult.Success "item4" === result
   where
     opts =
@@ -114,10 +114,10 @@ test_nativeWindow =
 
 test_interruptWindow :: UnitTest
 test_interruptWindow =
-  testEmbed_ $ defaultFilter do
-    result <- interpretNvimMenu $ runMenu (mkItems items) (modal Fuzzy) do
+  testEmbed_ $ defaultFilter $ interpretSingleNvimMenu $ runMenuUi (mkItems items) (modal Fuzzy) do
+    result <- flip (withMenuUi opts) mappings \ m -> do
       withPromptInputSync ["i", "<c-c>", "<cr>"] do
-        nvimMenuLoop @WindowMenu opts mappings
+        menuMaps (insertAt @2 <$> m)
     MenuResult.Aborted === result
     assertEq 1 . length =<< vimGetWindows
   where
@@ -126,11 +126,11 @@ test_interruptWindow =
 
 test_windowOnlyInsert :: UnitTest
 test_windowOnlyInsert =
-  testEmbed_ $ defaultFilter do
-    result <- interpretNvimMenu $ runMenu (mkItems items) (modal Fuzzy) do
-      withPromptInputSync ["i", nosync "<esc>", "<cr>"] do
-        nvimMenuLoop @WindowMenu opts mappings
-    MenuResult.Aborted === result
+  testEmbed_ $ defaultFilter $ interpretSingleNvimMenu $ runMenuUi (mkItems items) (modal Fuzzy) do
+      result <- flip (withMenuUi opts) mappings \ m -> do
+        withPromptInputSync ["i", nosync "<esc>", "<cr>"] do
+          menuMaps (insertAt @2 <$> m)
+      MenuResult.Aborted === result
   where
     opts =
       def & #prompt .~ onlyInsert

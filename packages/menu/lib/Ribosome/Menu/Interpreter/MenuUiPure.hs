@@ -1,17 +1,16 @@
 module Ribosome.Menu.Interpreter.MenuUiPure where
 
-import Conc (Gate, interpretAtomic, interpretGate, subscribeWhile, withAsync_)
+import Conc (Gate, interpretAtomic, interpretGate, interpretScopedResumable_, subscribeWhile, withAsync_)
 import Polysemy.Chronos (ChronosTime)
 import Polysemy.Conc.Gate (gate, signal)
-import Polysemy.Conc.Interpreter.Scoped (interpretScopedR_)
 import qualified Time
 import Time (MilliSeconds (MilliSeconds))
 
 import Ribosome.Menu.Data.MenuEvent (MenuEvent (Exhausted))
 import Ribosome.Menu.Effect.MenuUi (
   MenuUi (PromptEvent, Render, RenderPrompt),
-  NvimMenuUi,
   PureMenu (PureMenu),
+  ScopedMenuUi,
   )
 import qualified Ribosome.Menu.Prompt.Data.PromptEvent as PromptEvent
 import Ribosome.Menu.Prompt.Data.PromptEvent (PromptEvent)
@@ -40,12 +39,12 @@ takeEvent =
 
 interpretMenuUiPureAtomic ::
   Members [Gate, AtomicState [PromptEvent], ChronosTime] r =>
-  InterpreterFor (NvimMenuUi PureMenu) r
+  InterpreterFor (ScopedMenuUi p PureMenu) r
 interpretMenuUiPureAtomic =
-  interpretScopedR_ (const (pure PureMenu)) \ PureMenu -> \case
+  interpretScopedResumable_ (const (pure PureMenu)) \ PureMenu -> \case
     RenderPrompt _ _ ->
       unit
-    PromptEvent _ -> do
+    PromptEvent -> do
       gate
       takeEvent
     Render _ ->
@@ -55,7 +54,7 @@ interpretMenuUiPure ::
   Members [EventConsumer res MenuEvent, ChronosTime, Resource, Async, Race, Embed IO] r =>
   Bool ->
   [PromptEvent] ->
-  InterpreterFor (NvimMenuUi PureMenu) r
+  InterpreterFor (ScopedMenuUi p PureMenu) r
 interpretMenuUiPure waitExhausted events =
   interpretGate .
   withAsync_ (initialWait waitExhausted) .

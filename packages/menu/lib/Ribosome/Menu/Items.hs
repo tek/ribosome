@@ -10,6 +10,7 @@ import Data.Sequence ((|>))
 import Prelude hiding (unify)
 
 import Ribosome.Menu.Class.MenuState (MenuState (Item, history, mode), entries, items)
+import Ribosome.Menu.Combinators (sortedEntries)
 import Ribosome.Menu.Data.CursorIndex (CursorIndex (CursorIndex))
 import Ribosome.Menu.Data.Entry (Entries, Entry)
 import qualified Ribosome.Menu.Data.MenuAction as MenuAction
@@ -17,7 +18,7 @@ import Ribosome.Menu.Data.MenuAction (MenuAction)
 import qualified Ribosome.Menu.Data.MenuItem as MenuItem
 import Ribosome.Menu.Data.MenuItem (MenuItem)
 import Ribosome.Menu.Data.WithCursor (WithCursor)
-import Ribosome.Menu.Effect.Menu (Menu, viewMenu)
+import Ribosome.Menu.Effect.Menu (Menu, readState, viewMenu)
 import Ribosome.Menu.ItemLens (focus, selected, selected')
 import Ribosome.Menu.Lens (use, (%=), (.=))
 
@@ -162,3 +163,10 @@ deleteSelected = do
   history m .= mempty
   items %= flip IntMap.withoutKeys (IntSet.fromList deletedItems)
   #cursor %= adaptCursorAfterDeletion deletedEntries
+
+currentEntries ::
+  MenuState s =>
+  Member (Menu s) r =>
+  Sem r [Text]
+currentEntries =
+  toListOf (sortedEntries . each . #item . #text) <$> readState

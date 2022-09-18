@@ -78,11 +78,8 @@ import Ribosome.Menu.Effect.MenuFilter (MenuFilter (..))
 import Ribosome.Menu.Effect.MenuStream (MenuStream)
 import Ribosome.Menu.Effect.MenuUi (
   MenuUi,
-  NvimMenuUi,
   PureMenu,
-  PureMenuUi,
   WindowMenu,
-  WindowMenuUi,
   )
 import Ribosome.Menu.Interpreter.Menu (
   MenuLoopDeps,
@@ -90,9 +87,9 @@ import Ribosome.Menu.Interpreter.Menu (
   NvimMenuIO,
   NvimMenus,
   interpretMenuLoopDeps,
-  interpretMenuLoops,
   interpretMenus,
-  interpretNvimMenu,
+  interpretNvimMenus,
+  interpretSingleNvimMenu,
   promptInput,
   )
 import Ribosome.Menu.Interpreter.MenuFilter (defaultFilter)
@@ -126,7 +123,7 @@ import Ribosome.Menu.Items (
   withSelectionItems,
   )
 import Ribosome.Menu.Lens (use, view, (%=), (+=), (.=), (<.=))
-import Ribosome.Menu.Loop (menu, menuLoop, nvimMenu, nvimMenuLoop, runMenu, staticNvimMenu)
+import Ribosome.Menu.Loop (addMenuUi, menu, menuLoop, runMenu, runMenuUi, staticWindowMenu, windowMenu, withMenuUi)
 import Ribosome.Menu.Mappings (Mappings, defaultMappings, insert)
 import Ribosome.Menu.Prompt.Data.Prompt (Prompt (Prompt), PromptText (PromptText))
 import Ribosome.Menu.Prompt.Data.PromptConfig

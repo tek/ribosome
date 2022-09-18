@@ -6,6 +6,7 @@ import Conc (
   GatesIO,
   interpretAtomic,
   interpretEventsChan,
+  interpretScopedResumableWith,
   withAsyncGated_,
   )
 import Control.Lens.Regex.Text (group, match, regex)
@@ -13,7 +14,6 @@ import qualified Data.Text as Text
 import Exon (exon)
 import qualified Log
 import Polysemy.Conc.Gate (signal)
-import Polysemy.Conc.Interpreter.Scoped (interpretScopedRWith)
 import Prelude hiding (group)
 
 import qualified Ribosome.Api.Mode as Api
@@ -56,7 +56,6 @@ import Ribosome.Menu.Data.WindowConfig (WindowConfig (WindowConfig))
 import Ribosome.Menu.Effect.MenuUi (
   MenuUi (PromptEvent, Render, RenderPrompt),
   WindowMenu (WindowMenu),
-  WindowMenuUi,
   )
 import qualified Ribosome.Menu.Mappings as Mappings
 import Ribosome.Menu.NvimRenderer (menuSyntax, renderNvimMenu)
@@ -340,15 +339,15 @@ windowResources (WindowConfig pconf itemsOpt statusOpt mappings) use =
 interpretMenuUiWindow ::
   Members [Log, GatesIO, Resource, Race, Async, Embed IO] r =>
   Members [Scratch !! RpcError, Rpc !! RpcError, Settings !! SettingError, EventConsumer eres Event] r =>
-  InterpreterFor WindowMenuUi r
+  InterpreterFor (Scoped WindowConfig WindowMenu MenuUi !! RpcError) r
 interpretMenuUiWindow =
-  interpretScopedRWith @WindowScope windowResources \ (WindowMenu itemsScratch statusScratch promptScratch) -> \case
+  interpretScopedResumableWith @WindowScope windowResources \ (WindowMenu itemsScratch statusScratch promptScratch) -> \case
     RenderPrompt True (Prompt cursor _ (PromptText text)) -> do
       void (restop (Scratch.update (promptScratch ^. #id) ([text] :: [Text])))
       restop (setCursor (promptScratch ^. #window) 0 cursor)
     RenderPrompt False _ ->
       unit
-    PromptEvent _ ->
+    PromptEvent ->
       consume
     Render menu ->
       runReader menu (renderNvimMenu itemsScratch statusScratch)
