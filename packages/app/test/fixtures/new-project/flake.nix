@@ -5,7 +5,7 @@
     ribosome.url = "git+https://git.tryp.io/tek/ribosome";
   };
 
-  outputs = { ribosome, ... }: ribosome.lib.flake ({ config, lib, ... }: {
+  outputs = { ribosome, ... }: ribosome.lib.pro ({ config, lib, ... }: {
     base = ./.;
     packages.test-project = ./packages/test-project;
     main = "test-project";

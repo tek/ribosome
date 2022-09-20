@@ -4,7 +4,7 @@
   inputs.ribosome.url = path:RIBOSOME;
 
   outputs = { ribosome, ... }:
-  ribosome.inputs.hix.lib.flake {
+  ribosome.inputs.hix.lib.pro {
     base = ./.;
     depsFull = [ribosome];
     overrides = { fast, ... }: {

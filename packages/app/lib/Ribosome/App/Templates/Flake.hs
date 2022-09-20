@@ -41,7 +41,7 @@ flakeNix (FlakeUrl flakeUrl) (ProjectName name) (Branch branch) github cachix =
     ribosome.url = "#{flakeUrl}";
   };
 
-  outputs = { ribosome, ... }: ribosome.lib.flake ({ config, lib, ... }: {
+  outputs = { ribosome, ... }: ribosome.lib.pro ({ config, lib, ... }: {
     base = ./.;
     packages.#{name} = ./packages/#{name};
     main = "#{name}";
