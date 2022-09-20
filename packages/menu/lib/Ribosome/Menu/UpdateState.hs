@@ -74,9 +74,12 @@ appendFilter ::
   MenuState s =>
   Members [MenuFilter (Filter s), State s] r =>
   MenuQuery ->
-  Sem r QueryEvent
-appendFilter query =
-  ifM (use (entries . to null)) (resetFiltered query) (refineFiltered query =<< use entries)
+  Sem r (Maybe QueryEvent)
+appendFilter query = do
+  es <- use entries
+  if null es
+  then pure Nothing
+  else Just <$> refineFiltered query es
 
 -- TODO all changes should check the history. deleting a character and adding it again does not change the result, but
 -- refine will be called unconditionally. furthermore, unappend and random are identical.
@@ -85,14 +88,12 @@ promptChange ::
   Members [MenuFilter (Filter s), State s] r =>
   PromptChange ->
   MenuQuery ->
-  Sem r QueryEvent
+  Sem r (Maybe QueryEvent)
 promptChange = \case
   Prompt.Append ->
     appendFilter
-  Prompt.Unappend ->
-    popFiltered
   Prompt.Random ->
-    popFiltered
+    fmap Just . popFiltered
 
 insertItems ::
   MenuState s =>
@@ -118,14 +119,13 @@ promptItemUpdate ::
   Members [MenuFilter (Filter s), State s] r =>
   PromptChange ->
   PromptText ->
-  Sem r MenuEvent
+  Sem r (Maybe MenuEvent)
 promptItemUpdate change (PromptText (MenuQuery -> query)) =
-  MenuEvent.Query <$> promptChange change query
+  fmap MenuEvent.Query <$> promptChange change query
 
 diffPrompt :: PromptText -> MenuQuery -> PromptChange
 diffPrompt (PromptText new) (MenuQuery old)
   | Text.isPrefixOf old new = Prompt.Append
-  | Text.isPrefixOf new old = Prompt.Unappend
   | otherwise = Prompt.Random
 
 queryEvent ::
@@ -137,7 +137,7 @@ queryEvent = \case
   Just prompt -> do
     Log.debug [exon|query update: #{unPromptText prompt}|]
     change <- use (MenuState.query . to (diffPrompt prompt))
-    publish =<< promptItemUpdate change prompt
+    traverse_ publish =<< promptItemUpdate change prompt
   Nothing -> do
     query <- use MenuState.query
     publish . MenuEvent.Query =<< popFiltered query

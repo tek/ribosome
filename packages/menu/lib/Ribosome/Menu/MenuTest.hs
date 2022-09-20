@@ -22,12 +22,12 @@ import Ribosome.Host.Interpret (type (|>))
 import Ribosome.Host.Interpreter.Log (interpretReportLogLog)
 import Ribosome.Menu.Action (MenuWidget)
 import Ribosome.Menu.Class.MenuState (Filter, MenuState (Item))
-import Ribosome.Menu.Data.MenuEvent (MenuEvent (Query))
+import Ribosome.Menu.Data.MenuEvent (MenuEvent)
 import Ribosome.Menu.Data.MenuItem (MenuItem)
 import Ribosome.Menu.Data.WindowConfig (WindowConfig (WindowConfig))
 import Ribosome.Menu.Effect.Menu (MenuEngine, MenuEngineStack, Menus, bundleMenuEngine, waitPrompt)
 import Ribosome.Menu.Effect.MenuFilter (MenuFilter)
-import Ribosome.Menu.Effect.MenuTest (MenuTest, waitEventPred)
+import Ribosome.Menu.Effect.MenuTest (MenuTest)
 import Ribosome.Menu.Interpreter.Menu (MenuLoopDeps, interpretMenuLoopDeps, interpretMenus)
 import Ribosome.Menu.Interpreter.MenuTest (
   MenuTestResources,
@@ -38,7 +38,7 @@ import Ribosome.Menu.Interpreter.MenuTest (
   )
 import Ribosome.Menu.Interpreter.MenuUi (interpretMenuUiNvimNull)
 import Ribosome.Menu.Interpreter.MenuUiWindow (interpretMenuUiWindow)
-import Ribosome.Menu.Loop (addMenuUi, lookupMapping, runMenu, menuLoop')
+import Ribosome.Menu.Loop (addMenuUi, lookupMapping, menuLoop', runMenu)
 import Ribosome.Menu.Mappings (Mappings)
 import Ribosome.Menu.Prompt.Data.PromptConfig (PromptConfig)
 import Ribosome.Menu.Stream.Util (queueStream)
@@ -141,9 +141,6 @@ menuTestLoop pconf mappings sem = do
   interpretMenuTest pconf $ insertAt @2 $ withEventLog do
     withAsync_ (Sync.putWait timeout =<< menuLoop' mappings) do
       timeout_ (fail "prompt didn't start") timeout waitPrompt
-      waitEventPred "initial prompt update" \case
-        Query _ -> True
-        _ -> False
       sem
 
 testMenuWith ::

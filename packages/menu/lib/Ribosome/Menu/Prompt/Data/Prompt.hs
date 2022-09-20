@@ -6,8 +6,6 @@ import Ribosome.Menu.Prompt.Data.PromptMode (PromptMode)
 data PromptChange =
   Append
   |
-  Unappend
-  |
   Random
   deriving stock (Eq, Show)
 

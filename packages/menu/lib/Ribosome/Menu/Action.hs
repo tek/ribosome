@@ -109,8 +109,6 @@ menuChangeMode m = do
     mode .= m
   menuRender
 
--- TODO menuState's underlying constructor must be changed to inspect the new state and trigger a refilter if the mode
--- has been modified
 menuCycleFilter ::
   ∀ s r a .
   MenuState s =>
