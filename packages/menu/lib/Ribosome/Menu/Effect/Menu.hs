@@ -86,6 +86,9 @@ type WindowMenus res s =
 type ModalMenus res i =
   Menus res (ModalState i)
 
+type ModalUiMenus ui res i =
+  UiMenus ui res (ModalState i)
+
 putCursor ::
   Member (Menu s) r =>
   CursorIndex ->

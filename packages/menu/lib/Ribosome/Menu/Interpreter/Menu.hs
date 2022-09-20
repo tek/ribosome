@@ -33,7 +33,6 @@ import Ribosome.Host.Effect.MState (MState, ScopedMState, mread, muse)
 import Ribosome.Host.Effect.Rpc (Rpc)
 import Ribosome.Host.Interpret (type (|>))
 import Ribosome.Host.Interpreter.MState (interpretMState, interpretMStates)
-import qualified Ribosome.Menu.Class.MenuState as MenuState
 import Ribosome.Menu.Class.MenuState (Filter, MenuState (Item, mode))
 import Ribosome.Menu.Data.CursorIndex (CursorIndex)
 import qualified Ribosome.Menu.Data.Filter as Filter
@@ -303,11 +302,11 @@ promptInputFilter events =
 promptInput ::
   ∀ s eres r .
   MenuState s =>
-  MenuState.Filter s ~ FilterMode Filter.Filter =>
   Members MenuLoopIO r =>
   Members (NvimMenuIO eres) r =>
+  Filter s ~ FilterMode Filter.Filter =>
   [PromptEvent] ->
-  InterpretersFor (WindowMenus () s !! RpcError : MenuLoopDeps ++ [MenuFilter (MenuState.Filter s), ChronosTime]) r
+  InterpretersFor (WindowMenus () s !! RpcError : MenuLoopDeps ++ [MenuFilter (Filter s), ChronosTime]) r
 promptInput events =
   interpretTimeChronos .
   defaultFilter .
