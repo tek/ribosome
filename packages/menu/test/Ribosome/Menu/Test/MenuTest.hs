@@ -15,10 +15,7 @@ import Ribosome.Menu.Combinators (sortEntries, sortedEntries)
 import qualified Ribosome.Menu.Data.Entry as Entry
 import Ribosome.Menu.Data.Entry (Entries, Entry (Entry), simpleIntEntries)
 import Ribosome.Menu.Data.Filter (Filter (Fuzzy, Prefix, Regex, Substring))
-import Ribosome.Menu.Data.MenuEvent (
-  MenuEvent (Query),
-  QueryEvent (Refined, Reset),
-  )
+import Ribosome.Menu.Data.MenuEvent (MenuEvent (Query), QueryEvent (Refined, Reset))
 import qualified Ribosome.Menu.Data.MenuItem as MenuItem
 import Ribosome.Menu.Data.MenuItem (Items, simpleMenuItem)
 import Ribosome.Menu.Data.MenuResult (MenuResult (Success))
@@ -150,6 +147,19 @@ itemsChangeFilter =
     "ab"
   ]
 
+test_initialFilter :: UnitTest
+test_initialFilter =
+  runTest do
+    runTestMenu startInsert $ defaultFilter do
+      testError $ testStaticMenu its def (modal Substring) mempty do
+        sendPrompt (Prompt 1 Insert "abc")
+        waitEvent "substring refined" (Query Refined)
+        awaitCurrent ["xabc"]
+        quit
+  where
+    its =
+      simpleMenuItem () <$> itemsChangeFilter
+
 test_changeFilter :: UnitTest
 test_changeFilter =
   runTest do
@@ -187,7 +197,7 @@ test_changeFilter =
 
 charsToggle :: [PromptEvent]
 charsToggle =
-  Update "a" : (Mapping <$> ["<esc>", "k", "<space>", "*", "<cr>"])
+  Update "a" : (Mapping <$> ["k", "<space>", "*", "<cr>"])
 
 itemsToggle :: [Text]
 itemsToggle =
@@ -299,9 +309,9 @@ test_menu =
     unitTestTimes 100 "filter items" test_pureMenuFilter,
     unitTestTimes 100 "execute an action" test_pureMenuExecute,
     unitTestTimes 100 "mark multiple items" test_menuMultiMark,
-    unitTest "change filter" test_changeFilter,
-    -- TODO flaky
-    -- unitTestTimes 100 "toggle selection items" test_menuToggle,
+    unitTestTimes 100 "initial filter race" test_initialFilter,
+    unitTestTimes 3 "change filter" test_changeFilter,
+    unitTestTimes 100 "toggle selection items" test_menuToggle,
     unitTest "delete selected" test_menuDeleteSelected,
     unitTest "unselected items with no selected items" test_menuUnselectedCursor
   ]

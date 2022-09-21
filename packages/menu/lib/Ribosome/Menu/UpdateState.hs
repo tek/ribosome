@@ -74,6 +74,8 @@ popFiltered ::
 popFiltered =
   historyOr resetFiltered
 
+-- TODO this returns Just Refined for empty entries so that a race condition in tests can be avoided.
+-- improve this
 appendFilter ::
   MenuState s =>
   Members [MenuFilter (Filter s), State s] r =>
@@ -82,7 +84,7 @@ appendFilter ::
 appendFilter query = do
   es <- use entries
   if null es
-  then pure Nothing
+  then pure (Just Refined)
   else Just <$> refineFiltered query es
 
 promptChange ::
