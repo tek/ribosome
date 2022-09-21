@@ -58,6 +58,7 @@ import Ribosome.Menu.Effect.Menu (
   ModalMenu,
   ModalMenus,
   ModalUiMenus,
+  ModalWindowMenus,
   UiMenuParams,
   UiMenus,
   WindowMenus,
