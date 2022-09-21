@@ -5,9 +5,10 @@ import Data.MessagePack (Object)
 import Data.Text (splitOn)
 import Exon (exon)
 
-import Ribosome.Host.Api.Effect (vimGetOption, vimSetOption)
+import Ribosome.Host.Api.Effect (vimGetOption, vimSetOption, nvimSetOption)
 import Ribosome.Host.Class.Msgpack.Encode (MsgpackEncode)
 import Ribosome.Host.Effect.Rpc (Rpc)
+import qualified Data.Text as Text
 
 -- |Append a string to a comma-separated option.
 optionCat ::
@@ -35,6 +36,15 @@ optionList ::
 optionList name = do
   s <- vimGetOption name
   pure (splitOn "," s)
+
+-- |Set an option to a comma-separated list of strings.
+optionSetList ::
+  Member Rpc r =>
+  Text ->
+  [Text] ->
+  Sem r ()
+optionSetList name values =
+  nvimSetOption name (Text.intercalate "," values)
 
 -- |Run an action with an option temporarily set to a value, then restore the old value.
 withOption ::
