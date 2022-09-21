@@ -25,6 +25,17 @@ nvimSetCwd ::
 nvimSetCwd dir =
   nvimCommand [exon|cd #{pathText dir}|]
 
+-- |Convert an abstract path to an absolute one, using the supplied directory as the base for relative paths.
+relativePathAt ::
+  Path Abs Dir ->
+  SomeBase t ->
+  Path Abs t
+relativePathAt cwd = \case
+  Abs p ->
+    p
+  Rel p ->
+    cwd </> p
+
 -- |Convert an abstract path to an absolute one, using Neovim's current working directory as the base for relative
 -- paths.
 nvimRelativePath ::
@@ -48,6 +59,25 @@ parseNvimDir "" =
 parseNvimDir p =
   traverse nvimRelativePath (parseSomeDir (toString p))
 
+-- |Parse a directory path and prepend the supplied directory to it if it's relative.
+parseDirAt ::
+  Path Abs Dir ->
+  Text ->
+  Maybe (Path Abs Dir)
+parseDirAt cwd "" =
+  pure cwd
+parseDirAt cwd p =
+  relativePathAt cwd <$> parseSomeDir (toString p)
+
+-- |Parse a list of directory paths and prepend Neovim's current working directory to it if a path is relative.
+parseNvimDirs ::
+  Member Rpc r =>
+  [Text] ->
+  Sem r [Path Abs Dir]
+parseNvimDirs paths = do
+  cwd <- nvimCwd
+  pure (mapMaybe (parseDirAt cwd) paths)
+
 -- |Parse a file path and prepend Neovim's current working directory to it if it's relative.
 parseNvimFile ::
   Member Rpc r =>
@@ -55,6 +85,23 @@ parseNvimFile ::
   Sem r (Maybe (Path Abs File))
 parseNvimFile =
   traverse nvimRelativePath . parseSomeFile . toString
+
+-- |Parse a file path and prepend the supplied directory to it if it's relative.
+parseFileAt ::
+  Path Abs Dir ->
+  Text ->
+  Maybe (Path Abs File)
+parseFileAt cwd p =
+  relativePathAt cwd <$> parseSomeFile (toString p)
+
+-- |Parse a list of file paths and prepend Neovim's current working directory to it if a path is relative.
+parseNvimFiles ::
+  Member Rpc r =>
+  [Text] ->
+  Sem r [Path Abs File]
+parseNvimFiles paths = do
+  cwd <- nvimCwd
+  pure (mapMaybe (parseFileAt cwd) paths)
 
 -- |Parse a directory path and prepend Neovim's current working directory to it if it's relative.
 --
