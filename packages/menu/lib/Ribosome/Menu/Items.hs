@@ -9,7 +9,7 @@ import qualified Data.Sequence as Seq
 import Data.Sequence ((|>))
 import Prelude hiding (unify)
 
-import Ribosome.Menu.Class.MenuState (MenuState (Item, history, mode), entries, items)
+import Ribosome.Menu.Class.MenuState (MenuState (Item, mode), entries, history, items)
 import Ribosome.Menu.Combinators (sortedEntries)
 import Ribosome.Menu.Data.CursorIndex (CursorIndex (CursorIndex))
 import Ribosome.Menu.Data.Entry (Entries, Entry)

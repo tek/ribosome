@@ -6,7 +6,7 @@ import Data.Sequence ((|>))
 import qualified Data.Trie as Trie
 import Lens.Micro.Mtl (view)
 
-import Ribosome.Menu.Class.MenuState (MenuState (Item, history, mode), entries, entryCount, query)
+import Ribosome.Menu.Class.MenuState (MenuState (Item, mode), entries, entryCount, history, query)
 import Ribosome.Menu.Data.Entry (Entries, Entry, entriesLength)
 import Ribosome.Menu.Data.State (MenuQuery (MenuQuery))
 import Ribosome.Menu.Lens (use, (%=), (.=))
@@ -14,12 +14,14 @@ import Ribosome.Menu.Lens (use, (%=), (.=))
 addHistory ::
   MenuState s =>
   Member (State s) r =>
+  MenuQuery ->
+  Entries (Item s) ->
   Sem r ()
-addHistory = do
-  MenuQuery oldQuery <- use query
+addHistory "" _ =
+  unit
+addHistory (MenuQuery q) ents = do
   m <- use mode
-  old <- use entries
-  history m %= Trie.insert (encodeUtf8 oldQuery) old
+  history m %= Trie.insert (encodeUtf8 q) ents
 
 updateEntries ::
   MenuState s =>
@@ -31,16 +33,7 @@ updateEntries newQuery new = do
   entries .= new
   query .= newQuery
   entryCount .= entriesLength new
-
-push ::
-  MenuState s =>
-  Member (State s) r =>
-  MenuQuery ->
-  Entries (Item s) ->
-  Sem r ()
-push newQuery new = do
-  addHistory
-  updateEntries newQuery new
+  addHistory newQuery new
 
 numVisible ::
   MenuState s =>

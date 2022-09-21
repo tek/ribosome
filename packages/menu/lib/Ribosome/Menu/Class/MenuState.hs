@@ -19,13 +19,12 @@ class (
 
   mode :: Lens' s (Mode s)
 
-  history :: Mode s -> Traversal' s (Trie (Entries (Item s)))
+  histories :: Lens' s (Map (Mode s) (Trie (Entries (Item s))))
 
 type Filter s =
   MenuMode.Filter (Mode s)
 
 instance (
-    Ord m,
     MenuMode i m
   ) => MenuState (Modal m i) where
     type Item (Modal m i) = i
@@ -37,8 +36,8 @@ instance (
     mode =
       #mode
 
-    history m =
-      #history . ix m
+    histories =
+      #history
 
 instance (
     MenuState s
@@ -52,8 +51,15 @@ instance (
     mode =
       #state . mode
 
-    history m =
-      #state . history m
+    histories =
+      #state . histories
+
+history ::
+  MenuState s =>
+  Mode s ->
+  Traversal' s (Trie (Entries (Item s)))
+history m =
+  histories . ix m
 
 items ::
   MenuState s =>
