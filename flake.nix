@@ -32,7 +32,7 @@
       ribosome-host = nvimBin inputs;
       ribosome-menu = inputs;
       ribosome-test = inputs;
-      streamly = hackage "0.8.1" "0ywyy7gxjnp32hx8kki0lfn94bnc9mzjh8g6mg65ff3vv28k2vdr";
+      streamly = hackage "0.8.2" "0jhsdd71kqw0k0aszg1qb1l0wbxl1r73hsmkdgch4vlx43snlc8a";
       type-errors = notest;
       type-errors-pretty = notest jailbreak;
       unicode-data = hackage "0.2.0" "14crb68g79yyw87fgh49z2fn4glqx0zr53v6mapihaxzkikhkkc3";
