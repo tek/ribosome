@@ -1,6 +1,6 @@
 module Ribosome.Menu.Interpreter.MenuUiPure where
 
-import Conc (Gate, interpretAtomic, interpretGate, interpretScopedResumable_, subscribeWhile, withAsync_)
+import Conc (Gate, interpretAtomic, interpretGate, interpretScopedR_, subscribeWhile, withAsync_)
 import Polysemy.Chronos (ChronosTime)
 import Polysemy.Conc.Gate (gate, signal)
 import qualified Time
@@ -41,7 +41,7 @@ interpretMenuUiPureAtomic ::
   Members [Gate, AtomicState [PromptEvent], ChronosTime] r =>
   InterpreterFor (ScopedMenuUi p PureMenu) r
 interpretMenuUiPureAtomic =
-  interpretScopedResumable_ (const (pure PureMenu)) \ PureMenu -> \case
+  interpretScopedR_ (const (pure PureMenu)) \ PureMenu -> \case
     RenderPrompt _ _ ->
       unit
     PromptEvent -> do

@@ -1,6 +1,6 @@
 module Ribosome.Menu.Test.Menu where
 
-import Conc (Consume, Restoration, consumeFind, interpretQueueTBM, interpretScopedResumable_, resultToMaybe)
+import Conc (Consume, Restoration, consumeFind, interpretQueueTBM, interpretScopedR_, resultToMaybe)
 import Exon (exon)
 import Hedgehog.Internal.Property (Failure)
 import Polysemy.Chronos (ChronosTime, interpretTimeChronos)
@@ -43,7 +43,7 @@ enqueueItems ::
   Members [Hedgehog IO, Queue [Text]] r =>
   InterpreterFor (ScopedMenuUi p ()) r
 enqueueItems =
-  interpretScopedResumable_ (const unit) \ () -> \case
+  interpretScopedR_ (const unit) \ () -> \case
     MenuUi.Render menu ->
       evalMaybe . resultToMaybe =<< Queue.writeTimeout (Seconds 5) (MenuItem.text . Entry.item <$> menu ^. #entries . to sortEntries)
     MenuUi.RenderPrompt _ _ ->

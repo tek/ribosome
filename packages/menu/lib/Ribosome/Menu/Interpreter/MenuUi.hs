@@ -1,6 +1,6 @@
 module Ribosome.Menu.Interpreter.MenuUi where
 
-import Conc (Consume, interpretScopedResumable_)
+import Conc (Consume, interpretScopedR_)
 
 import qualified Ribosome.Menu.Effect.MenuUi as MenuUi
 import Ribosome.Menu.Effect.MenuUi (MenuUi (PromptEvent, Render, RenderPrompt), ScopedMenuUi)
@@ -19,7 +19,7 @@ interpretMenuUiNull =
 
 interpretMenuUiNvimNull :: InterpreterFor (ScopedMenuUi p ()) r
 interpretMenuUiNvimNull =
-  interpretScopedResumable_ (const unit) \ () -> \case
+  interpretScopedR_ (const unit) \ () -> \case
     RenderPrompt _ _ ->
       unit
     PromptEvent ->

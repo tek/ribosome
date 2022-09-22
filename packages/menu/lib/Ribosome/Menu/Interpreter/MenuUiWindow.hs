@@ -6,7 +6,7 @@ import Conc (
   GatesIO,
   interpretAtomic,
   interpretEventsChan,
-  interpretScopedResumableWith,
+  interpretScopedRWith,
   withAsyncGated_,
   )
 import Control.Lens.Regex.Text (group, match, regex)
@@ -23,7 +23,7 @@ import qualified Ribosome.Data.FloatOptions as FloatOptions
 import Ribosome.Data.FloatOptions (FloatAnchor (SW), FloatRelative (Editor))
 import Ribosome.Data.Mapping (Mapping, MappingId (MappingId), MappingLhs (MappingLhs), MappingSpec (MappingSpec))
 import Ribosome.Data.Mode (NvimMode (NvimMode))
-import Ribosome.Data.ScratchOptions (ScratchOptions, scratch)
+import Ribosome.Data.ScratchOptions (ScratchOptions, ensureName, scratch)
 import qualified Ribosome.Data.ScratchState as Scratch
 import Ribosome.Data.ScratchState (ScratchState)
 import Ribosome.Data.SettingError (SettingError)
@@ -176,10 +176,10 @@ geometry = do
   pure (height - marginV, marginH, height - 2 * marginV, width - 2 * marginH)
 
 itemsOptions :: (Int, Int, Int, Int) -> ScratchOptions -> ScratchOptions
-itemsOptions (row, col, height, width) =
-  (#float <|>~ Just floatOptions)
-  .
-  (#maxSize <|>~ Just (height - 5))
+itemsOptions (row, col, height, width) options =
+  ensureName "ribosome-menu-items" options
+  & #float <|>~ Just floatOptions
+  & #maxSize <|>~ Just (height - 5)
   where
     floatOptions =
       def
@@ -193,7 +193,7 @@ itemsOptions (row, col, height, width) =
 
 statusOptions :: (Int, Int, Int, Int) -> ScratchOptions -> ScratchOptions
 statusOptions (row, col, _, width) options =
-  options
+  ensureName "ribosome-menu-status" options
   & #float <|>~ Just floatOptions
   & #size <|>~ Just 1
   where
@@ -212,7 +212,7 @@ promptOptions ::
   [MappingSpec] ->
   ScratchOptions
 promptOptions (row, col, _, width) custom =
-  scratch "ribosome-prompt"
+  scratch "ribosome-menu-prompt"
   & #modify .~ True
   & #focus .~ True
   & #mappings <>~ promptMappings custom
@@ -339,9 +339,9 @@ windowResources (WindowConfig pconf itemsOpt statusOpt mappings) use =
 interpretMenuUiWindow ::
   Members [Log, GatesIO, Resource, Race, Async, Embed IO] r =>
   Members [Scratch !! RpcError, Rpc !! RpcError, Settings !! SettingError, EventConsumer eres Event] r =>
-  InterpreterFor (Scoped WindowConfig WindowMenu MenuUi !! RpcError) r
+  InterpreterFor (Scoped WindowConfig WindowMenu (MenuUi !! RpcError) !! RpcError) r
 interpretMenuUiWindow =
-  interpretScopedResumableWith @WindowScope windowResources \ (WindowMenu itemsScratch statusScratch promptScratch) -> \case
+  interpretScopedRWith @WindowScope windowResources \ (WindowMenu itemsScratch statusScratch promptScratch) -> \case
     RenderPrompt True (Prompt cursor _ (PromptText text)) -> do
       void (restop (Scratch.update (promptScratch ^. #id) ([text] :: [Text])))
       restop (setCursor (promptScratch ^. #window) 0 cursor)

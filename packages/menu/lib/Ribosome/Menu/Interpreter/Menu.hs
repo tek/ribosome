@@ -28,7 +28,7 @@ import Ribosome.Data.SettingError (SettingError)
 import Ribosome.Effect.Scratch (Scratch)
 import Ribosome.Effect.Settings (Settings)
 import Ribosome.Host.Data.Event (Event)
-import Ribosome.Host.Data.RpcError (RpcError)
+import Ribosome.Host.Data.RpcError (RpcError, rpcError)
 import Ribosome.Host.Effect.MState (MState, ScopedMState, mread, muse)
 import Ribosome.Host.Effect.Rpc (Rpc)
 import Ribosome.Host.Interpret (type (|>))
@@ -102,15 +102,19 @@ data MenuSync =
 
 renderEvent ::
   MenuState s =>
-  Members [MState (MS s), MState CursorIndex, MenuUi, Events eres MenuEvent, Log] r =>
+  Members [MState (MS s), MState CursorIndex, MenuUi !! RpcError, Events eres MenuEvent, Log] r =>
   RenderEvent ->
   Sem r ()
 renderEvent (RenderEvent desc) = do
   Log.debug [exon|menu render: #{desc}|]
   MS s <- mread
   c <- mread
-  MenuUi.render (RenderMenu.fromState (WithCursor s c))
-  publish Rendered
+  resuming @_ @MenuUi err do
+    MenuUi.render (RenderMenu.fromState (WithCursor s c))
+    publish Rendered
+  where
+    err e =
+      Log.error [exon|menu render: #{rpcError e}|]
 
 -- |Call the effect that hides the streaming internals by passing all actions to it so they don't need to be lowered
 -- with 'withStrategicToFinal'.
@@ -201,7 +205,7 @@ interpretWindowMenu =
 
 type MenuScope s =
   [
-    MenuUi,
+    MenuUi !! RpcError,
     Gate @@ "prompt",
     MState (MS s),
     MState CursorIndex,
@@ -256,11 +260,11 @@ interpretMenus =
     MenuEngine (Bundle (There Here) e) ->
       case e of
         MenuUi.RenderPrompt consumerChange prompt ->
-          pureT =<< MenuUi.renderPrompt consumerChange prompt
+          pureT =<< restop (MenuUi.renderPrompt consumerChange prompt)
         MenuUi.PromptEvent ->
-          pureT =<< MenuUi.promptEvent
+          pureT =<< restop MenuUi.promptEvent
         MenuUi.Render m ->
-          pureT =<< MenuUi.render m
+          pureT =<< restop (MenuUi.render m)
     MenuEngine (Bundle (There (There Here)) e) ->
       case e of
         Menu.StartPrompt ->
