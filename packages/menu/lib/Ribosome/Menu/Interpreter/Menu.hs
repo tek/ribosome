@@ -163,11 +163,11 @@ type MenuLoopDeps =
     GatesIO
   ]
 
-interpretMenuLoopDeps ::
+interpretMenuDeps ::
   Member (Final IO) r =>
   Members MenuLoopIO r =>
   InterpretersFor MenuLoopDeps r
-interpretMenuLoopDeps =
+interpretMenuDeps =
   interpretGates .
   interpretEventsChan .
   interpretMStates .
@@ -177,12 +177,12 @@ interpretMenuLoopDeps =
 type NvimMenus =
   ScopedMenuUi WindowConfig WindowMenu : MenuFilter (FilterMode Filter.Filter) : MenuLoopDeps
 
-interpretNvimMenus ::
+interpretWindowMenu ::
   Members MenuLoopIO r =>
   Members [Settings !! SettingError, Rpc !! RpcError, Scratch !! RpcError, EventConsumer eres Event, Final IO] r =>
   InterpretersFor NvimMenus r
-interpretNvimMenus =
-  interpretMenuLoopDeps .
+interpretWindowMenu =
+  interpretMenuDeps .
   defaultFilter .
   interpretMenuUiWindow
 
@@ -270,15 +270,15 @@ interpretMenus =
 type NvimMenuIO eres =
   [Settings !! SettingError, Rpc !! RpcError, Scratch !! RpcError, EventConsumer eres Event, Final IO]
 
-interpretSingleNvimMenu ::
+interpretSingleWindowMenu ::
   ∀ s eres r .
   MenuState s =>
   Members MenuLoopIO r =>
   Member (MenuFilter (Filter s)) r =>
   Members (NvimMenuIO eres) r =>
   InterpretersFor (WindowMenus () s !! RpcError : MenuLoopDeps) r
-interpretSingleNvimMenu =
-  interpretMenuLoopDeps .
+interpretSingleWindowMenu =
+  interpretMenuDeps .
   interpretMenuUiWindow .
   interpretMenus .
   raiseUnder
@@ -293,7 +293,7 @@ promptInputFilter ::
   InterpretersFor (WindowMenus () s !! RpcError : MenuLoopDeps |> ChronosTime) r
 promptInputFilter events =
   interpretTimeChronos .
-  interpretMenuLoopDeps .
+  interpretMenuDeps .
   interpretMenuUiPure True events .
   interpretMenus .
   raiseUnder .
@@ -310,7 +310,7 @@ promptInput ::
 promptInput events =
   interpretTimeChronos .
   defaultFilter .
-  interpretMenuLoopDeps .
+  interpretMenuDeps .
   interpretMenuUiPure True events .
   interpretMenus .
   raiseUnder .

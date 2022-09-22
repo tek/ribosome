@@ -22,7 +22,7 @@ import Ribosome.Menu.Data.State (Modal, modal)
 import Ribosome.Menu.Effect.Menu (readCursor, readState)
 import qualified Ribosome.Menu.Effect.MenuTest as MenuTest
 import Ribosome.Menu.Effect.MenuTest (sendMapping, sendMappingWait, waitEvent)
-import Ribosome.Menu.Interpreter.Menu (interpretSingleNvimMenu, promptInput)
+import Ribosome.Menu.Interpreter.Menu (interpretSingleWindowMenu, promptInput)
 import Ribosome.Menu.Interpreter.MenuFilter (defaultFilter)
 import Ribosome.Menu.Loop (menuMaps, runMenuUi, windowMenu, withMenuUi)
 import Ribosome.Menu.Mappings (Mappings, defaultMappings)
@@ -101,7 +101,7 @@ nativeWindowChars =
 
 test_nativeWindow :: UnitTest
 test_nativeWindow =
-  testEmbed_ $ defaultFilter $ interpretSingleNvimMenu $ runMenuUi (mkItems items) (modal Fuzzy) do
+  testEmbed_ $ defaultFilter $ interpretSingleWindowMenu $ runMenuUi (mkItems items) (modal Fuzzy) do
     result <- flip (withMenuUi opts) mappings \ m -> do
       withPromptInputSync nativeWindowChars do
         menuMaps (insertAt @2 <$> m)
@@ -114,7 +114,7 @@ test_nativeWindow =
 
 test_interruptWindow :: UnitTest
 test_interruptWindow =
-  testEmbed_ $ defaultFilter $ interpretSingleNvimMenu $ runMenuUi (mkItems items) (modal Fuzzy) do
+  testEmbed_ $ defaultFilter $ interpretSingleWindowMenu $ runMenuUi (mkItems items) (modal Fuzzy) do
     result <- flip (withMenuUi opts) mappings \ m -> do
       withPromptInputSync ["i", "<c-c>", "<cr>"] do
         menuMaps (insertAt @2 <$> m)
@@ -126,7 +126,7 @@ test_interruptWindow =
 
 test_windowOnlyInsert :: UnitTest
 test_windowOnlyInsert =
-  testEmbed_ $ defaultFilter $ interpretSingleNvimMenu $ runMenuUi (mkItems items) (modal Fuzzy) do
+  testEmbed_ $ defaultFilter $ interpretSingleWindowMenu $ runMenuUi (mkItems items) (modal Fuzzy) do
       result <- flip (withMenuUi opts) mappings \ m -> do
         withPromptInputSync ["i", nosync "<esc>", "<cr>"] do
           menuMaps (insertAt @2 <$> m)

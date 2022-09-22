@@ -33,7 +33,7 @@ import Ribosome.Menu.Data.MenuItem (simpleMenuItem)
 import Ribosome.Menu.Data.RenderEvent (RenderEvent)
 import Ribosome.Menu.Data.State (ModalState, modal)
 import Ribosome.Menu.Effect.Menu (Menu, bundleMenuEngine, menuEngine)
-import Ribosome.Menu.Interpreter.Menu (MS (MS), interpretMenuLoopDeps, interpretMenus, menuStream, unMS)
+import Ribosome.Menu.Interpreter.Menu (MS (MS), interpretMenuDeps, interpretMenus, menuStream, unMS)
 import Ribosome.Menu.Interpreter.MenuFilter (defaultFilter)
 import Ribosome.Menu.Interpreter.MenuStream (interpretMenuStream)
 import Ribosome.Menu.Interpreter.MenuUi (interceptMenuUiPromptEvents, interpretMenuUiNvimNull)
@@ -123,7 +123,7 @@ menuBench files =
   interpretGate $
   interpretEventsChan @PromptEvent $
   defaultFilter $
-  interpretMenuLoopDeps $
+  interpretMenuDeps $
   interpretMenuUiNvimNull $
   interpretMenus do
     resumeBootError $ addMenuUi () $ runMenu items (modal Fuzzy) $ bundleMenuEngine $ interceptMenuUiPromptEvents do

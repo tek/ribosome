@@ -28,7 +28,7 @@ import Ribosome.Menu.Data.WindowConfig (WindowConfig (WindowConfig))
 import Ribosome.Menu.Effect.Menu (MenuEngine, MenuEngineStack, Menus, bundleMenuEngine, waitPrompt)
 import Ribosome.Menu.Effect.MenuFilter (MenuFilter)
 import Ribosome.Menu.Effect.MenuTest (MenuTest, waitEventPred)
-import Ribosome.Menu.Interpreter.Menu (MenuLoopDeps, interpretMenuLoopDeps, interpretMenus)
+import Ribosome.Menu.Interpreter.Menu (MenuLoopDeps, interpretMenuDeps, interpretMenus)
 import Ribosome.Menu.Interpreter.MenuTest (
   MenuTestResources,
   TestTimeout (TestTimeout),
@@ -82,7 +82,7 @@ runTestMenuWith ::
   PromptConfig ->
   InterpretersFor (MenuTestStack i result) r
 runTestMenuWith timeout pconf sem =
-  interpretMenuTestResources timeout pconf $ interpretMenuLoopDeps do
+  interpretMenuTestResources timeout pconf $ interpretMenuDeps do
     items <- queueStream
     runReader items sem
 
@@ -104,7 +104,7 @@ runStaticTestMenuWith ::
   InterpretersFor (MenuTestStack i result) r
 runStaticTestMenuWith timeout pconf items =
   interpretMenuTestResources timeout pconf .
-  interpretMenuLoopDeps .
+  interpretMenuDeps .
   runReader (Stream.fromList items)
 
 runStaticTestMenu ::
@@ -173,7 +173,7 @@ testMenu ::
   Mappings s (MenuTestEffects s result ++ r) result ->
   InterpretersFor (MenuTestEffects s result) r
 testMenu pconf initial maps =
-  interpretMenuLoopDeps .
+  interpretMenuDeps .
   interpretReportLogLog .
   interpretMenuUiNvimNull .
   interpretMenus .
@@ -212,7 +212,7 @@ testNvimMenu ::
   Mappings s (MenuTestEffects s result ++ r) result ->
   InterpretersFor (MenuTestEffects s result) r
 testNvimMenu pconf initial options maps =
-  interpretMenuLoopDeps .
+  interpretMenuDeps .
   interpretReportLogLog .
   interpretMenuUiWindow .
   interpretMenus .

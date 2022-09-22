@@ -92,10 +92,10 @@ import Ribosome.Menu.Interpreter.Menu (
   MenuLoopIO,
   NvimMenuIO,
   NvimMenus,
-  interpretMenuLoopDeps,
+  interpretMenuDeps,
   interpretMenus,
-  interpretNvimMenus,
-  interpretSingleNvimMenu,
+  interpretWindowMenu,
+  interpretSingleWindowMenu,
   promptInput,
   )
 import Ribosome.Menu.Interpreter.MenuFilter (defaultFilter)
