@@ -137,11 +137,24 @@ menuStream items = do
   Log.debug "Finished menu stream"
   where
     insert new = do
+      Log.debug "menu: schedule insert"
       msState (insertItems new)
       RenderEvent "new items" <$ publish Inserted
     update p = do
+      Log.debug "menu: schedule query update"
       msState (queryEvent (Prompt.text <$> p))
       RenderEvent "query update" <$ Sync.putTry MenuSync
+
+sendPrompt ::
+  Members [Reader MenuConfig, Queue (Maybe Prompt), Sync MenuSync, Log] r =>
+  Maybe Prompt ->
+  Sem r ()
+sendPrompt new = do
+  Queue.write new
+  whenM (asks (view #sync)) do
+    Log.debug "menu: Waiting for query update"
+    MenuSync <- Sync.takeBlock
+    Log.debug "menu: Query update signalled"
 
 type MenuLoopIO =
   [
@@ -234,11 +247,12 @@ interpretMenus =
           muse (mstateT f)
         Menu.ReadState ->
           pureT . unMS =<< mread
-        Menu.UseState f ->
-          muse $ viaMS \ s -> do
+        Menu.UseState f -> do
+          (a, promptChange) <- muse $ viaMS \ s -> do
             (newS, a) <- mstateT f s
-            when (s ^. mode /= newS ^. mode) (Queue.write Nothing)
-            pure (newS, a)
+            pure (newS, (a, s ^. mode /= newS ^. mode))
+          when promptChange (sendPrompt Nothing)
+          pure a
     MenuEngine (Bundle (There Here) e) ->
       case e of
         MenuUi.RenderPrompt consumerChange prompt ->
@@ -257,11 +271,11 @@ interpretMenus =
           pureT =<< Queue.close
         Menu.PromptUpdated new -> do
           publish (MenuEvent.PromptUpdated new)
-          Queue.write (Just new)
-          whenM (asks (view #sync)) (void Sync.takeBlock)
+          sendPrompt (Just new)
           unitT
-        Menu.Render ->
-          Queue.write (RenderEvent "consumer") *> unitT
+        Menu.Render -> do
+          Queue.write (RenderEvent "consumer")
+          unitT
         Menu.PromptLooped ->
           pureT =<< publish PromptLoop
     MenuEngine (Bundle (There (There (There _))) _) ->
