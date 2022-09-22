@@ -74,6 +74,7 @@ historyOr noMatch query@(MenuQuery (encodeUtf8 -> queryBs)) = do
 
 -- TODO this returns Just Refined for empty entries so that a race condition in tests can be avoided.
 -- improve this
+-- also it appears not to reliably solve the race condition
 appendFilter ::
   MenuState s =>
   Members [MenuFilter (Filter s), State s] r =>
@@ -99,21 +100,26 @@ promptChange = \case
 
 insertItems ::
   MenuState s =>
-  Members [MenuFilter (Filter s), State s] r =>
+  Members [MenuFilter (Filter s), State s, Log] r =>
   [MenuItem (Item s)] ->
   Sem r ()
 insertItems new = do
   index <- use itemCount
-  itemCount += length new
+  itemCount += newCount
   let newI = IntMap.fromList (zip [index..] new)
   items %= IntMap.union newI
   filterMode <- use MenuState.filterMode
   query <- use MenuState.query
   ents <- menuFilter filterMode query (Initial newI)
   entries %= IntMap.unionWith (<>) ents
-  entryCount += entriesLength ents
+  let newEntriesCount = entriesLength ents
+  entryCount += newEntriesCount
   histories .= mempty
   addHistory query =<< use entries
+  Log.debug [exon|Inserted #{show newCount} items (#{show newEntriesCount} entries)|]
+  where
+    newCount =
+      length new
 
 promptItemUpdate ::
   MenuState s =>
@@ -139,7 +145,8 @@ updateQuery = \case
     Log.debug [exon|query update: #{unPromptText prompt}|]
     change <- use (MenuState.query . to (diffPrompt prompt))
     promptItemUpdate change prompt
-  Nothing ->
+  Nothing -> do
+    Log.debug "query reset"
     historyOr resetFiltered =<< use MenuState.query
 
 queryEvent ::
