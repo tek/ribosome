@@ -11,4 +11,4 @@ data FileBuffer =
     buffer :: Buffer,
     path :: Path Abs File
   }
-  deriving stock (Eq, Show)
+  deriving stock (Eq, Show, Generic)
