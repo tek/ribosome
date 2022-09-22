@@ -60,7 +60,10 @@ library
       Ribosome.Data.ScratchState
       Ribosome.Data.Setting
       Ribosome.Data.SettingError
-      Ribosome.Data.Syntax
+      Ribosome.Data.Syntax.Dsl
+      Ribosome.Data.Syntax.Syntax
+      Ribosome.Data.Syntax.SyntaxKind
+      Ribosome.Data.SyntaxItem
       Ribosome.Data.Tag
       Ribosome.Data.WindowConfig
       Ribosome.Data.WindowView
@@ -100,6 +103,9 @@ library
       Ribosome.Settings
       Ribosome.Socket
       Ribosome.Syntax
+      Ribosome.Syntax.Build
+      Ribosome.Syntax.Cons
+      Ribosome.Syntax.Dsl
       Ribosome.Text
   hs-source-dirs:
       lib
@@ -172,6 +178,7 @@ library
       aeson
     , base >=4.12 && <5
     , exon
+    , extra
     , messagepack
     , optparse-applicative
     , path

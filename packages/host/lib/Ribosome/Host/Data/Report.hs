@@ -79,6 +79,7 @@ data LogReport =
   }
   deriving stock (Show, Generic)
 
+-- |Convenience alias for the error report logger.
 type ReportLog =
   DataLog LogReport
 

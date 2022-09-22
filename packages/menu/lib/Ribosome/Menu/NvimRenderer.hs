@@ -9,6 +9,8 @@ import qualified Polysemy.Log as Log
 
 import Ribosome.Api.Window (redraw, setLine, windowExec)
 import Ribosome.Data.ScratchState (ScratchState (buffer, window))
+import Ribosome.Data.Syntax.Syntax (HiLink (..), Syntax (Syntax))
+import Ribosome.Data.SyntaxItem (SyntaxItem (..))
 import qualified Ribosome.Effect.Scratch as Scratch
 import Ribosome.Effect.Scratch (Scratch)
 import Ribosome.Host.Api.Effect (nvimBufIsLoaded, windowGetWidth)
@@ -23,7 +25,7 @@ import Ribosome.Menu.Data.MenuView (MenuView (MenuView))
 import Ribosome.Menu.Data.NvimMenuState (NvimMenuState, botIndex, cursorLine, topIndex)
 import Ribosome.Menu.Data.RenderMenu (RenderMenu)
 import Ribosome.Menu.Lens (use, view, (%=), (.=), (<.=))
-import Ribosome.Syntax (HiLink (..), Syntax (Syntax), SyntaxItem (..), syntaxMatch)
+import Ribosome.Syntax.Cons (syntaxMatch)
 
 -- TODO use signs instead of this
 marker :: Char
@@ -32,7 +34,7 @@ marker =
 
 markerConceal :: SyntaxItem
 markerConceal =
-  item { siOptions = options, siParams = params }
+  item {options, params}
   where
     item = syntaxMatch "RibosomeMenuMarker" (Text.snoc "^" marker)
     options = ["conceal"]
@@ -40,7 +42,7 @@ markerConceal =
 
 selectionLine :: SyntaxItem
 selectionLine =
-  item { siOptions = options }
+  item {options}
   where
     item = syntaxMatch "RibosomeMenuMarkedLine" ".*$"
     options = ["contained"]

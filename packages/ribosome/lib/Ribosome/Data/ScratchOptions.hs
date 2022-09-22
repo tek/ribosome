@@ -4,7 +4,7 @@ module Ribosome.Data.ScratchOptions where
 import Ribosome.Data.FloatOptions (FloatOptions)
 import Ribosome.Data.Mapping (Mapping)
 import Ribosome.Data.ScratchId (ScratchId)
-import Ribosome.Data.Syntax (Syntax)
+import Ribosome.Data.Syntax.Syntax (Syntax)
 
 -- |Configure the visual properties of a scratch buffer.
 -- If the option @float@ is specified, the buffer will be opened in a floating window.
@@ -66,6 +66,7 @@ instance Default ScratchOptions where
   def =
     scratch "scratch"
 
+-- |Set the name of a scratch only if the current one isn't the default name.
 ensureName :: ScratchId -> ScratchOptions -> ScratchOptions
 ensureName name opt@ScratchOptions {name = "scratch"} =
   opt {name}

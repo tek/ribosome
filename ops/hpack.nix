@@ -134,6 +134,7 @@ in {
     library.dependencies = [
       "aeson"
       "exon"
+      "extra"
       "messagepack"
       "optparse-applicative"
       "path"
@@ -196,6 +197,7 @@ in {
     ];
     tests.ribosome-test-unit = exe "ribosome-test" "test" {
       dependencies = [
+        "exon"
         "polysemy-test"
         "ribosome"
         "ribosome-host"

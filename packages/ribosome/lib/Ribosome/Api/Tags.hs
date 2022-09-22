@@ -1,3 +1,4 @@
+-- |API functions for tags.
 module Ribosome.Api.Tags where
 
 import Path (Abs, File, Path)
