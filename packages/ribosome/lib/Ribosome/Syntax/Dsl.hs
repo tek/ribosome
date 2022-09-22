@@ -31,6 +31,15 @@ infixr 5 #>
 
 infixr 6 >-
 
+-- |Declare that the two syntax trees should both be allowed to match at this point.
+--
+-- Can be chained for multiple choices.
+(<#>) :: Alg -> Alg -> Alg
+(<#>) =
+  Choice
+
+infixr 7 <#>
+
 -- |Set a prefix for all syntax groups in the subtree.
 --
 -- In @prefix "Ribosome" (prefix "Long" (match "Word" "..."))@, the inner @match@ will have the group name
@@ -44,7 +53,7 @@ prefix =
 -- |Construct a concrete syntax item.
 item :: SyntaxGroup -> SyntaxKind -> Alg
 item grp k =
-  Item (SyntaxItem grp k [] [] [] [] False)
+  Item (SyntaxItem grp k ["skipwhite"] [] [] [] False)
 
 -- |Construct a @syntax match@ item.
 match :: SyntaxGroup -> Text -> Alg
@@ -97,6 +106,26 @@ endOffset spec =
       Region (r & #endOffset ?~ spec)
     k ->
       k
+
+-- |Set an option on all items in the subtree.
+addOption :: Text -> Alg -> Alg
+addOption name =
+  modItem (#options <>~ [name])
+
+-- |Remove an option from all items in the subtree.
+removeOption :: Text -> Alg -> Alg
+removeOption name =
+  modItem (#options %~ filter (/= name))
+
+-- |Set the option @shipwhite@ on all items in the subtree.
+ws :: Alg -> Alg
+ws =
+  addOption "skipwhite"
+
+-- |Remove the option @shipwhite@ from all items in the subtree, which is set by default.
+nows :: Alg -> Alg
+nows =
+  removeOption "skipwhite"
 
 -- |Add a highlight group to all nodes in the subtree.
 --
