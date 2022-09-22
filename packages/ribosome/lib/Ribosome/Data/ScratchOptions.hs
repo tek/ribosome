@@ -65,3 +65,9 @@ scratch name =
 instance Default ScratchOptions where
   def =
     scratch "scratch"
+
+ensureName :: ScratchId -> ScratchOptions -> ScratchOptions
+ensureName name opt@ScratchOptions {name = "scratch"} =
+  opt {name}
+ensureName _ opt =
+  opt
