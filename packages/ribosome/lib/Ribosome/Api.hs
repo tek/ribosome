@@ -14,6 +14,7 @@ module Ribosome.Api (
   module Ribosome.Api.Register,
   module Ribosome.Api.Sleep,
   module Ribosome.Api.Syntax,
+  module Ribosome.Api.Tags,
   module Ribosome.Api.Tabpage,
   module Ribosome.Api.Undo,
   module Ribosome.Api.Window,
@@ -33,6 +34,7 @@ import Ribosome.Api.Process
 import Ribosome.Api.Register
 import Ribosome.Api.Sleep
 import Ribosome.Api.Syntax
+import Ribosome.Api.Tags
 import Ribosome.Api.Tabpage
 import Ribosome.Api.Undo
 import Ribosome.Api.Window

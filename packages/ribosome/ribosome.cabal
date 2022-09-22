@@ -39,6 +39,7 @@ library
       Ribosome.Api.Sleep
       Ribosome.Api.Syntax
       Ribosome.Api.Tabpage
+      Ribosome.Api.Tags
       Ribosome.Api.Undo
       Ribosome.Api.Window
       Ribosome.Cli
@@ -60,6 +61,7 @@ library
       Ribosome.Data.Setting
       Ribosome.Data.SettingError
       Ribosome.Data.Syntax
+      Ribosome.Data.Tag
       Ribosome.Data.WindowConfig
       Ribosome.Data.WindowView
       Ribosome.Effect.Persist

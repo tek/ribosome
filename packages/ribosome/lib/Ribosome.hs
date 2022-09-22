@@ -217,6 +217,7 @@ module Ribosome (
   registerRepr,
   pathText,
   CustomConfig (CustomConfig),
+  Tag (Tag),
 
   -- * Reexports
   module Prelate.Prelude,
@@ -246,6 +247,7 @@ import Ribosome.Data.ScratchOptions (ScratchOptions, scratch)
 import Ribosome.Data.ScratchState (ScratchState (ScratchState))
 import Ribosome.Data.Setting (Setting (Setting))
 import Ribosome.Data.SettingError (SettingError)
+import Ribosome.Data.Tag (Tag (Tag))
 import Ribosome.Effect.Persist (Persist)
 import Ribosome.Effect.PersistPath (PersistPath, persistPath)
 import Ribosome.Effect.Scratch (Scratch)
