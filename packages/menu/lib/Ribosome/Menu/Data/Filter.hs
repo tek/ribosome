@@ -40,4 +40,4 @@ instance MenuMode i Filter where
     const Nothing
 
   filterMode f =
-    FilterMode f MenuItem.text
+    FilterMode f (Just . MenuItem.text)

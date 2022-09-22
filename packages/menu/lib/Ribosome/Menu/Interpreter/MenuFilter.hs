@@ -23,7 +23,7 @@ import Ribosome.Menu.Filters (
   )
 
 execute ::
-  (MenuItem i -> Text) ->
+  (MenuItem i -> Maybe Text) ->
   Matcher i ->
   FilterJob i a ->
   IO a

@@ -5,5 +5,5 @@ import Ribosome.Menu.Data.MenuItem (MenuItem)
 data FilterMode f i =
   FilterMode {
     filter :: f,
-    extract :: MenuItem i -> Text
+    extract :: MenuItem i -> Maybe Text
   }

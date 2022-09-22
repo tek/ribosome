@@ -12,14 +12,14 @@ import Ribosome.Menu.Data.MenuItem (Items, MenuItem)
 import qualified Ribosome.Menu.Stream.ParMap as Stream
 
 type Matcher i =
-  (MenuItem i -> Text) -> Entry i -> Maybe (Int, Entry i)
+  (MenuItem i -> Maybe Text) -> Entry i -> Maybe (Int, Entry i)
 
 entry :: Int -> MenuItem i -> Entry i
 entry index item =
   Entry item index False
 
 filterPar ::
-  (MenuItem i -> Text) ->
+  (MenuItem i -> Maybe Text) ->
   Matcher i ->
   [Entry i] ->
   IO (Entries i)
@@ -28,7 +28,7 @@ filterPar ex f =
   Stream.parMapMaybeIO 100 (f ex)
 
 initPar ::
-  (MenuItem i -> Text) ->
+  (MenuItem i -> Maybe Text) ->
   Matcher i ->
   Items i ->
   IO (Entries i)
@@ -38,7 +38,7 @@ initPar ex f =
   IntMap.toList
 
 refinePar ::
-  (MenuItem i -> Text) ->
+  (MenuItem i -> Maybe Text) ->
   Matcher i ->
   Entries i ->
   IO (Entries i)
@@ -48,10 +48,13 @@ refinePar ex f =
 
 matchOrEmpty ::
   (Text -> Bool) ->
-  Text ->
+  Maybe Text ->
   Bool
-matchOrEmpty predicate text =
-  not (Text.null text) && predicate text
+matchOrEmpty predicate = \case
+  Just text ->
+    not (Text.null text) && predicate text
+  Nothing ->
+    False
 
 matchAll :: Matcher i
 matchAll _ e =
@@ -85,6 +88,8 @@ matchFuzzy False "" _ e =
   Just (-(Text.length (MenuItem.text (e ^. #item))), e)
 matchFuzzy True "" _ e =
   Just (0, e)
-matchFuzzy _ query ex (Entry item index sel) = do
-  Alignment score _ <- bestMatch query (toString (ex item))
+matchFuzzy _ query ex (Entry item@(ex -> Just seg) index sel) = do
+  Alignment score _ <- bestMatch query (toString seg)
   pure (score, Entry item index sel)
+matchFuzzy _ _ _ _ =
+  Nothing

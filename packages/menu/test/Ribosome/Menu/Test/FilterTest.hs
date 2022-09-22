@@ -22,5 +22,5 @@ items =
 test_filterFuzzy :: UnitTest
 test_filterFuzzy =
   runTestAuto do
-    r <- defaultFilter (menuFilter (FilterMode Fuzzy (view #text)) "ab" (Initial items))
+    r <- defaultFilter (menuFilter (FilterMode Fuzzy (Just . view #text)) "ab" (Initial items))
     ["ab", "xabc", "xaxbx", "xaxbxcx"] === sortEntriesText r

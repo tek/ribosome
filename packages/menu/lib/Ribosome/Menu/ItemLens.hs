@@ -12,28 +12,6 @@ import qualified Ribosome.Menu.Data.MenuItem as MenuItem
 import Ribosome.Menu.Data.MenuItem (MenuItem)
 import Ribosome.Menu.Data.WithCursor (WithCursor)
 
--- entries :: Lens' (Menu f i) (Entries i)
--- entries =
---   #items . #entries
-
--- history :: Lens' (Menu f i) (Map f (Trie (Entries i)))
--- history =
---   #items . #history
-
--- items ::
---   HasField "items" s s (Modal f i) (Modal f i) =>
---   Lens' s (Items i)
--- items =
---   #items . #items
-
--- currentQuery :: Lens' (Menu f i) MenuQuery
--- currentQuery =
---   #items . #currentQuery
-
--- itemCount :: Lens' (Menu f i) Int
--- itemCount =
---   #items . #itemCount
-
 filterIndexesFlat :: [Int] -> [a] -> [a]
 filterIndexesFlat indexes =
   reverse . go 0 (sort indexes) []
