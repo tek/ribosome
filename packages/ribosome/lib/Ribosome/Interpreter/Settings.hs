@@ -8,7 +8,7 @@ import Ribosome.Data.Setting (Setting (Setting))
 import qualified Ribosome.Data.SettingError as SettingError
 import Ribosome.Data.SettingError (SettingError)
 import Ribosome.Effect.Settings (Settings (Get, Update))
-import Ribosome.Host.Api.Effect (nvimGetVar, nvimSetVar)
+import Ribosome.Host.Api.Data (nvimGetVar, nvimSetVar)
 import Ribosome.Host.Class.Msgpack.Decode (MsgpackDecode)
 import qualified Ribosome.Host.Data.RpcError as RpcError
 import Ribosome.Host.Data.RpcError (RpcError)

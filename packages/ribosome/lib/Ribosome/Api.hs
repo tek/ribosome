@@ -18,7 +18,7 @@ module Ribosome.Api (
   module Ribosome.Api.Tabpage,
   module Ribosome.Api.Undo,
   module Ribosome.Api.Window,
-  module Ribosome.Host.Api.Effect,
+  module Ribosome.Host.Api.Data,
 ) where
 
 import Ribosome.Api.Autocmd
@@ -34,9 +34,9 @@ import Ribosome.Api.Process
 import Ribosome.Api.Register
 import Ribosome.Api.Sleep
 import Ribosome.Api.Syntax
-import Ribosome.Api.Tags
 import Ribosome.Api.Tabpage
+import Ribosome.Api.Tags
 import Ribosome.Api.Undo
 import Ribosome.Api.Window
 import Ribosome.Data.FileBuffer (FileBuffer (FileBuffer))
-import Ribosome.Host.Api.Effect
+import Ribosome.Host.Api.Data

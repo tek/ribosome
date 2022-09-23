@@ -5,7 +5,7 @@ import Polysemy.Test (UnitTest, assertEq)
 import Ribosome.Api.Buffer (currentBufferContent, setCurrentBufferContent)
 import Ribosome.Api.Register (setregLine, unnamedRegister)
 import Ribosome.Api.Window (setCurrentCursor)
-import Ribosome.Host.Api.Effect (nvimCommand)
+import Ribosome.Host.Api.Data (nvimCommand)
 import Ribosome.Host.Test.Run (embedTest_)
 
 test_undo :: UnitTest

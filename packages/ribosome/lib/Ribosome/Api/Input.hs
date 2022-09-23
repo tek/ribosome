@@ -5,7 +5,7 @@ import Conc (withAsync_)
 import qualified Polysemy.Time as Time
 import Time (MilliSeconds, NanoSeconds, convert)
 
-import Ribosome.Host.Api.Effect (nvimInput, nvimReplaceTermcodes, nvimFeedkeys)
+import Ribosome.Host.Api.Data (nvimInput, nvimReplaceTermcodes, nvimFeedkeys)
 import Ribosome.Host.Effect.Rpc (Rpc)
 
 -- |Send a list of character sequences as user input to Neovim with an optional wait interval.

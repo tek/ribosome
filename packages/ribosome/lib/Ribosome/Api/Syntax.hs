@@ -3,7 +3,7 @@ module Ribosome.Api.Syntax where
 
 import Ribosome.Data.Syntax.Syntax (Syntax)
 import Ribosome.Host.Api.Data (Window)
-import Ribosome.Host.Api.Effect (vimCallFunction)
+import Ribosome.Host.Api.Data (vimCallFunction)
 import Ribosome.Host.Class.Msgpack.Encode (MsgpackEncode (toMsgpack))
 import qualified Ribosome.Host.Effect.Rpc as Rpc
 import Ribosome.Host.Effect.Rpc (Rpc)

@@ -9,7 +9,7 @@ import qualified Ribosome.Data.SettingError as SettingError
 import Ribosome.Data.SettingError (SettingError)
 import qualified Ribosome.Effect.Settings as Settings
 import Ribosome.Effect.Settings (Settings)
-import Ribosome.Host.Api.Effect (nvimSetVar)
+import Ribosome.Host.Api.Data (nvimSetVar)
 import Ribosome.Test.Error (resumeTestError)
 import Ribosome.Unit.Run (runTestRibosome)
 

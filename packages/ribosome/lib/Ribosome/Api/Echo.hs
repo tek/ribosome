@@ -2,7 +2,7 @@
 module Ribosome.Api.Echo where
 
 import Ribosome.Data.PluginName (PluginName)
-import Ribosome.Host.Api.Effect (nvimEcho)
+import Ribosome.Host.Api.Data (nvimEcho)
 import Ribosome.Host.Class.Msgpack.Array (msgpackArray)
 import Ribosome.Host.Effect.Rpc (Rpc)
 import Ribosome.PluginName (pluginNamePrefixed)

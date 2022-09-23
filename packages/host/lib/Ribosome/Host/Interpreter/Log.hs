@@ -21,11 +21,19 @@ import Polysemy.Log.Handle (interpretDataLogHandleWith)
 import Polysemy.Log.Log (interpretDataLog)
 import System.IO (Handle, IOMode (AppendMode), hClose, openFile)
 
-import Ribosome.Host.Api.Effect (nvimEcho)
+import Ribosome.Host.Api.Data (nvimEcho)
 import Ribosome.Host.Class.Msgpack.Encode (toMsgpack)
 import qualified Ribosome.Host.Data.HostConfig as HostConfig
 import Ribosome.Host.Data.HostConfig (LogConfig (LogConfig))
-import Ribosome.Host.Data.Report (LogReport (LogReport), Report (Report), ReportLog, prefixReportContext', report, reportMessages, severity)
+import Ribosome.Host.Data.Report (
+  LogReport (LogReport),
+  Report (Report),
+  ReportLog,
+  prefixReportContext',
+  report,
+  reportMessages,
+  severity,
+  )
 import Ribosome.Host.Effect.Log (FileLog, StderrLog, fileLog, stderrLog)
 import qualified Ribosome.Host.Effect.Reports as Reports
 import Ribosome.Host.Effect.Reports (Reports)

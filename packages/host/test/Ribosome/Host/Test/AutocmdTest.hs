@@ -5,7 +5,7 @@ import qualified Polysemy.Conc.Sync as Sync
 import Polysemy.Test (UnitTest, assertJust)
 import Polysemy.Time (Seconds (Seconds))
 
-import Ribosome.Host.Api.Effect (nvimCommand, nvimGetVar, nvimSetVar)
+import Ribosome.Host.Api.Data (nvimCommand, nvimGetVar, nvimSetVar)
 import Ribosome.Host.Data.Execution (Execution (Async))
 import Ribosome.Host.Data.Report (resumeReport)
 import Ribosome.Host.Data.RpcError (RpcError)

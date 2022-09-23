@@ -24,24 +24,54 @@ import Language.Haskell.TH (
   listE,
   litP,
   mkName,
+  newName,
   normalB,
   normalC,
   sigD,
   varE,
   varP,
+  varT,
   )
 import Prelude hiding (Type)
 
+import Ribosome.Host.Class.MonadRpc (MonadRpc, rpcRequest)
 import Ribosome.Host.Class.Msgpack.Decode (MsgpackDecode (fromMsgpack))
 import Ribosome.Host.Class.Msgpack.Encode (MsgpackEncode (toMsgpack))
 import Ribosome.Host.Class.Msgpack.Error (decodeIncompatible)
 import Ribosome.Host.Data.ApiInfo (ExtTypeMeta (ExtTypeMeta))
 import Ribosome.Host.Data.ApiType (ApiType, pattern PolyType)
 import Ribosome.Host.Data.Request (Request (Request), RpcMethod (RpcMethod))
-import Ribosome.Host.Data.RpcCall (RpcCall (RpcCallRequest))
 import Ribosome.Host.TH.Api.Generate (MethodSpec (MethodSpec), generateFromApi, reifyApiType)
-import Ribosome.Host.TH.Api.GenerateEffect (analyzeReturnType, msgpackEncodeConstraint)
 import Ribosome.Host.TH.Api.Param (Param (Param), paramName)
+
+msgpackDecodeConstraint :: ApiType -> Q (Maybe Type)
+msgpackDecodeConstraint = \case
+  PolyType ->
+    Just <$> [t|MsgpackDecode $(varT (mkName "a"))|]
+  _ ->
+    pure Nothing
+
+msgpackEncodeConstraint :: Param -> Q (Maybe Type)
+msgpackEncodeConstraint = \case
+  Param _ _ (Just p) ->
+    Just <$> [t|MsgpackEncode $(varT p)|]
+  Param _ _ Nothing ->
+    pure Nothing
+
+effReturnType :: ApiType -> Q (Maybe Name, Type)
+effReturnType = \case
+  PolyType -> do
+    let n = mkName "a"
+    pure (Just n, VarT n)
+  a -> do
+    t <- reifyApiType a
+    pure (Nothing, t)
+
+analyzeReturnType :: ApiType -> Q (Maybe Name, Type, Maybe Type)
+analyzeReturnType tpe = do
+  (n, rt) <- effReturnType tpe
+  constraint <- msgpackDecodeConstraint tpe
+  pure (n, rt, constraint)
 
 effectiveType :: ApiType -> Q Type
 effectiveType = \case
@@ -53,8 +83,9 @@ effectiveType = \case
 dataSig :: [Param] -> Name -> ApiType -> DecQ
 dataSig params name returnType = do
   (retTv, retType, decodeConstraint) <- analyzeReturnType returnType
+  m <- newName "m"
+  monadRpcConstraint <- [t|MonadRpc $(varT m)|]
   encodeConstraints <- traverse msgpackEncodeConstraint params
-  rc <- [t|RpcCall|]
   let
     paramType = \case
       Param _ _ (Just n) ->
@@ -62,9 +93,9 @@ dataSig params name returnType = do
       Param _ t Nothing ->
         t
     paramsType =
-      foldr (AppT . AppT ArrowT . paramType) (AppT rc retType) params
+      foldr (AppT . AppT ArrowT . paramType) (AppT (VarT m) retType) params
     constraints =
-      maybeToList decodeConstraint <> catMaybes encodeConstraints
+      monadRpcConstraint : maybeToList decodeConstraint <> catMaybes encodeConstraints
     paramTv = \case
       Param _ _ (Just n) ->
         Just n
@@ -74,14 +105,16 @@ dataSig params name returnType = do
       mapMaybe paramTv params
     tv n =
       KindedTV n SpecifiedSpec StarT
-  sigD name (pure (ForallT ((tv <$> paramTvs) <> maybeToList (tv <$> retTv)) constraints paramsType))
+    mTv =
+      KindedTV m SpecifiedSpec (AppT (AppT ArrowT StarT) StarT)
+  sigD name (pure (ForallT ((tv <$> paramTvs) <> maybeToList (tv <$> retTv) <> [mTv]) constraints paramsType))
 
 dataBody :: String -> Name -> [Param] -> DecQ
 dataBody apiName name params =
-  funD name [clause (varP <$> names) (normalB rpcCall) []]
+  funD name [clause (varP <$> names) (normalB call) []]
   where
-    rpcCall =
-      [|RpcCallRequest (Request (RpcMethod apiName) $(listE (toObjVar <$> names)))|]
+    call =
+      [|rpcRequest (Request (RpcMethod apiName) $(listE (toObjVar <$> names)))|]
     toObjVar v =
       [|toMsgpack $(varE v)|]
     names =

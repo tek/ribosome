@@ -3,7 +3,7 @@ module Ribosome.Host.Test.CommandBangTest where
 import Conc (interpretAtomic)
 import Polysemy.Test (UnitTest, assertJust)
 
-import Ribosome.Host.Api.Effect (nvimCommand, nvimGetVar, nvimSetVar)
+import Ribosome.Host.Api.Data (nvimCommand, nvimGetVar, nvimSetVar)
 import Ribosome.Host.Class.Msgpack.Encode (toMsgpack)
 import Ribosome.Host.Data.Bang (Bang (Bang, NoBang))
 import Ribosome.Host.Data.Execution (Execution (Sync))

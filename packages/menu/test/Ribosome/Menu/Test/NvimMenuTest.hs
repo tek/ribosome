@@ -7,7 +7,7 @@ import Streamly.Prelude (SerialT)
 import Test.Tasty (TestTree, testGroup)
 
 import Ribosome.Api.Buffer (bufferContent, buflisted)
-import Ribosome.Host.Api.Effect (bufferGetName, vimGetBuffers, vimGetWindows)
+import Ribosome.Host.Api.Data (bufferGetName, vimGetBuffers, vimGetWindows)
 import Ribosome.Menu.Action (MenuWidget, menuOk, menuSuccess)
 import Ribosome.Menu.Class.MenuState (MenuState, entries)
 import Ribosome.Menu.Combinators (sortEntries)

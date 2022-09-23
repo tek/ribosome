@@ -19,6 +19,7 @@
       inputs = buildInputs [pkgs.neovim pkgs.tmux pkgs.xterm];
     in {
       bytestring-trie = hackage "0.2.6" "0hlgdl7plif58r73hza2148671jf6l2pim84a0a7xf13n8bkrmh7";
+      exon = hackage "1.0.0.2" "053a5n77fmzzpzg3xsfl7398325z5zm0nya6vzb8rfr3ix24zbnh";
       criterion = notest;
       fuzzyfind = hackage "3.0.0" "1aba9rxxdi6sv0z6qgwyq87fnqqhncqakvrbph0fvppd0lnajaac";
       massiv = hackage "0.6.1.0" "133ixc95qw10ni54y4hrq7swq7bskf398s11zdakdvnj9v6hwlsr";

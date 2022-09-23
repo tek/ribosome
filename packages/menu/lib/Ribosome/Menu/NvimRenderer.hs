@@ -13,7 +13,7 @@ import Ribosome.Data.Syntax.Syntax (HiLink (..), Syntax (Syntax))
 import Ribosome.Data.SyntaxItem (SyntaxItem (..))
 import qualified Ribosome.Effect.Scratch as Scratch
 import Ribosome.Effect.Scratch (Scratch)
-import Ribosome.Host.Api.Effect (nvimBufIsLoaded, windowGetWidth)
+import Ribosome.Host.Api.Data (nvimBufIsLoaded, windowGetWidth)
 import Ribosome.Host.Data.RpcError (RpcError)
 import Ribosome.Host.Effect.Rpc (Rpc)
 import Ribosome.Menu.Data.CursorIndex (CursorIndex (CursorIndex))

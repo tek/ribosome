@@ -1,8 +1,23 @@
 -- |Applicative sequencing for RPC requests
 module Ribosome.Host.Data.RpcCall where
 
-import Ribosome.Host.Class.Msgpack.Decode (MsgpackDecode)
+import Data.MessagePack (Object)
+
+import Ribosome.Host.Class.Msgpack.Error (DecodeError (DecodeError))
 import Ribosome.Host.Data.Request (Request)
+
+type DecodeAtomic a =
+  [Object] -> Either DecodeError ([Object], a)
+
+decodeAtomWith ::
+  (Object -> Either DecodeError a) ->
+  [Object] ->
+  Either DecodeError ([Object], a)
+decodeAtomWith decode = \case
+  o : rest ->
+    (rest,) <$> decode o
+  [] ->
+    Left (DecodeError "atomic call response" "Too few results")
 
 type RpcCall :: Type -> Type
 
@@ -10,7 +25,7 @@ type RpcCall :: Type -> Type
 -- representation of the Neovim API.
 --
 -- Neovim has an API function named @nvim_call_atomic@ that makes it possible to send multiple RPC requests at once,
--- reducing the communcation overhead.
+-- reducing the communication overhead.
 -- Applicative sequences of 'RpcCall's are automatically batched into a single call by 'Ribosome.Rpc'.
 --
 -- This can be combined neatly with @ApplicativeDo@:
@@ -23,36 +38,61 @@ type RpcCall :: Type -> Type
 -- >   b :: Int <- Api.nvimGetVar "number2"
 -- >   pure (a + b)
 data RpcCall a where
-  RpcCallRequest :: MsgpackDecode a => Request -> RpcCall a
   RpcPure :: a -> RpcCall a
-  RpcFmap :: (a -> b) -> RpcCall a -> RpcCall b
-  RpcAtomic :: (a -> b -> c) -> RpcCall a -> RpcCall b -> RpcCall c
+  RpcRequest :: Request -> (Object -> Either DecodeError a) -> RpcCall a
+  RpcBind :: RpcCall a -> (a -> RpcCall b) -> RpcCall b
+  RpcAtomic :: [Request] -> DecodeAtomic a -> RpcCall a
 
 instance Functor RpcCall where
   fmap f = \case
-    RpcCallRequest req ->
-      RpcFmap f (RpcCallRequest req)
     RpcPure a ->
       RpcPure (f a)
-    RpcFmap g a ->
-      RpcFmap (f . g) a
-    RpcAtomic g a b ->
-      RpcAtomic (\ x y -> f (g x y)) a b
+    RpcRequest req decode ->
+      RpcRequest req (fmap f . decode)
+    RpcBind fa g ->
+      RpcBind fa (fmap f . g)
+    RpcAtomic reqs decode ->
+      RpcAtomic reqs (fmap (second f) . decode)
+  {-# inline fmap #-}
+
+asAtomic :: RpcCall a -> RpcCall a
+asAtomic = \case
+  RpcRequest req decode ->
+    RpcAtomic [req] (decodeAtomWith decode)
+  RpcPure a ->
+    RpcAtomic [] (Right . (,a))
+  step ->
+    step
+{-# inline asAtomic #-}
 
 instance Applicative RpcCall where
   pure =
     RpcPure
-  liftA2 =
-    RpcAtomic
+
+  liftA2 f (asAtomic -> RpcAtomic reqsA decodeA) (asAtomic -> RpcAtomic reqsB decodeB) =
+    RpcAtomic (reqsA <> reqsB) \ o -> do
+      (restA, a) <- decodeA o
+      second (f a) <$> decodeB restA
+  liftA2 f fa fb =
+    fa >>= \ a ->
+      f a <$> fb
+  {-# inline liftA2 #-}
+
+instance Monad RpcCall where
+  (>>=) =
+    RpcBind
+  {-# inline (>>=) #-}
 
 instance (
     Semigroup a
   ) => Semigroup (RpcCall a) where
     (<>) =
       liftA2 (<>)
+    {-# inline (<>) #-}
 
 instance (
     Monoid a
   ) => Monoid (RpcCall a) where
     mempty =
       pure mempty
+    {-# inline mempty #-}

@@ -15,7 +15,7 @@ import qualified Polysemy.Time as Time
 import Polysemy.Time (MilliSeconds (MilliSeconds), Minutes (Minutes))
 import Ribosome.Data.PluginName (PluginName (PluginName))
 import Ribosome.Embed (HandlerEffects, embedPlugin)
-import Ribosome.Host.Api.Effect (nvimCallFunction)
+import Ribosome.Host.Api.Data (nvimCallFunction)
 import Ribosome.Host.Data.HostConfig (LogConfig, hostLog, logLevelStderr)
 import Ribosome.Host.Data.RpcError (RpcError)
 import Ribosome.Host.Effect.Rpc (Rpc)

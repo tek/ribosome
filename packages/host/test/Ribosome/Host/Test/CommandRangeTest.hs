@@ -2,7 +2,7 @@ module Ribosome.Host.Test.CommandRangeTest where
 
 import Polysemy.Test (UnitTest, assertJust)
 
-import Ribosome.Host.Api.Effect (
+import Ribosome.Host.Api.Data (
   nvimBufSetLines,
   nvimCommand,
   nvimGetCurrentBuf,

@@ -5,7 +5,7 @@ import Data.MessagePack (Object)
 import Data.Text (splitOn)
 import Exon (exon)
 
-import Ribosome.Host.Api.Effect (vimGetOption, vimSetOption, nvimSetOption)
+import Ribosome.Host.Api.Data (vimGetOption, vimSetOption, nvimSetOption)
 import Ribosome.Host.Class.Msgpack.Encode (MsgpackEncode)
 import Ribosome.Host.Effect.Rpc (Rpc)
 import qualified Data.Text as Text

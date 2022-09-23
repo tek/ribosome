@@ -46,6 +46,7 @@ module Ribosome (
   async,
   notify,
   channelId,
+  MonadRpc (atomic),
   Buffer,
   Window,
   Tabpage,
@@ -264,6 +265,7 @@ import Ribosome.Embed (
   runEmbedStackCli,
   )
 import Ribosome.Host.Api.Data (Buffer, Tabpage, Window)
+import Ribosome.Host.Class.MonadRpc (MonadRpc (atomic))
 import Ribosome.Host.Class.Msgpack.Array (msgpackArray)
 import Ribosome.Host.Class.Msgpack.Decode (pattern Msgpack, MsgpackDecode (fromMsgpack))
 import Ribosome.Host.Class.Msgpack.Encode (MsgpackEncode (toMsgpack))

@@ -5,7 +5,7 @@ import Exon (exon)
 import Options.Applicative (auto, option, short, switch)
 import Polysemy.Test (UnitTest, assertJust)
 
-import Ribosome.Host.Api.Effect (nvimCommand, nvimGetVar, nvimSetVar)
+import Ribosome.Host.Api.Data (nvimCommand, nvimGetVar, nvimSetVar)
 import Ribosome.Host.Class.Msgpack.Decode (MsgpackDecode)
 import Ribosome.Host.Class.Msgpack.Encode (MsgpackEncode)
 import Ribosome.Host.Data.Args (

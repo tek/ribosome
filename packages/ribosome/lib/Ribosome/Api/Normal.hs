@@ -1,7 +1,7 @@
 -- |Functions for triggering normal mode commands.
 module Ribosome.Api.Normal where
 
-import Ribosome.Host.Api.Effect (nvimCommand)
+import Ribosome.Host.Api.Data (nvimCommand)
 
 import Ribosome.Host.Effect.Rpc (Rpc)
 import Exon (exon)

@@ -4,7 +4,7 @@ import qualified Log
 import Log (Severity (Error, Info))
 import Polysemy.Test (UnitTest)
 
-import Ribosome.Host.Api.Effect (nvimCommand, nvimInput)
+import Ribosome.Host.Api.Data (nvimCommand, nvimInput)
 import Ribosome.Host.Data.Execution (Execution (Sync))
 import Ribosome.Host.Data.Report (Report (Report))
 import Ribosome.Host.Data.RpcHandler (Handler)

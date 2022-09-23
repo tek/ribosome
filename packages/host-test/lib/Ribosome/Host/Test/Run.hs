@@ -126,6 +126,31 @@ embedTest ::
 embedTest =
   embedTestConf def
 
+embedTestLevel ::
+  HasCallStack =>
+  Severity ->
+  [RpcHandler EmbedTestStack] ->
+  Sem (Rpc : EmbedTestStack) () ->
+  UnitTest
+embedTestLevel level =
+  embedTestConf def { host = setStderr level def }
+
+embedTestDebug ::
+  HasCallStack =>
+  [RpcHandler EmbedTestStack] ->
+  Sem (Rpc : EmbedTestStack) () ->
+  UnitTest
+embedTestDebug =
+  embedTestLevel Debug
+
+embedTestTrace ::
+  HasCallStack =>
+  [RpcHandler EmbedTestStack] ->
+  Sem (Rpc : EmbedTestStack) () ->
+  UnitTest
+embedTestTrace =
+  embedTestLevel Trace
+
 embedTest_ ::
   HasCallStack =>
   Sem (Rpc : EmbedTestStack) () ->
@@ -133,3 +158,17 @@ embedTest_ ::
 embedTest_ =
   runTest .
   embedNvim_
+
+embedTestDebug_ ::
+  HasCallStack =>
+  Sem (Rpc : EmbedTestStack) () ->
+  UnitTest
+embedTestDebug_ =
+  embedTestDebug mempty
+
+embedTestTrace_ ::
+  HasCallStack =>
+  Sem (Rpc : EmbedTestStack) () ->
+  UnitTest
+embedTestTrace_ =
+  embedTestTrace mempty

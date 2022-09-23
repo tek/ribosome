@@ -7,7 +7,7 @@ import Path (relfile, toFilePath)
 import qualified Polysemy.Test as Test
 import Polysemy.Test (UnitTest, assertEq, assertLeft)
 
-import Ribosome.Host.Api.Effect (nvimCallFunction)
+import Ribosome.Host.Api.Data (nvimCallFunction)
 import Ribosome.Host.Data.Execution (Execution (Sync))
 import Ribosome.Host.Data.Report (Report (Report))
 import Ribosome.Host.Data.RpcError (RpcError)

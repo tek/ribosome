@@ -10,7 +10,7 @@ import Ribosome.Data.ScratchOptions (ScratchOptions (ScratchOptions))
 import qualified Ribosome.Effect.Scratch as Scratch
 import Ribosome.Effect.Scratch (Scratch)
 import Ribosome.Host.Api.Data (nvimCommand)
-import Ribosome.Host.Api.Effect (vimCallFunction)
+import Ribosome.Host.Api.Data (vimCallFunction)
 import Ribosome.Host.Data.Execution (Execution (Sync))
 import Ribosome.Host.Data.Report (resumeReport)
 import Ribosome.Host.Data.RpcError (RpcError)

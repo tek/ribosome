@@ -27,7 +27,7 @@ import Ribosome.Host.Data.RpcError (RpcError)
 --
 -- A manual call would be constructed like this:
 --
--- > Ribosome.sync (RpcCallRequest (Request "nvim_get_option" [toMsgpack "textwidth"]))
+-- > Ribosome.sync (RpcRequest (Request "nvim_get_option" [toMsgpack "textwidth"]))
 --
 -- RPC calls may be batched and sent via @nvim_call_atomic@, see 'RpcCall'.
 --

@@ -4,7 +4,7 @@ module Ribosome.Api.Tabpage where
 import Exon (exon)
 
 import Ribosome.Host.Api.Data (Tabpage)
-import Ribosome.Host.Api.Effect (nvimTabpageGetNumber, tabpageIsValid, vimCommand)
+import Ribosome.Host.Api.Data (nvimTabpageGetNumber, tabpageIsValid, vimCommand)
 import Ribosome.Host.Effect.Rpc (Rpc)
 import Ribosome.Host.Modify (silentBang)
 

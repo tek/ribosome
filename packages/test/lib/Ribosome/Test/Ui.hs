@@ -5,7 +5,7 @@ import Polysemy.Test (Hedgehog, assertEq, (===))
 
 import Ribosome.Api.Window (currentCursor, cursor)
 import Ribosome.Host.Api.Data (Window)
-import Ribosome.Host.Api.Effect (nvimListWins)
+import Ribosome.Host.Api.Data (nvimListWins)
 import Ribosome.Host.Effect.Rpc (Rpc)
 
 -- |Assert the number of windows.

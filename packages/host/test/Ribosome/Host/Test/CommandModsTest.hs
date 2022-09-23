@@ -3,7 +3,7 @@ module Ribosome.Host.Test.CommandModsTest where
 import Conc (interpretAtomic)
 import Polysemy.Test (UnitTest, assertJust)
 
-import Ribosome.Host.Api.Effect (nvimCommand, nvimGetVar, nvimSetVar)
+import Ribosome.Host.Api.Data (nvimCommand, nvimGetVar, nvimSetVar)
 import Ribosome.Host.Data.CommandMods (CommandMods (CommandMods))
 import Ribosome.Host.Data.Execution (Execution (Sync))
 import Ribosome.Host.Data.Report (resumeReport)

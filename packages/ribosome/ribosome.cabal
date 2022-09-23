@@ -25,7 +25,6 @@ library
       Ribosome.Api
       Ribosome.Api.Autocmd
       Ribosome.Api.Buffer
-      Ribosome.Api.Data
       Ribosome.Api.Echo
       Ribosome.Api.Function
       Ribosome.Api.Input

@@ -7,7 +7,7 @@ import Polysemy.Test (UnitTest, assertEq, (===))
 import qualified Sync
 import Time (Seconds (Seconds))
 
-import Ribosome.Host.Api.Effect (nvimCallFunction, nvimGetVar, nvimInput, nvimSetVar)
+import Ribosome.Host.Api.Data (nvimCallFunction, nvimGetVar, nvimInput, nvimSetVar)
 import Ribosome.Host.Class.Msgpack.Array (msgpackArray)
 import Ribosome.Host.Data.Args (Args (Args))
 import Ribosome.Host.Data.Execution (Execution (Sync))

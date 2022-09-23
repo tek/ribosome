@@ -2,7 +2,7 @@
 module Ribosome.Api.Mode where
 
 import Ribosome.Data.Mode (NvimMode)
-import Ribosome.Host.Api.Effect (nvimGetMode, vimCallFunction)
+import Ribosome.Host.Api.Data (nvimGetMode, vimCallFunction)
 import Ribosome.Host.Class.Msgpack.Decode (MsgpackDecode (..))
 import Ribosome.Host.Class.Msgpack.Util (decodeString)
 import Ribosome.Host.Effect.Rpc (Rpc)

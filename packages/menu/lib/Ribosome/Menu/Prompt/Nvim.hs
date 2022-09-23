@@ -5,7 +5,7 @@ import Prelude hiding (consume)
 
 import Ribosome.Api.Window (redraw)
 import qualified Ribosome.Host.Api.Data as ApiData (vimCommand)
-import Ribosome.Host.Api.Effect (
+import Ribosome.Host.Api.Data (
   vimCallFunction,
   vimCommand,
   vimCommandOutput,

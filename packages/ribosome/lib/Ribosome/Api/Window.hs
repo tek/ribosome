@@ -3,7 +3,7 @@ module Ribosome.Api.Window where
 
 import Ribosome.Data.WindowView (PartialWindowView, WindowView)
 import Ribosome.Host.Api.Data (Window)
-import Ribosome.Host.Api.Effect (
+import Ribosome.Host.Api.Data (
   nvimBufGetOption,
   nvimCallFunction,
   nvimCommand,

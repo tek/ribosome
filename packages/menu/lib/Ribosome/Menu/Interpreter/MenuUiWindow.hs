@@ -32,7 +32,7 @@ import qualified Ribosome.Effect.Scratch as Scratch
 import Ribosome.Effect.Scratch (Scratch)
 import Ribosome.Effect.Settings (Settings)
 import Ribosome.Host.Api.Data (Buffer, Window)
-import Ribosome.Host.Api.Effect (
+import Ribosome.Host.Api.Data (
   nvimBufAttach,
   nvimCommand,
   nvimFeedkeys,

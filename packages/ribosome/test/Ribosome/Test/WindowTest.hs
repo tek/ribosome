@@ -5,7 +5,7 @@ import Test.Tasty (TestTree, testGroup)
 
 import Ribosome.Api.Window (ensureMainWindow)
 import Ribosome.Host.Api.Data (Window)
-import Ribosome.Host.Api.Effect (bufferSetOption, nvimCommand, vimGetCurrentBuffer, vimGetCurrentWindow, vimGetWindows)
+import Ribosome.Host.Api.Data (bufferSetOption, nvimCommand, vimGetCurrentBuffer, vimGetCurrentWindow, vimGetWindows)
 import Ribosome.Host.Class.Msgpack.Encode (toMsgpack)
 import Ribosome.Host.Effect.Rpc (Rpc)
 import Ribosome.Host.Test.Run (embedTest_)

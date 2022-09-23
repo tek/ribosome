@@ -22,7 +22,7 @@ import qualified Ribosome.Data.ScratchState as ScratchState
 import Ribosome.Data.ScratchState (ScratchState (ScratchState))
 import qualified Ribosome.Host.Api.Data as Data
 import Ribosome.Host.Api.Data (Buffer, Tabpage, Window)
-import Ribosome.Host.Api.Effect (
+import Ribosome.Host.Api.Data (
   bufferGetName,
   bufferSetName,
   bufferSetOption,

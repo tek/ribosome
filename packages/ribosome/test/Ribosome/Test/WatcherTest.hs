@@ -5,7 +5,7 @@ import Data.MessagePack (Object)
 import Polysemy.Test (UnitTest, (===))
 
 import Ribosome.Api.Autocmd (doautocmd)
-import Ribosome.Host.Api.Effect (nvimSetVar)
+import Ribosome.Host.Api.Data (nvimSetVar)
 import Ribosome.Host.Data.Report (Report)
 import Ribosome.Host.Data.RpcError (RpcError)
 import Ribosome.Host.Effect.Rpc (Rpc)

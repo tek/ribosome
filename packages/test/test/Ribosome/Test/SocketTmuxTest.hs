@@ -2,7 +2,7 @@ module Ribosome.Test.SocketTmuxTest where
 
 import Polysemy.Test (UnitTest, assert)
 
-import Ribosome.Host.Api.Effect (nvimGetVar, nvimSetVar)
+import Ribosome.Host.Api.Data (nvimGetVar, nvimSetVar)
 import Ribosome.Test.SocketTmux (testSocketTmux)
 
 test_socketTmux :: UnitTest

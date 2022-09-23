@@ -24,8 +24,8 @@ library
       Ribosome.Host
       Ribosome.Host.Api.Autocmd
       Ribosome.Host.Api.Data
-      Ribosome.Host.Api.Effect
       Ribosome.Host.Api.Event
+      Ribosome.Host.Class.MonadRpc
       Ribosome.Host.Class.Msgpack.Array
       Ribosome.Host.Class.Msgpack.Decode
       Ribosome.Host.Class.Msgpack.Encode
@@ -51,6 +51,7 @@ library
       Ribosome.Host.Data.Report
       Ribosome.Host.Data.Request
       Ribosome.Host.Data.Response
+      Ribosome.Host.Data.RpcBatch
       Ribosome.Host.Data.RpcCall
       Ribosome.Host.Data.RpcError
       Ribosome.Host.Data.RpcHandler
@@ -99,7 +100,6 @@ library
       Ribosome.Host.Text
       Ribosome.Host.TH.Api.Generate
       Ribosome.Host.TH.Api.GenerateData
-      Ribosome.Host.TH.Api.GenerateEffect
       Ribosome.Host.TH.Api.Param
       Ribosome.Host.TH.Api.Sig
   hs-source-dirs:

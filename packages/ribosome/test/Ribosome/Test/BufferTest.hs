@@ -6,7 +6,7 @@ import Polysemy.Test (UnitTest, assert, assertEq, evalMaybe, (/==), (===))
 
 import Ribosome.Api.Buffer (bufferCount, bufferForFile, bufferIsFile, edit)
 import Ribosome.Data.FileBuffer (FileBuffer (FileBuffer))
-import Ribosome.Host.Api.Effect (nvimGetCurrentBuf)
+import Ribosome.Host.Api.Data (nvimGetCurrentBuf)
 import Ribosome.Host.Test.Run (embedTest_)
 
 test_bufferForFile :: UnitTest

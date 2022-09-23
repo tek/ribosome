@@ -8,7 +8,7 @@ import Data.MessagePack (Object)
 
 import Ribosome.Host.Api.Autocmd (autocmd)
 import Ribosome.Host.Api.Data (Buffer)
-import Ribosome.Host.Api.Effect (bufferGetNumber, nvimExecAutocmds, vimGetOption, vimSetOption)
+import Ribosome.Host.Api.Data (bufferGetNumber, nvimExecAutocmds, vimGetOption, vimSetOption)
 import Ribosome.Host.Class.Msgpack.Encode (toMsgpack)
 import Ribosome.Host.Data.RpcType (AutocmdBuffer (AutocmdBuffer), AutocmdEvents, AutocmdId, AutocmdOptions, target)
 import qualified Ribosome.Host.Effect.Rpc as Rpc

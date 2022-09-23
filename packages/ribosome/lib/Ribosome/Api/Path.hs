@@ -4,24 +4,26 @@ module Ribosome.Api.Path where
 import Exon (exon)
 import Path (Abs, Dir, File, Path, SomeBase (Abs, Rel), parseSomeDir, parseSomeFile, (</>))
 
-import Ribosome.Host.Api.Effect (nvimCommand, vimCallFunction)
+import qualified Ribosome.Host.Api.Data as Data
+import Ribosome.Host.Api.Data (nvimCommand)
+import Ribosome.Host.Class.MonadRpc (MonadRpc)
 import Ribosome.Host.Data.Report (Report)
 import Ribosome.Host.Effect.Rpc (Rpc)
-import Ribosome.Internal.Path (failInvalidPath)
 import Ribosome.Host.Path (pathText)
+import Ribosome.Internal.Path (failInvalidPath)
 
 -- |Get Neovim's current working directory.
 nvimCwd ::
-  Member Rpc r =>
-  Sem r (Path Abs Dir)
+  MonadRpc m =>
+  m (Path Abs Dir)
 nvimCwd =
-  vimCallFunction "getcwd" []
+  Data.vimCallFunction "getcwd" []
 
 -- |Set Neovim's current working directory.
 nvimSetCwd ::
-  Member Rpc r =>
+  MonadRpc m =>
   Path Abs Dir ->
-  Sem r ()
+  m ()
 nvimSetCwd dir =
   nvimCommand [exon|cd #{pathText dir}|]
 

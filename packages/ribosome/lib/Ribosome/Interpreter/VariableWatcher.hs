@@ -8,7 +8,7 @@ import Data.MessagePack (Object (ObjectNil))
 import Ribosome.Effect.VariableWatcher (WatchedVariable (WatchedVariable))
 import qualified Ribosome.Effect.VariableWatcher as VariableWatcher
 import Ribosome.Effect.VariableWatcher (VariableWatcher)
-import Ribosome.Host.Api.Effect (nvimGetVar)
+import Ribosome.Host.Api.Data (nvimGetVar)
 import Ribosome.Host.Data.Report (Report)
 import Ribosome.Host.Data.RpcError (RpcError)
 import Ribosome.Host.Data.RpcHandler (Handler)

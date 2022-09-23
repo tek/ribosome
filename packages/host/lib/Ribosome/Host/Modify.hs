@@ -7,7 +7,7 @@ import Data.MessagePack (Object (ObjectString))
 import Exon (exon)
 
 import Ribosome.Host.Api.Data (Buffer, Window)
-import Ribosome.Host.Api.Effect (
+import Ribosome.Host.Api.Data (
   nvimBufGetNumber,
   nvimGetCurrentBuf,
   nvimGetCurrentWin,
@@ -16,15 +16,15 @@ import Ribosome.Host.Api.Effect (
   vimSetCurrentWindow,
   )
 import Ribosome.Host.Data.Request (Request (Request))
-import Ribosome.Host.Data.RpcCall (RpcCall (RpcCallRequest))
+import Ribosome.Host.Data.RpcCall (RpcCall (RpcRequest))
 import qualified Ribosome.Host.Effect.Rpc as Rpc
 import Ribosome.Host.Effect.Rpc (Rpc)
 
 -- |Modify an 'RpcCall' constructor if it contains a request for @nvim_command@ by prefixing it with the given string.
 modifyCall :: Text -> RpcCall a -> RpcCall a
 modifyCall modifier = \case
-  RpcCallRequest (Request "nvim_command" [ObjectString cmd]) ->
-    RpcCallRequest (Request "nvim_command" [ObjectString [exon|#{encodeUtf8 modifier} #{cmd}|]])
+  RpcRequest (Request "nvim_command" [ObjectString cmd]) decode ->
+    RpcRequest (Request "nvim_command" [ObjectString [exon|#{encodeUtf8 modifier} #{cmd}|]]) decode
   c ->
     c
 

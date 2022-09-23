@@ -8,8 +8,8 @@ import Path (Abs, Dir, File, Path, parseAbsFile, parseRelFile, (</>))
 import Ribosome.Api.Path (nvimCwd)
 import Ribosome.Data.FileBuffer (FileBuffer (FileBuffer))
 import qualified Ribosome.Host.Api.Data as Data
-import Ribosome.Host.Api.Data (Buffer)
-import Ribosome.Host.Api.Effect (
+import Ribosome.Host.Api.Data (
+  Buffer,
   bufferGetLines,
   bufferGetName,
   bufferGetNumber,
@@ -25,6 +25,7 @@ import Ribosome.Host.Api.Effect (
   vimGetCurrentBuffer,
   vimGetCurrentWindow,
   )
+import Ribosome.Host.Class.MonadRpc (MonadRpc, atomic)
 import Ribosome.Host.Class.Msgpack.Encode (toMsgpack)
 import Ribosome.Host.Data.RpcError (RpcError)
 import qualified Ribosome.Host.Effect.Rpc as Rpc
@@ -158,19 +159,20 @@ fileBuffer cwd buffer (toString -> path) =
 
 -- |Get all buffers in the buffer list whose name is a path.
 fileBuffers ::
-  Member Rpc r =>
-  Sem r [FileBuffer]
-fileBuffers = do
-  cwd <- nvimCwd
-  buffers <- vimGetBuffers
-  names <- Rpc.sync (foldMap (fmap pure . Data.bufferGetName) buffers)
-  pure (catMaybes (zipWith (fileBuffer cwd) buffers names))
+  MonadRpc m =>
+  m [FileBuffer]
+fileBuffers =
+  atomic do
+    cwd <- nvimCwd
+    buffers <- Data.vimGetBuffers
+    names <- foldMap (fmap pure . Data.bufferGetName) buffers
+    pure (catMaybes (zipWith (fileBuffer cwd) buffers names))
 
 -- |Find the buffer whose name is the given path.
 bufferForFile ::
-  Member Rpc r =>
+  MonadRpc m =>
   Path Abs File ->
-  Sem r (Maybe FileBuffer)
+  m (Maybe FileBuffer)
 bufferForFile target =
   find sameBuffer <$> fileBuffers
   where

@@ -6,6 +6,7 @@ import qualified Polysemy.Log as Log
 import qualified Polysemy.Process as Process
 import Polysemy.Process (Process)
 
+import Ribosome.Host.Class.MonadRpc (rpcRequest)
 import Ribosome.Host.Class.Msgpack.Error (DecodeError)
 import Ribosome.Host.Data.ChannelId (ChannelId)
 import Ribosome.Host.Data.Request (
@@ -18,7 +19,9 @@ import Ribosome.Host.Data.Request (
   )
 import qualified Ribosome.Host.Data.Response as Response
 import Ribosome.Host.Data.Response (Response)
-import Ribosome.Host.Data.RpcCall (RpcCall (RpcCallRequest))
+import qualified Ribosome.Host.Data.RpcBatch as RpcBatch
+import Ribosome.Host.Data.RpcBatch (RpcBatch)
+import Ribosome.Host.Data.RpcCall (RpcCall)
 import qualified Ribosome.Host.Data.RpcError as RpcError
 import Ribosome.Host.Data.RpcError (RpcError)
 import qualified Ribosome.Host.Data.RpcMessage as RpcMessage
@@ -47,23 +50,52 @@ request exec req@Request {method, arguments} decode = do
     Response.Error e ->
       stop (RpcError.Api method arguments e)
 
+handleBatch ::
+  ∀ r a .
+  (∀ x . Request -> (Object -> Either DecodeError x) -> Sem r x) ->
+  RpcBatch a ->
+  Sem r a
+handleBatch handle =
+  spin
+  where
+    spin :: ∀ x . RpcBatch x -> Sem r x
+    spin = \case
+      RpcBatch.Pure a ->
+        pure a
+      RpcBatch.Bind fa f ->
+        spin . f =<< spin fa
+      RpcBatch.Request req decode ->
+        handle req decode
+
 handleCall ::
+  ∀ a r .
   RpcCall a ->
-  (Request -> (Object -> Either DecodeError a) -> Sem r a) ->
+  (∀ x . Request -> (Object -> Either DecodeError x) -> Sem r x) ->
   Sem r a
 handleCall call handle =
   RpcCall.cata call & \case
-    Right (req, decode) -> do
-      handle req decode
-    Left a ->
-      pure a
+    batch ->
+      handleBatch handle batch
+
+handleNotify ::
+  ∀ a o r .
+  Members [Process RpcMessage o, Responses RequestId Response !! RpcError, Log, Stop RpcError] r =>
+  RpcCall a ->
+  Sem r ()
+handleNotify call =
+  RpcCall.cata call & \case
+    RpcBatch.Request req _ -> do
+      Log.trace [exon|notify rpc: #{formatReq req}|]
+      Process.send (RpcMessage.Notification req)
+    batch ->
+      void (handleBatch (request "notification with bind") batch)
 
 fetchChannelId ::
   Member (AtomicState (Maybe ChannelId)) r =>
   Members [Process RpcMessage o, Responses RequestId Response !! RpcError, Log, Stop RpcError] r =>
   Sem r ChannelId
 fetchChannelId = do
-  (cid, ()) <- handleCall (RpcCallRequest (Request "nvim_get_api_info" [])) (request "sync")
+  (cid, ()) <- handleCall (rpcRequest (Request "nvim_get_api_info" [])) (request "sync")
   cid <$ atomicPut (Just cid)
 
 cachedChannelId ::
@@ -88,9 +120,7 @@ interpretRpc =
         runTSimple (use a)
       unitT
     Rpc.Notify call -> do
-      handleCall (void call) \ req _ -> do
-        Log.trace [exon|notify rpc: #{formatReq req}|]
-        Process.send (RpcMessage.Notification req)
+      handleNotify call
       unitT
     Rpc.ChannelId ->
       pureT =<< cachedChannelId

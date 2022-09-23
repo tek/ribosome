@@ -6,7 +6,7 @@ import Polysemy.Test (Hedgehog, UnitTest, assertEq, assertJust)
 import qualified Sync
 import Time (Seconds (Seconds))
 
-import Ribosome.Host.Api.Effect (nvimCallFunction, nvimCommand)
+import Ribosome.Host.Api.Data (nvimCallFunction, nvimCommand)
 import Ribosome.Host.Class.Msgpack.Encode (toMsgpack)
 import Ribosome.Host.Data.Execution (Execution (Async, Sync))
 import Ribosome.Host.Data.RpcHandler (Handler)
