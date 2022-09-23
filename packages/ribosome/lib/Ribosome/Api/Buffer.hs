@@ -7,7 +7,6 @@ import Path (Abs, Dir, File, Path, parseAbsFile, parseRelFile, (</>))
 
 import Ribosome.Api.Path (nvimCwd)
 import Ribosome.Data.FileBuffer (FileBuffer (FileBuffer))
-import qualified Ribosome.Host.Api.Data as Data
 import Ribosome.Host.Api.Data (
   Buffer,
   bufferGetLines,
@@ -28,7 +27,6 @@ import Ribosome.Host.Api.Data (
 import Ribosome.Host.Class.MonadRpc (MonadRpc, atomic)
 import Ribosome.Host.Class.Msgpack.Encode (toMsgpack)
 import Ribosome.Host.Data.RpcError (RpcError)
-import qualified Ribosome.Host.Effect.Rpc as Rpc
 import Ribosome.Host.Effect.Rpc (Rpc)
 import Ribosome.Host.Modify (silentBang)
 import Ribosome.Host.Path (pathText)
@@ -54,62 +52,62 @@ buflisted buf = do
 
 -- |Return the entire content of the given buffer.
 bufferContent ::
-  Member Rpc r =>
+  MonadRpc m =>
   Buffer ->
-  Sem r [Text]
+  m [Text]
 bufferContent buffer =
   bufferGetLines buffer 0 (-1) False
 
 -- |Return the entire content of the current buffer.
 currentBufferContent ::
-  Member Rpc r =>
-  Sem r [Text]
+  MonadRpc m =>
+  m [Text]
 currentBufferContent =
   bufferContent =<< vimGetCurrentBuffer
 
 -- |Replace the content of the given buffer.
 setBufferContent ::
-  Member Rpc r =>
+  MonadRpc m =>
   Buffer ->
   [Text] ->
-  Sem r ()
+  m ()
 setBufferContent buffer =
   bufferSetLines buffer 0 (-1) False
 
 -- |Replace the content of the current buffer.
 setCurrentBufferContent ::
-  Member Rpc r =>
+  MonadRpc m =>
   [Text] ->
-  Sem r ()
+  m ()
 setCurrentBufferContent content = do
   buffer <- vimGetCurrentBuffer
   setBufferContent buffer content
 
 -- |Replace a single line in the given buffer.
 setBufferLine ::
-  Member Rpc r =>
+  MonadRpc m =>
   Buffer ->
   Int ->
   Text ->
-  Sem r ()
+  m ()
 setBufferLine buffer line text =
   bufferSetLines buffer line (line + 1) False [text]
 
 -- |Execute an action only if the given buffer is valid, i.e. it exists but may be unloaded.
 whenValid ::
-  Member Rpc r =>
-  (Buffer -> Sem r ()) ->
+  MonadRpc m =>
+  (Buffer -> m ()) ->
   Buffer ->
-  Sem r ()
+  m ()
 whenValid use buffer =
   whenM (bufferIsValid buffer) (use buffer)
 
 -- |Execute an action with the given buffer's number if it is valid.
 withBufferNumber ::
-  Member Rpc r =>
-  (Int -> Sem r ()) ->
+  MonadRpc m =>
+  (Int -> m ()) ->
   Buffer ->
-  Sem r ()
+  m ()
 withBufferNumber run =
  whenValid (run <=< bufferGetNumber)
 
@@ -126,25 +124,25 @@ closeBuffer =
 
 -- |Force-wipe a buffer, discarding changes.
 wipeBuffer ::
-  Member Rpc r =>
+  MonadRpc m =>
   Buffer ->
-  Sem r ()
+  m ()
 wipeBuffer =
   whenValid \ b -> nvimBufDelete b [("force", toMsgpack True)]
 
 -- |Force-unload a buffer, discarding changes.
 unloadBuffer ::
-  Member Rpc r =>
+  MonadRpc m =>
   Buffer ->
-  Sem r ()
+  m ()
 unloadBuffer =
   whenValid \ b -> nvimBufDelete b [("force", toMsgpack True), ("unload", toMsgpack True)]
 
 -- |Add a buffer to the list without loading it.
 addBuffer ::
-  Member Rpc r =>
+  MonadRpc m =>
   Text ->
-  Sem r ()
+  m ()
 addBuffer path =
   nvimCommand [exon|badd #{path}|]
 
@@ -163,9 +161,8 @@ fileBuffers ::
   m [FileBuffer]
 fileBuffers =
   atomic do
-    cwd <- nvimCwd
-    buffers <- Data.vimGetBuffers
-    names <- foldMap (fmap pure . Data.bufferGetName) buffers
+    (cwd, buffers) <- (,) <$> nvimCwd <*> vimGetBuffers
+    names <- foldMap (fmap pure . bufferGetName) buffers
     pure (catMaybes (zipWith (fileBuffer cwd) buffers names))
 
 -- |Find the buffer whose name is the given path.
@@ -181,64 +178,65 @@ bufferForFile target =
 
 -- |Return the name of the current buffer.
 currentBufferName ::
-  Member Rpc r =>
-  Sem r Text
+  MonadRpc m =>
+  m Text
 currentBufferName =
   bufferGetName =<< vimGetCurrentBuffer
 
 -- |Set the current buffer.
 setCurrentBuffer ::
-  Member Rpc r =>
+  MonadRpc m =>
   Buffer ->
-  Sem r ()
+  m ()
 setCurrentBuffer buf = do
   win <- vimGetCurrentWindow
   nvimWinSetBuf win buf
 
 -- |Indicate whether the given buffer is a file, i.e. has empty @buftype@.
 bufferIsFile ::
-  Member Rpc r =>
+  MonadRpc m =>
   Buffer ->
-  Sem r Bool
+  m Bool
 bufferIsFile buf =
   Text.null <$> bufferGetOption buf "buftype"
 
 -- |Return the number of buffers in the list.
 bufferCount ::
-  Member Rpc r =>
-  Sem r Natural
+  MonadRpc m =>
+  m Natural
 bufferCount =
   fromIntegral . length <$> vimGetBuffers
 
 -- |Return the file system path of the given buffer, if its name is a valid path.
 bufferPath ::
-  Member Rpc r =>
+  MonadRpc m =>
   Buffer ->
-  Sem r (Maybe (Path Abs File))
+  m (Maybe (Path Abs File))
 bufferPath buffer = do
-  Rpc.sync do
-    cwd <- Data.vimCallFunction "getcwd" []
-    name <- Data.bufferGetName buffer
+  atomic do
+    cwd <- nvimCallFunction "getcwd" []
+    name <- bufferGetName buffer
     pure (fileBuffer cwd buffer name <&> \ (FileBuffer _ path) -> path)
 
 -- |Return the file system path of the current buffer, if its name is a valid path.
 currentBufferPath ::
-  Member Rpc r =>
-  Sem r (Maybe (Path Abs File))
+  MonadRpc m =>
+  m (Maybe (Path Abs File))
 currentBufferPath =
   bufferPath =<< nvimGetCurrentBuf
 
 -- |Filter out the unlisted buffers from the given list.
 filterListed ::
-  Member Rpc r =>
+  MonadRpc m =>
   [Buffer] ->
-  Sem r [Buffer]
+  m [Buffer]
 filterListed bufs = do
-  nums <- Rpc.sync (traverse Data.bufferGetNumber bufs)
-  listedFlags <- Rpc.sync (traverse (Data.nvimCallFunction "buflisted" . pure . toMsgpack) nums)
-  let listed = mapMaybe chooseListed (zip bufs listedFlags)
-  buftypes :: [Text] <- Rpc.sync (traverse (\ buf -> Data.bufferGetOption buf "buftype") listed)
-  pure (mapMaybe chooseEmptyTypes (zip bufs buftypes))
+  atomic do
+    nums <- traverse bufferGetNumber bufs
+    listedFlags <- traverse (nvimCallFunction "buflisted" . pure . toMsgpack) nums
+    let listed = mapMaybe chooseListed (zip bufs listedFlags)
+    buftypes :: [Text] <- traverse (flip bufferGetOption "buftype") listed
+    pure (mapMaybe chooseEmptyTypes (zip bufs buftypes))
   where
     chooseListed (b, l) =
       if l then Just b else Nothing
