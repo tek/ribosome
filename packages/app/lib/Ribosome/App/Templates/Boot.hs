@@ -69,7 +69,7 @@ vimBoot pn@(ProjectName name) gh cachix =
 let s:exe = s:repo . '/result/bin/#{name}'
 let s:build_cmd = [
   \ 'nix',#{cachixOpts (fromMaybe cachixTek cachix)}
-  \ 'build', '.##{name}',
+  \ 'build', '.#{"#" <> name}',
   \ ]
 let s:errors = []
 
