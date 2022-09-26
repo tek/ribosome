@@ -14,11 +14,10 @@ import Ribosome.Data.Mapping (
   mapModeShortName,
   unMappingId,
   )
-import qualified Ribosome.Host.Api.Data as Data
-import Ribosome.Host.Api.Data (Buffer)
+import Ribosome.Host.Api.Data (Buffer, nvimBufSetKeymap, nvimSetKeymap)
+import Ribosome.Host.Class.MonadRpc (MonadRpc (atomic))
 import Ribosome.Host.Data.ChannelId (ChannelId (ChannelId))
 import Ribosome.Host.Data.Event (EventName (EventName))
-import Ribosome.Host.Data.RpcCall (RpcCall)
 import Ribosome.Host.Data.RpcHandler (RpcHandler (RpcHandler, rpcName))
 import Ribosome.Host.Data.RpcName (RpcName (RpcName))
 import qualified Ribosome.Host.Effect.Rpc as Rpc
@@ -26,21 +25,22 @@ import Ribosome.Host.Effect.Rpc (Rpc)
 
 -- |Generate an atomic call executing a mapping cmd for all modes specified in the 'Mapping' and run it.
 mappingCmdWith ::
-  Member Rpc r =>
-  (Text -> Text -> Text -> Map Text Object -> RpcCall ()) ->
+  MonadRpc m =>
+  (Text -> Text -> Text -> Map Text Object -> m ()) ->
+  ChannelId ->
   Mapping ->
-  Sem r ()
-mappingCmdWith call (Mapping action (MappingSpec (MappingLhs lhs) modes) ident opts) = do
-  cmd <- command action
-  Rpc.sync $ for_ modes \ mode ->
+  m ()
+mappingCmdWith call (ChannelId cid) (Mapping action (MappingSpec (MappingLhs lhs) modes) ident opts) =
+  for_ modes \ mode ->
     call (mapModeShortName mode) lhs [exon|<cmd>#{cmd}<cr>|] opts
   where
+    cmd =
+      command action
     command = \case
       MappingCall (RpcName name) ->
-        pure [exon|silent #{name}#{i}|]
-      MappingEvent (EventName name) -> do
-        ChannelId cid <- Rpc.channelId
-        pure [exon|call rpcnotify(#{show cid}, '#{name}'#{foldMap idArg ident})|]
+        [exon|silent #{name}#{i}|]
+      MappingEvent (EventName name) ->
+        [exon|call rpcnotify(#{show cid}, '#{name}'#{foldMap idArg ident})|]
     i =
       foldMap unMappingId ident
     idArg = \case
@@ -48,38 +48,89 @@ mappingCmdWith call (Mapping action (MappingSpec (MappingLhs lhs) modes) ident o
 
 -- |Generate an atomic call executing a mapping cmd for all modes specified in the 'Mapping' and run it.
 mappingCmd ::
-  Member Rpc r =>
+  MonadRpc m =>
+  ChannelId ->
   Mapping ->
-  Sem r ()
+  m ()
 mappingCmd = do
-  mappingCmdWith Data.nvimSetKeymap
+  mappingCmdWith nvimSetKeymap
 
 -- |Generate an atomic call executing a buffer mapping cmd for all modes specified in the 'Mapping' and run it.
 bufferMappingCmd ::
-  Member Rpc r =>
+  MonadRpc m =>
   -- |Use @<buffer>@ to create a buffer-local mapping.
   Buffer ->
+  ChannelId ->
   Mapping ->
-  Sem r ()
+  m ()
 bufferMappingCmd buffer =
-  mappingCmdWith (Data.nvimBufSetKeymap buffer)
+  mappingCmdWith (nvimBufSetKeymap buffer)
 
 -- |Register a mapping globally.
+activateMappingOnChan ::
+  MonadRpc m =>
+  ChannelId ->
+  Mapping ->
+  m ()
+activateMappingOnChan =
+  mappingCmd
+
+-- |Register a mapping in the supplied buffer.
+activateBufferMappingOnChan ::
+  MonadRpc m =>
+  Buffer ->
+  ChannelId ->
+  Mapping ->
+  m ()
+activateBufferMappingOnChan buffer =
+  bufferMappingCmd buffer
+
+-- |Register a mapping globally.
+--
+-- This obtains the channel ID and cannot be batched atomically.
 activateMapping ::
   Member Rpc r =>
   Mapping ->
   Sem r ()
-activateMapping =
-  mappingCmd
+activateMapping m = do
+  cid <- Rpc.channelId
+  mappingCmd cid m
 
 -- |Register a mapping in the supplied buffer.
+--
+-- This obtains the channel ID and cannot be batched atomically.
 activateBufferMapping ::
   Member Rpc r =>
   Buffer ->
   Mapping ->
   Sem r ()
-activateBufferMapping buffer =
-  bufferMappingCmd buffer
+activateBufferMapping buffer m = do
+  cid <- Rpc.channelId
+  bufferMappingCmd buffer cid m
+
+-- |Register a set of mappings globally.
+--
+-- This obtains the channel ID and cannot be batched atomically.
+activateMappings ::
+  Member Rpc r =>
+  [Mapping] ->
+  Sem r ()
+activateMappings m = do
+  cid <- Rpc.channelId
+  traverse_ (mappingCmd cid) m
+
+-- |Register a set of mappings in the supplied buffer.
+--
+-- This obtains the channel ID and cannot be batched atomically.
+activateBufferMappings ::
+  Member Rpc r =>
+  Buffer ->
+  [Mapping] ->
+  Sem r ()
+activateBufferMappings buffer m = do
+  cid <- Rpc.channelId
+  atomic do
+    traverse_ (bufferMappingCmd buffer cid) m
 
 -- |Construct a 'Mapping' using the name from the supplied 'RpcHandler'.
 mappingFor ::

@@ -20,9 +20,10 @@ import Ribosome.Data.ScratchId (ScratchId (ScratchId, unScratchId))
 import Ribosome.Data.ScratchOptions (ScratchOptions (ScratchOptions, filetype, name), focus, mappings, syntax)
 import qualified Ribosome.Data.ScratchState as ScratchState
 import Ribosome.Data.ScratchState (ScratchState (ScratchState))
-import qualified Ribosome.Host.Api.Data as Data
-import Ribosome.Host.Api.Data (Buffer, Tabpage, Window)
 import Ribosome.Host.Api.Data (
+  Buffer,
+  Tabpage,
+  Window,
   bufferGetName,
   bufferSetName,
   bufferSetOption,
@@ -38,38 +39,45 @@ import Ribosome.Host.Api.Data (
   windowGetBuffer,
   windowIsValid,
   windowSetHeight,
+  windowSetOption,
   windowSetWidth,
   )
+import Ribosome.Host.Class.MonadRpc (MonadRpc (atomic))
 import Ribosome.Host.Class.Msgpack.Decode (fromMsgpack)
 import Ribosome.Host.Class.Msgpack.Encode (toMsgpack)
 import Ribosome.Host.Data.RpcError (RpcError)
 import Ribosome.Host.Data.RpcType (AutocmdId (AutocmdId), group)
-import qualified Ribosome.Host.Effect.Rpc as Rpc
 import Ribosome.Host.Effect.Rpc (Rpc)
-import Ribosome.Mapping (activateBufferMapping)
+import Ribosome.Mapping (activateBufferMappings)
 import Ribosome.PluginName (pluginNamePascalCase)
 
-createScratchTab :: Member Rpc r => Sem r Tabpage
+createScratchTab ::
+  MonadRpc m =>
+  m Tabpage
 createScratchTab = do
   vimCommand "tabnew"
   vimGetCurrentTabpage
 
 createRegularWindow ::
-  Member Rpc r =>
+  MonadRpc m =>
   Bool ->
   Bool ->
   Maybe Int ->
-  Sem r (Buffer, Window)
+  m (Buffer, Window)
 createRegularWindow vertical bottom size = do
   vimCommand prefixedCmd
   buf <- vimGetCurrentBuffer
   win <- vimGetCurrentWindow
   pure (buf, win)
   where
-    prefixedCmd = locationPrefix <> " " <> sizePrefix <> cmd
-    cmd = if vertical then "vnew" else "new"
-    sizePrefix = maybe "" show size
-    locationPrefix = if bottom then "belowright" else "aboveleft"
+    prefixedCmd =
+      [exon|#{locationPrefix} #{sizePrefix}#{cmd}|]
+    cmd =
+      if vertical then "vnew" else "new"
+    sizePrefix =
+      foldMap show size
+    locationPrefix =
+      if bottom then "belowright" else "aboveleft"
 
 floatConfig ::
   FloatOptions ->
@@ -78,50 +86,51 @@ floatConfig =
   fromRight Map.empty . fromMsgpack . toMsgpack
 
 createFloatWith ::
-  Member Rpc r =>
+  MonadRpc m =>
   Bool ->
   Bool ->
   FloatOptions ->
-  Sem r (Buffer, Window)
+  m (Buffer, Window)
 createFloatWith listed scratch options = do
   buffer <- nvimCreateBuf listed scratch
   window <- nvimOpenWin buffer (enter options) (floatConfig options)
   pure (buffer, window)
 
 createFloat ::
-  Member Rpc r =>
+  MonadRpc m =>
   FloatOptions ->
-  Sem r (Buffer, Window)
+  m (Buffer, Window)
 createFloat =
   createFloatWith True True
 
 createScratchWindow ::
-  Member Rpc r =>
+  MonadRpc m =>
   Bool ->
   Bool ->
   Bool ->
   Maybe FloatOptions ->
   Maybe Int ->
-  Sem r (Buffer, Window)
-createScratchWindow vertical wrap bottom float size = do
-  (buffer, win) <- createWindow
-  Rpc.sync do
-    Data.windowSetOption win "wrap" (toMsgpack wrap)
-    Data.windowSetOption win "number" (toMsgpack False)
-    Data.windowSetOption win "cursorline" (toMsgpack True)
-    Data.windowSetOption win "colorcolumn" (toMsgpack ("" :: Text))
-    Data.windowSetOption win "foldmethod" (toMsgpack ("manual" :: Text))
-    Data.windowSetOption win "conceallevel" (toMsgpack (2 :: Int))
-    Data.windowSetOption win "concealcursor" (toMsgpack ("nvic" :: Text))
-    pure ()
-  pure (buffer, win)
+  m (Buffer, Window)
+createScratchWindow vertical wrap bottom float size =
+  atomic do
+    (buffer, win) <- createWindow
+    windowSetOption win "wrap" (toMsgpack wrap)
+    windowSetOption win "number" (toMsgpack False)
+    windowSetOption win "cursorline" (toMsgpack True)
+    windowSetOption win "colorcolumn" (toMsgpack ("" :: Text))
+    windowSetOption win "foldmethod" (toMsgpack ("manual" :: Text))
+    windowSetOption win "conceallevel" (toMsgpack (2 :: Int))
+    windowSetOption win "concealcursor" (toMsgpack ("nvic" :: Text))
+    pure (buffer, win)
   where
     createWindow =
       maybe regular createFloat float
     regular =
       createRegularWindow vertical bottom size
 
-createScratchUiInTab :: Member Rpc r => Sem r (Buffer, Window, Maybe Tabpage)
+createScratchUiInTab ::
+  MonadRpc m =>
+  m (Buffer, Window, Maybe Tabpage)
 createScratchUiInTab = do
   tab <- createScratchTab
   win <- vimGetCurrentWindow
@@ -129,26 +138,27 @@ createScratchUiInTab = do
   pure (buffer, win, Just tab)
 
 createScratchUi ::
-  Member Rpc r =>
+  MonadRpc m =>
   ScratchOptions ->
-  Sem r (Buffer, Window, Maybe Tabpage)
+  m (Buffer, Window, Maybe Tabpage)
 createScratchUi (ScratchOptions False vertical wrap _ _ bottom _ float size _ _ _ _ _) =
   uncurry (,,Nothing) <$> createScratchWindow vertical wrap bottom float size
 createScratchUi _ =
   createScratchUiInTab
 
 configureScratchBuffer ::
-  Member Rpc r =>
+  MonadRpc m =>
   Buffer ->
   Maybe Text ->
   ScratchId ->
-  Sem r ()
+  m ()
 configureScratchBuffer buffer ft (ScratchId name) = do
-  bufferSetOption buffer "bufhidden" ("wipe" :: Text)
-  bufferSetOption buffer "buftype" ("nofile" :: Text)
-  bufferSetOption buffer "swapfile" False
-  traverse_ (bufferSetOption buffer "filetype") ft
-  bufferSetName buffer name
+  atomic do
+    bufferSetOption buffer "bufhidden" ("wipe" :: Text)
+    bufferSetOption buffer "buftype" ("nofile" :: Text)
+    bufferSetOption buffer "swapfile" False
+    traverse_ (bufferSetOption buffer "filetype") ft
+    bufferSetName buffer name
 
 setupScratchBuffer ::
   Members [Rpc, Log] r =>
@@ -187,7 +197,7 @@ setupScratchIn ::
 setupScratchIn buffer previous window tab options@(ScratchOptions {..}) = do
   validBuffer <- setupScratchBuffer window buffer filetype name
   traverse_ (executeWindowSyntax window) syntax
-  traverse_ (activateBufferMapping validBuffer) mappings
+  activateBufferMappings validBuffer mappings
   unless focus (vimSetCurrentWindow previous)
   auId <- setupDeleteAutocmd name validBuffer
   let scratch = ScratchState name options validBuffer window previous tab auId

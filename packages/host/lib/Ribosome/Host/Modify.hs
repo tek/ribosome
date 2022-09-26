@@ -12,13 +12,13 @@ import Ribosome.Host.Api.Data (
   nvimGetCurrentBuf,
   nvimGetCurrentWin,
   nvimSetCurrentBuf,
-  nvimWinGetNumber,
   vimSetCurrentWindow,
   )
 import Ribosome.Host.Data.Request (Request (Request))
 import Ribosome.Host.Data.RpcCall (RpcCall (RpcRequest))
 import qualified Ribosome.Host.Effect.Rpc as Rpc
 import Ribosome.Host.Effect.Rpc (Rpc)
+import Ribosome.Host.Class.MonadRpc (MonadRpc)
 
 -- |Modify an 'RpcCall' constructor if it contains a request for @nvim_command@ by prefixing it with the given string.
 modifyCall :: Text -> RpcCall a -> RpcCall a
@@ -71,14 +71,14 @@ noautocmd =
 
 -- |Prefix all @nvim_commands@ called in an action with @windo N@ where @N@ is the number of the given window.
 windo ::
-  Member Rpc r =>
+  MonadRpc m =>
   Window ->
-  Sem r a ->
-  Sem r a
+  m a ->
+  m a
 windo win ma = do
   previous <- nvimGetCurrentWin
-  number <- nvimWinGetNumber win
-  a <- modifyCmd [exon|#{show number}windo|] ma
+  vimSetCurrentWindow win
+  a <- ma
   when (previous /= win) (vimSetCurrentWindow previous)
   pure a
 

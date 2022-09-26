@@ -11,8 +11,8 @@ import Exon (exon)
 import Ribosome.Data.Syntax.Syntax (HiLink (HiLink), Highlight (Highlight), Syntax (Syntax))
 import Ribosome.Data.Syntax.SyntaxKind (SyntaxKind (..), SyntaxRegion (SyntaxRegion))
 import Ribosome.Data.SyntaxItem (SyntaxGroup (SyntaxGroup), SyntaxItem (SyntaxItem))
-import qualified Ribosome.Host.Api.Data as Data
-import Ribosome.Host.Data.RpcCall (RpcCall)
+import Ribosome.Host.Api.Data (nvimCommand)
+import Ribosome.Host.Class.MonadRpc (MonadRpc)
 
 joinEquals :: Map Text Text -> Text
 joinEquals =
@@ -76,10 +76,16 @@ syntaxCmds :: Syntax -> [[Text]]
 syntaxCmds (Syntax items highlights hilinks) =
   (syntaxItemCmd <$> items) <> (highlightCmd <$> highlights) <> (hilinkCmd <$> hilinks)
 
-catCmd :: [Text] -> RpcCall ()
+catCmd ::
+  MonadRpc m =>
+  [Text] ->
+  m ()
 catCmd =
-  Data.nvimCommand . Text.unwords
+  nvimCommand . Text.unwords
 
-catCmds :: [[Text]] -> RpcCall ()
+catCmds ::
+  MonadRpc m =>
+  [[Text]] ->
+  m ()
 catCmds =
   foldMap catCmd

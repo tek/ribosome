@@ -2,21 +2,20 @@
 module Ribosome.Api.Syntax where
 
 import Ribosome.Data.Syntax.Syntax (Syntax)
-import Ribosome.Host.Api.Data (Window)
-import Ribosome.Host.Api.Data (vimCallFunction)
+import Ribosome.Host.Api.Data (Window, vimCallFunction)
+import Ribosome.Host.Class.MonadRpc (MonadRpc (atomic))
 import Ribosome.Host.Class.Msgpack.Encode (MsgpackEncode (toMsgpack))
-import qualified Ribosome.Host.Effect.Rpc as Rpc
 import Ribosome.Host.Effect.Rpc (Rpc)
 import Ribosome.Host.Modify (windo)
 import Ribosome.Internal.Syntax (catCmds, syntaxCmds)
 
 -- |Apply syntax rules to the current window.
 executeSyntax ::
-  Member Rpc r =>
+  MonadRpc m =>
   Syntax ->
-  Sem r ()
+  m ()
 executeSyntax =
-  Rpc.sync . catCmds . syntaxCmds
+  catCmds . syntaxCmds
 
 -- |Apply syntax rules to a window.
 executeWindowSyntax ::
@@ -26,6 +25,16 @@ executeWindowSyntax ::
   Sem r ()
 executeWindowSyntax win syntax =
   windo win (executeSyntax syntax)
+
+-- |Apply syntax rules to a window.
+executeWindowSyntaxes ::
+  MonadRpc m =>
+  Window ->
+  [Syntax] ->
+  m ()
+executeWindowSyntaxes win syntax =
+  atomic $ windo win do
+    traverse_ executeSyntax syntax
 
 -- |Get the name of the syntax group at a given position.
 syntaxName ::
