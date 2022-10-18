@@ -131,10 +131,6 @@ popEntriesFallback f ents =
                 Just (Right b) -> (Right (b : bs), True)
                 _ -> (Right bs, False)
 
-justIf :: Bool -> a -> Maybe a
-justIf cond a =
-  bool Nothing (Just a) cond
-
 popSelection ::
   Int ->
   Entries i ->

@@ -1,6 +1,6 @@
 module Ribosome.Menu.Prompt.Run where
 
-import Conc (GatesIO, consumeElem, subscribeAsync, withAsync_)
+import Conc (Gates, consumeElem, subscribeAsync, withAsync_)
 import Time (MilliSeconds, convert)
 
 import Ribosome.Api.Input (feedKey, syntheticInput, syntheticInputFk)
@@ -42,7 +42,7 @@ nosync =
 
 withPromptInputSync ::
   Members [Reader MenuConfig, MenuEngine s] r =>
-  Members [Rpc, GatesIO, EventConsumer mres MenuEvent, Resource, Race, Async, Time t d] r =>
+  Members [Rpc, Gates, EventConsumer MenuEvent, Resource, Race, Async, Time t d] r =>
   [SyncChar] ->
   Sem r a ->
   Sem r a

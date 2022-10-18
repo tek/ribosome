@@ -81,7 +81,7 @@ stateToMState sem =
 
 -- |A 'Scoped' alias for 'MState' that allows running it on a local region without having to involve `IO` in the stack.
 type ScopedMState s =
-  Scoped s () (MState s)
+  Scoped s (MState s)
 
 -- |Run a 'Scoped' 'MState' on a local region without having to involve `IO` in the stack.
 withMState ::

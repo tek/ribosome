@@ -1,6 +1,6 @@
 module Ribosome.Menu.Test.Menu where
 
-import Conc (Consume, Restoration, consumeFind, interpretQueueTBM, interpretScopedR_, resultToMaybe)
+import Conc (Consume, consumeFind, interpretQueueTBM, interpretScopedR_, resultToMaybe)
 import Exon (exon)
 import Hedgehog.Internal.Property (Failure)
 import Polysemy.Chronos (ChronosTime, interpretTimeChronos)
@@ -41,7 +41,7 @@ import Ribosome.Test.Wait (assertWait)
 
 enqueueItems ::
   Members [Hedgehog IO, Queue [Text]] r =>
-  InterpreterFor (ScopedMenuUi p ()) r
+  InterpreterFor (ScopedMenuUi p) r
 enqueueItems =
   interpretScopedR_ (const unit) \ () -> \case
     MenuUi.Render menu ->
@@ -61,7 +61,7 @@ enqueuePrompt = do
 
 type SimpleTestMenu =
   [
-    ScopedMenuUi () (),
+    ScopedMenuUi (),
     ReportLog,
     ChronosTime,
     Queue [Text],
@@ -69,7 +69,7 @@ type SimpleTestMenu =
   ]
 
 runSimpleTestMenu ::
-  Members [Reader TestTimeout, Fail, Hedgehog IO, Log, Resource, Race, Mask Restoration, Embed IO, Final IO] r =>
+  Members [Reader TestTimeout, Fail, Hedgehog IO, Log, Resource, Race, Mask, Embed IO, Final IO] r =>
   InterpretersFor SimpleTestMenu r
 runSimpleTestMenu =
   interpretQueueTBM @Prompt 64 .
@@ -81,9 +81,9 @@ runSimpleTestMenu =
 type PromptTest i =
   Consume MenuEvent :
   MenuTestWith (Modal Filter i) () ++
-  Menus () (Modal Filter i) :
-  UiMenus () () (Modal Filter i) :
-  UiMenus () () (Modal Filter i) !! RpcError :
+  Menus (Modal Filter i) :
+  UiMenus () (Modal Filter i) :
+  UiMenus () (Modal Filter i) !! RpcError :
   MenuFilter (FilterMode Filter) :
   Stop RpcError :
   SimpleTestMenu ++
@@ -93,7 +93,7 @@ promptTest ::
   ∀ i r .
   Show i =>
   Members MenuTestIOStack r =>
-  Members [Hedgehog IO, Error TestError, Fail, Log, Resource, Race, Mask Restoration, Async, Embed IO, Final IO] r =>
+  Members [Hedgehog IO, Error TestError, Fail, Log, Resource, Race, Mask, Async, Embed IO, Final IO] r =>
   InterpretersFor (PromptTest i) r
 promptTest sem =
   runTestMenu @_ @i startInsert $
@@ -106,7 +106,7 @@ promptTest sem =
     items <- ask
     runMenu items (modal Fuzzy) $
       bundleMenuEngine $
-      menuTestLoop @_ @_ @(Modal Filter i) startInsert (const (Just enqueuePrompt)) $
+      menuTestLoop @_ @(Modal Filter i) startInsert (const (Just enqueuePrompt)) $
       subscribe @MenuEvent do
         assertItems []
         sem

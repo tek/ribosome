@@ -147,8 +147,8 @@ menuMaps mappings =
   menuLoop (fmap (insertAt @2) . lookupMapping mappings)
 
 runMenu ::
-  ∀ s res r .
-  Member (Menus res s) r =>
+  ∀ s r .
+  Member (Menus s) r =>
   SerialT IO (MenuItem (Item s)) ->
   s ->
   InterpreterFor (MenuEngine s) r
@@ -156,28 +156,28 @@ runMenu items initial =
   scoped (MenuParams items initial)
 
 runMenuUi' ::
-  Member (UiMenus ui res s) r =>
+  Member (UiMenus ui s) r =>
   SerialT IO (MenuItem (Item s)) ->
   s ->
-  InterpreterFor (Scoped ui res (MenuEngine s)) r
+  InterpreterFor (Scoped ui (MenuEngine s)) r
 runMenuUi' items initial =
   rescope (UiMenuParams (MenuParams items initial))
 
 runMenuUi ::
-  Members [UiMenus ui res s !! RpcError, Stop RpcError] r =>
+  Members [UiMenus ui s !! RpcError, Stop RpcError] r =>
   SerialT IO (MenuItem (Item s)) ->
   s ->
-  InterpreterFor (Scoped ui res (MenuEngine s)) r
+  InterpreterFor (Scoped ui (MenuEngine s)) r
 runMenuUi items initial =
   restop .
   runMenuUi' items initial .
   raiseUnder
 
 addMenuUi ::
-  ∀ s res ui r .
-  Member (UiMenus ui res s) r =>
+  ∀ s ui r .
+  Member (UiMenus ui s) r =>
   ui ->
-  InterpreterFor (Menus res s) r
+  InterpreterFor (Menus s) r
 addMenuUi ui =
   rescope (flip UiMenuParams ui)
 
@@ -190,9 +190,9 @@ withDefaultMappings f consumerMappings =
   f (defaultMappings <> consumerMappings)
 
 withMenuUi ::
-  ∀ res result s r a .
+  ∀ result s r a .
   MenuState s =>
-  Member (Scoped WindowConfig res (MenuEngine s)) r =>
+  Member (Scoped WindowConfig (MenuEngine s)) r =>
   WindowOptions ->
   (Mappings s r result -> Sem (MenuEngine s : r) a) ->
   Mappings s r result ->
@@ -203,8 +203,8 @@ withMenuUi options use =
       use mappings
 
 menu ::
-  ∀ res result s ui r .
-  Members [UiMenus ui res s !! RpcError, Log, Stop RpcError] r =>
+  ∀ result s ui r .
+  Members [UiMenus ui s !! RpcError, Log, Stop RpcError] r =>
   SerialT IO (MenuItem (Item s)) ->
   s ->
   ui ->
@@ -219,9 +219,9 @@ menu items initial ui =
   fmap (insertAt @2)
 
 windowMenu ::
-  ∀ res result s r .
+  ∀ result s r .
   MenuState s =>
-  Members [UiMenus WindowConfig res s !! RpcError, Log, Stop RpcError] r =>
+  Members [UiMenus WindowConfig s !! RpcError, Log, Stop RpcError] r =>
   SerialT IO (MenuItem (Item s)) ->
   s ->
   WindowOptions ->
@@ -235,9 +235,9 @@ windowMenu items initial options =
   fmap (insertAt @2)
 
 staticWindowMenu ::
-  ∀ mres result s r .
+  ∀ result s r .
   MenuState s =>
-  Members [UiMenus WindowConfig mres s !! RpcError, Log, Stop RpcError] r =>
+  Members [UiMenus WindowConfig s !! RpcError, Log, Stop RpcError] r =>
   [MenuItem (Item s)] ->
   s ->
   WindowOptions ->

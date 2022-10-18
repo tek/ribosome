@@ -12,15 +12,15 @@ import Polysemy.Process (
   ProcessOptions,
   ProcessOutputParseResult (Done, Fail, Partial),
   SystemProcess,
+  SystemProcessScopeError,
   interpretProcessOutputIncremental,
   interpretProcess_,
-  interpretSystemProcessNative_, SystemProcessScopeError,
+  interpretSystemProcessNative_,
   )
 import Polysemy.Process.Data.ProcessError (ProcessError)
 import Polysemy.Process.Data.SystemProcessError (SystemProcessError)
 import qualified Polysemy.Process.Effect.ProcessInput as ProcessInput
 import Polysemy.Process.Effect.ProcessOutput (ProcessOutput (Chunk))
-import Polysemy.Process.Interpreter.SystemProcess (PipesProcess)
 import System.Process.Typed (ProcessConfig)
 
 convertResult :: Serialize.Result a -> ProcessOutputParseResult a
@@ -60,17 +60,17 @@ interpretProcessInputCereal =
       pure (Serialize.encode msg)
 
 interpretProcessCereal ::
-  ∀ resource a r .
+  ∀ a r .
   Serialize a =>
-  Member (Scoped_ resource (SystemProcess !! SystemProcessError) !! SystemProcessScopeError) r =>
+  Member (Scoped_ (SystemProcess !! SystemProcessError) !! SystemProcessScopeError) r =>
   Members [Log, Resource, Race, Async, Embed IO] r =>
   ProcessOptions ->
-  InterpreterFor (Scoped_ () (Process a (Either Text a)) !! ProcessError) r
+  InterpreterFor (Scoped_ (Process a (Either Text a)) !! ProcessError) r
 interpretProcessCereal options =
   interpretProcessOutputLog @'Stderr .
   interpretProcessOutputCereal .
   interpretProcessInputCereal .
-  interpretProcess_ @resource options .
+  interpretProcess_ options .
   raiseUnder3
 
 interpretProcessCerealNative ::
@@ -79,8 +79,8 @@ interpretProcessCerealNative ::
   Members [Log, Resource, Race, Async, Embed IO] r =>
   ProcessOptions ->
   ProcessConfig () () () ->
-  InterpreterFor (Scoped_ () (Process a (Either Text a)) !! ProcessError) r
+  InterpreterFor (Scoped_ (Process a (Either Text a)) !! ProcessError) r
 interpretProcessCerealNative options conf =
   interpretSystemProcessNative_ conf .
-  interpretProcessCereal @PipesProcess @a options .
+  interpretProcessCereal @a options .
   raiseUnder

@@ -4,31 +4,20 @@
   inputs = {
     hix.url = git+https://git.tryp.io/tek/hix;
     chiasma.url = git+https://git.tryp.io/tek/chiasma;
-    polysemy-log.url = git+https://git.tryp.io/tek/polysemy-log;
-    polysemy-conc.url = git+https://git.tryp.io/tek/polysemy-conc;
-    prelate.url = git+https://git.tryp.io/tek/prelate;
   };
 
-  outputs = { self, hix, chiasma, polysemy-log, polysemy-conc, prelate, ... }:
+  outputs = { self, hix, chiasma, ... }:
   let
-    RIBOSOME_ROOT = builtins.toPath self;
 
-    overrides = { hackage, source, configure, pkgs, buildInputs, jailbreak, notest, ... }:
+    overrides = { hackage, configure, pkgs, buildInputs, jailbreak, notest, ... }:
     let
       nvimBin = configure "--extra-prog-path=${pkgs.neovim}/bin";
       inputs = buildInputs [pkgs.neovim pkgs.tmux pkgs.xterm];
     in {
-      bytestring-trie = hackage "0.2.6" "0hlgdl7plif58r73hza2148671jf6l2pim84a0a7xf13n8bkrmh7";
-      exon = hackage "1.0.0.2" "053a5n77fmzzpzg3xsfl7398325z5zm0nya6vzb8rfr3ix24zbnh";
+      chiasma = hackage "0.10.0.0" "1dmhrya6s323j2pvp51mi8x4vm6hmiiab2hcvh8m1vhyjkqvaiv3";
       criterion = notest;
-      fuzzyfind = hackage "3.0.0" "1aba9rxxdi6sv0z6qgwyq87fnqqhncqakvrbph0fvppd0lnajaac";
-      massiv = hackage "0.6.1.0" "133ixc95qw10ni54y4hrq7swq7bskf398s11zdakdvnj9v6hwlsr";
-      scheduler = hackage "1.5.0" "143bsd0kfknrhdz37599k2didxmplljdpnf1ixmdfh4r9hnrp9f3";
+      fuzzyfind = jailbreak (hackage "3.0.0" "1aba9rxxdi6sv0z6qgwyq87fnqqhncqakvrbph0fvppd0lnajaac");
       integration = inputs;
-      polysemy-log = source.package polysemy-log "polysemy-log";
-      polysemy-conc = source.package polysemy-conc "conc";
-      polysemy-process = source.package polysemy-conc "process";
-      prelate = source.package prelate "prelate";
       ribosome = inputs;
       ribosome-host = nvimBin inputs;
       ribosome-menu = inputs;
@@ -36,8 +25,8 @@
       streamly = hackage "0.8.2" "0jhsdd71kqw0k0aszg1qb1l0wbxl1r73hsmkdgch4vlx43snlc8a";
       type-errors = notest;
       type-errors-pretty = notest jailbreak;
-      unicode-data = hackage "0.2.0" "14crb68g79yyw87fgh49z2fn4glqx0zr53v6mapihaxzkikhkkc3";
     };
+
   in hix.lib.pro ({ config, lib, ...}: {
     packages = {
       integration = ./packages/integration;
@@ -59,7 +48,7 @@
     };
     ghcid.shellConfig = {
       buildInputs = with config.pkgs; [pkgs.neovim pkgs.tmux pkgs.xterm];
-      env = { inherit RIBOSOME_ROOT; };
+      env = { RIBOSOME_ROOT = builtins.toPath self; };
     };
     ghci = {
       preludePackage = "prelate";

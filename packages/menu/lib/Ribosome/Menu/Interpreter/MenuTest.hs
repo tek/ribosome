@@ -198,9 +198,9 @@ interpretMenuTestQueuesWith =
       sendPromptEvent False (PromptEvent.Quit Nothing)
 
 interpretMenuTestQueues ::
-  ∀ i a ires r .
+  ∀ i a r .
   Show i =>
-  Members [EventConsumer ires MenuEvent, AtomicState Prompt, AtomicState [WaitEvent]] r =>
+  Members [EventConsumer MenuEvent, AtomicState Prompt, AtomicState [WaitEvent]] r =>
   Members [Queue PromptEvent, Queue (MenuItem i), Sync (MenuResult a), Reader TestTimeout, Log, Fail, Race] r =>
   PromptConfig ->
   InterpretersFor [MenuTest i a, Consume MenuEvent] r
@@ -240,7 +240,7 @@ interpretMenuTest ::
   Show i =>
   Members (MenuTestResources i result) r =>
   Members [MenuUi, Log, Fail, Resource, Race, Embed IO] r =>
-  Member (EventConsumer ires MenuEvent) r =>
+  Member (EventConsumer MenuEvent) r =>
   PromptConfig ->
   InterpretersFor [MenuTest i result, Consume MenuEvent] r
 interpretMenuTest pconf =

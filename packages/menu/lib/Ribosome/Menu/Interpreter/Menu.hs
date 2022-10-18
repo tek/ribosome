@@ -1,11 +1,8 @@
 module Ribosome.Menu.Interpreter.Menu where
 
 import Conc (
-  ChanConsumer,
-  ChanEvents,
   Gate,
-  GatesIO,
-  MaskIO,
+  Gates,
   interpretEventsChan,
   interpretGates,
   interpretQueueTBM,
@@ -57,7 +54,7 @@ import Ribosome.Menu.Effect.MenuFilter (MenuFilter)
 import qualified Ribosome.Menu.Effect.MenuStream as MenuStream
 import Ribosome.Menu.Effect.MenuStream (MenuStream)
 import qualified Ribosome.Menu.Effect.MenuUi as MenuUi
-import Ribosome.Menu.Effect.MenuUi (MenuUi, ScopedMenuUi, WindowMenu)
+import Ribosome.Menu.Effect.MenuUi (MenuUi, ScopedMenuUi)
 import Ribosome.Menu.Interpreter.MenuFilter (defaultFilter)
 import Ribosome.Menu.Interpreter.MenuStream (interpretMenuStream)
 import Ribosome.Menu.Interpreter.MenuUiPure (interpretMenuUiPure)
@@ -102,7 +99,7 @@ data MenuSync =
 
 renderEvent ::
   MenuState s =>
-  Members [MState (MS s), MState CursorIndex, MenuUi !! RpcError, Events eres MenuEvent, Log] r =>
+  Members [MState (MS s), MState CursorIndex, MenuUi !! RpcError, Events MenuEvent, Log] r =>
   RenderEvent ->
   Sem r ()
 renderEvent (RenderEvent desc) = do
@@ -129,9 +126,9 @@ renderEvent (RenderEvent desc) = do
 --
 -- - @publish@ sends 'MenuEvent's to consumers of 'Events'.
 menuStream ::
-  ∀ s ires r .
+  ∀ s r .
   MenuState s =>
-  Members [Queue (Maybe Prompt), Queue RenderEvent, Events ires MenuEvent] r =>
+  Members [Queue (Maybe Prompt), Queue RenderEvent, Events MenuEvent] r =>
   Members [MenuStream, MenuFilter (Filter s), MState (MS s), Sync MenuSync, Log] r =>
   SerialT IO (MenuItem (Item s)) ->
   Sem r ()
@@ -163,7 +160,7 @@ sendPrompt new = do
 type MenuLoopIO =
   [
     Log,
-    MaskIO,
+    Mask,
     Resource,
     Race,
     Async,
@@ -175,9 +172,9 @@ type MenuLoopDeps =
     MenuStream,
     Reader MenuConfig,
     ScopedMState Prompt,
-    ChanEvents MenuEvent,
-    ChanConsumer MenuEvent,
-    GatesIO
+    Events MenuEvent,
+    EventConsumer MenuEvent,
+    Gates
   ]
 
 interpretMenuDeps ::
@@ -192,11 +189,11 @@ interpretMenuDeps =
   interpretMenuStream
 
 type NvimMenus =
-  ScopedMenuUi WindowConfig WindowMenu : MenuFilter (FilterMode Filter.Filter) : MenuLoopDeps
+  ScopedMenuUi WindowConfig : MenuFilter (FilterMode Filter.Filter) : MenuLoopDeps
 
 interpretWindowMenu ::
   Members MenuLoopIO r =>
-  Members [Settings !! SettingError, Rpc !! RpcError, Scratch !! RpcError, EventConsumer eres Event, Final IO] r =>
+  Members [Settings !! SettingError, Rpc !! RpcError, Scratch !! RpcError, EventConsumer Event, Final IO] r =>
   InterpretersFor NvimMenus r
 interpretWindowMenu =
   interpretMenuDeps .
@@ -218,7 +215,7 @@ menuScope ::
   MenuState s =>
   Members MenuLoopIO r =>
   Members MenuLoopDeps r =>
-  Members [ScopedMenuUi ui res, MenuFilter (Filter s), Stop RpcError] r =>
+  Members [ScopedMenuUi ui, MenuFilter (Filter s), Stop RpcError] r =>
   UiMenuParams ui s ->
   (() -> Sem (MenuScope s ++ r) a) ->
   Sem r a
@@ -235,12 +232,12 @@ menuScope (UiMenuParams (MenuParams items initial) ui) use =
         use ()
 
 interpretMenus ::
-  ∀ res ui s r .
+  ∀ ui s r .
   MenuState s =>
   Members MenuLoopIO r =>
   Members MenuLoopDeps r =>
-  Members [ScopedMenuUi ui res, MenuFilter (Filter s)] r =>
-  InterpreterFor (UiMenus ui () s !! RpcError) r
+  Members [ScopedMenuUi ui, MenuFilter (Filter s)] r =>
+  InterpreterFor (UiMenus ui s !! RpcError) r
 interpretMenus =
   interpretScopedResumableWithH @(MenuScope s) menuScope \ () -> \case
     MenuEngine (Bundle Here e) ->
@@ -286,7 +283,7 @@ interpretMenus =
       error "GHC does not understand"
 
 type NvimMenuIO eres =
-  [Settings !! SettingError, Rpc !! RpcError, Scratch !! RpcError, EventConsumer eres Event, Final IO]
+  [Settings !! SettingError, Rpc !! RpcError, Scratch !! RpcError, EventConsumer Event, Final IO]
 
 interpretSingleWindowMenu ::
   ∀ s eres r .
@@ -294,7 +291,7 @@ interpretSingleWindowMenu ::
   Members MenuLoopIO r =>
   Member (MenuFilter (Filter s)) r =>
   Members (NvimMenuIO eres) r =>
-  InterpretersFor (WindowMenus () s !! RpcError : MenuLoopDeps) r
+  InterpretersFor (WindowMenus s !! RpcError : MenuLoopDeps) r
 interpretSingleWindowMenu =
   interpretMenuDeps .
   interpretMenuUiWindow .
@@ -308,7 +305,7 @@ promptInputFilter ::
   Members (NvimMenuIO eres) r =>
   Member (MenuFilter (Filter s)) r =>
   [PromptEvent] ->
-  InterpretersFor (WindowMenus () s !! RpcError : MenuLoopDeps |> ChronosTime) r
+  InterpretersFor (WindowMenus s !! RpcError : MenuLoopDeps |> ChronosTime) r
 promptInputFilter events =
   interpretTimeChronos .
   interpretMenuDeps .
@@ -324,7 +321,7 @@ promptInput ::
   Members (NvimMenuIO eres) r =>
   Filter s ~ FilterMode Filter.Filter =>
   [PromptEvent] ->
-  InterpretersFor (WindowMenus () s !! RpcError : MenuLoopDeps ++ [MenuFilter (Filter s), ChronosTime]) r
+  InterpretersFor (WindowMenus s !! RpcError : MenuLoopDeps ++ [MenuFilter (Filter s), ChronosTime]) r
 promptInput events =
   interpretTimeChronos .
   defaultFilter .

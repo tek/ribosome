@@ -25,5 +25,5 @@ data PureMenu =
   PureMenu
   deriving stock (Eq, Show)
 
-type ScopedMenuUi param res =
-  Scoped param res (MenuUi !! RpcError) !! RpcError
+type ScopedMenuUi param =
+  Scoped param (MenuUi !! RpcError) !! RpcError

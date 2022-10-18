@@ -75,7 +75,7 @@ fileList =
 -- variance introduced by outliers: 19% (moderately inflated)
 appendBench ::
   ∀ r .
-  Members [Log, Resource, Race, Mask Restoration, Async, Embed IO, Final IO] r =>
+  Members [Log, Resource, Race, Mask, Async, Embed IO, Final IO] r =>
   [Text] ->
   Sem r ()
 appendBench files =
@@ -151,7 +151,7 @@ menuBench files =
     publishPrompt i t =
       publish (PromptEvent.Update (Prompt i PromptMode.Insert t))
 
-runBench :: Sem [Log, Race, Mask Restoration, Async, Resource, Embed IO, Final IO] a -> IO a
+runBench :: Sem [Log, Race, Mask, Async, Resource, Embed IO, Final IO] a -> IO a
 runBench =
   runFinal .
   embedToFinal .

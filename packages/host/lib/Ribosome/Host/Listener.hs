@@ -1,6 +1,6 @@
 module Ribosome.Host.Listener where
 
-import Conc (Lock, Restoration, interpretAtomic, interpretEventsChan, interpretLockReentrant, lock)
+import Conc (Lock, interpretAtomic, interpretEventsChan, interpretLockReentrant, lock)
 import Exon (exon)
 import qualified Polysemy.Log as Log
 import qualified Polysemy.Process as Process
@@ -35,7 +35,7 @@ readyToSend i =
 -- |Send a response, increment the 'RequestId' tracking the latest sent response, and publish an event that unblocks all
 -- waiting responses.
 sendResponse ::
-  Members [Process RpcMessage a, AtomicState RequestId, Events res ResponseSent, Log] r =>
+  Members [Process RpcMessage a, AtomicState RequestId, Events ResponseSent, Log] r =>
   RequestId ->
   Response ->
   Sem r ()
@@ -50,7 +50,7 @@ sendResponse i response = do
 -- This is protected by a mutex to avoid deadlock.
 -- Returns whether the response was sent for 'sendWhenReady' to decide whether to recurse.
 sendIfReady ::
-  Member (Events res ResponseSent) r =>
+  Member (Events ResponseSent) r =>
   Members [Tagged ResponseLock Lock, Process RpcMessage a, AtomicState RequestId, Log, Resource] r =>
   RequestId ->
   Response ->
@@ -72,7 +72,7 @@ sendIfReady i response =
 -- response is sent at the same time that the call to 'subscribe' is made after comparing the IDs unsuccessfully and the
 -- 'ResponseSent' event is therefore missed, causing this to block indefinitely.
 sendWhenReady ::
-  Members [Events res ResponseSent, EventConsumer res ResponseSent] r =>
+  Members [Events ResponseSent, EventConsumer ResponseSent] r =>
   Members [Tagged ResponseLock Lock, Process RpcMessage a, AtomicState RequestId, Log, Resource] r =>
   RequestId ->
   Response ->
@@ -86,7 +86,7 @@ sendWhenReady i response =
         trySend
 
 dispatch ::
-  Members [AtomicState RequestId, Tagged ResponseLock Lock, Events res ResponseSent, EventConsumer res ResponseSent] r =>
+  Members [AtomicState RequestId, Tagged ResponseLock Lock, Events ResponseSent, EventConsumer ResponseSent] r =>
   Members [Host, Process RpcMessage a, Responses RequestId Response !! RpcError, Log, Resource, Async] r =>
   RpcMessage ->
   Sem r ()
@@ -100,7 +100,7 @@ dispatch = \case
 
 listener ::
   Members [Host, Process RpcMessage (Either Text RpcMessage)] r =>
-  Members [Responses RequestId Response !! RpcError, Log, Resource, Mask Restoration, Race, Async, Embed IO] r =>
+  Members [Responses RequestId Response !! RpcError, Log, Resource, Mask, Race, Async, Embed IO] r =>
   Sem r ()
 listener =
   interpretLockReentrant $ untag $ interpretEventsChan $ interpretAtomic 0 $ forever do

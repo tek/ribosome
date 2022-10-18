@@ -37,6 +37,9 @@ type RpcCall :: Type -> Type
 -- >   a :: Int <- Api.nvimGetVar "number1"
 -- >   b :: Int <- Api.nvimGetVar "number2"
 -- >   pure (a + b)
+--
+-- For further compositionality, the class 'Ribosome.MonadRpc' allows writing RPC code abstracted over both 'RpcCall'
+-- and 'Sem'.
 data RpcCall a where
   RpcPure :: a -> RpcCall a
   RpcRequest :: Request -> (Object -> Either DecodeError a) -> RpcCall a

@@ -1,14 +1,6 @@
 module Ribosome.Menu.Interpreter.MenuUiWindow where
 
-import Conc (
-  Consume,
-  Gate,
-  GatesIO,
-  interpretAtomic,
-  interpretEventsChan,
-  interpretScopedRWith,
-  withAsyncGated_,
-  )
+import Conc (Consume, Gate, Gates, interpretAtomic, interpretEventsChan, interpretScopedRWith, withAsyncGated_)
 import Control.Lens.Regex.Text (group, match, regex)
 import qualified Data.Text as Text
 import Exon (exon)
@@ -31,8 +23,9 @@ import qualified Ribosome.Data.WindowConfig as Nvim
 import qualified Ribosome.Effect.Scratch as Scratch
 import Ribosome.Effect.Scratch (Scratch)
 import Ribosome.Effect.Settings (Settings)
-import Ribosome.Host.Api.Data (Buffer, Window)
 import Ribosome.Host.Api.Data (
+  Buffer,
+  Window,
   nvimBufAttach,
   nvimCommand,
   nvimFeedkeys,
@@ -108,7 +101,7 @@ promptMode =
       Nothing
 
 handleEsc ::
-  Members [Rpc !! RpcError, EventConsumer eres Event, Events pres PromptEvent, Log] r =>
+  Members [Rpc !! RpcError, EventConsumer Event, Events PromptEvent, Log] r =>
   PromptConfig ->
   Sem r ()
 handleEsc pconf = do
@@ -125,7 +118,7 @@ handleEsc pconf = do
           publish PromptEvent.Ignore
 
 promptBufferEvents ::
-  Members [Rpc !! RpcError, EventConsumer eres Event, Events pres PromptEvent, Log, Gate] r =>
+  Members [Rpc !! RpcError, EventConsumer Event, Events PromptEvent, Log, Gate] r =>
   PromptConfig ->
   Sem r ()
 promptBufferEvents pconf =
@@ -258,7 +251,7 @@ withMainScratch itemsOpt statusOpt use = do
   where
     acquire = do
       itemScr <- Scratch.open (withItemsSyntax itemsOpt)
-      windowSetOption (itemScr ^. #window) "cursorline" True !>> Log.debug "Failed to set cursorline"
+      windowSetOption (itemScr ^. #window) "cursorline" True
       statusScr <- for statusOpt \ so -> do
         s <- Scratch.open (withStatusSyntax so)
         windowSetOption (s ^. #window) "cursorline" False
@@ -287,8 +280,8 @@ flushInput = do
   nvimFeedkeys key "int" False
 
 withBufferPromptEvents ::
-  Members [EventConsumer pres PromptEvent, Events pres PromptEvent] r =>
-  Members [Rpc, Rpc !! RpcError, EventConsumer eres Event, Log, GatesIO, Resource, Race, Async] r =>
+  Members [EventConsumer PromptEvent, Events PromptEvent] r =>
+  Members [Rpc, Rpc !! RpcError, EventConsumer Event, Log, Gates, Resource, Race, Async] r =>
   PromptConfig ->
   Buffer ->
   Sem (Consume PromptEvent : r) a ->
@@ -300,8 +293,8 @@ withBufferPromptEvents pconf buf sem =
       sem
 
 withPrompt ::
-  Member (EventConsumer eres Event) r =>
-  Members [Scratch, Rpc, Rpc !! RpcError, Stop RpcError, Log, Resource, GatesIO, Race, Async, Embed IO] r =>
+  Member (EventConsumer Event) r =>
+  Members [Scratch, Rpc, Rpc !! RpcError, Stop RpcError, Log, Resource, Gates, Race, Async, Embed IO] r =>
   PromptConfig ->
   [MappingSpec] ->
   (Int, Int, Int, Int) ->
@@ -322,8 +315,8 @@ withPrompt pconf mappings geo use =
 
 windowResources ::
   Member Log r =>
-  Members [Settings !! SettingError, GatesIO, Embed IO] r =>
-  Members [Scratch !! RpcError, Rpc !! RpcError, Stop RpcError, EventConsumer eres Event, Resource, Race, Async] r =>
+  Members [Settings !! SettingError, Gates, Embed IO] r =>
+  Members [Scratch !! RpcError, Rpc !! RpcError, Stop RpcError, EventConsumer Event, Resource, Race, Async] r =>
   WindowConfig ->
   (WindowMenu -> Sem (WindowScope ++ r) a) ->
   Sem r a
@@ -337,9 +330,9 @@ windowResources (WindowConfig pconf itemsOpt statusOpt mappings) use =
 
 -- TODO see how a 'buftype=prompt' looks
 interpretMenuUiWindow ::
-  Members [Log, GatesIO, Resource, Race, Async, Embed IO] r =>
-  Members [Scratch !! RpcError, Rpc !! RpcError, Settings !! SettingError, EventConsumer eres Event] r =>
-  InterpreterFor (Scoped WindowConfig WindowMenu (MenuUi !! RpcError) !! RpcError) r
+  Members [Log, Gates, Resource, Race, Async, Embed IO] r =>
+  Members [Scratch !! RpcError, Rpc !! RpcError, Settings !! SettingError, EventConsumer Event] r =>
+  InterpreterFor (Scoped WindowConfig (MenuUi !! RpcError) !! RpcError) r
 interpretMenuUiWindow =
   interpretScopedRWith @WindowScope windowResources \ (WindowMenu itemsScratch statusScratch promptScratch) -> \case
     RenderPrompt True (Prompt cursor _ (PromptText text)) -> do

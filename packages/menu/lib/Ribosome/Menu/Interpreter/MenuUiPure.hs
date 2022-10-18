@@ -16,13 +16,13 @@ import qualified Ribosome.Menu.Prompt.Data.PromptEvent as PromptEvent
 import Ribosome.Menu.Prompt.Data.PromptEvent (PromptEvent)
 
 waitForItems ::
-  Member (EventConsumer res MenuEvent) r =>
+  Member (EventConsumer MenuEvent) r =>
   Sem r ()
 waitForItems =
   subscribeWhile (pure . (Exhausted /=))
 
 initialWait ::
-  Members [EventConsumer res MenuEvent, Gate] r =>
+  Members [EventConsumer MenuEvent, Gate] r =>
   Bool ->
   Sem r ()
 initialWait waitExhausted = do
@@ -39,7 +39,7 @@ takeEvent =
 
 interpretMenuUiPureAtomic ::
   Members [Gate, AtomicState [PromptEvent], ChronosTime] r =>
-  InterpreterFor (ScopedMenuUi p PureMenu) r
+  InterpreterFor (ScopedMenuUi p) r
 interpretMenuUiPureAtomic =
   interpretScopedR_ (const (pure PureMenu)) \ PureMenu -> \case
     RenderPrompt _ _ ->
@@ -51,10 +51,10 @@ interpretMenuUiPureAtomic =
       unit
 
 interpretMenuUiPure ::
-  Members [EventConsumer res MenuEvent, ChronosTime, Resource, Async, Race, Embed IO] r =>
+  Members [EventConsumer MenuEvent, ChronosTime, Resource, Async, Race, Embed IO] r =>
   Bool ->
   [PromptEvent] ->
-  InterpreterFor (ScopedMenuUi p PureMenu) r
+  InterpreterFor (ScopedMenuUi p) r
 interpretMenuUiPure waitExhausted events =
   interpretGate .
   withAsync_ (initialWait waitExhausted) .

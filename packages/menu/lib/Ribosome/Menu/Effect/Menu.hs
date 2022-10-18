@@ -68,8 +68,8 @@ data MenuParams s =
     initialState :: s
   }
 
-type Menus res s =
-  Scoped (MenuParams s) res (MenuEngine s)
+type Menus s =
+  Scoped (MenuParams s) (MenuEngine s)
 
 data UiMenuParams ui s =
   UiMenuParams {
@@ -77,20 +77,20 @@ data UiMenuParams ui s =
     ui :: ui
   }
 
-type UiMenus ui res s =
-  Scoped (UiMenuParams ui s) res (MenuEngine s)
+type UiMenus ui s =
+  Scoped (UiMenuParams ui s) (MenuEngine s)
 
-type WindowMenus res s =
-  UiMenus WindowConfig res s
+type WindowMenus s =
+  UiMenus WindowConfig s
 
-type ModalMenus res i =
-  Menus res (ModalState i)
+type ModalMenus i =
+  Menus (ModalState i)
 
-type ModalUiMenus ui res i =
-  UiMenus ui res (ModalState i)
+type ModalUiMenus ui i =
+  UiMenus ui (ModalState i)
 
-type ModalWindowMenus res i =
-  WindowMenus res (ModalState i)
+type ModalWindowMenus i =
+  WindowMenus (ModalState i)
 
 putCursor ::
   Member (Menu s) r =>
@@ -184,5 +184,5 @@ menuState ::
 menuState action =
   useCursor \ cursor ->
     useState \ s -> do
-      (WithCursor newItems newCursor, result) <- runState (WithCursor s cursor) action
-      pure (newItems, (newCursor, result))
+      (WithCursor newItems newCursor,ult) <- runState (WithCursor s cursor) action
+      pure (newItems, (newCursor,ult))

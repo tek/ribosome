@@ -1,6 +1,6 @@
 module Ribosome.Host.Embed where
 
-import Conc (ChanConsumer, ChanEvents, interpretEventsChan)
+import Conc (interpretEventsChan)
 import Polysemy.Process (Process)
 import qualified Polysemy.Process.Effect.Process as Process
 
@@ -18,8 +18,8 @@ import Ribosome.Host.Interpreter.UserError (interpretUserErrorInfo)
 import Ribosome.Host.Run (RpcDeps, RpcStack, interpretRpcStack)
 
 publishRequests ::
-  ∀ res i o r a .
-  Members [Process i o, Events res i] r =>
+  ∀ i o r a .
+  Members [Process i o, Events i] r =>
   Sem r a ->
   Sem r a
 publishRequests =
@@ -32,8 +32,8 @@ publishRequests =
 
 type EmbedExtra =
   [
-    ChanEvents RpcMessage,
-    ChanConsumer RpcMessage
+    Events RpcMessage,
+    EventConsumer RpcMessage
   ]
 
 type HostEmbedStack =

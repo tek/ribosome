@@ -1,6 +1,6 @@
 module Ribosome.Host.Run where
 
-import Conc (ChanConsumer, ChanEvents, interpretAtomic, interpretEventsChan)
+import Conc (interpretAtomic, interpretEventsChan)
 import Polysemy.Process (Process)
 
 import Ribosome.Host.Data.Event (Event)
@@ -15,7 +15,7 @@ import Ribosome.Host.Effect.Responses (Responses)
 import Ribosome.Host.Effect.Rpc (Rpc)
 import Ribosome.Host.Effect.UserError (UserError)
 import Ribosome.Host.IOStack (IOStack)
-import Ribosome.Host.Interpreter.Log (interpretReportLogRpc, interpretLogRpc)
+import Ribosome.Host.Interpreter.Log (interpretLogRpc, interpretReportLogRpc)
 import Ribosome.Host.Interpreter.Reports (interpretReports)
 import Ribosome.Host.Interpreter.Responses (interpretResponses)
 import Ribosome.Host.Interpreter.Rpc (interpretRpc)
@@ -29,8 +29,8 @@ type RpcStack =
     DataLog LogReport,
     Rpc !! RpcError,
     Responses RequestId Response !! RpcError,
-    ChanEvents Event,
-    ChanConsumer Event,
+    Events Event,
+    EventConsumer Event,
     Reports
   ]
 

@@ -24,5 +24,5 @@ interpretProcessCerealNvimEmbed ::
 interpretProcessCerealNvimEmbed options conf =
   interpretProcessCerealNative (fromMaybe def options) (fromMaybe nvimProc conf) .
   resumeHoistError (BootError . show) .
-  withProcess_ @() .
+  withProcess_ .
   raiseUnder2

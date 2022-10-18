@@ -1,7 +1,7 @@
 module Ribosome.Host.Test.Run where
 
 import qualified Chronos
-import Conc (GatesIO, Restoration, interpretGates, interpretMaskFinal, interpretRace, interpretUninterruptibleMaskFinal)
+import Conc (Gates, interpretGates, interpretMaskFinal, interpretRace, interpretUninterruptibleMaskFinal)
 import Hedgehog.Internal.Property (Failure)
 import Log (Severity (Debug, Trace, Warn), interpretLogStderrLevelConc)
 import Polysemy.Chronos (ChronosTime, interpretTimeChronos, interpretTimeChronosConstant)
@@ -19,9 +19,9 @@ import Ribosome.Host.Test.Data.TestConfig (TestConfig (TestConfig), host)
 type TestIOStack =
   [
     Log,
-    Mask Restoration,
-    UninterruptibleMask Restoration,
-    GatesIO,
+    Mask,
+    UninterruptibleMask,
+    Gates,
     Race,
     Async,
     Error BootError,

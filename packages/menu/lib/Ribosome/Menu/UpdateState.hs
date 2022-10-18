@@ -151,7 +151,7 @@ updateQuery = \case
 
 queryEvent ::
   MenuState s =>
-  Members [MenuFilter (Filter s), State s, Events res MenuEvent, Log] r =>
+  Members [MenuFilter (Filter s), State s, Events MenuEvent, Log] r =>
   Maybe PromptText ->
   Sem r ()
 queryEvent =

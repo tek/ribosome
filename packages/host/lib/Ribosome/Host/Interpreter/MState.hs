@@ -9,7 +9,7 @@ import Ribosome.Host.Effect.MState (MState, ScopedMState)
 
 -- |Interpret 'MState' using 'AtomicState' and 'Lock'.
 interpretMState ::
-  Members [Resource, Race, Mask mres, Embed IO] r =>
+  Members [Resource, Race, Mask, Embed IO] r =>
   s ->
   InterpreterFor (MState s) r
 interpretMState initial =
@@ -44,7 +44,7 @@ evalMState initial =
 
 -- |Internal combinator that runs the dependencies of the scope for 'MState'.
 scope ::
-  Members [Mask mres, Resource, Race, Embed IO] r =>
+  Members [Mask, Resource, Race, Embed IO] r =>
   s ->
   (() ->
   Sem (AtomicState s : Lock : r) a) ->
@@ -54,8 +54,8 @@ scope initial use =
 
 -- |Interpret 'MState' as a scoped effect.
 interpretMStates ::
-  ∀ s mres r .
-  Members [Mask mres, Resource, Race, Embed IO] r =>
+  ∀ s r .
+  Members [Mask, Resource, Race, Embed IO] r =>
   InterpreterFor (ScopedMState s) r
 interpretMStates =
   interpretScopedWithH @[AtomicState s, Lock] scope \ () -> \case

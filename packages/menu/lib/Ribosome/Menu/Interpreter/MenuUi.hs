@@ -17,7 +17,7 @@ interpretMenuUiNull =
     Render _ ->
       unit
 
-interpretMenuUiNvimNull :: InterpreterFor (ScopedMenuUi p ()) r
+interpretMenuUiNvimNull :: InterpreterFor (ScopedMenuUi p) r
 interpretMenuUiNvimNull =
   interpretScopedR_ (const unit) \ () -> \case
     RenderPrompt _ _ ->
@@ -41,7 +41,7 @@ interceptMenuUiPromptConsume =
       MenuUi.render m
 
 interceptMenuUiPromptEvents ::
-  Members [MenuUi, EventConsumer pres PromptEvent] r =>
+  Members [MenuUi, EventConsumer PromptEvent] r =>
   Sem r a ->
   Sem r a
 interceptMenuUiPromptEvents sem =

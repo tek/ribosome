@@ -2,9 +2,7 @@ module Ribosome.Host.Unit.Run where
 
 import qualified Chronos
 import Conc (
-  GatesIO,
-  MaskIO,
-  UninterruptibleMaskIO,
+  Gates,
   interpretGates,
   interpretMaskFinal,
   interpretRace,
@@ -26,9 +24,9 @@ import Ribosome.Host.IOStack (LogConfStack, interpretLogConfStack)
 type TestIOStack =
   [
     Log,
-    MaskIO,
-    UninterruptibleMaskIO,
-    GatesIO,
+    Mask,
+    UninterruptibleMask,
+    Gates,
     Race,
     Async,
     Error BootError,

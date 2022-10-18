@@ -13,7 +13,7 @@ import Ribosome.Host.Embed (embedNvim_)
 import Ribosome.Host.Unit.Run (runTest)
 
 listenEvent ::
-  Members [EventConsumer res Event, Sync Event] r =>
+  Members [EventConsumer Event, Sync Event] r =>
   Sem r ()
 listenEvent =
   subscribe do

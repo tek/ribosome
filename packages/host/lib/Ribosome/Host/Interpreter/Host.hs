@@ -1,6 +1,6 @@
 module Ribosome.Host.Interpreter.Host where
 
-import Conc (Restoration, withAsync_)
+import Conc (withAsync_)
 import Data.MessagePack (Object (ObjectNil))
 import Exon (exon)
 import Log (Severity (Error, Warn), dataLog)
@@ -31,7 +31,7 @@ invalidMethod (Request (RpcMethod name) _) =
   Response.Error [exon|Invalid method for request: #{name}|]
 
 publishEvent ::
-  Member (Events er Event) r =>
+  Member (Events Event) r =>
   Request ->
   Sem r ()
 publishEvent (Request (RpcMethod name) args) =
@@ -73,7 +73,7 @@ handle notification (Request method args) =
       pure (Just response)
 
 interpretHost ::
-  Members [Handlers !! Report, Rpc !! RpcError, DataLog LogReport, Events er Event, Log, Final IO] r =>
+  Members [Handlers !! Report, Rpc !! RpcError, DataLog LogReport, Events Event, Log, Final IO] r =>
   InterpreterFor Host r
 interpretHost =
   interpret \case
@@ -95,12 +95,12 @@ type HostDeps er =
     Process RpcMessage (Either Text RpcMessage),
     Rpc !! RpcError,
     DataLog LogReport,
-    Events er Event,
+    Events Event,
     Responses RequestId Response !! RpcError,
     Log,
     Error BootError,
     Resource,
-    Mask Restoration,
+    Mask,
     Race,
     Async,
     Embed IO,

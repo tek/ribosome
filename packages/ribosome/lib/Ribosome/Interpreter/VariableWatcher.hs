@@ -5,9 +5,8 @@ import Conc (interpretAtomic, interpretLockReentrant, lockOrSkip_)
 import qualified Data.Map.Strict as Map
 import Data.MessagePack (Object (ObjectNil))
 
-import Ribosome.Effect.VariableWatcher (WatchedVariable (WatchedVariable))
 import qualified Ribosome.Effect.VariableWatcher as VariableWatcher
-import Ribosome.Effect.VariableWatcher (VariableWatcher)
+import Ribosome.Effect.VariableWatcher (VariableWatcher, WatchedVariable (WatchedVariable))
 import Ribosome.Host.Api.Data (nvimGetVar)
 import Ribosome.Host.Data.Report (Report)
 import Ribosome.Host.Data.RpcError (RpcError)
@@ -54,7 +53,7 @@ checkVar (WatchedVariable var) old handler =
 -- This does not remove 'VariableWatcher' from the stack, but intercepts and resends it, to make it simpler to use
 -- with the plugin runners.
 watchVariables ::
-  Members [VariableWatcher !! Report, Rpc !! RpcError, Resource, Mask mres, Race, Embed IO] r =>
+  Members [VariableWatcher !! Report, Rpc !! RpcError, Resource, Mask, Race, Embed IO] r =>
   Map WatchedVariable (Object -> Handler r ()) ->
   Sem r a ->
   Sem r a
@@ -73,7 +72,7 @@ watchVariables vars =
 
 -- |Interpret 'VariableWatcher' with 'watchVariables', but eliminate the effect from the stack.
 interpretVariableWatcher ::
-  Members [Rpc !! RpcError, Resource, Mask mres, Race, Embed IO] r =>
+  Members [Rpc !! RpcError, Resource, Mask, Race, Embed IO] r =>
   Map WatchedVariable (Object -> Handler (VariableWatcher !! Report : r) ()) ->
   InterpreterFor (VariableWatcher !! Report) r
 interpretVariableWatcher vars =

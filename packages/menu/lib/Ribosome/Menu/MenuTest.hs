@@ -1,6 +1,6 @@
 module Ribosome.Menu.MenuTest where
 
-import Conc (ChanConsumer, Consume, GatesIO, Restoration, timeout_, withAsync_)
+import Conc (Consume, Gates, timeout_, withAsync_)
 import qualified Data.Map.Strict as Map
 import qualified Data.Text as Text
 import qualified Log
@@ -38,23 +38,23 @@ import Ribosome.Menu.Interpreter.MenuTest (
   )
 import Ribosome.Menu.Interpreter.MenuUi (interpretMenuUiNvimNull)
 import Ribosome.Menu.Interpreter.MenuUiWindow (interpretMenuUiWindow)
-import Ribosome.Menu.Loop (addMenuUi, lookupMapping, runMenu, menuLoop')
+import Ribosome.Menu.Loop (addMenuUi, lookupMapping, menuLoop', runMenu)
 import Ribosome.Menu.Mappings (Mappings)
 import Ribosome.Menu.Prompt.Data.PromptConfig (PromptConfig)
 import Ribosome.Menu.Stream.Util (queueStream)
 
 type MenuTestDeps s result =
   [
-    GatesIO,
+    Gates,
     Stop RpcError
   ] ++ MenuTestResources (Item s) result
 
 type MenuTestIOStack =
   [
-    GatesIO,
+    Gates,
     Log,
     Fail,
-    Mask Restoration,
+    Mask,
     Resource,
     Race,
     Async,
@@ -69,7 +69,7 @@ type MenuTestWith s result =
   MenuTestLoop s result ++ MenuEngineStack s |> MenuEngine s
 
 type MenuTestEffects s result =
-  MenuTestWith s result ++ [Menus () s, ReportLog] ++ MenuLoopDeps
+  MenuTestWith s result ++ [Menus s, ReportLog] ++ MenuLoopDeps
 
 type MenuTestStack i result =
   Reader (SerialT IO (MenuItem i)) : MenuLoopDeps ++ MenuTestResources i result
@@ -127,12 +127,12 @@ withEventLog =
       Text.unlines ("wait events:" : (("  " <>) . show <$> reverse evs))
 
 menuTestLoop ::
-  ∀ result ires s r .
+  ∀ result s r .
   Show (Item s) =>
   Members MenuTestIOStack r =>
   Members (MenuEngineStack s) r =>
   Members (MenuTestResources (Item s) result) r =>
-  Members [ReportLog, EventConsumer ires MenuEvent] r =>
+  Members [ReportLog, EventConsumer MenuEvent] r =>
   PromptConfig ->
   (MappingLhs -> Maybe (MenuWidget s (MenuTestLoop s result ++ r) result)) ->
   InterpretersFor (MenuTestLoop s result) r
@@ -147,12 +147,12 @@ menuTestLoop pconf mappings sem = do
       sem
 
 testMenuWith ::
-  ∀ result ires mres s r .
+  ∀ result s r .
   Show (Item s) =>
   Members MenuTestIOStack r =>
-  Member (EventConsumer ires MenuEvent) r =>
+  Member (EventConsumer MenuEvent) r =>
   Members (MenuTestResources (Item s) result) r =>
-  Members [Reader (SerialT IO (MenuItem (Item s))), Menus mres s, ReportLog] r =>
+  Members [Reader (SerialT IO (MenuItem (Item s))), Menus s, ReportLog] r =>
   PromptConfig ->
   s ->
   (MappingLhs -> Maybe (MenuWidget s (MenuTestWith s result ++ r) result)) ->
@@ -205,7 +205,7 @@ testNvimMenu ::
   Member (Reader (SerialT IO (MenuItem (Item s)))) r =>
   Members MenuTestIOStack r =>
   Members (MenuTestDeps s result) r =>
-  Members [ChanConsumer Event, MenuFilter (Filter s), Rpc, Rpc !! RpcError, Settings !! SettingError, Scratch !! RpcError] r =>
+  Members [EventConsumer Event, MenuFilter (Filter s), Rpc, Rpc !! RpcError, Settings !! SettingError, Scratch !! RpcError] r =>
   PromptConfig ->
   s ->
   ScratchOptions ->
@@ -226,7 +226,7 @@ testStaticNvimMenu ::
   MenuState s =>
   Show (Item s) =>
   Members MenuTestIOStack r =>
-  Members [ChanConsumer Event, MenuFilter (Filter s), Rpc, Rpc !! RpcError, Settings !! SettingError, Scratch !! RpcError, Stop RpcError] r =>
+  Members [EventConsumer Event, MenuFilter (Filter s), Rpc, Rpc !! RpcError, Settings !! SettingError, Scratch !! RpcError, Stop RpcError] r =>
   [MenuItem (Item s)] ->
   PromptConfig ->
   s ->
