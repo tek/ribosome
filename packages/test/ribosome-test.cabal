@@ -27,6 +27,7 @@ library
       Ribosome.Test.Examples.Example1
       Ribosome.Test.Log
       Ribosome.Test.Screenshot
+      Ribosome.Test.Skip
       Ribosome.Test.SocketTmux
       Ribosome.Test.TmuxCommon
       Ribosome.Test.Ui
@@ -129,7 +130,6 @@ test-suite ribosome-test-unit
       Ribosome.Test.ReportTest
       Ribosome.Test.SocketTmuxTest
       Ribosome.Test.SyntaxTest
-      Skip
   hs-source-dirs:
       test
   default-extensions:

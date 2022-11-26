@@ -21,6 +21,9 @@ class (
 
   histories :: Lens' s (Map (Mode s) (Trie (Entries (Item s))))
 
+  renderStatus :: s -> Int -> [Text]
+  renderStatus _ _ = []
+
 type Filter s =
   MenuMode.Filter (Mode s)
 
@@ -30,14 +33,11 @@ instance (
     type Item (Modal m i) = i
     type Mode (Modal m i) = m
 
-    core =
-      #core
+    core = #core
 
-    mode =
-      #mode
+    mode = #mode
 
-    histories =
-      #history
+    histories = #history
 
 instance (
     MenuState s
@@ -45,14 +45,11 @@ instance (
     type Item (WithCursor s) = Item s
     type Mode (WithCursor s) = Mode s
 
-    core =
-      #state . core
+    core = #state . core
 
-    mode =
-      #state . mode
+    mode = #state . mode
 
-    histories =
-      #state . histories
+    histories = #state . histories
 
 history ::
   MenuState s =>

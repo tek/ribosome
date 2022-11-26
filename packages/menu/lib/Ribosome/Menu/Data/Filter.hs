@@ -36,8 +36,8 @@ instance MenuMode i Filter where
     Prefix -> "prefix"
     Regex -> "regex"
 
-  renderExtra =
-    const Nothing
+  renderExtra _ _ =
+    Nothing
 
   filterMode f =
     FilterMode f (Just . MenuItem.text)

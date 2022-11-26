@@ -3,9 +3,10 @@ module Ribosome.Menu.Data.MenuStatus where
 data MenuStatus =
   MenuStatus {
     filter :: Text,
-    extra :: Maybe Text,
+    middle :: Int -> Maybe Text,
+    bottom :: Int -> [Text],
     itemCount :: Int,
     entryCount :: Int,
     cursor :: Int
   }
-  deriving stock (Eq, Show, Generic)
+  deriving stock (Generic)

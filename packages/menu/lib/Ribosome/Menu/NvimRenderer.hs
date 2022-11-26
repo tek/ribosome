@@ -200,16 +200,24 @@ updateStatus ::
   Sem r ()
 updateStatus scr = do
   width <- windowGetWidth (scr ^. #window)
-  view #status >>= \ MenuStatus {filter = f, extra, ..} -> do
+  view #status >>= \ MenuStatus {filter = f, middle, ..} -> do
     let
+      builtinSegmentsSize =
+        Text.length filterSegment + Text.length countSegment
+      space =
+        width - 2
+      middleSpace =
+        space - builtinSegmentsSize
       filterSegment =
         [exon|🔎 #{f}|]
-      extraSegment =
-        fromMaybe "" extra
+      middleSegment =
+        Text.take middleSpace (fromMaybe "" (middle middleSpace))
+      bottomSegment =
+        Text.take space <$> bottom space
       countSegment =
         [exon|#{show (cursor + 1)}/#{show entryCount}/#{show itemCount}|]
       gutter =
-        width - (Text.length filterSegment + Text.length countSegment + Text.length extraSegment) - 2
+        space - (builtinSegmentsSize + Text.length middleSegment)
       leftGutter =
         fromMaybe 0 (div gutter 2)
       rightGutter =
@@ -219,8 +227,8 @@ updateStatus scr = do
       segments =
         if gutter <= 0
         then countSegment
-        else [exon|#{filterSegment}#{ws leftGutter}#{extraSegment}#{ws rightGutter}#{countSegment}|]
-    void $ restop $ Scratch.update (scr ^. #id) ([segments] :: [Text])
+        else [exon|#{filterSegment}#{ws leftGutter}#{middleSegment}#{ws rightGutter}#{countSegment}|]
+    void $ restop $ Scratch.update (scr ^. #id) (segments : bottomSegment)
 
 renderNvimMenu ::
   ∀ i r .

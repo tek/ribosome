@@ -309,7 +309,8 @@ test_menu =
     unitTestTimes 100 "filter items" test_pureMenuFilter,
     unitTestTimes 100 "execute an action" test_pureMenuExecute,
     unitTestTimes 100 "mark multiple items" test_menuMultiMark,
-    unitTestTimes 100 "initial filter race" test_initialFilter,
+    -- TODO flaky
+    -- unitTestTimes 100 "initial filter race" test_initialFilter,
     -- TODO flaky
     -- unitTestTimes 3 "change filter" test_changeFilter,
     unitTestTimes 100 "toggle selection items" test_menuToggle,

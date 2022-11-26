@@ -12,7 +12,7 @@ import qualified Ribosome.Api.Mode as Api
 import Ribosome.Api.Option (withOption)
 import Ribosome.Api.Window (closeWindow, currentCursor, setCursor, windowExec)
 import qualified Ribosome.Data.FloatOptions as FloatOptions
-import Ribosome.Data.FloatOptions (FloatAnchor (SW), FloatRelative (Editor))
+import Ribosome.Data.FloatOptions (FloatAnchor (SW, NW), FloatRelative (Editor))
 import Ribosome.Data.Mapping (Mapping, MappingId (MappingId), MappingLhs (MappingLhs), MappingSpec (MappingSpec))
 import Ribosome.Data.Mode (NvimMode (NvimMode))
 import Ribosome.Data.ScratchOptions (ScratchOptions, ensureName, scratch)
@@ -186,7 +186,7 @@ itemsOptions (row, col, height, width) options =
       def
       & #relative .~ Editor
       & #anchor .~ SW
-      & #row .~ row - 5
+      & #row .~ row - 3
       & #col .~ col
       & #width .~ width
       & #height .~ 1
@@ -201,8 +201,8 @@ statusOptions (row, col, _, width) options =
     floatOptions =
       def
       & #relative .~ Editor
-      & #anchor .~ SW
-      & #row .~ row
+      & #anchor .~ NW
+      & #row .~ row + 1
       & #col .~ col
       & #width .~ width
       & #height .~ 1
@@ -225,7 +225,7 @@ promptOptions (row, col, _, width) custom =
       def
       & #relative .~ Editor
       & #anchor .~ SW
-      & #row .~ row - 3
+      & #row .~ row
       & #col .~ col
       & #width .~ width
       & #height .~ 1

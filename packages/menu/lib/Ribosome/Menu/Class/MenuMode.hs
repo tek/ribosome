@@ -8,26 +8,16 @@ class (
     type Filter mode :: Type -> Type
 
     cycleFilter :: mode -> mode
+    cycleFilter = id
 
     renderFilter :: mode -> Text
+    renderFilter _ = "no mode"
 
-    renderExtra :: mode -> Maybe Text
+    renderExtra :: mode -> Int -> Maybe Text
+    renderExtra _ _ = Nothing
 
     filterMode :: mode -> Filter mode i
 
 instance MenuMode i () where
-
-  type Filter () =
-    Const ()
-
-  cycleFilter =
-    id
-
-  renderFilter _ =
-    "no mode"
-
-  renderExtra _ =
-    Nothing
-
-  filterMode () =
-    Const () 
+  type Filter () = Const ()
+  filterMode () = Const ()

@@ -1,7 +1,7 @@
 module Ribosome.Menu.Data.RenderMenu where
 
 import Ribosome.Menu.Class.MenuMode (MenuMode (renderExtra, renderFilter))
-import Ribosome.Menu.Class.MenuState (MenuState (Item, core, mode))
+import Ribosome.Menu.Class.MenuState (MenuState (Item, core, mode, renderStatus))
 import Ribosome.Menu.Data.CursorIndex (CursorIndex (CursorIndex))
 import Ribosome.Menu.Data.Entry (Entries)
 import Ribosome.Menu.Data.MenuStatus (MenuStatus (MenuStatus))
@@ -15,18 +15,20 @@ data RenderMenu i =
     cursor :: CursorIndex,
     status :: MenuStatus
   }
-  deriving stock (Eq, Show, Generic)
+  deriving stock (Generic)
 
 menuStatus ::
-  ∀ i mode .
-  MenuMode i mode =>
+  ∀ s .
+  MenuState s =>
   Int ->
   Int ->
   CursorIndex ->
-  mode ->
+  s ->
   MenuStatus
-menuStatus itemCount entryCount (CursorIndex cursor) md =
-  MenuStatus (renderFilter @i md) (renderExtra @i md) itemCount entryCount cursor
+menuStatus itemCount entryCount (CursorIndex cursor) s =
+  MenuStatus (renderFilter @(Item s) md) (renderExtra @(Item s) md) (renderStatus s) itemCount entryCount cursor
+  where
+    md = s ^. mode
 
 fromState ::
   ∀ s .
@@ -34,7 +36,7 @@ fromState ::
   WithCursor s ->
   RenderMenu (Item s)
 fromState (WithCursor s cursor) =
-  RenderMenu {status = menuStatus @(Item s) itemCount entryCount cursor (s ^. mode), ..}
+  RenderMenu {status = menuStatus @s itemCount entryCount cursor s, ..}
   where
     Core {entries, itemCount, entryCount} =
       s ^. core

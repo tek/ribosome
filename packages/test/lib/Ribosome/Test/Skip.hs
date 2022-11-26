@@ -1,4 +1,4 @@
-module Skip where
+module Ribosome.Test.Skip where
 
 import qualified Data.Text.IO as Text
 import Polysemy.Test (UnitTest)

@@ -1,5 +1,6 @@
 module Ribosome.Menu.Test.NvimMenuTest where
 
+import Exon (exon)
 import Lens.Micro.Mtl (view)
 import Polysemy.Test (UnitTest, assertEq, runTestAuto, unitTest, (===))
 import qualified Streamly.Internal.Data.Stream.IsStream as Stream
@@ -7,13 +8,18 @@ import Streamly.Prelude (SerialT)
 import Test.Tasty (TestTree, testGroup)
 
 import Ribosome.Api.Buffer (bufferContent, buflisted)
+import qualified Ribosome.Effect.Scratch as Scratch
 import Ribosome.Host.Api.Data (bufferGetName, vimGetBuffers, vimGetWindows)
 import Ribosome.Menu.Action (MenuWidget, menuOk, menuSuccess)
-import Ribosome.Menu.Class.MenuState (MenuState, entries)
+import qualified Ribosome.Menu.Class.MenuMode as MenuMode
+import Ribosome.Menu.Class.MenuMode (MenuMode (cycleFilter, filterMode, renderExtra, renderFilter))
+import Ribosome.Menu.Class.MenuState (MenuState (renderStatus), entries)
+import qualified Ribosome.Menu.Class.MenuState as MenuState
 import Ribosome.Menu.Combinators (sortEntries)
 import Ribosome.Menu.Data.CursorIndex (CursorIndex (CursorIndex))
 import Ribosome.Menu.Data.Entry (intEntries)
 import Ribosome.Menu.Data.Filter (Filter (Fuzzy))
+import Ribosome.Menu.Data.FilterMode (FilterMode (FilterMode))
 import Ribosome.Menu.Data.MenuEvent (MenuEvent (Rendered))
 import Ribosome.Menu.Data.MenuItem (MenuItem, simpleMenuItem)
 import qualified Ribosome.Menu.Data.MenuResult as MenuResult
@@ -36,6 +42,9 @@ import Ribosome.Menu.Prompt.Run (SyncChar, nosync, withPromptInputSync)
 import Ribosome.Menu.Scratch (menuScratch, menuScratchSized)
 import Ribosome.Menu.Test.Run (unitTestTimes)
 import Ribosome.Test.Embed (testEmbed_)
+import Ribosome.Test.Screenshot (awaitScreenshot)
+import Ribosome.Test.Skip (skipUnlessX)
+import Ribosome.Test.SocketTmux (testSocketTmux)
 
 staticMenuItems ::
   [Text] ->
@@ -161,6 +170,62 @@ test_scrollUp =
     its =
       staticMenuItems (replicate 100 "item")
 
+data TestMode =
+  TestMode {
+    mode :: Filter,
+    count :: Int
+  }
+  deriving stock (Eq, Show, Ord, Generic)
+
+data TestState =
+  TestState {
+    testModal :: Modal TestMode Text,
+    message :: Text
+  }
+  deriving stock (Eq, Show, Generic)
+
+instance MenuMode Text TestMode where
+  type Filter TestMode =
+    FilterMode Filter
+
+  cycleFilter (TestMode {..}) =
+    TestMode {mode = cycleFilter mode, ..}
+
+  renderFilter (TestMode {mode}) =
+    renderFilter mode
+
+  renderExtra (TestMode {count}) _ =
+    Just [exon|count: #{show count}|]
+
+  filterMode (TestMode mode _) =
+    FilterMode mode (Just . view #render)
+
+instance MenuState TestState where
+  type Item TestState = Text
+  type Mode TestState = TestMode
+
+  core = #testModal . #core
+
+  mode = #testModal . #mode
+
+  histories = #testModal . #history
+
+  renderStatus (TestState {message}) _ =
+    [[exon|message: #{message}|]]
+
+-- TODO withPromptInputSync here is partially ineffective since it sets menuSync, which should be read by the main loop.
+test_bottomStatus :: UnitTest
+test_bottomStatus =
+  testSocketTmux $ defaultFilter do
+    result <- testStaticNvimMenu @() [] True def (TestState (modal (TestMode Fuzzy 0)) "empty") def defaultMappings do
+      waitEvent "initial render" Rendered
+      status <- stopNote "no status scratch" =<< Scratch.find "ribosome-menu-status"
+      assertEq ["message: empty"] . drop 1 =<< bufferContent (status ^. #buffer)
+      awaitScreenshot False "menu-bottom-status" 0
+      withPromptInputSync [nosync "<esc>"] do
+        MenuTest.result
+    MenuResult.Aborted === result
+
 nmenuBot :: MenuView
 nmenuBot =
   MenuView 4 0 4 4
@@ -209,6 +274,7 @@ test_nvimMenu =
     unitTestTimes 10 "interrupt window" test_interruptWindow,
     unitTest "close scratch when quitting" test_quit,
     unitTest "scroll up" test_scrollUp,
+    unitTestTimes 3 "extra bottom status message" (skipUnlessX test_bottomStatus),
     unitTest "new view after scrolling up" test_viewScrollUp,
     unitTest "new view after scrolling down" test_viewScrollDown,
     unitTest "new view after moving cursor" test_viewMoveCursor,
