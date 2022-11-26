@@ -117,6 +117,18 @@ handleEsc pconf = do
           nvimCommand "stopinsert"
           publish PromptEvent.Ignore
 
+publishPrompt ::
+  Members [Events PromptEvent, Rpc !! RpcError, Log] r =>
+  Text ->
+  Sem r ()
+publishPrompt text =
+  resuming (\ e -> Log.debug [exon|Buffer event error: #{rpcError e}|]) do
+    promptMode >>= traverse_ \ m -> do
+      (_, cursor) <- currentCursor
+      let prompt = Prompt cursor m (PromptText text)
+      Log.debug [exon|BufLinesEvent: #{show prompt}|]
+      publish (PromptEvent.Update prompt)
+
 promptBufferEvents ::
   Members [Rpc !! RpcError, EventConsumer Event, Events PromptEvent, Log, Gate] r =>
   PromptConfig ->
@@ -125,15 +137,11 @@ promptBufferEvents pconf =
   subscribe @Event do
     Log.debug "Subscribed to buffer updates"
     signal
+    publishPrompt ""
     forever do
       consume >>= \case
         BufLinesEvent {linedata = [text]} -> do
-          resuming (\ e -> Log.debug [exon|Buffer event error: #{rpcError e}|]) do
-            promptMode >>= traverse_ \ m -> do
-              (_, cursor) <- currentCursor
-              let prompt = Prompt cursor m (PromptText text)
-              Log.debug [exon|BufLinesEvent: #{show prompt}|]
-              publish (PromptEvent.Update prompt)
+          publishPrompt text
         MenuMapping (MappingId "<esc>") ->
           handleEsc pconf
         MenuMapping (MappingId lhs) -> do

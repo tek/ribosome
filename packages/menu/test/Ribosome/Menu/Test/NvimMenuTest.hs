@@ -138,7 +138,7 @@ test_windowOnlyInsert =
 test_quit :: UnitTest
 test_quit =
   testEmbed_ $ defaultFilter do
-    result <- testStaticNvimMenu @() @(Modal Filter Text) [] def (modal Fuzzy) (menuScratchSized 4) defaultMappings do
+    result <- testStaticNvimMenu @() @(Modal Filter Text) [] False def (modal Fuzzy) (menuScratchSized 4) defaultMappings do
       sendMapping "<esc>"
       MenuTest.result
     MenuResult.Aborted === result
@@ -147,7 +147,7 @@ test_quit =
 test_scrollUp :: UnitTest
 test_scrollUp =
   testEmbed_ $ defaultFilter do
-    MenuResult.Success a <- testStaticNvimMenu its def (modal Fuzzy) (menuScratch & #maxSize ?~ 4) maps do
+    MenuResult.Success a <- testStaticNvimMenu its False def (modal Fuzzy) (menuScratch & #maxSize ?~ 4) maps do
       waitEvent "initial render" Rendered
       traverse_ sendMappingWait (replicate 20 "k" <> ["<cr>"])
       MenuTest.result

@@ -133,12 +133,13 @@ menuTestLoop ::
   Members (MenuEngineStack s) r =>
   Members (MenuTestResources (Item s) result) r =>
   Members [ReportLog, EventConsumer MenuEvent] r =>
+  Bool ->
   PromptConfig ->
   (MappingLhs -> Maybe (MenuWidget s (MenuTestLoop s result ++ r) result)) ->
   InterpretersFor (MenuTestLoop s result) r
-menuTestLoop pconf mappings sem = do
+menuTestLoop nativePrompt pconf mappings sem = do
   TestTimeout timeout <- ask
-  interpretMenuTest pconf $ insertAt @2 $ withEventLog do
+  interpretMenuTest nativePrompt pconf $ insertAt @2 $ withEventLog do
     withAsync_ (Sync.putWait timeout =<< menuLoop' mappings) do
       timeout_ (fail "prompt didn't start") timeout waitPrompt
       waitEventPred "initial prompt update" \case
@@ -153,13 +154,14 @@ testMenuWith ::
   Member (EventConsumer MenuEvent) r =>
   Members (MenuTestResources (Item s) result) r =>
   Members [Reader (SerialT IO (MenuItem (Item s))), Menus s, ReportLog] r =>
+  Bool ->
   PromptConfig ->
   s ->
   (MappingLhs -> Maybe (MenuWidget s (MenuTestWith s result ++ r) result)) ->
   InterpretersFor (MenuTestWith s result) r
-testMenuWith pconf initial mappings sem = do
+testMenuWith nativePrompt pconf initial mappings sem = do
   items <- ask
-  runMenu items initial $ bundleMenuEngine (menuTestLoop pconf mappings sem)
+  runMenu items initial $ bundleMenuEngine (menuTestLoop nativePrompt pconf mappings sem)
 
 testMenu ::
   ∀ result s r .
@@ -180,7 +182,7 @@ testMenu pconf initial maps =
   resumeReportFail .
   addMenuUi () .
   raiseUnder3 .
-  testMenuWith pconf initial (lookupMapping maps)
+  testMenuWith False pconf initial (lookupMapping maps)
 
 testStaticMenu ::
   ∀ result s r .
@@ -206,12 +208,13 @@ testNvimMenu ::
   Members MenuTestIOStack r =>
   Members (MenuTestDeps s result) r =>
   Members [EventConsumer Event, MenuFilter (Filter s), Rpc, Rpc !! RpcError, Settings !! SettingError, Scratch !! RpcError] r =>
+  Bool ->
   PromptConfig ->
   s ->
   ScratchOptions ->
   Mappings s (MenuTestEffects s result ++ r) result ->
   InterpretersFor (MenuTestEffects s result) r
-testNvimMenu pconf initial options maps =
+testNvimMenu nativePrompt pconf initial options maps =
   interpretMenuDeps .
   interpretReportLogLog .
   interpretMenuUiWindow .
@@ -219,7 +222,7 @@ testNvimMenu pconf initial options maps =
   resumeReportFail .
   addMenuUi (WindowConfig pconf options (Just def) (Map.keys maps)) .
   raiseUnder3 .
-  testMenuWith pconf initial (lookupMapping maps)
+  testMenuWith nativePrompt pconf initial (lookupMapping maps)
 
 testStaticNvimMenu ::
   ∀ result s r .
@@ -228,11 +231,12 @@ testStaticNvimMenu ::
   Members MenuTestIOStack r =>
   Members [EventConsumer Event, MenuFilter (Filter s), Rpc, Rpc !! RpcError, Settings !! SettingError, Scratch !! RpcError, Stop RpcError] r =>
   [MenuItem (Item s)] ->
+  Bool ->
   PromptConfig ->
   s ->
   ScratchOptions ->
   Mappings s (MenuTestEffects s result ++ MenuTestStack (Item s) result ++ r) result ->
   InterpretersFor (MenuTestEffects s result ++ MenuTestStack (Item s) result) r
-testStaticNvimMenu items pconf initial options maps =
+testStaticNvimMenu items nativePrompt pconf initial options maps =
   runStaticTestMenu @(Item s) pconf items .
-  testNvimMenu @_ @s pconf initial options maps
+  testNvimMenu @_ @s nativePrompt pconf initial options maps

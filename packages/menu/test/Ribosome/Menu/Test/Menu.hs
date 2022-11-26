@@ -106,7 +106,7 @@ promptTest sem =
     items <- ask
     runMenu items (modal Fuzzy) $
       bundleMenuEngine $
-      menuTestLoop @_ @(Modal Filter i) startInsert (const (Just enqueuePrompt)) $
+      menuTestLoop @_ @(Modal Filter i) False startInsert (const (Just enqueuePrompt)) $
       subscribe @MenuEvent do
         assertItems []
         sem

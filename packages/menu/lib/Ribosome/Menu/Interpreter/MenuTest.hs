@@ -241,8 +241,9 @@ interpretMenuTest ::
   Members (MenuTestResources i result) r =>
   Members [MenuUi, Log, Fail, Resource, Race, Embed IO] r =>
   Member (EventConsumer MenuEvent) r =>
+  Bool ->
   PromptConfig ->
   InterpretersFor [MenuTest i result, Consume MenuEvent] r
-interpretMenuTest pconf =
+interpretMenuTest nativePrompt pconf =
   interpretMenuTestQueues pconf .
-  interceptMenuQueue
+  (if nativePrompt then id else interceptMenuQueue)
