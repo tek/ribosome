@@ -22,6 +22,8 @@ import Ribosome.Host.Interpret (type (|>))
 import Ribosome.Host.Interpreter.Log (interpretReportLogLog)
 import Ribosome.Menu.Action (MenuWidget)
 import Ribosome.Menu.Class.MenuState (Filter, MenuState (Item))
+import qualified Ribosome.Menu.Data.Filter as Data
+import Ribosome.Menu.Data.FilterMode (FilterMode)
 import Ribosome.Menu.Data.MenuEvent (MenuEvent (Query))
 import Ribosome.Menu.Data.MenuItem (MenuItem)
 import Ribosome.Menu.Data.WindowConfig (WindowConfig (WindowConfig))
@@ -29,6 +31,7 @@ import Ribosome.Menu.Effect.Menu (MenuEngine, MenuEngineStack, Menus, bundleMenu
 import Ribosome.Menu.Effect.MenuFilter (MenuFilter)
 import Ribosome.Menu.Effect.MenuTest (MenuTest, waitEventPred)
 import Ribosome.Menu.Interpreter.Menu (MenuLoopDeps, interpretMenuDeps, interpretMenus)
+import Ribosome.Menu.Interpreter.MenuFilter (defaultFilter)
 import Ribosome.Menu.Interpreter.MenuTest (
   MenuTestResources,
   TestTimeout (TestTimeout),
@@ -207,7 +210,8 @@ testNvimMenu ::
   Member (Reader (SerialT IO (MenuItem (Item s)))) r =>
   Members MenuTestIOStack r =>
   Members (MenuTestDeps s result) r =>
-  Members [EventConsumer Event, MenuFilter (Filter s), Rpc, Rpc !! RpcError, Settings !! SettingError, Scratch !! RpcError] r =>
+  Members [EventConsumer Event, MenuFilter (Filter s)] r =>
+  Members [Rpc, Rpc !! RpcError, Settings !! SettingError, Scratch !! RpcError, Stop RpcError] r =>
   Bool ->
   PromptConfig ->
   s ->
@@ -229,7 +233,8 @@ testStaticNvimMenu ::
   MenuState s =>
   Show (Item s) =>
   Members MenuTestIOStack r =>
-  Members [EventConsumer Event, MenuFilter (Filter s), Rpc, Rpc !! RpcError, Settings !! SettingError, Scratch !! RpcError, Stop RpcError] r =>
+  Members [EventConsumer Event, MenuFilter (Filter s)] r =>
+  Members [Rpc, Rpc !! RpcError, Settings !! SettingError, Scratch !! RpcError, Stop RpcError] r =>
   [MenuItem (Item s)] ->
   Bool ->
   PromptConfig ->
@@ -240,3 +245,39 @@ testStaticNvimMenu ::
 testStaticNvimMenu items nativePrompt pconf initial options maps =
   runStaticTestMenu @(Item s) pconf items .
   testNvimMenu @_ @s nativePrompt pconf initial options maps
+
+testNativeMenu' ::
+  ∀ result s r .
+  MenuState s =>
+  Show (Item s) =>
+  Members MenuTestIOStack r =>
+  Members [EventConsumer Event, MenuFilter (Filter s)] r =>
+  Members [Rpc, Rpc !! RpcError, Settings !! SettingError, Scratch !! RpcError, Stop RpcError] r =>
+  SerialT IO (MenuItem (Item s)) ->
+  PromptConfig ->
+  s ->
+  ScratchOptions ->
+  Mappings s (MenuTestEffects s result ++ MenuTestStack (Item s) result ++ r) result ->
+  InterpretersFor (MenuTestEffects s result ++ MenuTestStack (Item s) result) r
+testNativeMenu' items pconf initial options maps =
+  interpretMenuTestResources (Seconds 5) pconf .
+  interpretMenuDeps .
+  runReader items .
+  testNvimMenu @_ @s True pconf initial options maps
+
+testNativeMenu ::
+  ∀ result s r .
+  MenuState s =>
+  Show (Item s) =>
+  Filter s ~ FilterMode Data.Filter =>
+  Members MenuTestIOStack r =>
+  Members [EventConsumer Event, Rpc, Rpc !! RpcError, Settings !! SettingError, Scratch !! RpcError, Stop RpcError] r =>
+  SerialT IO (MenuItem (Item s)) ->
+  PromptConfig ->
+  s ->
+  ScratchOptions ->
+  Mappings s (MenuTestEffects s result ++ MenuTestStack (Item s) result |> MenuFilter (Filter s) ++ r) result ->
+  InterpretersFor (MenuTestEffects s result ++ MenuTestStack (Item s) result |> MenuFilter (Filter s)) r
+testNativeMenu items pconf initial options maps =
+  defaultFilter .
+  testNativeMenu' items pconf initial options maps
