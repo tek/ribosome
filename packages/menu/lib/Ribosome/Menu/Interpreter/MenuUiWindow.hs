@@ -186,7 +186,7 @@ itemsOptions (row, col, height, width) options =
       def
       & #relative .~ Editor
       & #anchor .~ SW
-      & #row .~ row - 3
+      & #row .~ row - 2
       & #col .~ col
       & #width .~ width
       & #height .~ 1
@@ -202,7 +202,7 @@ statusOptions (row, col, _, width) options =
       def
       & #relative .~ Editor
       & #anchor .~ NW
-      & #row .~ row + 1
+      & #row .~ row
       & #col .~ col
       & #width .~ width
       & #height .~ 1
