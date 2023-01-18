@@ -9,7 +9,7 @@
   outputs = { self, hix, chiasma, ... }:
   let
 
-    overrides = { hackage, configure, pkgs, buildInputs, jailbreak, notest, ... }:
+    overrides = { hackage, configure, pkgs, buildInputs, jailbreak, notest, unbreak, ... }:
     let
       nvimBin = configure "--extra-prog-path=${pkgs.neovim}/bin";
       inputs = buildInputs [pkgs.neovim pkgs.tmux pkgs.xterm];
@@ -24,7 +24,7 @@
       ribosome-test = inputs;
       streamly = hackage "0.8.2" "0jhsdd71kqw0k0aszg1qb1l0wbxl1r73hsmkdgch4vlx43snlc8a";
       type-errors = notest;
-      type-errors-pretty = notest jailbreak;
+      type-errors-pretty = unbreak (notest jailbreak);
     };
 
   in hix.lib.pro ({ config, lib, ...}: {
