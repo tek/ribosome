@@ -16,7 +16,7 @@ import Ribosome.Api.Tabpage (closeTabpage)
 import Ribosome.Api.Window (closeWindow)
 import Ribosome.Data.FloatOptions (FloatOptions, enter)
 import Ribosome.Data.PluginName (PluginName (PluginName))
-import Ribosome.Data.ScratchId (ScratchId (ScratchId, unScratchId))
+import Ribosome.Data.ScratchId (ScratchId (ScratchId))
 import Ribosome.Data.ScratchOptions (ScratchOptions (ScratchOptions, filetype, name), focus, mappings, syntax)
 import qualified Ribosome.Data.ScratchState as ScratchState
 import Ribosome.Data.ScratchState (ScratchState (ScratchState))
@@ -93,7 +93,7 @@ createFloatWith ::
   m (Buffer, Window)
 createFloatWith listed scratch options = do
   buffer <- nvimCreateBuf listed scratch
-  window <- nvimOpenWin buffer (enter options) (floatConfig options)
+  window <- nvimOpenWin buffer options.enter (floatConfig options)
   pure (buffer, window)
 
 createFloat ::
@@ -318,7 +318,7 @@ killScratch ::
   ScratchState ->
   Sem r ()
 killScratch (ScratchState name _ buffer window _ tab (AutocmdId auId)) = do
-  Log.debug [exon|Killing scratch buffer `#{unScratchId name}`|]
+  Log.debug [exon|Killing scratch buffer `##{name}`|]
   atomicModify' (Map.delete @_ @ScratchState name)
   resume_ (nvimDelAutocmd auId)
   traverse_ (resume_ . closeTabpage) tab
@@ -330,18 +330,18 @@ scratchPreviousWindow ::
   ScratchId ->
   Sem r (Maybe Window)
 scratchPreviousWindow =
-  fmap (fmap ScratchState.previous) . lookupScratch
+  fmap (fmap (.previous)) . lookupScratch
 
 scratchWindow ::
   Member (AtomicState (Map ScratchId ScratchState)) r =>
   ScratchId ->
   Sem r (Maybe Window)
 scratchWindow =
-  fmap (fmap ScratchState.window) . lookupScratch
+  fmap (fmap (.window)) . lookupScratch
 
 scratchBuffer ::
   Member (AtomicState (Map ScratchId ScratchState)) r =>
   ScratchId ->
   Sem r (Maybe Buffer)
 scratchBuffer =
-  fmap (fmap ScratchState.buffer) . lookupScratch
+  fmap (fmap (.buffer)) . lookupScratch

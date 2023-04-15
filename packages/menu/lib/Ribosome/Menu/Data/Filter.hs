@@ -40,4 +40,4 @@ instance MenuMode i Filter where
     Nothing
 
   filterMode f =
-    FilterMode f (Just . MenuItem.text)
+    FilterMode f (Just . (.text))

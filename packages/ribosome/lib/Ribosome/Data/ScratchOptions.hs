@@ -41,7 +41,7 @@ data ScratchOptions =
   }
   deriving stock (Eq, Show, Generic)
 
--- |The default configuration, setting all flags to 'False' except for 'resize' and 'bottom', and everything else to
+-- |The default configuration, setting all flags to 'False' except for @resize@ and @bottom@, and everything else to
 -- 'mempty'.
 scratch :: ScratchId -> ScratchOptions
 scratch name =

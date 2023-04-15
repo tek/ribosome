@@ -1,6 +1,6 @@
 module Ribosome.Menu.Interpreter.MenuUiWindow where
 
-import Conc (Consume, Gate, Gates, interpretAtomic, interpretEventsChan, interpretScopedRWith, withAsyncGated_)
+import Conc (Consume, Gate, Gates, interpretAtomic, interpretEventsChan, withAsyncGated_)
 import Control.Lens.Regex.Text (group, match, regex)
 import qualified Data.Text as Text
 import Exon (exon)
@@ -12,7 +12,7 @@ import qualified Ribosome.Api.Mode as Api
 import Ribosome.Api.Option (withOption)
 import Ribosome.Api.Window (closeWindow, currentCursor, setCursor, windowExec)
 import qualified Ribosome.Data.FloatOptions as FloatOptions
-import Ribosome.Data.FloatOptions (FloatAnchor (SW, NW), FloatRelative (Editor))
+import Ribosome.Data.FloatOptions (FloatAnchor (NW, SW), FloatRelative (Editor))
 import Ribosome.Data.Mapping (Mapping, MappingId (MappingId), MappingLhs (MappingLhs), MappingSpec (MappingSpec))
 import Ribosome.Data.Mode (NvimMode (NvimMode))
 import Ribosome.Data.ScratchOptions (ScratchOptions, ensureName, scratch)
@@ -46,10 +46,7 @@ import Ribosome.Lens ((<|>~))
 import Ribosome.Mapping (eventMapping)
 import Ribosome.Menu.Data.NvimMenuState (NvimMenuState)
 import Ribosome.Menu.Data.WindowConfig (WindowConfig (WindowConfig))
-import Ribosome.Menu.Effect.MenuUi (
-  MenuUi (PromptEvent, Render, RenderPrompt),
-  WindowMenu (WindowMenu),
-  )
+import Ribosome.Menu.Effect.MenuUi (MenuUi (PromptEvent, Render, RenderPrompt), WindowMenu (WindowMenu))
 import qualified Ribosome.Menu.Mappings as Mappings
 import Ribosome.Menu.NvimRenderer (menuSyntax, renderNvimMenu)
 import Ribosome.Menu.Prompt.Data.Prompt (Prompt (Prompt), PromptText (PromptText))
@@ -259,15 +256,15 @@ withMainScratch itemsOpt statusOpt use = do
   where
     acquire = do
       itemScr <- Scratch.open (withItemsSyntax itemsOpt)
-      windowSetOption (itemScr ^. #window) "cursorline" True
+      windowSetOption itemScr.window "cursorline" True
       statusScr <- for statusOpt \ so -> do
         s <- Scratch.open (withStatusSyntax so)
-        windowSetOption (s ^. #window) "cursorline" False
+        windowSetOption (s.window) "cursorline" False
         pure s
       pure (itemScr, statusScr)
     release (it, stMay) = do
-      Scratch.delete (it ^. #id)
-      for_ stMay \ s -> Scratch.delete (s ^. #id)
+      Scratch.delete (it.id)
+      for_ stMay \ s -> Scratch.delete (s.id)
     withItemsSyntax =
       #syntax <>~ [menuSyntax]
     withStatusSyntax =
@@ -310,15 +307,15 @@ withPrompt ::
   Sem r a
 withPrompt pconf mappings geo use =
   interpretEventsChan @PromptEvent $ bracket acquire release \ s -> do
-    when (isStartInsert pconf) (windowExec (s ^. #window) "startinsert")
-    windowSetOption (s ^. #window) "cursorline" False
-    withBufferPromptEvents pconf (s ^. #buffer) do
+    when (isStartInsert pconf) (windowExec s.window "startinsert")
+    windowSetOption s.window "cursorline" False
+    withBufferPromptEvents pconf s.buffer do
       insertAt @1 (use s)
   where
     acquire =
       Scratch.show @_ @[] [] (promptOptions geo mappings)
     release s = do
-      Scratch.delete (Scratch.id s)
+      Scratch.delete s.id
       flushInput
 
 windowResources ::
@@ -344,8 +341,8 @@ interpretMenuUiWindow ::
 interpretMenuUiWindow =
   interpretScopedRWith @WindowScope windowResources \ (WindowMenu itemsScratch statusScratch promptScratch) -> \case
     RenderPrompt True (Prompt cursor _ (PromptText text)) -> do
-      void (restop (Scratch.update (promptScratch ^. #id) ([text] :: [Text])))
-      restop (setCursor (promptScratch ^. #window) 0 cursor)
+      void (restop (Scratch.update (promptScratch.id) ([text] :: [Text])))
+      restop (setCursor (promptScratch.window) 0 cursor)
     RenderPrompt False _ ->
       unit
     PromptEvent ->

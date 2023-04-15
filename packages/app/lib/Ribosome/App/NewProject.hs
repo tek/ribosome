@@ -2,7 +2,6 @@ module Ribosome.App.NewProject where
 
 import qualified Data.Text.IO as Text
 import Polysemy.Chronos (ChronosTime)
-import qualified Time
 
 import Ribosome.App.Boot (generateBoot)
 import Ribosome.App.Data (Global (..), NewProject (..), Project (..), unPrintDir)
@@ -18,8 +17,7 @@ newProject ::
   NewProject ->
   Sem r ()
 newProject global NewProject {project = pro@Project {..}, ..} = do
-  year <- fromIntegral . Time.year <$> Time.today
-  writeTemplateTree global directory (newProjectTemplates names flakeUrl author maintainer branch github cachix year)
+  writeTemplateTree global directory (newProjectTemplates names flakeUrl author maintainer branch github cachix)
   unless (global ^. #quiet) do
     infoMessage [
       "🌝 Initialized a ",
@@ -37,4 +35,4 @@ newProject global NewProject {project = pro@Project {..}, ..} = do
       ]
     putStderr ""
   generateBoot global pro
-  when (unPrintDir printDir) (embed (Text.putStrLn (pathText directory)))
+  when printDir.unPrintDir (embed (Text.putStrLn (pathText directory)))

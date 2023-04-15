@@ -3,7 +3,7 @@
 -- |Scratch buffers
 module Ribosome.Effect.Scratch where
 
-import Prelude hiding (show)
+import Prelude hiding (find, get, show)
 
 import Ribosome.Data.ScratchId (ScratchId)
 import Ribosome.Data.ScratchOptions (ScratchOptions)

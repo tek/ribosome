@@ -2,7 +2,15 @@ module Ribosome.App.Templates.GithubActions where
 
 import Exon (exon)
 
-import Ribosome.App.Data (Branch (Branch), Cachix (Cachix), CachixKey (CachixKey), CachixName (CachixName), ProjectName (ProjectName), cachixName, cachixTek)
+import Ribosome.App.Data (
+  Branch (Branch),
+  Cachix (Cachix),
+  CachixKey (CachixKey),
+  CachixName (CachixName),
+  ProjectName (ProjectName),
+  cachixName,
+  cachixTek,
+  )
 
 cachixStep :: CachixName -> Text
 cachixStep (CachixName name) =
@@ -39,10 +47,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2.4.0
-      - uses: cachix/install-nix-action@v15
+      - uses: cachix/install-nix-action@v20
         with:
           extra_nix_config: |
-            access-tokens = github.com=${{ secrets.GITHUB_TOKEN }}#{cachixConf (fromMaybe cachixTek cachix)}#{foldMap (cachixStep . cachixName) cachix}
+            access-tokens = github.com=${{ secrets.GITHUB_TOKEN }}#{cachixConf (fromMaybe cachixTek cachix)}#{foldMap (cachixStep . (.cachixName)) cachix}
       - name: 'build'
         run: nix build .#static
       - uses: 'marvinpinto/action-automatic-releases@latest'

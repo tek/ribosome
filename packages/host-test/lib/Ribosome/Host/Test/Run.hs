@@ -54,7 +54,7 @@ runUnitTest ::
   UnitTest
 runUnitTest =
   runTestAuto .
-  mapError (TestError . unBootError) .
+  mapError (TestError . (.unBootError)) .
   asyncToIOFinal .
   interpretRace .
   interpretGates .

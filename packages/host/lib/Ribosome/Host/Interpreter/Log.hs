@@ -78,7 +78,7 @@ interpretReportLogLog ::
   Member Log r =>
   InterpreterFor ReportLog r
 interpretReportLogLog =
-  interpretDataLog \ LogReport {report} -> Log.log (severity report) (reportMessages report)
+  interpretDataLog \ LogReport {report} -> Log.log report.severity (reportMessages report)
 
 interpretLogRpc ::
   Members [Log, ReportLog] r =>

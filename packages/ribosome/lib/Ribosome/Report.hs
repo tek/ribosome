@@ -1,4 +1,4 @@
--- |Smart constructors for @'DataLog' 'LogReport'@
+-- | Description: Smart constructors for @'DataLog' 'LogReport'@
 module Ribosome.Report (
   module Ribosome.Report,
   module Ribosome.Host.Effect.Reports,
@@ -54,7 +54,7 @@ logReport ::
   e ->
   Sem r ()
 logReport e =
-  dataLog (LogReport r True (severity r >= Warn) mempty)
+  dataLog (LogReport r True (r.severity >= Warn) mempty)
   where
     r = toReport e
 

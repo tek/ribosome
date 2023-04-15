@@ -118,7 +118,7 @@ dataBody apiName name params =
     toObjVar v =
       [|toMsgpack $(varE v)|]
     names =
-      paramName <$> params
+      (.paramName) <$> params
 
 genRequest :: MethodSpec -> DecsQ
 genRequest (MethodSpec apiName name params returnType) = do

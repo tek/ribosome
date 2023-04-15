@@ -38,7 +38,7 @@ withFocus' ::
   (Item s -> Sem r a) ->
   Sem r (Maybe a)
 withFocus' f =
-  withFocusItem (f . MenuItem.meta)
+  withFocusItem (f . (.meta))
 
 -- |Run an action with the focused entry and quit the menu with the returned value.
 -- If the menu was empty, do nothing (i.e. skip the event).

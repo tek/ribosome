@@ -1,12 +1,11 @@
 -- |Global configuration for a Ribosome plugin.
 module Ribosome.Data.PluginConfig where
 
+import Exon (exon)
+import Options.Applicative (Parser)
+
 import Ribosome.Data.PluginName (PluginName)
 import Ribosome.Host.Data.HostConfig (HostConfig)
-import Options.Applicative (Parser)
-import GHC.Show (showParen)
-import Text.Show (showsPrec)
-import Exon (exon)
 
 -- |The full configuration for a Ribosome plugin, consisting of the 'HostConfig', the plugin's name, and an arbitrary
 -- type for additional config defined by individual plugins.

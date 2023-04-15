@@ -7,7 +7,6 @@ import Fcf (Pure1, type (@@))
 import Fcf.Class.Functor (FMap)
 import Polysemy.Log (Severity (Error))
 import Prelude hiding (tag)
-import Text.Show (showParen, showsPrec)
 
 -- |The provenance of a report, for use in logs.
 newtype ReportContext =

@@ -27,8 +27,8 @@ publishRequests =
     Process.Send msg -> do
       publish msg
       Process.send msg
-    e ->
-      send @(Process i o) (coerce e)
+    Process.Recv ->
+      Process.recv
 
 type EmbedExtra =
   [

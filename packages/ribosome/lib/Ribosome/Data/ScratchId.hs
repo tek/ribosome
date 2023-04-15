@@ -7,5 +7,5 @@ import Ribosome.Host.Class.Msgpack.Encode (MsgpackEncode)
 -- |The ID type used to store active scratch buffers.
 newtype ScratchId =
   ScratchId { unScratchId :: Text }
-  deriving stock (Eq, Show)
+  deriving stock (Eq, Show, Generic)
   deriving newtype (IsString, Ord, MsgpackDecode, MsgpackEncode)

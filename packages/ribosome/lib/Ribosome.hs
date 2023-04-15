@@ -512,14 +512,14 @@ import Ribosome.Run (NvimPlugin)
 -- Since all of the functions in the wrapped @do@ block are polymorphic, the call to 'atomic' forces their type to be
 -- 'RpcCall' to match the parameter type.
 --
--- When 'fileBuffers' is then used at a call site with a concrete monad like 'Sem', the return type of 'atomic' is fixed
+-- When @fileBuffers@ is then used at a call site with a concrete monad like 'Sem', the return type of 'atomic' is fixed
 -- to that and the monadic sequence in the 'RpcCall' is passed to 'sync' by the instance of 'MonadRpc' for 'Sem'.
 --
--- When 'fileBuffers' is used at a call site with polymorphic monad, instantiation is deferred until that function itself
+-- When @fileBuffers@ is used at a call site with polymorphic monad, instantiation is deferred until that function itself
 -- is used with 'Sem' (or concrete 'RpcCall').
 -- Therefore, that polymorphic call site could again call 'atomic' to pull more requests into the potential atomic calls.
 --
--- The body of 'fileBuffers' produces two atomic calls that are in turn sequenced monadically.
+-- The body of @fileBuffers@ produces two atomic calls that are in turn sequenced monadically.
 --
 -- The first line batches @nvim_call_function "getcwd"@ and @nvim_get_buffers@ together.
 -- Since @buffers@ is used in the next line, the sequence is monad, so the second line cannot be included in the first

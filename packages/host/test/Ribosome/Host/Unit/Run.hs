@@ -1,13 +1,7 @@
 module Ribosome.Host.Unit.Run where
 
 import qualified Chronos
-import Conc (
-  Gates,
-  interpretGates,
-  interpretMaskFinal,
-  interpretRace,
-  interpretUninterruptibleMaskFinal,
-  )
+import Conc (Gates, interpretGates, interpretMaskFinal, interpretRace, interpretUninterruptibleMaskFinal)
 import Hedgehog.Internal.Property (Failure)
 import Log (Severity (Trace), interpretLogStderrConc)
 import Polysemy.Chronos (ChronosTime, interpretTimeChronos)
@@ -59,7 +53,7 @@ runUnitTest ::
   UnitTest
 runUnitTest =
   runTestAuto .
-  mapError (TestError . unBootError) .
+  mapError (TestError . (.unBootError)) .
   asyncToIOFinal .
   interpretRace .
   interpretGates .

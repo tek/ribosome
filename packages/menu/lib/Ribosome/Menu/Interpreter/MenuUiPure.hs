@@ -1,17 +1,13 @@
 module Ribosome.Menu.Interpreter.MenuUiPure where
 
-import Conc (Gate, interpretAtomic, interpretGate, interpretScopedR_, subscribeWhile, withAsync_)
+import Conc (Gate, interpretAtomic, interpretGate, subscribeWhile, withAsync_)
 import Polysemy.Chronos (ChronosTime)
 import Polysemy.Conc.Gate (gate, signal)
 import qualified Time
 import Time (MilliSeconds (MilliSeconds))
 
 import Ribosome.Menu.Data.MenuEvent (MenuEvent (Exhausted))
-import Ribosome.Menu.Effect.MenuUi (
-  MenuUi (PromptEvent, Render, RenderPrompt),
-  PureMenu (PureMenu),
-  ScopedMenuUi,
-  )
+import Ribosome.Menu.Effect.MenuUi (MenuUi (PromptEvent, Render, RenderPrompt), PureMenu (PureMenu), ScopedMenuUi)
 import qualified Ribosome.Menu.Prompt.Data.PromptEvent as PromptEvent
 import Ribosome.Menu.Prompt.Data.PromptEvent (PromptEvent)
 

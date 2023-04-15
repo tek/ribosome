@@ -23,11 +23,11 @@ class MsgpackArray a where
 
 instance MsgpackArray (Acc -> [Object]) where
   msgpackArray =
-    toList . unAcc
+    toList . (.unAcc)
 
 instance MsgpackArray (Acc -> Object) where
   msgpackArray =
-    toMsgpack . unAcc
+    toMsgpack . (.unAcc)
 
 instance MsgpackArray (a -> a) where
   msgpackArray =

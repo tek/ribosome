@@ -1,20 +1,29 @@
 cabal-version: 2.2
 
--- This file has been generated from package.yaml by hpack version 0.34.7.
+-- This file has been generated from package.yaml by hpack version 0.35.0.
 --
 -- see: https://github.com/sol/hpack
 
 name:           ribosome-host-test
 version:        0.9.9.9
-synopsis:       Test tools for Ribosome
+synopsis:       Test tools for ribosome-host
 description:    See https://hackage.haskell.org/package/ribosome-host-test/docs/Ribosome-Host-Test.html
 category:       Neovim
+homepage:       https://github.com/tek/ribosome#readme
+bug-reports:    https://github.com/tek/ribosome/issues
 author:         Torsten Schmits
 maintainer:     hackage@tryp.io
-copyright:      2022 Torsten Schmits
+copyright:      2023 Torsten Schmits
 license:        BSD-2-Clause-Patent
 license-file:   LICENSE
 build-type:     Simple
+extra-source-files:
+    readme.md
+    changelog.md
+
+source-repository head
+  type: git
+  location: https://github.com/tek/ribosome
 
 library
   exposed-modules:
@@ -23,82 +32,53 @@ library
   hs-source-dirs:
       lib
   default-extensions:
-      StandaloneKindSignatures
-      OverloadedLabels
       AllowAmbiguousTypes
       ApplicativeDo
-      BangPatterns
-      BinaryLiterals
       BlockArguments
-      ConstraintKinds
       DataKinds
       DefaultSignatures
       DeriveAnyClass
-      DeriveDataTypeable
-      DeriveFoldable
-      DeriveFunctor
-      DeriveGeneric
-      DeriveLift
-      DeriveTraversable
       DerivingStrategies
       DerivingVia
       DisambiguateRecordFields
-      DoAndIfThenElse
       DuplicateRecordFields
-      EmptyCase
-      EmptyDataDecls
-      ExistentialQuantification
-      FlexibleContexts
-      FlexibleInstances
       FunctionalDependencies
       GADTs
-      GeneralizedNewtypeDeriving
-      InstanceSigs
-      KindSignatures
       LambdaCase
       LiberalTypeSynonyms
-      MultiParamTypeClasses
       MultiWayIf
-      NamedFieldPuns
       OverloadedLabels
       OverloadedLists
       OverloadedStrings
       PackageImports
       PartialTypeSignatures
-      PatternGuards
       PatternSynonyms
-      PolyKinds
       QuantifiedConstraints
       QuasiQuotes
-      RankNTypes
       RecordWildCards
       RecursiveDo
       RoleAnnotations
-      ScopedTypeVariables
-      StandaloneDeriving
       TemplateHaskell
-      TupleSections
-      TypeApplications
       TypeFamilies
       TypeFamilyDependencies
-      TypeOperators
-      TypeSynonymInstances
       UndecidableInstances
       UnicodeSyntax
       ViewPatterns
-  ghc-options: -Wall -Wredundant-constraints -Wincomplete-uni-patterns -Wmissing-deriving-strategies -Widentities -Wunused-packages -fplugin=Polysemy.Plugin
+      OverloadedRecordDot
+      NoFieldSelectors
+  ghc-options: -Wall -Widentities -Wincomplete-uni-patterns -Wmissing-deriving-strategies -Wredundant-constraints -Wunused-type-patterns -Wunused-packages -fplugin=Polysemy.Plugin
   build-depends:
-      base >=4.12 && <5
+      base ==4.*
     , chronos
     , hedgehog
     , polysemy
     , polysemy-chronos
     , polysemy-plugin
     , polysemy-test
-    , prelate >=0.1
+    , prelate >=0.5.1 && <0.6
     , ribosome-host
   mixins:
       base hiding (Prelude)
     , prelate (Prelate as Prelude)
     , prelate hiding (Prelate)
-  default-language: Haskell2010
+  default-language: GHC2021

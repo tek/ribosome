@@ -1,6 +1,6 @@
 module Ribosome.Menu.Test.Menu where
 
-import Conc (Consume, consumeFind, interpretQueueTBM, interpretScopedR_, resultToMaybe)
+import Conc (Consume, consumeFind, interpretQueueTBM, resultToMaybe)
 import Exon (exon)
 import Hedgehog.Internal.Property (Failure)
 import Polysemy.Chronos (ChronosTime, interpretTimeChronos)
@@ -20,6 +20,7 @@ import Ribosome.Menu.Data.FilterMode (FilterMode)
 import qualified Ribosome.Menu.Data.MenuEvent as MenuEvent
 import Ribosome.Menu.Data.MenuEvent (MenuEvent)
 import qualified Ribosome.Menu.Data.MenuItem as MenuItem
+import qualified Ribosome.Menu.Data.RenderMenu
 import Ribosome.Menu.Data.State (Modal, modal)
 import Ribosome.Menu.Effect.Menu (Menu, Menus, UiMenus, bundleMenuEngine)
 import Ribosome.Menu.Effect.MenuFilter (MenuFilter)
@@ -45,7 +46,7 @@ enqueueItems ::
 enqueueItems =
   interpretScopedR_ (const unit) \ () -> \case
     MenuUi.Render menu ->
-      evalMaybe . resultToMaybe =<< Queue.writeTimeout (Seconds 5) (MenuItem.text . Entry.item <$> menu ^. #entries . to sortEntries)
+      evalMaybe . resultToMaybe =<< Queue.writeTimeout (Seconds 5) ((.text) . (.item) <$> menu.entries ^. to sortEntries)
     MenuUi.RenderPrompt _ _ ->
       unit
     MenuUi.PromptEvent ->

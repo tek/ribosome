@@ -1,6 +1,5 @@
 module Ribosome.Menu.Loop where
 
-import Conc (rescope)
 import Control.Monad.Extra (loopM)
 import qualified Data.Map.Strict as Map
 import Exon (exon)
@@ -117,7 +116,7 @@ lookupMapping mappings i =
   Map.lookup i byLhs
   where
     byLhs =
-      Map.mapKeys Mapping.lhs mappings
+      Map.mapKeys (.lhs) mappings
 
 menuLoop' ::
   ∀ s result r .
@@ -211,7 +210,7 @@ menu ::
   Mappings s r result ->
   Sem r (MenuResult result)
 menu items initial ui =
-  restop .
+  restop @RpcError .
   runMenuUi' items initial .
   raiseUnder .
   scoped ui .

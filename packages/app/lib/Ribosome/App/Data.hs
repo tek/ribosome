@@ -4,12 +4,12 @@ import Path (Abs, Dir, Path, Rel)
 
 newtype ProjectName =
   ProjectName { unProjectName :: Text }
-  deriving stock (Eq, Show)
+  deriving stock (Eq, Show, Generic)
   deriving newtype (IsString, Ord)
 
 newtype ModuleName =
   ModuleName { unModuleName :: Text }
-  deriving stock (Eq, Show)
+  deriving stock (Eq, Show, Generic)
   deriving newtype (IsString, Ord)
 
 data ProjectNames =
@@ -23,27 +23,27 @@ data ProjectNames =
 
 newtype GithubOrg =
   GithubOrg { unGithubOrg :: Text }
-  deriving stock (Eq, Show)
+  deriving stock (Eq, Show, Generic)
   deriving newtype (IsString, Ord)
 
 newtype GithubRepo =
   GithubRepo { unGithubRepo :: Text }
-  deriving stock (Eq, Show)
+  deriving stock (Eq, Show, Generic)
   deriving newtype (IsString, Ord)
 
 newtype CachixName =
   CachixName { unCachixName :: Text }
-  deriving stock (Eq, Show)
+  deriving stock (Eq, Show, Generic)
   deriving newtype (IsString, Ord)
 
 newtype CachixKey =
   CachixKey { unCachixKey :: Text }
-  deriving stock (Eq, Show)
+  deriving stock (Eq, Show, Generic)
   deriving newtype (IsString, Ord)
 
 newtype SkipCachix =
   SkipCachix { unSkipCachix :: Bool }
-  deriving stock (Eq, Show)
+  deriving stock (Eq, Show, Generic)
 
 instance Default SkipCachix where
   def =
@@ -51,32 +51,32 @@ instance Default SkipCachix where
 
 newtype FlakeUrl =
   FlakeUrl { unFlakeUrl :: Text }
-  deriving stock (Eq, Show)
+  deriving stock (Eq, Show, Generic)
   deriving newtype (IsString, Ord)
 
 newtype Branch =
   Branch { unBranch :: Text }
-  deriving stock (Eq, Show)
+  deriving stock (Eq, Show, Generic)
   deriving newtype (IsString, Ord)
 
 newtype Author =
   Author { unAuthor :: Text }
-  deriving stock (Eq, Show)
+  deriving stock (Eq, Show, Generic)
   deriving newtype (IsString, Ord)
 
 newtype Maintainer =
   Maintainer { unMaintainer :: Text }
-  deriving stock (Eq, Show)
+  deriving stock (Eq, Show, Generic)
   deriving newtype (IsString, Ord)
 
 newtype Year =
   Year { unYear :: Int }
-  deriving stock (Eq, Show)
+  deriving stock (Eq, Show, Generic)
   deriving newtype (Num, Real, Enum, Integral, Ord)
 
 newtype PrintDir =
   PrintDir { unPrintDir :: Bool }
-  deriving stock (Eq, Show)
+  deriving stock (Eq, Show, Generic)
 
 instance Default PrintDir where
   def =

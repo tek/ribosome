@@ -85,7 +85,7 @@ matchRegex query =
 matchFuzzy :: Bool -> String -> Matcher i
 -- |If the query is empty, score shorter strings higher.
 matchFuzzy False "" _ e =
-  Just (-(Text.length (MenuItem.text (e ^. #item))), e)
+  Just (-(Text.length e.item.text), e)
 matchFuzzy True "" _ e =
   Just (0, e)
 matchFuzzy _ query ex (Entry item@(ex -> Just seg) index sel) = do

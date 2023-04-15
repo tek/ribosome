@@ -42,7 +42,7 @@ mappingCmdWith call (ChannelId cid) (Mapping action (MappingSpec (MappingLhs lhs
       MappingEvent (EventName name) ->
         [exon|call rpcnotify(#{show cid}, '#{name}'#{foldMap idArg ident})|]
     i =
-      foldMap unMappingId ident
+      foldMap (.unMappingId) ident
     idArg = \case
       MappingId mi -> [exon|, '#{mi}'|]
 

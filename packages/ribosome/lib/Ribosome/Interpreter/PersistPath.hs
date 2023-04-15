@@ -82,5 +82,5 @@ interpretPersistPath ::
   InterpreterFor (PersistPath !! PersistPathError) r
 interpretPersistPath create sem = do
   xdg <- xdgCache
-  name <- note "plugin name not suitable for file system paths" . parseRelDir . toString . unPluginName =<< pluginName
+  name <- note "plugin name not suitable for file system paths" . parseRelDir . toString . (.unPluginName) =<< pluginName
   interpretPersistPathSetting create xdg name sem

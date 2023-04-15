@@ -25,7 +25,7 @@ import Ribosome.Menu.Data.State (MenuQuery (MenuQuery))
 import Ribosome.Menu.Effect.MenuFilter (FilterJob (Initial, Refine), MenuFilter, menuFilter)
 import Ribosome.Menu.Lens (use, (%=), (+=), (.=))
 import qualified Ribosome.Menu.Prompt.Data.Prompt as Prompt
-import Ribosome.Menu.Prompt.Data.Prompt (PromptChange, PromptText (PromptText), unPromptText)
+import Ribosome.Menu.Prompt.Data.Prompt (PromptChange, PromptText (PromptText))
 
 refilter ::
   MenuState s =>
@@ -142,7 +142,7 @@ updateQuery ::
   Sem r (Maybe QueryEvent)
 updateQuery = \case
   Just prompt -> do
-    Log.debug [exon|query update: #{unPromptText prompt}|]
+    Log.debug [exon|query update: ##{prompt}|]
     change <- use (MenuState.query . to (diffPrompt prompt))
     promptItemUpdate change prompt
   Nothing -> do

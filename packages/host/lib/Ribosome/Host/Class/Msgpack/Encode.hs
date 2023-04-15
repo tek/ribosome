@@ -19,8 +19,8 @@ import Time (
   Seconds (unSeconds),
   )
 
-import Ribosome.Host.Class.Msgpack.Util (ConstructSOP, ValidUtf8, encodeString, unValidUtf8)
 import Ribosome.Host.Class.Msgpack.Error (DecodeError, FieldError)
+import Ribosome.Host.Class.Msgpack.Util (ConstructSOP, ValidUtf8, encodeString, unValidUtf8)
 
 class EncodeRecord (fields :: [FieldInfo]) (as :: [Type]) where
   encodeRecord :: NP I as -> [(Object, Object)]
@@ -150,7 +150,7 @@ instance MsgpackEncode Text where
 
 instance MsgpackEncode ValidUtf8 where
   toMsgpack =
-    toMsgpack . unValidUtf8
+    toMsgpack . (.unValidUtf8)
 
 instance MsgpackEncode a => MsgpackEncode (Maybe a) where
   toMsgpack =

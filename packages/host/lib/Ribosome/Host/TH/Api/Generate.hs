@@ -77,7 +77,7 @@ functionData (RpcDecl name parameters _ _ _ returnType) = do
 
 genExtTypes :: Map ExtType ExtTypeMeta -> (Name -> ExtTypeMeta -> DecsQ) -> Q [[Dec]]
 genExtTypes types gen =
-  traverse (uncurry gen) (first (mkName . unExtType) <$> Map.toList types)
+  traverse (uncurry gen) (first (mkName . (.unExtType)) <$> Map.toList types)
 
 generateFromApi :: (MethodSpec -> Q [Dec]) -> Maybe (Name -> ExtTypeMeta -> DecsQ) -> Q [Dec]
 generateFromApi handleFunction handleExtType = do

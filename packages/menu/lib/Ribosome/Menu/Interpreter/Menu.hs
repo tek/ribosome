@@ -1,15 +1,6 @@
 module Ribosome.Menu.Interpreter.Menu where
 
-import Conc (
-  Gate,
-  Gates,
-  interpretEventsChan,
-  interpretGates,
-  interpretQueueTBM,
-  interpretScopedResumableWithH,
-  interpretSync,
-  withAsync_,
-  )
+import Conc (Gate, Gates, interpretEventsChan, interpretGates, interpretQueueTBM, interpretSync, withAsync_)
 import Exon (exon)
 import Lens.Micro.Mtl (view)
 import qualified Log
@@ -143,7 +134,7 @@ menuStream items = do
       RenderEvent "new items" <$ publish Inserted
     update p = do
       Log.debug "menu: schedule query update"
-      msState (queryEvent (Prompt.text <$> p))
+      msState (queryEvent ((.text) <$> p))
       RenderEvent "query update" <$ Sync.putTry MenuSync
 
 sendPrompt ::
@@ -247,7 +238,7 @@ interpretMenus =
         Menu.UseCursor f ->
           muse (mstateT f)
         Menu.ReadState ->
-          pureT . unMS =<< mread
+          pureT . (.unMS) =<< mread
         Menu.UseState f -> do
           (a, promptChange) <- muse $ viaMS \ s -> do
             (newS, a) <- mstateT f s

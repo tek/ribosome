@@ -4,10 +4,9 @@ module Ribosome.Host.Data.RpcHandler where
 
 import Data.MessagePack (Object)
 import Exon (exon)
-import Text.Show (showParen, showsPrec)
 
 import Ribosome.Host.Data.Execution (Execution)
-import Ribosome.Host.Data.Report (Report, resumeReport, Report)
+import Ribosome.Host.Data.Report (Report, resumeReport)
 import Ribosome.Host.Data.Request (RpcMethod (RpcMethod))
 import Ribosome.Host.Data.RpcError (RpcError)
 import Ribosome.Host.Data.RpcName (RpcName (RpcName))

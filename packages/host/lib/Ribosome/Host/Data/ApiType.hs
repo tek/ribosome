@@ -5,16 +5,14 @@ import Exon (exon)
 import qualified FlatParse.Basic as FlatParse
 import FlatParse.Basic (
   Result (Err, Fail, OK),
+  anyAsciiDecimalInt,
   branch,
   char,
   inSpan,
   isLatinLetter,
-  many_,
   optional,
-  readInt,
   runParser,
   satisfy,
-  satisfyASCII,
   string,
   switch,
   takeRest,
@@ -22,7 +20,6 @@ import FlatParse.Basic (
   (<|>),
   )
 import Prelude hiding (optional, some, span, try, (<|>))
-import Text.Show (showsPrec)
 
 import Ribosome.Host.Class.Msgpack.Decode (MsgpackDecode (fromMsgpack))
 import Ribosome.Host.Class.Msgpack.Error (DecodeError, decodeError)
@@ -68,11 +65,11 @@ type Parser =
 
 ws :: Parser ()
 ws =
-  many_ (satisfy isSpace)
+  void (FlatParse.many (satisfy isSpace))
 
 span :: Parser () -> Parser String
 span seek =
-  withSpan seek \ _ sp -> inSpan sp takeRest
+  withSpan seek \ _ sp -> inSpan sp (decodeUtf8 <$> takeRest)
 
 prim :: Parser ApiPrim
 prim =
@@ -94,7 +91,7 @@ typedArray = do
   arity <- optional do
     $(char ',')
     ws
-    readInt
+    anyAsciiDecimalInt
   pure (Array t arity)
 
 array :: Parser ApiType
@@ -104,7 +101,7 @@ array = do
 
 ext :: Parser ApiType
 ext =
-  Ext <$> span (many_ (satisfyASCII isLatinLetter))
+  Ext <$> span (void (many (satisfy isLatinLetter)))
 
 apiType :: Parser ApiType
 apiType =

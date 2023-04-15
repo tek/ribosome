@@ -1,6 +1,6 @@
 module Ribosome.Menu.Interpreter.MenuUi where
 
-import Conc (Consume, interpretScopedR_)
+import Conc (Consume)
 
 import qualified Ribosome.Menu.Effect.MenuUi as MenuUi
 import Ribosome.Menu.Effect.MenuUi (MenuUi (PromptEvent, Render, RenderPrompt), ScopedMenuUi)

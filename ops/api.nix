@@ -1,11 +1,6 @@
 self: { config, lib, ... }:
 with lib;
-let
-  overrides = { self, hsLib, ... }: {
-    static = hsLib.justStaticExecutables self.${config.exe};
-  };
-
-in {
+{
   options = with types; {
 
     exe = mkOption {
@@ -60,8 +55,8 @@ in {
 
     githubRepo = mkDefault config.exe;
 
-    extraOverrides = {
-      all = [overrides];
+    overrides = { self, hsLib, ... }: {
+      static = hsLib.justStaticExecutables self.${config.exe};
     };
 
     output.extraPackages = ["static"];

@@ -187,19 +187,16 @@ updateMenu scratch =
     (visible, changed) <- updateMenuState (fromMaybe 30 (scratch ^. #options . #maxSize))
     when changed do
       void (Scratch.update (scratch ^. #id) (reverse (toList (withMark <$> visible))))
-    windowExec win "call winrestview({'topline': 1})"
+    windowExec scratch.window "call winrestview({'topline': 1})"
     targetLine <- windowLine
-    setLine win targetLine !>> Log.debug "menu cursor line invalid"
-  where
-    win =
-      window scratch
+    setLine scratch.window targetLine !>> Log.debug "menu cursor line invalid"
 
 updateStatus ::
   Members [Reader (RenderMenu i), Scratch !! RpcError, Rpc, Stop RpcError] r =>
   ScratchState ->
   Sem r ()
 updateStatus scr = do
-  width <- windowGetWidth (scr ^. #window)
+  width <- windowGetWidth scr.window
   view #status >>= \ MenuStatus {filter = f, middle, ..} -> do
     let
       builtinSegmentsSize =
@@ -239,9 +236,9 @@ renderNvimMenu ::
   Sem r ()
 renderNvimMenu itemsScratch statusScratch =
   restop @_ @Rpc $ restop @_ @Scratch do
-    whenM (nvimBufIsLoaded (buffer itemsScratch)) do
+    whenM (nvimBufIsLoaded itemsScratch.buffer) do
       updateMenu itemsScratch
       for_ statusScratch \ s ->
-        whenM (nvimBufIsLoaded (s ^. #buffer)) do
+        whenM (nvimBufIsLoaded (s.buffer)) do
           updateStatus s
       redraw

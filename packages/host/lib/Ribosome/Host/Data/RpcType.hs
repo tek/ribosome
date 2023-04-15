@@ -5,7 +5,7 @@ import Exon (exon)
 
 import Ribosome.Host.Class.Msgpack.Decode (MsgpackDecode)
 import Ribosome.Host.Class.Msgpack.Encode (MsgpackEncode)
-import Ribosome.Host.Data.RpcName (RpcName (RpcName), unRpcName)
+import Ribosome.Host.Data.RpcName (RpcName (RpcName))
 
 -- |A set of autocmd event specifiers, like @BufEnter@, used to create and trigger autocmds.
 newtype AutocmdEvents =
@@ -103,9 +103,9 @@ completionValue = \case
   CompleteBuiltin completer ->
     completer
   CompleteHandler CompleteFiltered func ->
-    [exon|customlist,#{unRpcName (completionName func)}|]
+    [exon|customlist,##{completionName func}|]
   CompleteHandler CompleteUnfiltered func ->
-    [exon|custom,#{unRpcName (completionName func)}|]
+    [exon|custom,##{completionName func}|]
 
 -- |Render a 'CommandCompletion' as the @-complete=@ option for a command definition.
 completionOption :: CommandCompletion -> Text

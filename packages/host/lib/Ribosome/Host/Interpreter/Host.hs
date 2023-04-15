@@ -52,7 +52,7 @@ handlerReport ::
   Report ->
   Sem r ()
 handlerReport notification (RpcMethod method) r =
-  dataLog (LogReport r (notification || severity r < Error) (severity r >= Warn) (fromText method))
+  dataLog (LogReport r (notification || r.severity < Error) (r.severity >= Warn) (fromText method))
 
 handle ::
   Members [Handlers !! Report, Rpc !! RpcError, DataLog LogReport, Log, Final IO] r =>

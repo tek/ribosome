@@ -126,7 +126,7 @@ execMulti ::
 execMulti =
   menuState do
     selection <- use selected'
-    menuSuccess (fmap MenuItem.text <$> selection)
+    menuSuccess (fmap (.text) <$> selection)
 
 test_menuMultiMark :: UnitTest
 test_menuMultiMark = do
@@ -218,7 +218,7 @@ execToggle ::
 execToggle =
   menuState do
     use selectedOnly >>= maybe menuQuit \ selection ->
-      menuSuccess (MenuItem.text <$> selection)
+      menuSuccess ((.text) <$> selection)
 
 test_menuToggle :: UnitTest
 test_menuToggle = do
@@ -255,9 +255,9 @@ testItems =
 test_menuDeleteSelected :: UnitTest
 test_menuDeleteSelected = do
   runTestAuto do
-    targetSel === IntMap.elems (MenuItem.text <$> updatedSel ^. #state . #core . #items)
+    targetSel === IntMap.elems ((.text) <$> updatedSel ^. #state . #core . #items)
     2 === updatedSel ^. #cursor
-    targetFoc === IntMap.elems (MenuItem.text <$> updatedFoc ^. #state . #core . #items)
+    targetFoc === IntMap.elems ((.text) <$> updatedFoc ^. #state . #core . #items)
     (([0], [9]), 9) === second (length . sortEntries) (popSelection 0 unselectedEntries)
     75000 === length (sortEntries (snd (popSelection manyCursor manyEntries)))
     (([30000], [70000]), 100000) === second (length . sortEntries) (popSelection manyCursor manyUnselectedEntries)
@@ -296,7 +296,7 @@ test_menuDeleteSelected = do
 test_menuUnselectedCursor :: UnitTest
 test_menuUnselectedCursor =
   runTestAuto do
-    [2, 4] === (MenuItem.meta <$> MTL.evalState (Lens.use unselected) menu)
+    [2, 4] === ((.meta) <$> MTL.evalState (Lens.use unselected) menu)
   where
     menu =
       WithCursor (Modal (Core mempty entries 0 0 mempty) mempty Fuzzy) 1

@@ -36,4 +36,4 @@ instance Default HostConfig where
 -- |Set the stderr level on a 'HostConfig'.
 setStderr :: Severity -> HostConfig -> HostConfig
 setStderr l c =
-  c { hostLog = (hostLog c) { logLevelStderr = l } }
+  c { hostLog = c.hostLog { logLevelStderr = l } }

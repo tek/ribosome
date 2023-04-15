@@ -3,22 +3,11 @@ module Ribosome.App.Templates where
 import Exon (exon)
 import Path (reldir, relfile)
 
-import Ribosome.App.Data (
-  Author,
-  Branch,
-  Cachix,
-  FlakeUrl,
-  Github,
-  Maintainer,
-  ProjectName,
-  ProjectNames (..),
-  Year,
-  )
+import Ribosome.App.Data (Author, Branch, Cachix, FlakeUrl, Github, Maintainer, ProjectName, ProjectNames (..))
 import Ribosome.App.Data.TemplateTree (TemplateTree (TDir, TFile))
 import Ribosome.App.Templates.Boot (vimBoot)
 import Ribosome.App.Templates.Flake (flakeNix)
 import Ribosome.App.Templates.GithubActions (gaLatest, gaTags)
-import Ribosome.App.Templates.Hpack (hpackNix)
 import Ribosome.App.Templates.License (license)
 import Ribosome.App.Templates.MainHs (mainHs)
 import Ribosome.App.Templates.PingTestHs (pingTestHs)
@@ -44,11 +33,10 @@ newProjectTemplates ::
   Branch ->
   Maybe Github ->
   Maybe Cachix ->
-  Year ->
   TemplateTree
-newProjectTemplates ProjectNames {..} flakeUrl author maintainer branch github cachix year =
+newProjectTemplates ProjectNames {..} flakeUrl author maintainer branch github cachix =
   TDir [reldir|.|] [
-    TFile [relfile|flake.nix|] (flakeNix flakeUrl name branch github cachix),
+    TFile [relfile|flake.nix|] (flakeNix flakeUrl name author maintainer branch github cachix),
     TFile [relfile|readme.md|] (readmeMd name github),
     TDir [reldir|packages|] [
       TDir nameDir [
@@ -72,7 +60,6 @@ newProjectTemplates ProjectNames {..} flakeUrl author maintainer branch github c
       ]
     ],
     TDir [reldir|ops|] [
-      TFile [relfile|hpack.nix|] (hpackNix name author maintainer year github),
       TFile [relfile|version.nix|] [exon|"0.1.0.0"|]
     ]
   ]

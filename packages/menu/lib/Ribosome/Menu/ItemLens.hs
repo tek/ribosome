@@ -52,7 +52,7 @@ itemsByEntryIndex ::
   s ->
   Maybe (NonEmpty (MenuItem (Item s)))
 itemsByEntryIndex indexes menu =
-  nonEmpty (Entry.item <$> entriesByIndex indexes menu)
+  nonEmpty ((.item) <$> entriesByIndex indexes menu)
 
 getFocus ::
   MenuState s =>
@@ -72,7 +72,7 @@ selectedItemsOnly ::
   s ->
   Maybe (NonEmpty (MenuItem (Item s)))
 selectedItemsOnly =
-  nonEmpty . fmap Entry.item . view (entries . to (filterEntries (const Entry.selected)))
+  nonEmpty . fmap (.item) . view (entries . to (filterEntries (const (.selected))))
 
 selectedOnly ::
   MenuState s =>
@@ -97,7 +97,7 @@ selected ::
   MenuState s =>
   SimpleGetter (WithCursor s) (Maybe (NonEmpty (Item s)))
 selected =
-  to (fmap (fmap MenuItem.meta) . selectedItems)
+  to (fmap (fmap (.meta)) . selectedItems)
 
 menuItemsByIndexes ::
   MenuState s =>
@@ -115,7 +115,7 @@ unselectedItems ::
   WithCursor s ->
   [MenuItem (Item s)]
 unselectedItems s =
-  Entry.item <$> view (entries . to filterUnselected) s
+  (.item) <$> view (entries . to filterUnselected) s
   where
     filterUnselected =
       uncurry extract .
@@ -124,7 +124,7 @@ unselectedItems s =
     extract ents = \case
       True -> mapMaybe rightToMaybe ents
       False -> either id id <$> ents
-    folder (z, _) _ e | Entry.selected e =
+    folder (z, _) _ e | e.selected =
       (z, True)
     folder (z, foundSelected) i e | i == cursorIndex =
       (Left e : z, foundSelected)

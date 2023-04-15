@@ -3,16 +3,15 @@
 -- |Compute the command options and arguments based on handler function parameters.
 module Ribosome.Host.Handler.Command where
 
-import Type.Errors.Pretty (type (%), type (<>))
+import Data.MessagePack (Object)
 
+import Ribosome.Host.Class.Msgpack.Encode (toMsgpack)
 import Ribosome.Host.Data.Args (ArgList, Args, JsonArgs, Options)
 import Ribosome.Host.Data.Bang (Bang)
 import Ribosome.Host.Data.Bar (Bar)
 import Ribosome.Host.Data.CommandMods (CommandMods)
 import Ribosome.Host.Data.CommandRegister (CommandRegister)
 import Ribosome.Host.Data.Range (Range, RangeStyleOpt (rangeStyleArg, rangeStyleOpt))
-import Data.MessagePack (Object)
-import Ribosome.Host.Class.Msgpack.Encode (toMsgpack)
 
 -- |Represents the value for the command option @-nargs@.
 data ArgCount =

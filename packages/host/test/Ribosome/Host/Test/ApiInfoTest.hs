@@ -33,8 +33,8 @@ test_parseType =
     checkType (Prim LuaRef) "LuaRef"
     assertLeft err (first renderError (parseApiType "Booleans"))
     info <- evalEither =<< embed apiInfo
-    246 === length (functions info)
-    3 === length (types info)
+    251 === length info.functions
+    3 === length info.types
   where
     err =
       "Decoding ApiType: Parsed (Prim Boolean) but got leftovers: s"

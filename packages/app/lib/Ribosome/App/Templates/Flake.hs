@@ -3,6 +3,7 @@ module Ribosome.App.Templates.Flake where
 import Exon (exon)
 
 import Ribosome.App.Data (
+  Author,
   Branch (Branch),
   Cachix (Cachix),
   CachixKey (CachixKey),
@@ -11,6 +12,7 @@ import Ribosome.App.Data (
   Github (Github),
   GithubOrg (GithubOrg),
   GithubRepo (GithubRepo),
+  Maintainer,
   ProjectName (ProjectName),
   )
 
@@ -26,14 +28,23 @@ cachixAttrs (Cachix (CachixName name) (CachixKey key)) =
     cachixName = "#{name}";
     cachixKey = "#{key}";|]
 
+githubField ::
+  Github ->
+  Text
+githubField (Github (GithubOrg org) (GithubRepo repo)) =
+  [exon|
+        github = "#{repo}/#{org}";|]
+
 flakeNix ::
   FlakeUrl ->
   ProjectName ->
+  Author ->
+  Maintainer ->
   Branch ->
   Maybe Github ->
   Maybe Cachix ->
   Text
-flakeNix (FlakeUrl flakeUrl) (ProjectName name) (Branch branch) github cachix =
+flakeNix (FlakeUrl flakeUrl) (ProjectName name) author maintainer (Branch branch) github cachix =
   [exon|{
   description = "A Neovim Plugin";
 
@@ -42,24 +53,70 @@ flakeNix (FlakeUrl flakeUrl) (ProjectName name) (Branch branch) github cachix =
   };
 
   outputs = { ribosome, ... }: ribosome.lib.pro ({ config, lib, ... }: {
-    base = ./.;
-    packages.#{name} = ./packages/#{name};
     main = "#{name}";
+    depsFull = [ribosome];
+    compiler = "ghc925";
+    hackage.versionFile = "ops/version.nix";
+
+    cabal = {
+      license = "BSD-2-Clause-Patent";
+      license-file = "LICENSE";
+      author = "##{author}";
+      meta = {
+        maintainer = "##{maintainer}";
+        category = "Neovim";#{foldMap (githubField) github}
+      };
+      prelude = {
+        enable = true;
+        package = {
+          name = "prelate";
+          version = "^>= 0.5.1";
+        };
+        module = "Prelate";
+      };
+      ghc-options = ["-fplugin=Polysemy.Plugin"];
+      dependencies = ["polysemy" "polysemy-plugin"];
+    };
+
+    packages.#{name} = {
+      src = ./packages/#{name};
+
+      cabal.meta.synopsis = "A Neovim Plugin";
+
+      library = {
+        enable = true;
+        dependencies = [
+          "ribosome"
+          "ribosome-host"
+          "ribosome-menu"
+        ];
+      };
+
+      test = {
+        enable = true;
+        dependencies = [
+          "polysemy-test"
+          "ribosome"
+          "ribosome-host"
+          "ribosome-host-test"
+          "ribosome-test"
+          "tasty"
+        ];
+      };
+
+      executable.enable = true;
+
+    };
+
     exe = "#{name}";
     branch = "#{branch}";#{foldMap githubAttrs github}#{foldMap cachixAttrs cachix}
-    depsFull = [ribosome];
-    devGhc.compiler = "ghc902";
+
     overrides = { buildInputs, pkgs, ... }: {
       #{name} = buildInputs [pkgs.neovim pkgs.tmux pkgs.xterm];
     };
-    hpack.packages = import ./ops/hpack.nix { inherit config lib; };
-    hackage.versionFile = "ops/version.nix";
-    ghcid.shellConfig.buildInputs = with config.pkgs; [pkgs.neovim pkgs.tmux];
-    ghci = {
-      preludePackage = "prelate";
-      preludeModule = "Prelate";
-      args = ["-fplugin=Polysemy.Plugin"];
-    };
+
+    envs.dev.buildInputs = with config.pkgs; [pkgs.neovim pkgs.tmux];
+
   });
 }
 |]

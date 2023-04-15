@@ -39,4 +39,4 @@ test_mods :: UnitTest
 test_mods =
   runTest $ interpretAtomic 0 $ embedNvim handlers do
     nvimCommand "belowright silent lockmarks Mods"
-    assertJust @Text "belowright lockmarks silent" =<< nvimGetVar var
+    assertJust @Text "lockmarks silent belowright" =<< nvimGetVar var

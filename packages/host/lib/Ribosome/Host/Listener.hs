@@ -40,7 +40,7 @@ sendResponse ::
   Response ->
   Sem r ()
 sendResponse i response = do
-  Log.trace [exon|send response: <#{show (unRequestId i)}> #{formatResponse response}|]
+  Log.trace [exon|send response: <#{show i.unRequestId}> #{formatResponse response}|]
   Process.send (RpcMessage.Response (TrackedResponse i response))
   atomicModify' (max i)
   publish ResponseSent
