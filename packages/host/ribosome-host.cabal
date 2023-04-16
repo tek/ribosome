@@ -168,7 +168,6 @@ library
     , prelate >=0.5.1 && <0.6
     , template-haskell
     , text
-    , type-errors-pretty
     , typed-process
   mixins:
       base hiding (Prelude)

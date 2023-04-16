@@ -7,7 +7,8 @@
     chiasma.url = "git+https://git.tryp.io/tek/chiasma";
   };
 
-  outputs = { self, hix, hls, chiasma, ... }: hix.lib.pro ({ config, lib, ...}: {
+  outputs = {self, hix, hls, chiasma, ...}: hix.lib.pro ({config, lib, ...}: let
+  in {
     compiler = "ghc925";
     main = "ribosome-menu";
     depsFull = [chiasma];
@@ -17,44 +18,13 @@
       packages = ["ribosome-host" "ribosome-host-test" "ribosome" "ribosome-test" "ribosome-app"];
     };
 
-    overrides = { hackage, configure, pkgs, buildInputs, jailbreak, notest, unbreak, ... }:
-    let
-      nvimBin = configure "--extra-prog-path=${pkgs.neovim}/bin";
-      inputs = buildInputs [pkgs.neovim pkgs.tmux pkgs.xterm];
-    in {
+    overrides = { hackage, configure, pkgs, jailbreak, notest, unbreak, ... }: {
       criterion = notest;
       fuzzyfind = jailbreak (hackage "3.0.0" "1aba9rxxdi6sv0z6qgwyq87fnqqhncqakvrbph0fvppd0lnajaac");
-      integration = inputs;
-      ribosome = inputs;
-      ribosome-host = nvimBin inputs;
-      ribosome-menu = inputs;
-      ribosome-test = inputs;
       streamly = hackage "0.8.2" "0jhsdd71kqw0k0aszg1qb1l0wbxl1r73hsmkdgch4vlx43snlc8a";
-      type-errors = notest;
-      type-errors-pretty = unbreak (notest jailbreak);
     };
 
-    cabal = {
-      license = "BSD-2-Clause-Patent";
-      license-file = "LICENSE";
-      author = "Torsten Schmits";
-      meta = {
-        maintainer = "hackage@tryp.io";
-        category = "Neovim";
-        github = "tek/ribosome";
-        extra-source-files = ["readme.md" "changelog.md"];
-      };
-      ghc-options = ["-fplugin=Polysemy.Plugin"];
-      prelude = {
-        enable = true;
-        package = {
-          name = "prelate";
-          version = "^>= 0.5.1";
-        };
-        module = "Prelate";
-      };
-      dependencies = ["polysemy" "polysemy-plugin"];
-    };
+    buildInputs = pkgs: [pkgs.neovim pkgs.tmux pkgs.xterm];
 
     packages.ribosome-host = {
       src = ./packages/host;
@@ -81,7 +51,6 @@
           "polysemy-process"
           "template-haskell"
           "text"
-          "type-errors-pretty"
           "typed-process"
         ];
       };
@@ -102,6 +71,8 @@
           "tasty"
         ];
       };
+
+      override = api: api.configure "--extra-prog-path=${api.pkgs.neovim}/bin";
 
     };
 
@@ -324,13 +295,36 @@
 
     };
 
+    cabal = {
+      license = "BSD-2-Clause-Patent";
+      license-file = "LICENSE";
+      author = "Torsten Schmits";
+      meta = {
+        maintainer = "hackage@tryp.io";
+        category = "Neovim";
+        github = "tek/ribosome";
+        extra-source-files = ["readme.md" "changelog.md"];
+      };
+      ghc-options = ["-fplugin=Polysemy.Plugin"];
+      prelude = {
+        enable = true;
+        package = {
+          name = "prelate";
+          version = "^>= 0.5.1";
+        };
+        module = "Prelate";
+      };
+      dependencies = ["polysemy" "polysemy-plugin"];
+    };
+
     envs.dev = {
-      buildInputs = with config.pkgs; [pkgs.neovim pkgs.tmux pkgs.xterm];
+      buildInputs = pkgs: [pkgs.neovim pkgs.tmux pkgs.xterm];
       env = { RIBOSOME_ROOT = builtins.toPath self; };
     };
     envs.hls.hls.package = hls.packages.${config.system}.haskell-language-server-925;
 
     outputs.apps = import ./ops/template-apps.nix { inherit self config lib; };
+
   }) // {
 
     lib = hix.lib.extend (_: super: {
