@@ -30,6 +30,14 @@ repeatUntilNothing ma =
         Just a -> Stream.cons a spin
         Nothing -> Stream.nil
 
+nothingTerminated ::
+  Monad m =>
+  IsStream t =>
+  t m a ->
+  t m (Maybe a)
+nothingTerminated s =
+  Stream.serial (Just <$> s) (Stream.fromPure Nothing)
+
 queueStream ::
   IsStream t =>
   Functor (t IO) =>

@@ -127,7 +127,7 @@ menuLoop' ::
 menuLoop' mappings = do
   Log.debug "Starting prompt loop"
   Menu.startPrompt
-  flip loopM def (menuStep (fmap (insertAt @2) . mappings))
+  loopM (menuStep (fmap (insertAt @2) . mappings)) def
 
 menuLoop ::
   ∀ s result r .

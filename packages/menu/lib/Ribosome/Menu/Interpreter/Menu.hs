@@ -97,19 +97,19 @@ renderEvent (RenderEvent desc) = do
   Log.debug [exon|menu render: #{desc}|]
   MS s <- mread
   c <- mread
-  resuming @_ @MenuUi err do
-    MenuUi.render (RenderMenu.fromState (WithCursor s c))
-    publish Rendered
-  where
-    err e =
-      Log.error [exon|menu render: #{rpcError e}|]
+  resume @_ @MenuUi
+    do
+      MenuUi.render (RenderMenu.fromState (WithCursor s c))
+      publish Rendered
+    do
+      \ e -> Log.error [exon|menu render: #{rpcError e}|]
 
--- |Call the effect that hides the streaming internals by passing all actions to it so they don't need to be lowered
+-- | Call the effect that hides the streaming internals by passing all actions to it so they don't need to be lowered
 -- with 'withStrategicToFinal'.
 --
 -- - @Queue.readMaybe@ pulls 'Prompt' events emitted by 'Menu'.
 --
--- - @queryUpdate@ applies a new query to the current set ostems.
+-- - @update@ applies a new query to the current set of items.
 --
 -- - @insert@ adds new items to the set.
 --
@@ -270,8 +270,8 @@ interpretMenus =
           unitT
         Menu.PromptLooped ->
           pureT =<< publish PromptLoop
-    MenuEngine (Bundle (There (There (There _))) _) ->
-      error "GHC does not understand"
+    MenuEngine (Bundle (There (There (There e))) _) ->
+      case e of
 
 type NvimMenuIO eres =
   [Settings !! SettingError, Rpc !! RpcError, Scratch !! RpcError, EventConsumer Event, Final IO]
