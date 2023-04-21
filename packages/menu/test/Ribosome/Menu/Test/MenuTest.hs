@@ -13,11 +13,11 @@ import Ribosome.Menu.Action (MenuWidget, menuChangeMode, menuQuit, menuSuccess)
 import Ribosome.Menu.Class.MenuState (MenuState)
 import Ribosome.Menu.Combinators (sortEntries, sortedEntries)
 import qualified Ribosome.Menu.Data.Entry as Entry
-import Ribosome.Menu.Data.Entry (Entries, Entry (Entry), simpleIntEntries)
+import Ribosome.Menu.Data.Entry (Entry (Entry), simpleIntEntries)
 import Ribosome.Menu.Data.Filter (Filter (Fuzzy, Prefix, Regex, Substring))
 import Ribosome.Menu.Data.MenuEvent (MenuEvent (Query), QueryEvent (Refined, Reset))
 import qualified Ribosome.Menu.Data.MenuItem as MenuItem
-import Ribosome.Menu.Data.MenuItem (Items, simpleMenuItem)
+import Ribosome.Menu.Data.MenuItem (simpleMenuItem)
 import Ribosome.Menu.Data.MenuResult (MenuResult (Success))
 import Ribosome.Menu.Data.State (Core (Core), Modal (Modal), modal)
 import Ribosome.Menu.Data.WithCursor (WithCursor (WithCursor))
@@ -43,6 +43,7 @@ import Ribosome.Menu.Prompt.Data.PromptConfig (startInsert)
 import Ribosome.Menu.Prompt.Data.PromptEvent (PromptEvent (Mapping, Update))
 import Ribosome.Menu.Prompt.Data.PromptMode (PromptMode (Insert))
 import Ribosome.Menu.Test.Menu (assertItems, awaitCurrent, promptTest, setPrompt)
+import Ribosome.Menu.Test.RefineManyTest (test_refineMany)
 import Ribosome.Menu.Test.Run (unitTestTimes)
 import Ribosome.Test.Error (testError)
 
@@ -230,28 +231,6 @@ test_menuToggle = do
         result
       Success ["abc", "a"] === r
 
-charsExecuteThunk :: [Text]
-charsExecuteThunk =
-  ["<esc>", "<cr>", "k", "<cr>", "<esc>"]
-
-itemsExecuteThunk :: [Text]
-itemsExecuteThunk =
-  [
-    "a",
-    "b"
-  ]
-
-testItems :: (Items (), Entries ())
-testItems =
-  (its, entries)
-  where
-    its =
-      IntMap.fromList ([1..8] <&> \ n -> (n - 1, simpleMenuItem () (show n)))
-    entries =
-      IntMap.singleton 0 (uncurry newEntry . second (simpleMenuItem ()) <$> [(1, "2"), (3, "4"), (5, "6"), (7, "8")])
-    newEntry index item =
-      Entry item index False
-
 test_menuDeleteSelected :: UnitTest
 test_menuDeleteSelected = do
   runTestAuto do
@@ -309,11 +288,10 @@ test_menu =
     unitTestTimes 100 "filter items" test_pureMenuFilter,
     unitTestTimes 100 "execute an action" test_pureMenuExecute,
     unitTestTimes 100 "mark multiple items" test_menuMultiMark,
-    -- TODO flaky
-    -- unitTestTimes 100 "initial filter race" test_initialFilter,
-    -- TODO flaky
-    -- unitTestTimes 3 "change filter" test_changeFilter,
+    unitTestTimes 100 "initial filter race" test_initialFilter,
+    unitTestTimes 3 "change filter" test_changeFilter,
     unitTestTimes 100 "toggle selection items" test_menuToggle,
+    unitTestTimes 3 "refine large number of items" test_refineMany,
     unitTest "delete selected" test_menuDeleteSelected,
     unitTest "unselected items with no selected items" test_menuUnselectedCursor
   ]

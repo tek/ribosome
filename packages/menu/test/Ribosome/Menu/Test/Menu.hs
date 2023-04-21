@@ -164,6 +164,18 @@ assertItems i =
   withFrozenCallStack do
     assertEq i =<< currentItems
 
+-- | Wait until the filtered items satisfy the supplied assertion.
+assertCurrent ::
+  MenuState s =>
+  HasCallStack =>
+  Members [Menu s, Hedgehog IO, ChronosTime, Error Failure, Race, Async, Embed IO] r =>
+  ([Text] -> Sem r a) ->
+  Sem r a
+assertCurrent target =
+  withFrozenCallStack do
+    assertWait currentEntries target
+
+-- | Wait until the filtered items equal the supplied list.
 awaitCurrent ::
   MenuState s =>
   HasCallStack =>
@@ -172,4 +184,4 @@ awaitCurrent ::
   Sem r ()
 awaitCurrent target =
   withFrozenCallStack do
-    assertWait currentEntries (assertEq target)
+    assertCurrent (assertEq target)

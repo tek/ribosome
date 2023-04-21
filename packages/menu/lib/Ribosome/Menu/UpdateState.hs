@@ -63,7 +63,8 @@ historyOr ::
   Sem r (Maybe QueryEvent)
 historyOr noMatch query@(MenuQuery (encodeUtf8 -> queryBs)) = do
   mode <- use MenuState.mode
-  maybe (noMatch query) matching =<< use (history mode . to (`Trie.match` queryBs))
+  hist <- use (history mode)
+  maybe (noMatch query) matching (hist >>= flip Trie.match queryBs)
   where
     matching = \case
       (_, ents, "") -> do

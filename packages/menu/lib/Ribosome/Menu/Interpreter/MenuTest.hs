@@ -73,23 +73,45 @@ data WaitEvent =
   Satisfied Text
   deriving stock (Eq, Show)
 
+data WaitState =
+  WaitState {
+    exhausted :: Bool,
+    events :: [WaitEvent]
+  }
+  deriving stock (Eq, Show, Generic)
+
+pushWaitEvent ::
+  Member (AtomicState WaitState) r =>
+  WaitEvent ->
+  Sem r ()
+pushWaitEvent e =
+  atomicModify' (#events %~ (e :))
+
+consumeMenuEvent ::
+  Members [Consume MenuEvent, AtomicState WaitState] r =>
+  Sem r MenuEvent
+consumeMenuEvent =
+  consume >>= tap \case
+    MenuEvent.Exhausted -> atomicModify (#exhausted .~ True)
+    _ -> unit
+
 waitEventPredM ::
-  Members [Reader TestTimeout, Consume MenuEvent, AtomicState [WaitEvent], Fail, Race] r =>
+  Members [Reader TestTimeout, Consume MenuEvent, AtomicState WaitState, Fail, Race] r =>
   Text ->
   (MenuEvent -> Sem r Bool) ->
   Sem r ()
 waitEventPredM desc match = do
-  atomicModify (Requested desc :)
+  pushWaitEvent (Requested desc)
   failTimeout [exon|MenuEvent not published: #{desc}|] spin
-  atomicModify (Satisfied desc :)
+  pushWaitEvent (Satisfied desc)
   where
     spin = do
-      e <- consume
-      atomicModify' (Received e :)
+      e <- consumeMenuEvent
+      pushWaitEvent (Received e)
       unlessM (match e) spin
 
 waitEventPred ::
-  Members [Reader TestTimeout, Consume MenuEvent, AtomicState [WaitEvent], Fail, Race] r =>
+  Members [Reader TestTimeout, Consume MenuEvent, AtomicState WaitState, Fail, Race] r =>
   Text ->
   (MenuEvent -> Bool) ->
   Sem r ()
@@ -97,7 +119,7 @@ waitEventPred desc match =
   waitEventPredM desc (pure . match)
 
 waitEvent ::
-  Members [Reader TestTimeout, Consume MenuEvent, AtomicState [WaitEvent], Fail, Race] r =>
+  Members [Reader TestTimeout, Consume MenuEvent, AtomicState WaitState, Fail, Race] r =>
   Text ->
   MenuEvent ->
   Sem r ()
@@ -105,7 +127,7 @@ waitEvent desc target =
   waitEventPred [exon|#{desc} (#{show target})|] (target ==)
 
 waitEvents ::
-  Members [Reader TestTimeout, Consume MenuEvent, AtomicState [WaitEvent], Fail, Race] r =>
+  Members [Reader TestTimeout, Consume MenuEvent, AtomicState WaitState, Fail, Race] r =>
   Text ->
   Set MenuEvent ->
   Sem r ()
@@ -115,11 +137,12 @@ waitEvents desc targets =
     gets Set.null
 
 waitItemsDone ::
-  Members [Reader TestTimeout, Consume MenuEvent, AtomicState [WaitEvent], Fail, Race] r =>
+  Members [Reader TestTimeout, Consume MenuEvent, AtomicState WaitState, Fail, Race] r =>
   Text ->
   Sem r ()
 waitItemsDone desc =
-  waitEvents desc [Exhausted, Rendered]
+  unlessM (atomicView #exhausted) do
+    waitEvents desc [Exhausted, Rendered]
 
 updatePrompt ::
   Member (AtomicState Prompt) r =>
@@ -132,7 +155,7 @@ updatePrompt = \case
     pure False
 
 waitPromptUpdate ::
-  Members [Reader TestTimeout, Consume MenuEvent, AtomicState [WaitEvent], Fail, Race] r =>
+  Members [Reader TestTimeout, Consume MenuEvent, AtomicState WaitState, Fail, Race] r =>
   Text ->
   Sem r ()
 waitPromptUpdate desc =
@@ -147,7 +170,7 @@ nextEvent =
   failTimeout "next event" consume
 
 sendPromptEvent ::
-  Members [Reader TestTimeout, Consume MenuEvent, Queue PromptEvent, AtomicState Prompt, AtomicState [WaitEvent], Fail, Race] r =>
+  Members [Reader TestTimeout, Consume MenuEvent, Queue PromptEvent, AtomicState Prompt, AtomicState WaitState, Fail, Race] r =>
   Bool ->
   PromptEvent ->
   Sem r ()
@@ -170,7 +193,7 @@ interpretMenuTestQueuesWith ::
   ∀ i a r .
   Show i =>
   Members [Queue PromptEvent, Queue (MenuItem i), Sync (MenuResult a), Reader TestTimeout, Fail] r =>
-  Members [AtomicState Prompt, AtomicState [WaitEvent], Consume MenuEvent, Race, Log] r =>
+  Members [AtomicState Prompt, AtomicState WaitState, Consume MenuEvent, Race, Log] r =>
   InterpreterFor (MenuTest i a) r
 interpretMenuTestQueuesWith =
   withPromptInit .
@@ -200,7 +223,7 @@ interpretMenuTestQueuesWith =
 interpretMenuTestQueues ::
   ∀ i a r .
   Show i =>
-  Members [EventConsumer MenuEvent, AtomicState Prompt, AtomicState [WaitEvent]] r =>
+  Members [EventConsumer MenuEvent, AtomicState Prompt, AtomicState WaitState] r =>
   Members [Queue PromptEvent, Queue (MenuItem i), Sync (MenuResult a), Reader TestTimeout, Log, Fail, Race] r =>
   PromptConfig ->
   InterpretersFor [MenuTest i a, Consume MenuEvent] r
@@ -217,7 +240,7 @@ type MenuTestResources i result =
     Sync (MenuResult result),
     Reader TestTimeout,
     AtomicState Prompt,
-    AtomicState [WaitEvent],
+    AtomicState WaitState,
     ChronosTime
   ]
 
@@ -229,7 +252,7 @@ interpretMenuTestResources ::
   InterpretersFor (MenuTestResources i a) r
 interpretMenuTestResources timeout pconf =
   interpretTimeChronos .
-  interpretAtomic mempty .
+  interpretAtomic (WaitState False mempty) .
   interpretAtomic (pristinePrompt pconf) .
   runReader (TestTimeout (convert timeout)) .
   interpretSync .

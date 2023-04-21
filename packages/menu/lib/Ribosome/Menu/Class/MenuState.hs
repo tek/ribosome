@@ -10,7 +10,8 @@ import Ribosome.Menu.Data.State (Core, MenuQuery, Modal)
 import Ribosome.Menu.Data.WithCursor (WithCursor)
 
 class (
-    MenuMode (Item s) (Mode s)
+    MenuMode (Item s) (Mode s),
+    Show (Item s)
   ) => MenuState s where
   type Item s :: Type
   type Mode s :: Type
@@ -28,7 +29,8 @@ type Filter s =
   MenuMode.Filter (Mode s)
 
 instance (
-    MenuMode i m
+    MenuMode i m,
+    Show (Item (Modal m i))
   ) => MenuState (Modal m i) where
     type Item (Modal m i) = i
     type Mode (Modal m i) = m
@@ -54,9 +56,9 @@ instance (
 history ::
   MenuState s =>
   Mode s ->
-  Traversal' s (Trie (Entries (Item s)))
+  Traversal' s (Maybe (Trie (Entries (Item s))))
 history m =
-  histories . ix m
+  histories . at m
 
 items ::
   MenuState s =>

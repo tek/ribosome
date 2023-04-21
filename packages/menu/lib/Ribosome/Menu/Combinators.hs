@@ -21,7 +21,7 @@ addHistory "" _ =
   unit
 addHistory (MenuQuery q) ents = do
   m <- use mode
-  history m %= Trie.insert (encodeUtf8 q) ents
+  history m %= Just . Trie.insert (encodeUtf8 q) ents . fromMaybe mempty
 
 updateEntries ::
   MenuState s =>
