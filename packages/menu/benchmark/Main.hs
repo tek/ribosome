@@ -1,7 +1,6 @@
 module Main where
 
 import Conc (
-  Restoration,
   consumeElem,
   interpretEventsChan,
   interpretGate,
@@ -68,10 +67,10 @@ fileList =
   runTest do
     lines <$> Test.fixture [relfile|menu/nixpkgs-files|]
 
--- time                 1.388 s    (1.375 s .. 1.408 s)
---                      1.000 R²   (1.000 R² .. 1.000 R²)
--- mean                 1.415 s    (1.401 s .. 1.426 s)
--- std dev              14.25 ms   (6.179 ms .. 18.78 ms)
+-- time                 6.883 s    (6.869 s .. 6.903 s)
+--                      1.000 R²   (1.000 R² .. NaN R²)
+-- mean                 6.820 s    (6.765 s .. 6.847 s)
+-- std dev              39.57 ms   (3.702 ms .. 50.15 ms)
 -- variance introduced by outliers: 19% (moderately inflated)
 appendBench ::
   ∀ r .
@@ -101,7 +100,7 @@ appendBench files =
       consumeElem (Query Refined)
       Queue.close
       consumeElem Rendered
-      len <- length <$> toListOf (sortedEntries . each . #item . #text) . unMS <$> mread
+      len <- length <$> toListOf (sortedEntries . each . #item . #text) . (.unMS) <$> mread
       if len == 1401
       then unit
       else Base.throw (userError [exon|length is #{show len}|])
@@ -111,10 +110,10 @@ appendBench files =
     publishPrompt i t =
       Queue.write (Just (Prompt i PromptMode.Insert t))
 
--- time                 1.569 s    (1.357 s .. 1.695 s)
---                      0.998 R²   (0.994 R² .. 1.000 R²)
--- mean                 1.464 s    (1.406 s .. 1.503 s)
--- std dev              58.12 ms   (22.92 ms .. 74.51 ms)
+-- time                 6.945 s    (6.448 s .. 7.379 s)
+--                      0.999 R²   (0.998 R² .. 1.000 R²)
+-- mean                 6.877 s    (6.813 s .. 6.977 s)
+-- std dev              95.19 ms   (21.17 ms .. 124.8 ms)
 -- variance introduced by outliers: 19% (moderately inflated)
 menuBench ::
   [Text] ->
