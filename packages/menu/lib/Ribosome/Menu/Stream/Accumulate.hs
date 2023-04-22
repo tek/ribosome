@@ -1,112 +1,97 @@
 module Ribosome.Menu.Stream.Accumulate where
 
-import Control.Exception (finally)
-import Data.Sequence ((|>))
+import Data.Sequence (Seq (Empty, (:<|), (:|>)), (|>))
 import Prelude hiding (consume, finally, output)
-import Streamly.Internal.Data.Fold (Fold)
-import Streamly.Internal.Data.Fold.Step (Step (Done, Partial))
-import Streamly.Internal.Data.Fold.Type (mkFoldM)
 import qualified Streamly.Internal.Data.Stream.IsStream as Stream
-import Streamly.Prelude (IsStream)
+import Streamly.Prelude (IsStream, SerialT)
 
-data CWState r c =
-  CWState {
-    buffer :: Seq c,
-    lock :: MVar ()
+data BusyState =
+  Idle
+  |
+  Busy Int
+  deriving stock (Eq, Show, Generic)
+
+data BusyEnv r a =
+  BusyEnv {
+    buffer :: Seq a,
+    state :: BusyState
   }
 
-newtype Work r =
-  Work { unWork :: IO (Maybe r) }
+nonEmptyBuffer :: Seq a -> a -> NonEmpty a
+nonEmptyBuffer (h :<| t) a =
+  h :| (toList (t |> a))
+nonEmptyBuffer Empty a =
+  pure a
 
-work ::
-  MVar () ->
-  IO (Maybe r) ->
-  Work r
-work mv mr =
-  Work (finally mr (tryPutMVar mv ()))
+emitBuffer ::
+  (NonEmpty a -> IO r) ->
+  Seq a ->
+  a ->
+  SerialT IO r
+emitBuffer handleAcc buffer a =
+  Stream.fromEffect (handleAcc (nonEmptyBuffer buffer a))
 
-extract ::
-  (NonEmpty c -> IO r) ->
-  CWState r c ->
-  (CWState r c, Work r)
-extract consume s@CWState {..} =
-  (s { buffer = mempty }, output (nonEmpty (toList buffer)))
+increment :: BusyEnv r a -> BusyEnv r a
+increment env =
+  env {state = incState env.state}
   where
-    output = \case
-      Just as ->
-        work lock (Just <$> consume as)
-      Nothing ->
-        Work (pure Nothing)
+    incState = \case
+      Idle -> Busy 1
+      Busy n -> Busy (n + 1)
+
+decrement :: BusyEnv r a -> BusyEnv r a
+decrement BusyEnv {..} =
+  BusyEnv {state = incState state, ..}
+  where
+    incState = \case
+      Idle -> Idle
+      Busy 1 -> Idle
+      Busy n -> Busy (n - 1)
+
+bufferedElement ::
+  (NonEmpty a -> IO r) ->
+  a ->
+  BusyEnv r a ->
+  (BusyEnv r a, SerialT IO r)
+bufferedElement handleAcc a = \case
+  BusyEnv {buffer, state = Idle} ->
+    (BusyEnv {buffer = [], state = Busy 1}, emitBuffer handleAcc buffer a)
+  BusyEnv {buffer, state = Busy n} ->
+    (BusyEnv {buffer = buffer |> a, state = Busy n}, Stream.nil)
 
 elemStep ::
-  (NonEmpty c -> IO r) ->
-  CWState r c ->
-  Either c r ->
-  IO (Step (CWState r c) (CWState r c, Work r))
-elemStep consume s@CWState {..} = \case
-    Left c ->
-      accumulate s {buffer = buffer |> c} <$> liftIO (tryTakeMVar lock)
-    Right sk ->
-      pure (Done (s, Work (pure (Just sk))))
-  where
-    accumulate newS = \case
-      Just () ->
-        Done (extract consume newS)
-      Nothing ->
-        Partial newS
+  (NonEmpty a -> IO r) ->
+  (b -> IO r) ->
+  MVar (BusyEnv r a) ->
+  Either a b ->
+  SerialT IO r
+elemStep handleAcc handleReg envVar el =
+  Stream.concatM $ modifyMVar envVar \ env ->
+    case el of
+      Left a ->
+        pure (bufferedElement handleAcc a env)
+      Right b ->
+        pure (increment env, Stream.fromEffect (handleReg b))
 
-chunkWhileFold ::
-  (a -> IO (Either c r)) ->
-  (NonEmpty c -> IO r) ->
-  CWState r c ->
-  Fold IO a (CWState r c, Work r)
-chunkWhileFold classify consume initial =
-  mkFoldM step (pure (Partial initial)) (pure . extract consume)
-  where
-    step s =
-      elemStep consume s <=< classify
+checkBuffer ::
+  (NonEmpty a -> IO r) ->
+  MVar (BusyEnv r a) ->
+  SerialT IO r
+checkBuffer handleAcc envVar =
+  Stream.concatM $ modifyMVar envVar $ pure . \case
+    env | (buf :|> a) <- env.buffer ->
+      (env {buffer = []}, Stream.serial (emitBuffer handleAcc buf a) (checkBuffer handleAcc envVar))
+        | otherwise ->
+          (decrement env, Stream.nil)
 
-chunkWhileIteration ::
-  (a -> IO (Either c r)) ->
-  (NonEmpty c -> IO r) ->
-  (CWState r c, Maybe (Work r)) ->
-  IO (Fold IO a (CWState r c, Maybe (Work r)))
-chunkWhileIteration classify consume (initial, _) =
-  pure (second Just <$> chunkWhileFold classify consume initial)
-
-chunkWhileMain ::
+accLeftBusy ::
   IsStream t =>
-  Functor (t IO) =>
-  (a -> IO (Either c r)) ->
-  (NonEmpty c -> IO r) ->
-  CWState r c ->
-  t IO a ->
-  t IO (Work r)
-chunkWhileMain classify consume initial =
-  Stream.catMaybes .
-  Stream.map snd .
-  Stream.foldIterateM (chunkWhileIteration classify consume) (pure (initial, Nothing))
-
-mapMAcc ::
-  IsStream t =>
-  Functor (t IO) =>
-  (a -> IO (Either c r)) ->
-  (NonEmpty c -> IO r) ->
-  t IO a ->
-  t IO r
-mapMAcc classify consume str =
-  Stream.bracket_ (CWState mempty <$> liftIO (newMVar ())) (const unit) \ initial ->
-    Stream.catMaybes $
-    Stream.concatMapWith Stream.ahead (Stream.fromEffect . (.unWork)) $
-    chunkWhileMain classify consume initial
-    str
-
-mapMAccMaybe ::
-  IsStream t =>
-  Functor (t IO) =>
-  (a -> IO (Maybe r)) ->
-  IO r ->
-  t IO a ->
-  t IO r
-mapMAccMaybe classify consume =
-  mapMAcc (fmap (maybeToRight ()) . classify) (const consume)
+  (NonEmpty a -> IO r) ->
+  (b -> IO r) ->
+  t IO (Either a b) ->
+  SerialT IO r
+accLeftBusy handleAcc handleReg str =
+  Stream.bracket_ (liftIO (newMVar (BusyEnv [] Idle))) (const unit) \ envVar ->
+    Stream.concatMap (\ r -> Stream.serial r (checkBuffer handleAcc envVar)) $
+    Stream.map (elemStep handleAcc handleReg envVar) $
+    Stream.adapt str

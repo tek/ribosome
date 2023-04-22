@@ -4,10 +4,11 @@ import qualified Data.List.NonEmpty as NonEmpty
 import Polysemy.Final (bindS, getInitialStateS, getInspectorS, interpretFinal, runS)
 import qualified Streamly.Data.Fold as Fold
 import qualified Streamly.Internal.Data.Stream.IsStream as Stream
+import Streamly.Prelude (SerialT)
 
 import Ribosome.Menu.Effect.MenuStream (MenuStream (MenuStream))
-import Ribosome.Menu.Stream.Accumulate (mapMAcc)
-import Ribosome.Menu.Stream.Util (repeatUntilNothing, nothingTerminated)
+import Ribosome.Menu.Stream.Accumulate (accLeftBusy)
+import Ribosome.Menu.Stream.Util (nothingTerminated, repeatUntilNothing)
 
 interpretMenuStream ::
   Member (Final IO) r =>
@@ -29,7 +30,7 @@ interpretMenuStream =
         maybeF :: ∀ b . f (Maybe b) -> Maybe (f b)
         maybeF = fmap (<$ s) <=< ins
 
-        prompt = repeatUntilNothing (maybeF <$> promptEvents)
+        prompt = repeatUntilNothing @SerialT (maybeF <$> promptEvents)
 
         insert new = insertItems (pureS new)
 
@@ -41,14 +42,16 @@ interpretMenuStream =
           Stream.foldIterateM chunker (pure []) $
           Stream.fromSerial items
 
-        triage = \case
-          Left p -> pure (Left p)
-          Right (Just i) -> Right . Just <$> insert i
-          Right Nothing -> Right Nothing <$ exhausted
+        handleItems = \case
+          Just i -> Just <$> insert i
+          Nothing -> Nothing <$ exhausted
+
+        handlePrompts =
+          fmap Just . queryUpdate . NonEmpty.last
 
         stream =
           Stream.fold (Fold.drainBy (traverse_ renderEvent)) $
-          mapMAcc triage (fmap Just . queryUpdate . NonEmpty.last) $
+          accLeftBusy handlePrompts handleItems $
           Stream.parallelFst (Left <$> prompt) (Right <$> nothingTerminated menuItems)
 
       pure (pureS <$> stream)

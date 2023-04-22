@@ -175,6 +175,16 @@ assertCurrent target =
   withFrozenCallStack do
     assertWait currentEntries target
 
+assertItemCount ::
+  MenuState s =>
+  HasCallStack =>
+  Members [Menu s, Hedgehog IO, ChronosTime, Error Failure, Race, Async, Embed IO] r =>
+  Int ->
+  Sem r ()
+assertItemCount n =
+  withFrozenCallStack do
+    assertCurrent \ i -> assertEq n (length i)
+
 -- | Wait until the filtered items equal the supplied list.
 awaitCurrent ::
   MenuState s =>

@@ -43,7 +43,7 @@ import Ribosome.Menu.Prompt.Data.PromptConfig (startInsert)
 import Ribosome.Menu.Prompt.Data.PromptEvent (PromptEvent (Mapping, Update))
 import Ribosome.Menu.Prompt.Data.PromptMode (PromptMode (Insert))
 import Ribosome.Menu.Test.Menu (assertItems, awaitCurrent, promptTest, setPrompt)
-import Ribosome.Menu.Test.RefineManyTest (test_refineMany)
+import Ribosome.Menu.Test.RefineManyTest (test_refineMany, test_fastPromptAcc)
 import Ribosome.Menu.Test.Run (unitTestTimes)
 import Ribosome.Test.Error (testError)
 
@@ -292,6 +292,7 @@ test_menu =
     unitTestTimes 3 "change filter" test_changeFilter,
     unitTestTimes 100 "toggle selection items" test_menuToggle,
     unitTestTimes 3 "refine large number of items" test_refineMany,
+    unitTestTimes 3 "send many prompts in quick succession" test_fastPromptAcc,
     unitTest "delete selected" test_menuDeleteSelected,
     unitTest "unselected items with no selected items" test_menuUnselectedCursor
   ]
