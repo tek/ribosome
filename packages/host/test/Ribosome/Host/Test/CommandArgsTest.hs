@@ -5,9 +5,9 @@ import Exon (exon)
 import Options.Applicative (auto, option, short, switch)
 import Polysemy.Test (UnitTest, assertJust)
 
-import Ribosome.Host.Api.Data (nvimCommand, nvimGetVar, nvimSetVar)
+import Ribosome.Host.Api.Data (nvimCallFunction, nvimCommand, nvimGetVar, nvimSetVar)
 import Ribosome.Host.Class.Msgpack.Decode (MsgpackDecode)
-import Ribosome.Host.Class.Msgpack.Encode (MsgpackEncode)
+import Ribosome.Host.Class.Msgpack.Encode (MsgpackEncode, toMsgpack)
 import Ribosome.Host.Data.Args (
   ArgList (ArgList),
   Args (Args),
@@ -21,7 +21,7 @@ import Ribosome.Host.Data.RpcError (RpcError)
 import Ribosome.Host.Data.RpcHandler (Handler, RpcHandler)
 import Ribosome.Host.Effect.Rpc (Rpc)
 import Ribosome.Host.Embed (embedNvim)
-import Ribosome.Host.Handler (rpcCommand)
+import Ribosome.Host.Handler (rpcCommand, rpcFunction)
 import Ribosome.Host.Unit.Run (runTest)
 
 data Cat =
@@ -78,6 +78,7 @@ handlers ::
 handlers =
   [
     rpcCommand "Args" Sync args,
+    rpcFunction "ArgList" Sync argList,
     rpcCommand "ArgList" Sync argList,
     rpcCommand "JsonArgs" Sync jsonArgs,
     rpcCommand "Options" Sync options
@@ -94,3 +95,7 @@ test_args =
     assertJust (Cat 15.1 True) =<< nvimGetVar var
     nvimCommand [exon|Options 1 -f 15.1 -s|]
     assertJust (Cat 15.1 True) =<< nvimGetVar var
+    () <- nvimCallFunction "ArgList" [toMsgpack ("1" :: Text), toMsgpack @[Text] ["2", "3"]]
+    assertJust @[Text] ["2", "3"] =<< nvimGetVar var
+    () <- nvimCallFunction "ArgList" [toMsgpack ("1" :: Text), toMsgpack ("22" :: Text)]
+    assertJust @[Text] ["22"] =<< nvimGetVar var

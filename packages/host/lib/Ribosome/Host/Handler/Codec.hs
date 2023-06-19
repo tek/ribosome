@@ -104,6 +104,8 @@ instance (
 instance (
     Member (Stop Report) r
   ) => HandlerArg ArgList r where
+  handlerArg [o] | Right a <- fromMsgpack o =
+    pure ([], ArgList a)
   handlerArg os =
     case traverse fromMsgpack os of
       Right a ->
