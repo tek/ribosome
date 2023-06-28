@@ -33,8 +33,7 @@ data Cat =
   deriving anyclass (FromJSON, MsgpackEncode, MsgpackDecode)
 
 var :: Text
-var =
-  "test_var"
+var = "test_var"
 
 args ::
   Member (Rpc !! RpcError) r =>
