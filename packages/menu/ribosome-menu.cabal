@@ -1,6 +1,6 @@
 cabal-version: 2.2
 
--- This file has been generated from package.yaml by hpack version 0.35.0.
+-- This file has been generated from package.yaml by hpack version 0.35.2.
 --
 -- see: https://github.com/sol/hpack
 
@@ -130,7 +130,7 @@ library
       ViewPatterns
       OverloadedRecordDot
       NoFieldSelectors
-  ghc-options: -Wall -Widentities -Wincomplete-uni-patterns -Wmissing-deriving-strategies -Wredundant-constraints -Wunused-type-patterns -Wunused-packages -fplugin=Polysemy.Plugin
+  ghc-options: -fplugin=Polysemy.Plugin -Wall -Widentities -Wincomplete-uni-patterns -Wmissing-deriving-strategies -Wredundant-constraints -Wunused-type-patterns -Wunused-packages
   build-depends:
       base ==4.*
     , bytestring-trie
@@ -145,7 +145,7 @@ library
     , polysemy-chronos
     , polysemy-conc
     , polysemy-plugin
-    , prelate >=0.5.1 && <0.6
+    , prelate ==0.6.*
     , ribosome
     , ribosome-host
     , streamly
@@ -202,7 +202,7 @@ test-suite ribosome-menu-test
       ViewPatterns
       OverloadedRecordDot
       NoFieldSelectors
-  ghc-options: -threaded -rtsopts -with-rtsopts=-N -Wall -Widentities -Wincomplete-uni-patterns -Wmissing-deriving-strategies -Wredundant-constraints -Wunused-type-patterns -Wunused-packages -fplugin=Polysemy.Plugin
+  ghc-options: -fplugin=Polysemy.Plugin -threaded -rtsopts -with-rtsopts=-N -Wall -Widentities -Wincomplete-uni-patterns -Wmissing-deriving-strategies -Wredundant-constraints -Wunused-type-patterns -Wunused-packages
   build-depends:
       base ==4.*
     , exon
@@ -212,7 +212,7 @@ test-suite ribosome-menu-test
     , polysemy-chronos
     , polysemy-plugin
     , polysemy-test
-    , prelate >=0.5.1 && <0.6
+    , prelate ==0.6.*
     , ribosome
     , ribosome-host
     , ribosome-host-test
@@ -268,7 +268,7 @@ benchmark ribosome-menu-bench
       ViewPatterns
       OverloadedRecordDot
       NoFieldSelectors
-  ghc-options: -Wall -Widentities -Wincomplete-uni-patterns -Wmissing-deriving-strategies -Wredundant-constraints -Wunused-type-patterns -Wunused-packages -fplugin=Polysemy.Plugin
+  ghc-options: -fplugin=Polysemy.Plugin -Wall -Widentities -Wincomplete-uni-patterns -Wmissing-deriving-strategies -Wredundant-constraints -Wunused-type-patterns -Wunused-packages
   build-depends:
       base ==4.*
     , criterion
@@ -279,7 +279,7 @@ benchmark ribosome-menu-bench
     , polysemy-conc
     , polysemy-plugin
     , polysemy-test
-    , prelate >=0.5.1 && <0.6
+    , prelate ==0.6.*
     , ribosome
     , ribosome-host
     , ribosome-menu

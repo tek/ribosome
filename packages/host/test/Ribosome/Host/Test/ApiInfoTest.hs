@@ -33,7 +33,7 @@ test_parseType =
     checkType (Prim LuaRef) "LuaRef"
     assertLeft err (first renderError (parseApiType "Booleans"))
     info <- evalEither =<< embed apiInfo
-    251 === length info.functions
+    255 === length info.functions
     3 === length info.types
   where
     err =
