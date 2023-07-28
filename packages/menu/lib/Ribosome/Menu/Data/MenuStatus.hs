@@ -5,8 +5,8 @@ data MenuStatus =
     filter :: Text,
     middle :: Int -> Maybe Text,
     bottom :: Int -> [Text],
-    itemCount :: Int,
-    entryCount :: Int,
-    cursor :: Int
+    itemCount :: Word,
+    entryCount :: Word,
+    cursor :: Word
   }
   deriving stock (Generic)

@@ -1,12 +1,13 @@
 module Ribosome.Menu.Action where
 
-import Ribosome.Menu.Class.MenuState (MenuState, MenuState (Item, Mode, mode))
 import qualified Ribosome.Menu.Class.MenuMode as MenuMode
+import Ribosome.Menu.Class.MenuState (MenuState (Item, Mode, mode))
 import Ribosome.Menu.Combinators (numVisible, overEntries)
-import Ribosome.Menu.Data.CursorIndex (CursorIndex (CursorIndex))
 import qualified Ribosome.Menu.Data.MenuAction as MenuAction
 import Ribosome.Menu.Data.MenuAction (MenuAction)
+import Ribosome.Menu.Data.MenuItem (MenuItem)
 import Ribosome.Menu.Effect.Menu (Menu, basicState, menuState, modifyCursor, readCursor, viewState)
+import Ribosome.Menu.ItemLens (focus)
 import Ribosome.Menu.Lens (use, (%=), (.=))
 import Ribosome.Menu.Prompt.Data.Prompt (Prompt)
 
@@ -53,7 +54,11 @@ cycleMenu ::
   MenuSem s r ()
 cycleMenu offset = do
   count <- viewState (to numVisible)
-  modifyCursor \ current -> fromMaybe 0 ((current + fromIntegral offset) `mod` fromIntegral count)
+  modifyCursor \ current ->
+    let
+      new :: Int
+      new = fromIntegral current + offset
+    in fromIntegral (fromMaybe 0 (new `mod` count))
 
 menuCycle ::
   MenuState s =>
@@ -72,9 +77,9 @@ toggleSelected ::
   MenuSem s r ()
 toggleSelected = do
   basicState do
-    CursorIndex cur <- readCursor
+    cur <- readCursor
     #entries %= overEntries \ index ->
-      if index == cur
+      if index == fromIntegral cur
       then #selected %~ not
       else id
   cycleMenu 1
@@ -118,3 +123,11 @@ menuCycleFilter = do
     cur <- use mode
     mode .= (MenuMode.cycleFilter @(Item s) cur)
   menuRender
+
+menuFocusItem ::
+  MenuState s =>
+  MenuWidget s r (Maybe (MenuItem (Item s)))
+menuFocusItem =
+  menuState do
+    selection <- use focus
+    menuSuccess selection

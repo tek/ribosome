@@ -16,7 +16,7 @@ type Matcher i =
 
 entry :: Int -> MenuItem i -> Entry i
 entry index item =
-  Entry item index False
+  Entry item (fromIntegral index) False
 
 filterPar ::
   (MenuItem i -> Maybe Text) ->

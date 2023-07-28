@@ -43,7 +43,7 @@ import Ribosome.Menu.Prompt.Data.PromptConfig (startInsert)
 import Ribosome.Menu.Prompt.Data.PromptEvent (PromptEvent (Mapping, Update))
 import Ribosome.Menu.Prompt.Data.PromptMode (PromptMode (Insert))
 import Ribosome.Menu.Test.Menu (assertItems, awaitCurrent, promptTest, setPrompt)
-import Ribosome.Menu.Test.RefineManyTest (test_refineMany, test_fastPromptAcc)
+import Ribosome.Menu.Test.RefineManyTest (test_fastPromptAcc, test_refineMany)
 import Ribosome.Menu.Test.Run (unitTestTimes)
 import Ribosome.Test.Error (testError)
 
@@ -255,18 +255,18 @@ test_menuDeleteSelected = do
       its =
         IntMap.fromList [(n, simpleMenuItem () (show n)) | n <- [0..7]]
       entriesSel =
-        cons [(n, Entry (simpleMenuItem () (show n)) n (n `elem` sels)) | n <- [2..7]]
+        cons [(n, Entry (simpleMenuItem () (show n)) (fromIntegral n) (n `elem` sels)) | n <- [2..7]]
       entriesFoc =
-        cons [(n, Entry (simpleMenuItem () (show n)) n False) | n <- [2..7]]
+        cons [(n, Entry (simpleMenuItem () (show n)) (fromIntegral n) False) | n <- [2..7]]
       unselectedEntries =
-        cons [(n, Entry (simpleMenuItem () "") n False) | n <- [0..9]]
+        cons [(n, Entry (simpleMenuItem () "") (fromIntegral n) False) | n <- [0..9]]
       sels :: [Int]
       sels =
         [2, 3, 6, 7]
       manyEntries =
-        cons [(n, Entry (simpleMenuItem () "") n (n >= 50000 && even n)) | n <- [0..100000]]
+        cons [(n, Entry (simpleMenuItem () "") (fromIntegral n) (n >= 50000 && even n)) | n <- [0..100000]]
       manyUnselectedEntries =
-        cons [(n, Entry (simpleMenuItem () "") n False) | n <- [0..100000]]
+        cons [(n, Entry (simpleMenuItem () "") (fromIntegral n) False) | n <- [0..100000]]
       cons =
         Entry.fromList . reverse
       manyCursor =

@@ -2,38 +2,33 @@ module Ribosome.Menu.Test.NvimMenuTest where
 
 import Exon (exon)
 import Lens.Micro.Mtl (view)
-import Polysemy.Test (UnitTest, assertEq, runTestAuto, unitTest, (===))
-import qualified Streamly.Internal.Data.Stream.IsStream as Stream
-import Streamly.Prelude (SerialT)
+import Polysemy.Test (UnitTest, assertEq, unitTest, (===))
 import Test.Tasty (TestTree, testGroup)
 
 import Ribosome.Api.Buffer (bufferContent, buflisted)
-import qualified Ribosome.Effect.Scratch as Scratch
 import Ribosome.Host.Api.Data (bufferGetName, vimGetBuffers, vimGetWindows)
 import Ribosome.Menu.Action (MenuWidget, menuOk, menuSuccess)
 import qualified Ribosome.Menu.Class.MenuMode as MenuMode
 import Ribosome.Menu.Class.MenuMode (MenuMode (cycleFilter, filterMode, renderExtra, renderFilter))
-import Ribosome.Menu.Class.MenuState (MenuState (renderStatus), entries)
 import qualified Ribosome.Menu.Class.MenuState as MenuState
+import Ribosome.Menu.Class.MenuState (MenuState (renderStatus), entries)
 import Ribosome.Menu.Combinators (sortEntries)
 import Ribosome.Menu.Data.CursorIndex (CursorIndex (CursorIndex))
-import Ribosome.Menu.Data.Entry (intEntries)
 import Ribosome.Menu.Data.Filter (Filter (Fuzzy))
 import Ribosome.Menu.Data.FilterMode (FilterMode (FilterMode))
 import Ribosome.Menu.Data.MenuEvent (MenuEvent (Rendered))
-import Ribosome.Menu.Data.MenuItem (MenuItem, simpleMenuItem)
+import qualified Ribosome.Menu.Data.MenuItem
 import qualified Ribosome.Menu.Data.MenuResult as MenuResult
-import Ribosome.Menu.Data.MenuView (MenuView (MenuView))
 import Ribosome.Menu.Data.State (Modal, modal)
 import Ribosome.Menu.Effect.Menu (readCursor, readState)
 import qualified Ribosome.Menu.Effect.MenuTest as MenuTest
 import Ribosome.Menu.Effect.MenuTest (sendMapping, sendMappingWait, waitEvent)
+import qualified Ribosome.Menu.Effect.MenuUi as MenuUi
 import Ribosome.Menu.Interpreter.Menu (interpretSingleWindowMenu, promptInput)
 import Ribosome.Menu.Interpreter.MenuFilter (defaultFilter)
 import Ribosome.Menu.Loop (menuMaps, runMenuUi, windowMenu, withMenuUi)
 import Ribosome.Menu.Mappings (Mappings, defaultMappings)
 import Ribosome.Menu.MenuTest (testStaticNvimMenu)
-import Ribosome.Menu.NvimRenderer (computeView, entrySlice)
 import Ribosome.Menu.Prompt.Data.Prompt (Prompt (Prompt))
 import Ribosome.Menu.Prompt.Data.PromptConfig (onlyInsert, startInsert)
 import Ribosome.Menu.Prompt.Data.PromptEvent (PromptEvent (Mapping, Update))
@@ -41,22 +36,11 @@ import qualified Ribosome.Menu.Prompt.Data.PromptMode as PromptMode
 import Ribosome.Menu.Prompt.Run (SyncChar, nosync, withPromptInputSync)
 import Ribosome.Menu.Scratch (menuScratch, menuScratchSized)
 import Ribosome.Menu.Test.Run (unitTestTimes)
+import Ribosome.Menu.Test.Util (mkItems, staticMenuItems)
 import Ribosome.Test.Embed (testEmbed_)
 import Ribosome.Test.Screenshot (awaitScreenshot)
 import Ribosome.Test.Skip (skipUnlessX)
 import Ribosome.Test.SocketTmux (testSocketTmux)
-
-staticMenuItems ::
-  [Text] ->
-  [MenuItem Text]
-staticMenuItems =
-  fmap (simpleMenuItem "name")
-
-mkItems ::
-  [Text] ->
-  SerialT IO (MenuItem Text)
-mkItems =
-  Stream.fromList . fmap (simpleMenuItem "name")
 
 pureEvents :: [PromptEvent]
 pureEvents =
@@ -81,7 +65,7 @@ currentEntry ::
 currentEntry = do
   CursorIndex s <- readCursor
   fs <- sortEntries . view entries <$> readState
-  maybe menuOk menuSuccess (fs ^? ix s . #item . #text)
+  maybe menuOk menuSuccess (fs ^? ix (fromIntegral s) . #item . #text)
 
 mappings ::
   MenuState s =>
@@ -104,15 +88,11 @@ nativeChars :: [SyncChar]
 nativeChars =
   ["i", "t", "e", "<esc>", "k", "<c-k>", "k", "<cr>"]
 
-nativeWindowChars :: [SyncChar]
-nativeWindowChars =
-  ["i", "t", "e", "<esc>", "k", "<c-k>", "k", "<cr>"]
-
 test_nativeWindow :: UnitTest
 test_nativeWindow =
   testEmbed_ $ defaultFilter $ interpretSingleWindowMenu $ runMenuUi (mkItems items) (modal Fuzzy) do
     result <- flip (withMenuUi opts) mappings \ m -> do
-      withPromptInputSync nativeWindowChars do
+      withPromptInputSync nativeChars do
         menuMaps (insertAt @2 <$> m)
     MenuResult.Success "item4" === result
   where
@@ -198,7 +178,7 @@ instance MenuMode Text TestMode where
     Just [exon|count: #{show count}|]
 
   filterMode (TestMode mode _) =
-    FilterMode mode (Just . view #render)
+    FilterMode mode (Just . (.text))
 
 instance MenuState TestState where
   type Item TestState = Text
@@ -219,52 +199,12 @@ test_bottomStatus =
   testSocketTmux $ defaultFilter do
     result <- testStaticNvimMenu @() [] True def (TestState (modal (TestMode Fuzzy 0)) "empty") def defaultMappings do
       waitEvent "initial render" Rendered
-      status <- stopNote "no status scratch" =<< Scratch.find "ribosome-menu-status"
+      status <- MenuUi.statusScratch
       assertEq ["message: empty"] . drop 1 =<< bufferContent (status ^. #buffer)
       awaitScreenshot False "menu-bottom-status" 0
       withPromptInputSync [nosync "<esc>"] do
         MenuTest.result
     MenuResult.Aborted === result
-
-nmenuBot :: MenuView
-nmenuBot =
-  MenuView 4 0 4 4
-
-nmenuTop :: MenuView
-nmenuTop =
-  MenuView 9 5 5 0
-
-nmenuMid :: MenuView
-nmenuMid =
-  MenuView 7 3 5 3
-
-test_viewScrollUp :: UnitTest
-test_viewScrollUp =
-  runTestAuto do
-    MenuView 6 2 6 4 === computeView 6 5 10 nmenuBot
-
-test_viewScrollDown :: UnitTest
-test_viewScrollDown =
-  runTestAuto do
-    MenuView 8 4 4 0 === computeView 4 5 10 nmenuTop
-
-test_viewMoveCursor :: UnitTest
-test_viewMoveCursor =
-  runTestAuto do
-    MenuView 7 3 4 2 === computeView 4 5 10 nmenuMid
-
-test_viewInitial :: UnitTest
-test_viewInitial =
-  runTestAuto do
-    MenuView 0 0 0 0 === computeView 0 1 10 (MenuView 0 0 0 0)
-
-test_entrySlice :: UnitTest
-test_entrySlice =
-  runTestAuto do
-    6 === length (entrySlice ents 25 30)
-  where
-    ents =
-      intEntries (zip (repeat 0) [1..100])
 
 test_nvimMenu :: TestTree
 test_nvimMenu =
@@ -274,10 +214,5 @@ test_nvimMenu =
     unitTestTimes 10 "interrupt window" test_interruptWindow,
     unitTest "close scratch when quitting" test_quit,
     unitTest "scroll up" test_scrollUp,
-    unitTestTimes 3 "extra bottom status message" (skipUnlessX test_bottomStatus),
-    unitTest "new view after scrolling up" test_viewScrollUp,
-    unitTest "new view after scrolling down" test_viewScrollDown,
-    unitTest "new view after moving cursor" test_viewMoveCursor,
-    unitTest "new view after initial render" test_viewInitial,
-    unitTest "extract a slice of entries from the score map" test_entrySlice
+    unitTestTimes 3 "extra bottom status message" (skipUnlessX test_bottomStatus)
   ]

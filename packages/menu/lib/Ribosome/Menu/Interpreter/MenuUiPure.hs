@@ -7,7 +7,11 @@ import qualified Time
 import Time (MilliSeconds (MilliSeconds))
 
 import Ribosome.Menu.Data.MenuEvent (MenuEvent (Exhausted))
-import Ribosome.Menu.Effect.MenuUi (MenuUi (PromptEvent, Render, RenderPrompt), PureMenu (PureMenu), ScopedMenuUi)
+import Ribosome.Menu.Effect.MenuUi (
+  MenuUi (ItemsScratch, PromptEvent, PromptScratch, Render, RenderPrompt, StatusScratch),
+  PureMenu (PureMenu),
+  ScopedMenuUi,
+  )
 import qualified Ribosome.Menu.Prompt.Data.PromptEvent as PromptEvent
 import Ribosome.Menu.Prompt.Data.PromptEvent (PromptEvent)
 
@@ -45,6 +49,12 @@ interpretMenuUiPureAtomic =
       takeEvent
     Render _ ->
       unit
+    PromptScratch ->
+      stop "No scratch with pure interpreter"
+    StatusScratch ->
+      stop "No scratch with pure interpreter"
+    ItemsScratch ->
+      stop "No scratch with pure interpreter"
 
 interpretMenuUiPure ::
   Members [EventConsumer MenuEvent, ChronosTime, Resource, Async, Race, Embed IO] r =>

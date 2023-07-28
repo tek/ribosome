@@ -10,6 +10,9 @@ data MenuUi :: Effect where
   RenderPrompt :: Bool -> Prompt -> MenuUi m ()
   PromptEvent :: MenuUi m PromptEvent
   Render :: RenderMenu i -> MenuUi m ()
+  PromptScratch :: MenuUi m ScratchState
+  StatusScratch :: MenuUi m ScratchState
+  ItemsScratch :: MenuUi m ScratchState
 
 makeSem ''MenuUi
 

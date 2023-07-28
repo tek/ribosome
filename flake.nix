@@ -21,6 +21,28 @@
       streamly = hackage "0.8.2" "0jhsdd71kqw0k0aszg1qb1l0wbxl1r73hsmkdgch4vlx43snlc8a";
     };
 
+    cabal = {
+      license = "BSD-2-Clause-Patent";
+      license-file = "LICENSE";
+      author = "Torsten Schmits";
+      meta = {
+        maintainer = "hackage@tryp.io";
+        category = "Neovim";
+        github = "tek/ribosome";
+        extra-source-files = ["readme.md" "changelog.md"];
+      };
+      ghc-options = ["-fplugin=Polysemy.Plugin"];
+      prelude = {
+        enable = true;
+        package = {
+          name = "prelate";
+          version = "^>= 0.6";
+        };
+        module = "Prelate";
+      };
+      dependencies = ["polysemy" "polysemy-plugin"];
+    };
+
     buildInputs = pkgs: [pkgs.neovim pkgs.tmux pkgs.xterm];
 
     packages.ribosome-host = {
@@ -292,28 +314,6 @@
 
     };
 
-    cabal = {
-      license = "BSD-2-Clause-Patent";
-      license-file = "LICENSE";
-      author = "Torsten Schmits";
-      meta = {
-        maintainer = "hackage@tryp.io";
-        category = "Neovim";
-        github = "tek/ribosome";
-        extra-source-files = ["readme.md" "changelog.md"];
-      };
-      ghc-options = ["-fplugin=Polysemy.Plugin"];
-      prelude = {
-        enable = true;
-        package = {
-          name = "prelate";
-          version = "^>= 0.6";
-        };
-        module = "Prelate";
-      };
-      dependencies = ["polysemy" "polysemy-plugin"];
-    };
-
     envs.dev = {
       buildInputs = pkgs: [pkgs.neovim pkgs.tmux pkgs.xterm];
       env = { RIBOSOME_ROOT = builtins.toPath self; };
@@ -324,8 +324,8 @@
   }) // {
 
     lib = hix.lib.extend (_: super: {
-      modules = {projectModules ? [], extraModules ? []}:
-      super.modules { inherit projectModules; extraModules = extraModules ++ [(import ./ops/api.nix self)]; };
+      flakeWith = {projectModules ? [], extraModules ? []}:
+      super.flakeWith { inherit projectModules; extraModules = extraModules ++ [(import ./ops/api.nix self)]; };
     });
   };
 

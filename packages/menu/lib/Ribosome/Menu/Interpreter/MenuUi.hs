@@ -3,7 +3,10 @@ module Ribosome.Menu.Interpreter.MenuUi where
 import Conc (Consume)
 
 import qualified Ribosome.Menu.Effect.MenuUi as MenuUi
-import Ribosome.Menu.Effect.MenuUi (MenuUi (PromptEvent, Render, RenderPrompt), ScopedMenuUi)
+import Ribosome.Menu.Effect.MenuUi (
+  MenuUi (ItemsScratch, PromptEvent, PromptScratch, Render, RenderPrompt, StatusScratch),
+  ScopedMenuUi,
+  )
 import qualified Ribosome.Menu.Prompt.Data.PromptEvent as PromptEvent
 import Ribosome.Menu.Prompt.Data.PromptEvent (PromptEvent)
 
@@ -16,6 +19,12 @@ interpretMenuUiNull =
       pure PromptEvent.Ignore
     Render _ ->
       unit
+    PromptScratch ->
+      error "No scratch for null MenuUi"
+    StatusScratch ->
+      error "No scratch for null MenuUi"
+    ItemsScratch ->
+      error "No scratch for null MenuUi"
 
 interpretMenuUiNvimNull :: InterpreterFor (ScopedMenuUi p) r
 interpretMenuUiNvimNull =
@@ -26,6 +35,12 @@ interpretMenuUiNvimNull =
       pure PromptEvent.Ignore
     Render _ ->
       unit
+    PromptScratch ->
+      stop "No scratch for null MenuUi"
+    StatusScratch ->
+      stop "No scratch for null MenuUi"
+    ItemsScratch ->
+      stop "No scratch for null MenuUi"
 
 interceptMenuUiPromptConsume ::
   Members [MenuUi, Consume PromptEvent] r =>
@@ -39,6 +54,12 @@ interceptMenuUiPromptConsume =
       consume
     Render m ->
       MenuUi.render m
+    PromptScratch ->
+      MenuUi.promptScratch
+    StatusScratch ->
+      MenuUi.statusScratch
+    ItemsScratch ->
+      MenuUi.itemsScratch
 
 interceptMenuUiPromptEvents ::
   Members [MenuUi, EventConsumer PromptEvent] r =>

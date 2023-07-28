@@ -42,6 +42,15 @@ l .= b =
   modify' (l .~ b)
 {-# inline (.=) #-}
 
+(?=) ::
+  Member (State s) r =>
+  ASetter s s a (Maybe b) ->
+  b ->
+  Sem r ()
+l ?= b =
+  modify' (l ?~ b)
+{-# inline (?=) #-}
+
 infix 4 .=
 
 (+=) ::

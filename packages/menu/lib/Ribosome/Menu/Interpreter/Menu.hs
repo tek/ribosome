@@ -253,6 +253,12 @@ interpretMenus =
           pureT =<< restop MenuUi.promptEvent
         MenuUi.Render m ->
           pureT =<< restop (MenuUi.render m)
+        MenuUi.PromptScratch ->
+          pureT =<< restop (MenuUi.promptScratch)
+        MenuUi.StatusScratch ->
+          pureT =<< restop (MenuUi.statusScratch)
+        MenuUi.ItemsScratch ->
+          pureT =<< restop (MenuUi.itemsScratch)
     MenuEngine (Bundle (There (There Here)) e) ->
       case e of
         Menu.StartPrompt ->

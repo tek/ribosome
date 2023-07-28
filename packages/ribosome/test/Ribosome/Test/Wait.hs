@@ -1,9 +1,9 @@
 -- |Assertions that are made repeatedly until the succeed
 module Ribosome.Test.Wait where
 
-import Hedgehog.Internal.Property (Failure, failWith, liftTest, mkTest)
 import qualified Conc
 import Conc (interpretAtomic)
+import Hedgehog.Internal.Property (Failure, failWith, liftTest, mkTest)
 import Polysemy.Test (Hedgehog, liftH)
 import qualified Polysemy.Time as Time
 import Polysemy.Time (MilliSeconds (MilliSeconds), Seconds (Seconds))

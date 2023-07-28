@@ -16,8 +16,8 @@ data Core i =
   Core {
     items :: Items i,
     entries :: Entries i,
-    itemCount :: Int,
-    entryCount :: Int,
+    itemCount :: Word,
+    entryCount :: Word,
     query :: MenuQuery
   }
   deriving stock (Eq, Show, Generic)

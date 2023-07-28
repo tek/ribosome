@@ -64,6 +64,12 @@ interceptMenuQueue =
       pureT =<< MenuUi.renderPrompt c p
     MenuUi.Render m ->
       pureT =<< MenuUi.render m
+    MenuUi.PromptScratch ->
+      pureT =<< MenuUi.promptScratch
+    MenuUi.StatusScratch ->
+      pureT =<< MenuUi.statusScratch
+    MenuUi.ItemsScratch ->
+      pureT =<< MenuUi.itemsScratch
 
 data WaitEvent =
   Requested Text

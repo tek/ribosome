@@ -5,7 +5,6 @@ import Lens.Micro.Mtl (view)
 
 import Ribosome.Menu.Class.MenuState (MenuState (Item), entries)
 import Ribosome.Menu.Combinators (filterEntries, foldEntries, sortedEntries)
-import Ribosome.Menu.Data.CursorIndex (CursorIndex (CursorIndex))
 import qualified Ribosome.Menu.Data.Entry as Entry
 import Ribosome.Menu.Data.Entry (Entry)
 import qualified Ribosome.Menu.Data.MenuItem as MenuItem
@@ -126,11 +125,11 @@ unselectedItems s =
       False -> either id id <$> ents
     folder (z, _) _ e | e.selected =
       (z, True)
-    folder (z, foundSelected) i e | i == cursorIndex =
+    folder (z, foundSelected) i e | i == fromIntegral cursorIndex =
       (Left e : z, foundSelected)
     folder (z, _) _ e =
       (Right e : z, True)
-    CursorIndex cursorIndex =
+    cursorIndex =
       s ^. #cursor
 
 unselected ::

@@ -12,6 +12,7 @@ import Prelude hiding (unify)
 import Ribosome.Menu.Class.MenuState (MenuState (Item, mode), entries, history, items)
 import Ribosome.Menu.Combinators (sortedEntries)
 import Ribosome.Menu.Data.CursorIndex (CursorIndex (CursorIndex))
+import qualified Ribosome.Menu.Data.Entry
 import Ribosome.Menu.Data.Entry (Entries, Entry)
 import qualified Ribosome.Menu.Data.MenuAction as MenuAction
 import Ribosome.Menu.Data.MenuAction (MenuAction)
@@ -88,7 +89,7 @@ traverseSelection_ ::
 traverseSelection_ f =
   withSelection (traverse_ f)
 
-adaptCursorAfterDeletion :: [Int] -> CursorIndex -> CursorIndex
+adaptCursorAfterDeletion :: [Word] -> CursorIndex -> CursorIndex
 adaptCursorAfterDeletion deleted (CursorIndex curs) =
   CursorIndex (foldl' f curs deleted)
   where
@@ -132,27 +133,27 @@ popEntriesFallback f ents =
                 _ -> (Right bs, False)
 
 popSelection ::
-  Int ->
+  CursorIndex ->
   Entries i ->
-  (([Int], [Int]), Entries i)
+  (([Word], [Int]), Entries i)
 popSelection curs initial =
   unify (popEntriesFallback check initial)
   where
     check i e =
-      justIf (e ^. #selected) (Right (i, e ^. #index)) <|>
-      justIf (curs == i) (Left (e ^. #index))
+      justIf e.selected (Right (fromIntegral i, fromIntegral e.index)) <|>
+      justIf (curs == fromIntegral i) (Left (fromIntegral e.index))
     unify = \case
       Right (entryAndItemIndexes, ent) ->
         (unzip entryAndItemIndexes, ent)
       Left (itemIndex, (score, scoreIndex)) ->
-        (([curs], [itemIndex]), IntMap.update (Just . Seq.deleteAt scoreIndex) score initial)
+        (([fromIntegral curs], [itemIndex]), IntMap.update (Just . Seq.deleteAt scoreIndex) score initial)
 
 deleteSelected ::
   MenuState s =>
   Member (State (WithCursor s)) r =>
   Sem r ()
 deleteSelected = do
-  CursorIndex curs <- use #cursor
+  curs <- use #cursor
   ((deletedEntries, deletedItems), kept) <- use (entries . to (popSelection curs))
   entries .= kept
   m <- use mode

@@ -46,7 +46,10 @@ import Ribosome.Lens ((<|>~))
 import Ribosome.Mapping (eventMapping)
 import Ribosome.Menu.Data.NvimMenuState (NvimMenuState)
 import Ribosome.Menu.Data.WindowConfig (WindowConfig (WindowConfig))
-import Ribosome.Menu.Effect.MenuUi (MenuUi (PromptEvent, Render, RenderPrompt), WindowMenu (WindowMenu))
+import Ribosome.Menu.Effect.MenuUi (
+  MenuUi (ItemsScratch, PromptEvent, PromptScratch, Render, RenderPrompt, StatusScratch),
+  WindowMenu (WindowMenu),
+  )
 import qualified Ribosome.Menu.Mappings as Mappings
 import Ribosome.Menu.NvimRenderer (menuSyntax, renderNvimMenu)
 import Ribosome.Menu.Prompt.Data.Prompt (Prompt (Prompt), PromptText (PromptText))
@@ -55,6 +58,7 @@ import qualified Ribosome.Menu.Prompt.Data.PromptEvent as PromptEvent
 import Ribosome.Menu.Prompt.Data.PromptEvent (PromptEvent)
 import qualified Ribosome.Menu.Prompt.Data.PromptMode as PromptMode
 import Ribosome.Menu.Prompt.Data.PromptMode (PromptMode)
+import Ribosome.Menu.Scratch (menuItemsScratchId)
 import qualified Ribosome.Menu.Settings as Settings
 import qualified Ribosome.Settings as Settings
 
@@ -175,7 +179,7 @@ geometry = do
 
 itemsOptions :: (Int, Int, Int, Int) -> ScratchOptions -> ScratchOptions
 itemsOptions (row, col, height, width) options =
-  ensureName "ribosome-menu-items" options
+  ensureName menuItemsScratchId options
   & #float <|>~ Just floatOptions
   & #maxSize <|>~ Just (height - 5)
   where
@@ -349,3 +353,9 @@ interpretMenuUiWindow =
       consume
     Render menu ->
       runReader menu (renderNvimMenu itemsScratch statusScratch)
+    PromptScratch ->
+      stopNote "Prompt scratch not found" =<< restop (Scratch.find "ribosome-menu-prompt")
+    StatusScratch ->
+      stopNote "Status scratch not found" =<< restop (Scratch.find "ribosome-menu-status")
+    ItemsScratch ->
+      stopNote "Items scratch not found" =<< restop (Scratch.find menuItemsScratchId)

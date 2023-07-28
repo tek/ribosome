@@ -76,15 +76,12 @@ library
       Ribosome.Menu.NvimRenderer
       Ribosome.Menu.Prompt
       Ribosome.Menu.Prompt.Data.Codes
-      Ribosome.Menu.Prompt.Data.CursorUpdate
       Ribosome.Menu.Prompt.Data.Prompt
       Ribosome.Menu.Prompt.Data.PromptConfig
       Ribosome.Menu.Prompt.Data.PromptEvent
       Ribosome.Menu.Prompt.Data.PromptInputEvent
       Ribosome.Menu.Prompt.Data.PromptListening
       Ribosome.Menu.Prompt.Data.PromptMode
-      Ribosome.Menu.Prompt.Data.PromptUpdate
-      Ribosome.Menu.Prompt.Data.TextUpdate
       Ribosome.Menu.Prompt.Nvim
       Ribosome.Menu.Prompt.Run
       Ribosome.Menu.Scratch
@@ -162,9 +159,12 @@ test-suite ribosome-menu-test
       Ribosome.Menu.Test.FilterTest
       Ribosome.Menu.Test.Menu
       Ribosome.Menu.Test.MenuTest
+      Ribosome.Menu.Test.MultilineTest
       Ribosome.Menu.Test.NvimMenuTest
       Ribosome.Menu.Test.RefineManyTest
       Ribosome.Menu.Test.Run
+      Ribosome.Menu.Test.SliceTest
+      Ribosome.Menu.Test.Util
   hs-source-dirs:
       test
   default-extensions:

@@ -5,12 +5,9 @@ import Text.Regex.PCRE.Light.Char8 (caseless, compileM, utf8)
 import Ribosome.Menu.Data.Entry (Entry (Entry))
 import Ribosome.Menu.Data.Filter (Filter (Fuzzy, Prefix, Regex, Substring))
 import Ribosome.Menu.Data.FilterMode (FilterMode (FilterMode))
-import Ribosome.Menu.Data.State (MenuQuery (MenuQuery))
 import Ribosome.Menu.Data.MenuItem (MenuItem)
-import Ribosome.Menu.Effect.MenuFilter (
-  FilterJob (Initial, Match, Refine),
-  MenuFilter (MenuFilter),
-  )
+import Ribosome.Menu.Data.State (MenuQuery (MenuQuery))
+import Ribosome.Menu.Effect.MenuFilter (FilterJob (Initial, Match, Refine), MenuFilter (MenuFilter))
 import Ribosome.Menu.Filters (
   Matcher,
   initPar,
@@ -29,7 +26,7 @@ execute ::
   IO a
 execute extract m = \case
   Match index item ->
-    pure (m extract (Entry item index False))
+    pure (m extract (Entry item (fromIntegral index) False))
   Initial items ->
     initPar extract m items
   Refine entries ->

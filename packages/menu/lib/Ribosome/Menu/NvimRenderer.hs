@@ -1,14 +1,19 @@
 module Ribosome.Menu.NvimRenderer where
 
 import qualified Data.IntMap.Strict as IntMap
+import qualified Data.List.NonEmpty as NonEmpty
 import qualified Data.Map.Strict as Map
 import qualified Data.Sequence as Seq
+import Data.Sequence ((<|))
 import qualified Data.Text as Text
 import Exon (exon)
 import qualified Polysemy.Log as Log
 
+import Ribosome.Api (nvimBufLineCount)
 import Ribosome.Api.Window (redraw, setLine, windowExec)
-import Ribosome.Data.ScratchState (ScratchState (buffer, window))
+import qualified Ribosome.Data.ScratchOptions
+import qualified Ribosome.Data.ScratchState
+import Ribosome.Data.ScratchState (ScratchState)
 import Ribosome.Data.Syntax.Syntax (HiLink (..), Syntax (Syntax))
 import Ribosome.Data.SyntaxItem (SyntaxItem (..))
 import qualified Ribosome.Effect.Scratch as Scratch
@@ -16,21 +21,47 @@ import Ribosome.Effect.Scratch (Scratch)
 import Ribosome.Host.Api.Data (nvimBufIsLoaded, windowGetWidth)
 import Ribosome.Host.Data.RpcError (RpcError)
 import Ribosome.Host.Effect.Rpc (Rpc)
-import Ribosome.Menu.Data.CursorIndex (CursorIndex (CursorIndex))
-import Ribosome.Menu.Data.Entry (Entries, Entry (Entry), entriesLength)
+import Ribosome.Menu.Data.CursorIndex (CursorIndex)
+import Ribosome.Menu.Data.CursorLine (CursorLine (CursorLine))
+import qualified Ribosome.Menu.Data.Entry
+import Ribosome.Menu.Data.Entry (Entries, Entry (Entry), entriesLength, entriesLineCount, entryLineCount)
+import qualified Ribosome.Menu.Data.MenuItem
 import Ribosome.Menu.Data.MenuItem (MenuItem (MenuItem))
 import qualified Ribosome.Menu.Data.MenuStatus as MenuStatus
 import Ribosome.Menu.Data.MenuStatus (MenuStatus (MenuStatus))
-import Ribosome.Menu.Data.MenuView (MenuView (MenuView))
-import Ribosome.Menu.Data.NvimMenuState (NvimMenuState, botIndex, cursorLine, topIndex)
+import qualified Ribosome.Menu.Data.MenuView
+import Ribosome.Menu.Data.MenuView (EntryIndex (EntryIndex), MenuView (MenuView), ViewRange (ViewRange))
+import qualified Ribosome.Menu.Data.NvimMenuState
+import Ribosome.Menu.Data.NvimMenuState (
+  EntrySlice (EntrySlice, OnlyPartialEntry),
+  NvimMenuState,
+  PartialEntry (PartialEntry),
+  SliceIndexes (SliceIndexes),
+  sliceRange,
+  )
 import Ribosome.Menu.Data.RenderMenu (RenderMenu)
-import Ribosome.Menu.Lens (use, view, (%=), (.=), (<.=))
+import Ribosome.Menu.Lens (view, (.=), (<.=))
 import Ribosome.Syntax.Cons (syntaxMatch)
+
+newtype AvailLines =
+  AvailLines Word
+  deriving stock (Eq, Show, Generic)
+  deriving newtype (Num, Real, Enum, Integral, Ord)
+
+subClamp ::
+  ∀ a b .
+  Ord b =>
+  Num b =>
+  Integral a =>
+  b ->
+  a ->
+  b
+subClamp a (fromIntegral -> b) | b < a = a - b
+                               | otherwise = 0
 
 -- TODO use signs instead of this
 marker :: Char
-marker =
-  '†'
+marker = '†'
 
 markerConceal :: SyntaxItem
 markerConceal =
@@ -47,6 +78,7 @@ selectionLine =
     item = syntaxMatch "RibosomeMenuMarkedLine" ".*$"
     options = ["contained"]
 
+-- TODO this appears not to be used, investigate
 hlMarkedLine :: HiLink
 hlMarkedLine =
   HiLink "RibosomeMenuMarkedLine" "Tag"
@@ -55,120 +87,291 @@ menuSyntax :: Syntax
 menuSyntax =
   Syntax [markerConceal, selectionLine] [] [hlMarkedLine]
 
-withMark :: Entry i -> Text
-withMark (Entry (MenuItem _ _ text) _ sel) =
-  bool id (Text.cons marker) sel text
+withMark :: Entry i -> NonEmpty Text
+withMark (Entry (MenuItem _ _ text) _ sel)
+  | sel
+  , h :| t <- text
+  =
+    Text.cons marker h :| t
+  | otherwise =
+    text
 
+renderPartial :: Bool -> Maybe (PartialEntry i) -> [NonEmpty Text]
+renderPartial top = \case
+  Just pe | h : t <- taker pe pe.entry.item.render -> [h :| t]
+  _ -> []
+  where
+    taker PartialEntry {..} | top = NonEmpty.drop (fromIntegral (entry.item.lines - visibleLines))
+                            | otherwise = NonEmpty.take (fromIntegral visibleLines)
+
+renderSlice :: EntrySlice i -> [NonEmpty Text]
+renderSlice = \case
+  EntrySlice {..} ->
+    renderPartial True partialTop <>
+    (withMark <$> full) <>
+    renderPartial False partialBot
+  OnlyPartialEntry {..} ->
+    renderPartial False (Just entry)
+
+entryId :: Entry i -> (Word, Bool)
+entryId (Entry _ i s) = (i, s)
+
+partialEntryId :: PartialEntry i -> (Word, Word, Bool)
+partialEntryId (PartialEntry (Entry _ i s) v) = (i, v, s)
+
+type Acc i = (Maybe (Seq (Entry i), Maybe (PartialEntry i)), EntryIndex, Word)
+
+-- | For Bot: Uses a right fold for the 'IntMap' because the highest score comes first in the UI, then takes the 'Seq'
+-- from the left since these entries are ordered.
 entrySlice ::
+  ∀ i .
+  (∀ a b . (b -> a -> b) -> b -> IntMap a -> b) ->
+  (∀ a b . (b -> a -> b) -> b -> Seq a -> b) ->
   Entries i ->
-  Int ->
-  Int ->
-  Seq (Entry i)
-entrySlice ents bot top =
-  fst (IntMap.foldr' f (Seq.empty, 0) ents)
+  EntryIndex ->
+  AvailLines ->
+  Maybe (Seq (Entry i), Maybe (PartialEntry i))
+entrySlice scoreFolder entryFolder ents start (AvailLines avail) =
+  result
   where
-    f a (z, i) =
-      if
-        | i > top ->
-          (z, newI)
-        | i >= bot ->
-          (z <> Seq.take (top - i + 1) a, newI)
-        | newI >= bot ->
-          (z <> Seq.take (top - bot + 1) (Seq.drop (bot - i) a), newI)
-        | otherwise ->
-          (z, newI)
+    (result, _, _) = scoreFolder score (Nothing, 0, 0) ents
+
+    score :: Acc i -> Seq (Entry i) -> Acc i
+    score acc@(res, i, l) es
+
+      | l >= avail = acc
+
+      | let len = fromIntegral (Seq.length es)
+            new = i + len
+      , new <= start
+      = (res, new, l)
+
+      | otherwise = entryFolder entry acc es
+
+    entry :: Acc i -> Entry i -> Acc i
+    entry acc@(Just (_, Just _), _, _) _ = acc
+
+    entry (res, i, l) e
+
+      | i < start || l >= avail
+      = (res, i + 1, l)
+
+      | len <= remaining
+      = (Just add, i + 1, l + len)
+
+      | otherwise
+      = (Just (usePartial (PartialEntry e remaining)), i + 1, avail)
       where
-        newI =
-          i  + length a
+        len = fromIntegral (length e.item.render)
 
-newEntrySlice ::
-  Members [State NvimMenuState, Reader (RenderMenu i)] r =>
-  Sem r [Entry i]
-newEntrySlice = do
-  bot <- use (#view . #botIndex)
-  top <- use (#view . #topIndex)
-  ents <- view #entries
-  pure (toList (entrySlice ents bot top))
+        remaining = subClamp avail l
 
-scrollDown ::
-  CursorIndex ->
-  Int ->
-  Int ->
-  MenuView
-scrollDown newCursor@(CursorIndex bot) winHeight count =
-  MenuView (min (bot + winHeight) count - 1) bot newCursor 0
+        add | Just (es, p) <- res = (e <| es, p)
+            | otherwise = ([e], Nothing)
 
-scrollUp ::
-  CursorIndex ->
-  Int ->
-  MenuView
-scrollUp newCursor@(CursorIndex top) winHeight =
-  MenuView top (max (top - winHeight + 1) 0) newCursor (fromIntegral winHeight - 1)
+        usePartial p | Just (es, _) <- res = (es, Just p)
+                     | otherwise = (empty, Just p)
 
-moveCursorLine ::
-  CursorIndex ->
-  Int ->
-  Int ->
-  MenuView ->
-  MenuView
-moveCursorLine newCursor winHeight count (MenuView _ oldBot oldCursor oldCurLine) =
-  MenuView (min (oldBot + winHeight) count - 1) oldBot newCursor (oldCurLine + fromIntegral (newCursor - oldCursor))
+entrySliceBot ::
+  Entries i ->
+  EntryIndex ->
+  AvailLines ->
+  Maybe (EntrySlice i)
+entrySliceBot ents indexBot avail =
+  entrySlice (IntMap.foldr' . flip) foldl ents indexBot avail <&> \case
+    (Seq.Empty, Just partialTop) ->
+      OnlyPartialEntry {entry = partialTop, index = indexBot}
+    (full, partialTop) ->
+      let
+        count = length full
+        indexTop | count == 0 = indexBot
+                | otherwise = indexBot + fromIntegral count - 1
+      in
+        EntrySlice {full = toList full, indexBot, partialBot = Nothing, ..}
 
-resetView ::
-  CursorIndex ->
-  Int ->
-  Int ->
-  MenuView
-resetView newCursor winHeight count =
-  MenuView (min winHeight count - 1) 0 newCursor 0
+entrySliceTop ::
+  Entries i ->
+  EntryIndex ->
+  AvailLines ->
+  Maybe (EntrySlice i)
+entrySliceTop ents indexTop avail =
+  entrySlice IntMap.foldl' (foldr' . flip) ents bot avail <&> \case
+    (Seq.Empty, Just partialBot) ->
+      OnlyPartialEntry {entry = partialBot, index = indexTop}
+    (full, partialBot) ->
+      let
+        count = length full
+        indexBot | count == 0 = indexTop
+                | otherwise = indexTop - fromIntegral count + 1
+      in
+        EntrySlice {full = reverse (toList full), indexTop, partialTop = Nothing, ..}
+    where
+      bot = subClamp (EntryIndex total) (1 + indexTop)
+      total = entriesLength ents
 
-computeView ::
-  CursorIndex ->
-  Int ->
-  Int ->
-  MenuView ->
-  MenuView
-computeView newCursor@(CursorIndex cur) maxHeight count nmenu@(MenuView _ oldBot _ _) =
-  if
-    | scrolledDown -> scrollDown newCursor maxHeight count
-    | scrolledUp -> scrollUp newCursor maxHeight
-    | otherwise -> moveCursorLine newCursor maxHeight count nmenu
+preferBottomPartial :: AvailLines -> EntryIndex -> PartialEntry i -> PartialEntry i -> EntrySlice i
+preferBottomPartial (AvailLines avail) index bot top
+  | bottomEntryFits =
+    EntrySlice {
+      full = [bot.entry],
+      indexBot = index,
+      indexTop = index,
+      partialBot = Nothing,
+      partialTop
+    }
+  | otherwise =
+    OnlyPartialEntry {entry = PartialEntry {entry = bot.entry, visibleLines = avail}, index}
   where
-    scrolledUp =
-      relativeTop < cur
-    relativeTop =
-      newBot + maxHeight - 1
-    newBot =
-      min oldBot cur
-    scrolledDown =
-      oldBot > cur
+    partialTop | botExtra == 0 = Nothing
+               | otherwise = Just PartialEntry {entry = top.entry, visibleLines = avail - entryLineCount bot.entry}
 
-entryId :: Entry i -> (Int, Bool)
-entryId (Entry _ i s) =
-  (i, s)
+    bottomEntryFits = botExtra >= 0
 
+    botExtra :: Int
+    botExtra = fromIntegral @Word @Int avail - fromIntegral @Word @Int (entryLineCount bot.entry)
+
+-- | Fetch entries below the cursor index to fill the space below the cursor line, then fetch entries above the cursor
+-- index to fill the remaining space.
+-- This might return fewer lines than available if there are only a few visible items.
+entrySliceCursor ::
+  Entries i ->
+  CursorIndex ->
+  CursorLine ->
+  AvailLines ->
+  Maybe (EntrySlice i)
+entrySliceCursor ents cursor (CursorLine cursorL) avail =
+  (withBot <$> sliceBot) <|> onlyTop
+  where
+
+    onlyTop = sliceTop avail
+
+    withBot slice =
+      maybe slice (withBoth slice) (sliceTop topCount)
+      where
+        -- If a full slice and a partial item was found, there were enough items below the cursor to fill the space, so
+        -- we can use the available bottom space (@== cursorLine + 1@) to calculate the top space.
+        -- If not, we have to count all the lines in the returned entries.
+        -- Same applies to the new cursor line – it moves to the number of bottom entry lines if no partial item was found.
+        topCount = case slice of
+          EntrySlice {partialBot = Just _} -> subClamp avail botAvail
+          _ -> subClamp avail botLines
+
+        botLines = case slice of
+          EntrySlice {full} -> entriesLineCount full
+          OnlyPartialEntry {entry} -> entry.visibleLines
+
+    withBoth EntrySlice {full = entsBot, indexBot, partialBot} EntrySlice {full = entsTop, indexTop, partialTop} =
+      EntrySlice {full = entsTop <> entsBot, ..}
+    withBoth EntrySlice {full, indexBot, indexTop, partialBot} OnlyPartialEntry {entry} =
+      EntrySlice {partialTop = Just entry, ..}
+    withBoth OnlyPartialEntry {entry} EntrySlice {full, indexBot, indexTop, partialTop} =
+      EntrySlice {partialBot = Just entry, ..}
+    withBoth OnlyPartialEntry {entry = bot, index} OnlyPartialEntry {entry = top} =
+      preferBottomPartial avail index bot top
+
+    sliceTop topCount = entrySliceBot ents (fromIntegral (cursor + 1)) topCount
+
+    sliceBot = entrySliceTop ents (fromIntegral cursor) botAvail
+
+    botAvail = AvailLines (cursorL + 1)
+
+data ViewChange =
+  ScrollUp
+  |
+  ScrollDown
+  |
+  MoveCursor CursorIndex CursorLine
+  deriving stock (Eq, Show, Generic)
+
+entrySliceForChange ::
+  Entries i ->
+  CursorIndex ->
+  AvailLines ->
+  ViewChange ->
+  Maybe (EntrySlice i)
+entrySliceForChange ents cursor avail = \case
+  ScrollUp -> entrySliceTop ents (fromIntegral cursor) avail
+  ScrollDown -> entrySliceBot ents (fromIntegral cursor) avail
+  MoveCursor oldCursor cursorL -> entrySliceCursor ents oldCursor cursorL avail
+
+-- TODO scrolling is currently treated as only happening when the cursor line was at the top/bottom, and is placed there
+-- again after changing the view.
+-- But if we added a mapping for <c-f> that scrolled by a page, we'd want to keep the cursor line identical.
+-- This would be pretty easily achieved by always executing MoveCursor, except that we would need to clamp to the
+-- top/bottom index so we don't skip over the topmost slice. When scrolling again at the top/bottom line, we would wrap
+-- around. However, this would need to be handled in menuCycle (maybe with a special case here).
+viewChange :: Maybe ViewRange -> CursorIndex -> CursorIndex -> ViewChange
+
+viewChange (Just ViewRange {..}) oldCursor (fromIntegral -> newCursor)
+  | newCursor > top = ScrollUp
+  | newCursor < bottom = ScrollDown
+  | otherwise = MoveCursor oldCursor cursorLine
+
+viewChange Nothing _ _ = ScrollDown
+
+sliceIndexes :: EntrySlice i -> SliceIndexes
+sliceIndexes = \case
+  EntrySlice {..} ->
+    SliceIndexes {
+      full = entryId <$> full,
+      partialBot = partialEntryId <$> partialBot,
+      partialTop = partialEntryId <$> partialTop
+    }
+  OnlyPartialEntry {..} ->
+    SliceIndexes {
+      full = [],
+      partialBot = Just (partialEntryId entry),
+      partialTop = Nothing
+    }
+
+-- | Given a cursor index, bottom index, and list of entries, determine the line number of the first line in the entry
+-- list when displayed in the UI:
+--
+-- 1. Use the visible lines of a potential partial bottom entry as base offset, or 0.
+-- 2. Compute the relative index of the cursor from the top (both cursor and bottom index are absolute over all visible
+--    entries).
+-- 3. Sum the lines of the entries from the bottom up to, including, the entry pointed to by the relative index, by
+--    dropping the number of entries given by the relative index from 2.
+-- 4. Add the base offset.
+-- 5. Subtract one to get a zero-based line number.
+findCursorLine :: CursorIndex -> EntrySlice i -> CursorLine
+findCursorLine cursor = \case
+  EntrySlice {..} ->
+    CursorLine (subClamp @Word (linesBelowCursor + partialOffset) 1)
+    where
+      linesBelowCursor :: Word
+      linesBelowCursor = sum (entryLineCount <$> entriesBelowCursor)
+
+      entriesBelowCursor = drop relative full
+
+      relative :: Int
+      relative = fromIntegral (subClamp indexTop cursor)
+
+      partialOffset :: Word
+      partialOffset = maybe 0 (.visibleLines) partialBot
+  OnlyPartialEntry {entry} -> CursorLine (subClamp @Word entry.visibleLines 1)
+
+-- TODO remember to fix the correctness of the cursor when this is done:
+-- when items are refined, the cursor may become out of bounds, but it is not corrected, since it isn't even available
+-- at that location.
+-- this causes the view to become entirely wrong, pressing <cr> for an action does nothing at all
 updateMenuState ::
-  Members [State NvimMenuState, Reader (RenderMenu i)] r =>
-  Int ->
-  Sem r ([Entry i], Bool)
-updateMenuState scratchMax = do
-  oldIndexes <- use #indexes
-  newCursor <- view #cursor
-  count <- view (#entries . to entriesLength)
-  #view %= computeView newCursor (min count scratchMax) count
-  #cursorIndex .= newCursor
-  visible <- newEntrySlice
-  newIndexes <- #indexes <.= (entryId <$> visible)
-  pure (visible, newIndexes /= oldIndexes)
-
-windowLine ::
-  Members [State NvimMenuState, Reader (RenderMenu i)] r =>
-  Sem r Int
-windowLine = do
-  top <- use topIndex
-  bot <- use botIndex
-  curLine <- use cursorLine
-  pure (top - bot - fromIntegral curLine)
+  Member (State NvimMenuState) r =>
+  Entries i ->
+  CursorIndex ->
+  AvailLines ->
+  Sem r (Maybe (EntrySlice i, Bool))
+updateMenuState ents newCursor scratchMax = do
+  old <- get
+  let change = viewChange old.view.range old.view.cursor newCursor
+      maybeSlice = entrySliceForChange ents newCursor scratchMax change
+  for maybeSlice \ slice -> do
+    let
+      cursorLine = findCursorLine newCursor slice
+      (bottom, top) = sliceRange slice
+    #view .= MenuView (Just ViewRange {bottom, top, cursorLine}) newCursor
+    newIndexes <- #slice <.= (sliceIndexes slice)
+    pure (slice, newIndexes /= old.slice)
 
 runS ::
   Member (AtomicState s) r =>
@@ -184,12 +387,22 @@ updateMenu ::
   Sem r ()
 updateMenu scratch =
   runS do
-    (visible, changed) <- updateMenuState (fromMaybe 30 (scratch ^. #options . #maxSize))
-    when changed do
-      void (Scratch.update (scratch ^. #id) (reverse (toList (withMark <$> visible))))
-    windowExec scratch.window "call winrestview({'topline': 1})"
-    targetLine <- windowLine
-    setLine scratch.window targetLine !>> Log.debug "menu cursor line invalid"
+    newCursor <- view #cursor
+    ents <- view #entries
+    result <- updateMenuState ents newCursor (fromMaybe 30 (fromIntegral <$> scratch.options.maxSize))
+    for_ result \ (visible, changed) -> do
+      when changed do
+        void (Scratch.update scratch.id (toList =<< renderSlice visible))
+      gets (.view.range) >>= traverse_ \ range -> do
+        alignContent
+        count <- nvimBufLineCount scratch.buffer
+        let windowLine = subClamp count (1 + range.cursorLine)
+        setLine scratch.window windowLine !>> Log.debug "menu cursor line invalid"
+  where
+    -- Even though the line count is always matched to the window size, it is possible for the content to be scrolled
+    -- out of the viewport.
+    -- This enforces that the first content line is anchored at the first UI line.
+    alignContent = windowExec scratch.window "call winrestview({'topline': 1})"
 
 updateStatus ::
   Members [Reader (RenderMenu i), Scratch !! RpcError, Rpc, Stop RpcError] r =>
@@ -202,9 +415,9 @@ updateStatus scr = do
       builtinSegmentsSize =
         Text.length filterSegment + Text.length countSegment
       space =
-        width - 2
+        subClamp width (2 :: Word)
       middleSpace =
-        space - builtinSegmentsSize
+        subClamp space builtinSegmentsSize
       filterSegment =
         [exon|🔎 #{f}|]
       middleSegment =
@@ -218,7 +431,7 @@ updateStatus scr = do
       leftGutter =
         fromMaybe 0 (div gutter 2)
       rightGutter =
-        gutter - leftGutter
+        subClamp gutter leftGutter
       ws n =
         Text.replicate n " "
       segments =

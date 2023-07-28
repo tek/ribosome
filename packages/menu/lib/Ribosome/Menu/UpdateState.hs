@@ -107,7 +107,7 @@ insertItems ::
 insertItems new = do
   index <- use itemCount
   itemCount += newCount
-  let newI = IntMap.fromList (zip [index..] new)
+  let newI = IntMap.fromList (zip [fromIntegral index..] new)
   items %= IntMap.union newI
   filterMode <- use MenuState.filterMode
   query <- use MenuState.query
@@ -119,8 +119,7 @@ insertItems new = do
   addHistory query =<< use entries
   Log.debug [exon|Inserted #{show newCount} items (#{show newEntriesCount} entries)|]
   where
-    newCount =
-      length new
+    newCount = fromIntegral (length new)
 
 promptItemUpdate ::
   MenuState s =>

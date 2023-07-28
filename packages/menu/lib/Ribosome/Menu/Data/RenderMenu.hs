@@ -20,8 +20,8 @@ data RenderMenu i =
 menuStatus ::
   ∀ s .
   MenuState s =>
-  Int ->
-  Int ->
+  Word ->
+  Word ->
   CursorIndex ->
   s ->
   MenuStatus

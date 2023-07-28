@@ -74,13 +74,13 @@ entries =
 
 itemCount ::
   MenuState s =>
-  Lens s s Int Int
+  Lens s s Word Word
 itemCount =
   core . #itemCount
 
 entryCount ::
   MenuState s =>
-  Lens s s Int Int
+  Lens s s Word Word
 entryCount =
   core . #entryCount
 

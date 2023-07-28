@@ -2,9 +2,9 @@ module Ribosome.Menu.Test.Menu where
 
 import Conc (Consume, consumeFind, interpretQueueTBM, resultToMaybe)
 import Exon (exon)
-import Hedgehog.Internal.Property (Failure)
+import Hedgehog.Internal.Property (Failure, failWith)
 import Polysemy.Chronos (ChronosTime, interpretTimeChronos)
-import Polysemy.Test (Hedgehog, TestError, assertEq, evalMaybe)
+import Polysemy.Test (Hedgehog, TestError, assertEq, evalMaybe, liftH)
 import qualified Queue
 import Time (Seconds (Seconds))
 
@@ -51,6 +51,12 @@ enqueueItems =
       unit
     MenuUi.PromptEvent ->
       pure PromptEvent.Ignore
+    MenuUi.PromptScratch ->
+      liftH (failWith Nothing "No scratch for null MenuUi")
+    MenuUi.StatusScratch ->
+      liftH (failWith Nothing "No scratch for null MenuUi")
+    MenuUi.ItemsScratch ->
+      liftH (failWith Nothing "No scratch for null MenuUi")
 
 enqueuePrompt ::
   ∀ s r a .
