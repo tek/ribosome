@@ -52,7 +52,7 @@ jobs:
           extra_nix_config: |
             access-tokens = github.com=${{ secrets.GITHUB_TOKEN }}#{cachixConf (fromMaybe cachixTek cachix)}#{foldMap (cachixStep . (.cachixName)) cachix}
       - name: 'build'
-        run: nix build .#static
+        run: nix build .#{"#"}#{name}.static
       - uses: 'marvinpinto/action-automatic-releases@latest'
         name: 'create release'
         with:

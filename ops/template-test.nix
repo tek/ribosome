@@ -9,7 +9,7 @@ let
     cd $dir
     nix run path:${self}#new -- $name -a Author -m maint@ain.er -o org -r proj -b main --skip-cachix --flake-url 'path:${self}'
     cd $dir/$name
-    nix build .#static
+    nix build .#ribo-tpl.static
     if [[ ! -e result/bin/$name ]]
     then
       print "result/bin/$name not generated"

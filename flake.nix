@@ -17,11 +17,6 @@
       packages = ["ribosome-host" "ribosome-host-test" "ribosome" "ribosome-test" "ribosome-app"];
     };
 
-    overrides = { hackage, pkgs, jailbreak, ... }: {
-      fuzzyfind = jailbreak (hackage "3.0.1" "17lk2i3gq5kg7h2a4cax6n4lz2mh0qqyrw34lccnwr7nlvpg4var");
-      streamly = hackage "0.8.2" "0jhsdd71kqw0k0aszg1qb1l0wbxl1r73hsmkdgch4vlx43snlc8a";
-    };
-
     cabal = {
       license = "BSD-2-Clause-Patent";
       license-file = "LICENSE";
@@ -42,6 +37,11 @@
         module = "Prelate";
       };
       dependencies = ["polysemy" "polysemy-plugin"];
+    };
+
+    overrides = { hackage, pkgs, jailbreak, ... }: {
+      fuzzyfind = jailbreak (hackage "3.0.1" "17lk2i3gq5kg7h2a4cax6n4lz2mh0qqyrw34lccnwr7nlvpg4var");
+      streamly = hackage "0.8.2" "0jhsdd71kqw0k0aszg1qb1l0wbxl1r73hsmkdgch4vlx43snlc8a";
     };
 
     buildInputs = pkgs: [pkgs.neovim pkgs.tmux pkgs.xterm];
@@ -315,7 +315,6 @@
     };
 
     envs.dev = {
-      buildInputs = pkgs: [pkgs.neovim pkgs.tmux pkgs.xterm];
       env = { RIBOSOME_ROOT = builtins.toPath self; };
     };
 

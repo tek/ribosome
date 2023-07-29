@@ -9,7 +9,7 @@
     main = "test-project";
     depsFull = [ribosome];
     hackage.versionFile = "ops/version.nix";
-    genOverrides.enable = true;
+    gen-overrides.enable = true;
 
     cabal = {
       license = "BSD-2-Clause-Patent";
@@ -69,9 +69,7 @@
     cachixName = "cach";
     cachixKey = "12345";
 
-    overrides = { buildInputs, pkgs, ... }: {
-      test-project = buildInputs [pkgs.neovim pkgs.tmux pkgs.xterm];
-    };
+    buildInputs = pkgs: [pkgs.neovim pkgs.tmux pkgs.xterm];
 
     envs.dev.buildInputs = with config.pkgs; [pkgs.neovim pkgs.tmux];
 

@@ -55,12 +55,6 @@ with lib;
 
     githubRepo = mkDefault config.exe;
 
-    overrides = { self, hsLib, ... }: {
-      static = hsLib.justStaticExecutables self.${config.exe};
-    };
-
-    output.extraPackages = ["static"];
-
     outputs.apps.boot = {
       type = "app";
       program = "${import ./boot.nix {inherit self config; }}";

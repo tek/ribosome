@@ -23,7 +23,7 @@ jobs:
           name: cach
           signingKey: '${{ secrets.CACHIX_SIGNING_KEY }}'
       - name: 'build'
-        run: nix build .#static
+        run: nix build .#test-project.static
       - uses: 'marvinpinto/action-automatic-releases@latest'
         name: 'create release'
         with:

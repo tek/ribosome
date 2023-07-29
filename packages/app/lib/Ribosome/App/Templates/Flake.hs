@@ -56,7 +56,7 @@ flakeNix (FlakeUrl flakeUrl) (ProjectName name) author maintainer (Branch branch
     main = "#{name}";
     depsFull = [ribosome];
     hackage.versionFile = "ops/version.nix";
-    genOverrides.enable = true;
+    gen-overrides.enable = true;
 
     cabal = {
       license = "BSD-2-Clause-Patent";
@@ -64,7 +64,7 @@ flakeNix (FlakeUrl flakeUrl) (ProjectName name) author maintainer (Branch branch
       author = "##{author}";
       meta = {
         maintainer = "##{maintainer}";
-        category = "Neovim";#{foldMap (githubField) github}
+        category = "Neovim";#{foldMap githubField github}
       };
       prelude = {
         enable = true;
@@ -111,9 +111,7 @@ flakeNix (FlakeUrl flakeUrl) (ProjectName name) author maintainer (Branch branch
     exe = "#{name}";
     branch = "#{branch}";#{foldMap githubAttrs github}#{foldMap cachixAttrs cachix}
 
-    overrides = { buildInputs, pkgs, ... }: {
-      #{name} = buildInputs [pkgs.neovim pkgs.tmux pkgs.xterm];
-    };
+    buildInputs = pkgs: [pkgs.neovim pkgs.tmux pkgs.xterm];
 
     envs.dev.buildInputs = with config.pkgs; [pkgs.neovim pkgs.tmux];
 
