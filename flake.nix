@@ -230,7 +230,6 @@
           "exon"
           "extra"
           "fuzzyfind"
-          "generic-lens"
           "lens-regex-pcre"
           "microlens-mtl"
           "pcre-light"
