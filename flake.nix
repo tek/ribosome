@@ -11,6 +11,7 @@
     main = "ribosome-menu";
     depsFull = [chiasma];
     compat.enable = false;
+    gen-overrides.enable = true;
     hackage = {
       versionFile = "ops/version.nix";
       packages = ["ribosome-host" "ribosome-host-test" "ribosome" "ribosome-test" "ribosome-app"];
