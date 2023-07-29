@@ -8,8 +8,8 @@
   outputs = { ribosome, ... }: ribosome.lib.pro ({ config, lib, ... }: {
     main = "test-project";
     depsFull = [ribosome];
-    compiler = "ghc925";
     hackage.versionFile = "ops/version.nix";
+    genOverrides.enable = true;
 
     cabal = {
       license = "BSD-2-Clause-Patent";
@@ -24,7 +24,7 @@
         enable = true;
         package = {
           name = "prelate";
-          version = "^>= 0.5.1";
+          version = "^>= 0.6";
         };
         module = "Prelate";
       };

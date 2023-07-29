@@ -11,7 +11,7 @@ let
     set -e
     dir=$(${nix "run path:${self}#ribosome -- new --print-dir $*"})
     cd $dir
-    ${nix "run .#hpack"}
+    ${nix "run .#gen"}
   '';
 
 in script

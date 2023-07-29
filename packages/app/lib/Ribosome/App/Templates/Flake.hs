@@ -55,8 +55,8 @@ flakeNix (FlakeUrl flakeUrl) (ProjectName name) author maintainer (Branch branch
   outputs = { ribosome, ... }: ribosome.lib.pro ({ config, lib, ... }: {
     main = "#{name}";
     depsFull = [ribosome];
-    compiler = "ghc925";
     hackage.versionFile = "ops/version.nix";
+    genOverrides.enable = true;
 
     cabal = {
       license = "BSD-2-Clause-Patent";
