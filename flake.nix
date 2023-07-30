@@ -6,8 +6,7 @@
     chiasma.url = "git+https://git.tryp.io/tek/chiasma";
   };
 
-  outputs = {self, hix, chiasma, ...}: hix.lib.pro ({config, lib, ...}: let
-  in {
+  outputs = {self, hix, chiasma, ...}: hix.lib.pro ({config, lib, ...}: {
     main = "ribosome-menu";
     depsFull = [chiasma];
     compat.enable = false;
