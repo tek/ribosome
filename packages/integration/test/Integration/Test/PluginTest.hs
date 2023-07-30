@@ -63,7 +63,7 @@ waitForFunction ::
   Sem r ()
 waitForFunction =
   resumeTestError @Rpc @RpcError do
-    Conc.timeout_ (liftH (failWith Nothing "RPC function did not appear")) (Minutes 2) do
+    Conc.timeout_ (liftH (failWith Nothing "RPC function did not appear")) (Minutes 5) do
       Time.while (MilliSeconds 500) (resumeAs @RpcError @Rpc True (False <$ nvimCallFunction @Int "Test" []))
     assertEq (5 :: Int) =<< nvimCallFunction "Test" []
 

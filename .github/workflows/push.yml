@@ -24,6 +24,8 @@ jobs:
           name: tek
           signingKey: '${{ secrets.CACHIX_SIGNING_KEY }}'
       - name: 'build'
+        env:
+          RIBOSOME_ROOT: ${{ vars.GITHUB_WORKSPACE }}
         run: nix flake check
       - name: 'template test'
         run: nix run .#template-test
