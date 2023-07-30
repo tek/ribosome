@@ -39,7 +39,7 @@ import Ribosome.Menu.Test.Run (unitTestTimes)
 import Ribosome.Menu.Test.Util (mkItems, staticMenuItems)
 import Ribosome.Test.Embed (testEmbed_)
 import Ribosome.Test.Screenshot (awaitScreenshot)
-import Ribosome.Test.Skip (skipUnlessX)
+import Ribosome.Test.Skip (requireX)
 import Ribosome.Test.SocketTmux (testSocketTmux)
 
 pureEvents :: [PromptEvent]
@@ -214,5 +214,5 @@ test_nvimMenu =
     unitTestTimes 10 "interrupt window" test_interruptWindow,
     unitTest "close scratch when quitting" test_quit,
     unitTest "scroll up" test_scrollUp,
-    unitTestTimes 3 "extra bottom status message" (skipUnlessX test_bottomStatus)
+    requireX (unitTestTimes 3 "extra bottom status message") test_bottomStatus
   ]

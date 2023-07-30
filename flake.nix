@@ -202,6 +202,7 @@
           "ribosome"
           "ribosome-host"
           "ribosome-host-test"
+          "tasty"
         ];
       };
 

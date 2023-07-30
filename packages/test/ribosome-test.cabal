@@ -96,6 +96,7 @@ library
     , ribosome
     , ribosome-host
     , ribosome-host-test
+    , tasty
   mixins:
       base hiding (Prelude)
     , prelate (Prelate as Prelude)

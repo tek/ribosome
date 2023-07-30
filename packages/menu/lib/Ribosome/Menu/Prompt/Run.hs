@@ -1,7 +1,7 @@
 module Ribosome.Menu.Prompt.Run where
 
 import Conc (Gates, consumeElem, subscribeAsync, withAsync_)
-import Time (MilliSeconds, convert)
+import Time (MilliSeconds (MilliSeconds), convert, sleep)
 
 import Ribosome.Api.Input (feedKey, syntheticInput, syntheticInputFk)
 import Ribosome.Host.Effect.Rpc (Rpc)
@@ -50,6 +50,7 @@ withPromptInputSync chrs =
   menuSync . subscribeAsync do
     menuEngine @MenuCore waitPrompt
     for_ chrs \ (SyncChar {..}) -> do
+      sleep (MilliSeconds 1)
       void (feedKey char)
       when sync (consumeElem PromptLoop)
 
