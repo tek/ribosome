@@ -8,8 +8,11 @@ import Polysemy.Test (Hedgehog, TestError, assertEq, evalMaybe, liftH)
 import qualified Queue
 import Time (Seconds (Seconds))
 
+import Ribosome.Api.Buffer (bufferContent)
+import qualified Ribosome.Data.ScratchState
 import Ribosome.Host.Data.Report (ReportLog, resumeReportFail)
 import Ribosome.Host.Data.RpcError (RpcError)
+import Ribosome.Host.Effect.Rpc (Rpc)
 import Ribosome.Host.Interpreter.Log (interpretReportLogLog)
 import Ribosome.Menu.Action (MenuWidget, menuIgnore)
 import Ribosome.Menu.Class.MenuState (MenuState)
@@ -27,7 +30,7 @@ import Ribosome.Menu.Effect.MenuFilter (MenuFilter)
 import qualified Ribosome.Menu.Effect.MenuTest as MenuTest
 import Ribosome.Menu.Effect.MenuTest (MenuTest)
 import qualified Ribosome.Menu.Effect.MenuUi as MenuUi
-import Ribosome.Menu.Effect.MenuUi (ScopedMenuUi)
+import Ribosome.Menu.Effect.MenuUi (MenuUi, ScopedMenuUi)
 import Ribosome.Menu.Interpreter.Menu (interpretMenus)
 import Ribosome.Menu.Interpreter.MenuFilter (defaultFilter)
 import Ribosome.Menu.Interpreter.MenuTest (TestTimeout, failTimeout)
@@ -38,7 +41,7 @@ import Ribosome.Menu.Prompt.Data.Prompt (Prompt (Prompt), PromptText)
 import Ribosome.Menu.Prompt.Data.PromptConfig (startInsert)
 import qualified Ribosome.Menu.Prompt.Data.PromptEvent as PromptEvent
 import Ribosome.Test.Error (testError)
-import Ribosome.Test.Wait (assertWait)
+import Ribosome.Test.Wait (assertWait, (<--))
 
 enqueueItems ::
   Members [Hedgehog IO, Queue [Text]] r =>
@@ -201,3 +204,19 @@ awaitCurrent ::
 awaitCurrent target =
   withFrozenCallStack do
     assertCurrent (assertEq target)
+
+itemsBufferContent ::
+  Members [MenuUi, Rpc] r =>
+  Sem r [Text]
+itemsBufferContent = do
+  items <- MenuUi.itemsScratch
+  bufferContent items.buffer
+
+awaitItemsBuffer ::
+  HasCallStack =>
+  Members [MenuUi, Rpc, Hedgehog IO, ChronosTime, Race, Error Failure, Embed IO] r =>
+  [Text] ->
+  Sem r ()
+awaitItemsBuffer target =
+  withFrozenCallStack do
+    target <-- itemsBufferContent

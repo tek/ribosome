@@ -14,7 +14,7 @@
       ribosome-test = fast;
       integration = fast;
     };
-    packages.test-plugin = { src =  ./packages/test-plugin; };
+    packages.test-plugin = { src = ./packages/test-plugin; };
     ifd = true;
   };
 }

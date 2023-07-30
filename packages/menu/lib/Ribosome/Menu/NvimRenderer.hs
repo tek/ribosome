@@ -389,8 +389,11 @@ updateMenu scratch =
   runS do
     newCursor <- view #cursor
     ents <- view #entries
-    result <- updateMenuState ents newCursor (fromMaybe 30 (fromIntegral <$> scratch.options.maxSize))
-    for_ result \ (visible, changed) -> do
+    maybe clear update =<< updateMenuState ents newCursor (fromMaybe 30 (fromIntegral <$> scratch.options.maxSize))
+  where
+    clear = void (Scratch.update scratch.id (mempty @[_]))
+
+    update (visible, changed) = do
       when changed do
         void (Scratch.update scratch.id (toList =<< renderSlice visible))
       gets (.view.range) >>= traverse_ \ range -> do
@@ -398,7 +401,7 @@ updateMenu scratch =
         count <- nvimBufLineCount scratch.buffer
         let windowLine = subClamp count (1 + range.cursorLine)
         setLine scratch.window windowLine !>> Log.debug "menu cursor line invalid"
-  where
+
     -- Even though the line count is always matched to the window size, it is possible for the content to be scrolled
     -- out of the viewport.
     -- This enforces that the first content line is anchored at the first UI line.

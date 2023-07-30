@@ -26,7 +26,7 @@ import Ribosome.Menu.Class.MenuState (Filter, MenuState (Item))
 import qualified Ribosome.Menu.Data.Filter as Data
 import Ribosome.Menu.Data.FilterMode (FilterMode)
 import Ribosome.Menu.Data.MenuEvent (MenuEvent (Query))
-import Ribosome.Menu.Data.MenuItem (MenuItem)
+import Ribosome.Menu.Data.MenuItem (MenuItem, simpleMenuItemLines)
 import Ribosome.Menu.Data.WindowConfig (WindowConfig (WindowConfig))
 import Ribosome.Menu.Effect.Menu (MenuEngine, MenuEngineStack, Menus, bundleMenuEngine, waitPrompt)
 import Ribosome.Menu.Effect.MenuFilter (MenuFilter)
@@ -242,6 +242,23 @@ testStaticNvimMenu ::
 testStaticNvimMenu items nativePrompt pconf initial options maps =
   runStaticTestMenu @(Item s) pconf items .
   testNvimMenu @_ @s nativePrompt pconf initial options maps
+
+testStaticNvimMenuSimple ::
+  ∀ result s r .
+  Item s ~ () =>
+  MenuState s =>
+  Members MenuTestIOStack r =>
+  Members [EventConsumer Event, MenuFilter (Filter s)] r =>
+  Members [Rpc, Rpc !! RpcError, Settings !! SettingError, Scratch !! RpcError, Stop RpcError] r =>
+  [NonEmpty Text] ->
+  Bool ->
+  PromptConfig ->
+  s ->
+  ScratchOptions ->
+  Mappings s (MenuTestEffects s result ++ MenuTestStack (Item s) result ++ r) result ->
+  InterpretersFor (MenuTestEffects s result ++ MenuTestStack (Item s) result) r
+testStaticNvimMenuSimple items =
+  testStaticNvimMenu (simpleMenuItemLines () <$> items)
 
 testNativeMenu' ::
   ∀ result s r .
