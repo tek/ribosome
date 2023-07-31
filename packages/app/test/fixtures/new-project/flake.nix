@@ -5,9 +5,10 @@
     ribosome.url = "git+https://git.tryp.io/tek/ribosome";
   };
 
-  outputs = { ribosome, ... }: ribosome.lib.pro ({ config, lib, ... }: {
+  outputs = {ribosome, ...}: ribosome.lib.pro ({config, lib, ...}: {
     main = "test-project";
     depsFull = [ribosome];
+    compiler = "ghc94";
     hackage.versionFile = "ops/version.nix";
     gen-overrides.enable = true;
 

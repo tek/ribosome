@@ -23,7 +23,9 @@ jobs:
           name: cach
           signingKey: '${{ secrets.CACHIX_SIGNING_KEY }}'
       - name: 'build'
-        run: nix build .#test-project.static
+        run: |
+          nix bundle -o static-binary --bundler github:ralismark/nix-appimage .#static
+          mv static-binary test-project
       - uses: 'marvinpinto/action-automatic-releases@latest'
         name: 'create release'
         with:
@@ -31,4 +33,4 @@ jobs:
           automatic_release_tag: 'latest'
           prerelease: true
           files: |
-            result/bin/test-project
+            test-project

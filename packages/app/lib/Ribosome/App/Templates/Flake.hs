@@ -52,9 +52,10 @@ flakeNix (FlakeUrl flakeUrl) (ProjectName name) author maintainer (Branch branch
     ribosome.url = "#{flakeUrl}";
   };
 
-  outputs = { ribosome, ... }: ribosome.lib.pro ({ config, lib, ... }: {
+  outputs = {ribosome, ...}: ribosome.lib.pro ({config, lib, ...}: {
     main = "#{name}";
     depsFull = [ribosome];
+    compiler = "ghc94";
     hackage.versionFile = "ops/version.nix";
     gen-overrides.enable = true;
 

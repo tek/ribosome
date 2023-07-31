@@ -52,14 +52,16 @@ jobs:
           extra_nix_config: |
             access-tokens = github.com=${{ secrets.GITHUB_TOKEN }}#{cachixConf (fromMaybe cachixTek cachix)}#{foldMap (cachixStep . (.cachixName)) cachix}
       - name: 'build'
-        run: nix build .#{"#"}#{name}.static
+        run: |
+          nix bundle -o static-binary --bundler github:ralismark/nix-appimage .#static
+          mv static-binary #{name}
       - uses: 'marvinpinto/action-automatic-releases@latest'
         name: 'create release'
         with:
           repo_token: "${{ secrets.GITHUB_TOKEN }}"
           #{release}
           files: |
-            result/bin/#{name}
+            #{name}
 |]
 
 gaLatest ::
