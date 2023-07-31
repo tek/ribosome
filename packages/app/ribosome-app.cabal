@@ -94,9 +94,9 @@ library
     , optparse-applicative
     , path
     , path-io
-    , polysemy
+    , polysemy ==1.9.*
     , polysemy-chronos
-    , polysemy-plugin
+    , polysemy-plugin ==0.4.*
     , prelate ==0.6.*
     , rainbow
     , ribosome-host
@@ -148,8 +148,8 @@ executable ribosome
   ghc-options: -fplugin=Polysemy.Plugin -threaded -rtsopts -with-rtsopts=-N -Wall -Widentities -Wincomplete-uni-patterns -Wmissing-deriving-strategies -Wredundant-constraints -Wunused-type-patterns -Wunused-packages
   build-depends:
       base ==4.*
-    , polysemy
-    , polysemy-plugin
+    , polysemy ==1.9.*
+    , polysemy-plugin ==0.4.*
     , prelate ==0.6.*
     , ribosome-app
   mixins:
@@ -205,8 +205,8 @@ test-suite ribosome-app-test
       base ==4.*
     , chronos
     , path
-    , polysemy
-    , polysemy-plugin
+    , polysemy ==1.9.*
+    , polysemy-plugin ==0.4.*
     , polysemy-test
     , prelate ==0.6.*
     , ribosome-app

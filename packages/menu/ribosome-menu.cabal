@@ -137,10 +137,10 @@ library
     , lens-regex-pcre
     , microlens-mtl
     , pcre-light
-    , polysemy
+    , polysemy ==1.9.*
     , polysemy-chronos
     , polysemy-conc
-    , polysemy-plugin
+    , polysemy-plugin ==0.4.*
     , prelate ==0.6.*
     , ribosome
     , ribosome-host
@@ -208,9 +208,9 @@ test-suite ribosome-menu-test
     , exon
     , hedgehog
     , microlens-mtl
-    , polysemy
+    , polysemy ==1.9.*
     , polysemy-chronos
-    , polysemy-plugin
+    , polysemy-plugin ==0.4.*
     , polysemy-test
     , prelate ==0.6.*
     , ribosome
@@ -275,9 +275,9 @@ benchmark ribosome-menu-bench
     , exon
     , microlens
     , path
-    , polysemy
+    , polysemy ==1.9.*
     , polysemy-conc
-    , polysemy-plugin
+    , polysemy-plugin ==0.4.*
     , polysemy-test
     , prelate ==0.6.*
     , ribosome

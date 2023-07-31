@@ -159,8 +159,8 @@ library
     , optparse-applicative
     , path
     , path-io
-    , polysemy
-    , polysemy-plugin
+    , polysemy ==1.9.*
+    , polysemy-plugin ==0.4.*
     , prelate ==0.6.*
     , prettyprinter
     , ribosome-host
@@ -230,9 +230,9 @@ test-suite ribosome-test
     , hedgehog
     , messagepack
     , path
-    , polysemy
+    , polysemy ==1.9.*
     , polysemy-conc
-    , polysemy-plugin
+    , polysemy-plugin ==0.4.*
     , polysemy-test
     , prelate ==0.6.*
     , ribosome

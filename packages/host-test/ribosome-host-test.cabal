@@ -71,9 +71,9 @@ library
       base ==4.*
     , chronos
     , hedgehog
-    , polysemy
+    , polysemy ==1.9.*
     , polysemy-chronos
-    , polysemy-plugin
+    , polysemy-plugin ==0.4.*
     , polysemy-test
     , prelate ==0.6.*
     , ribosome-host

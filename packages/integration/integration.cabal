@@ -69,8 +69,8 @@ library
   build-depends:
       base ==4.*
     , messagepack
-    , polysemy
-    , polysemy-plugin
+    , polysemy ==1.9.*
+    , polysemy-plugin ==0.4.*
     , prelate ==0.6.*
     , ribosome
     , ribosome-host
@@ -130,10 +130,10 @@ test-suite integration-test
     , integration
     , path
     , path-io
-    , polysemy
+    , polysemy ==1.9.*
     , polysemy-chronos
     , polysemy-conc
-    , polysemy-plugin
+    , polysemy-plugin ==0.4.*
     , polysemy-process
     , polysemy-test
     , prelate ==0.6.*

@@ -160,10 +160,10 @@ library
     , network
     , optparse-applicative
     , path
-    , polysemy
+    , polysemy ==1.9.*
     , polysemy-chronos
     , polysemy-log
-    , polysemy-plugin
+    , polysemy-plugin ==0.4.*
     , polysemy-process
     , prelate ==0.6.*
     , template-haskell
@@ -245,10 +245,10 @@ test-suite ribosome-host-test
     , messagepack
     , optparse-applicative
     , path
-    , polysemy
+    , polysemy ==1.9.*
     , polysemy-chronos
     , polysemy-conc
-    , polysemy-plugin
+    , polysemy-plugin ==0.4.*
     , polysemy-test
     , prelate ==0.6.*
     , ribosome-host
