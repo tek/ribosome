@@ -62,11 +62,11 @@
         "thax": "thax_10"
       },
       "locked": {
-        "lastModified": 1690721320,
-        "narHash": "sha256-bgu4bcdTnECTBbBYH4e3ajwuyC/fS89EELeH1Ub6pPQ=",
+        "lastModified": 1691091661,
+        "narHash": "sha256-Dq7/gPaZfvJZ44pR+45DsXn4ipcMrsN9iMAchLYxBbc=",
         "ref": "refs/heads/main",
-        "rev": "011b603a348d0ff303880a18b57336fad079821c",
-        "revCount": 500,
+        "rev": "a46bf25230a1943763525caea10460a296d80470",
+        "revCount": 503,
         "type": "git",
         "url": "https://git.tryp.io/tek/hix"
       },
@@ -543,11 +543,11 @@
     },
     "thax_10": {
       "locked": {
-        "lastModified": 1677960812,
-        "narHash": "sha256-FYkZZVTMBo0dtqPr73tadUz+69jgQBo2S4qKOxTGWZ4=",
+        "lastModified": 1691091387,
+        "narHash": "sha256-i1dc/XqsIQizZ09o2ltX10zhV/3LCc0ZUqsS7enyN+g=",
         "owner": "tek",
         "repo": "thax",
-        "rev": "4b4f68d0232e1f707d97bbcaab0d5534b97ba94f",
+        "rev": "10fa7482d171739414fc0d829005b4055799e4c6",
         "type": "github"
       },
       "original": {
