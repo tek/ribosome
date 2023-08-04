@@ -11,7 +11,7 @@ import Generics.SOP.Type.Metadata (
   DatatypeInfo (ADT, Newtype),
   FieldInfo (FieldInfo),
   )
-import Path (Path, toFilePath)
+import Path (Path, toFilePath, SomeBase, prjSomeBase)
 import Time (
   MicroSeconds (unMicroSeconds),
   MilliSeconds (unMilliSeconds),
@@ -183,6 +183,10 @@ instance (MsgpackEncode a, MsgpackEncode b, MsgpackEncode c) => MsgpackEncode (a
 instance MsgpackEncode (Path b t) where
   toMsgpack =
     ObjectString . encodeUtf8 . toFilePath
+
+instance MsgpackEncode (SomeBase t) where
+  toMsgpack =
+    ObjectString . encodeUtf8 . prjSomeBase toFilePath
 
 instance MsgpackEncode NanoSeconds where
   toMsgpack =

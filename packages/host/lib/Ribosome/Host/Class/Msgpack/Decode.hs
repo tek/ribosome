@@ -13,7 +13,7 @@ import Generics.SOP.Type.Metadata (
   DatatypeInfo (ADT, Newtype),
   FieldInfo (FieldInfo),
   )
-import Path (Abs, Dir, File, Path, Rel, parseAbsDir, parseAbsFile, parseRelDir, parseRelFile)
+import Path (Abs, Dir, File, Path, Rel, parseAbsDir, parseAbsFile, parseRelDir, parseRelFile, SomeBase, parseSomeDir, parseSomeFile)
 import Time (MicroSeconds, MilliSeconds, NanoSeconds, Seconds (Seconds))
 
 import Ribosome.Host.Class.Msgpack.Error (
@@ -330,14 +330,21 @@ instance DecodePath Rel Dir where
   decodePath =
     parseRelDir
 
+decodePathWith ::
+  ∀ p .
+  (FilePath -> Either SomeException p) ->
+  Object ->
+  Either FieldError p
+decodePathWith dec o = do
+  ValidUtf8String s <- nestedDecode o
+  first (const (FieldError "Invalid path")) (dec s)
+
 decodePathE ::
   ∀ b t .
   DecodePath b t =>
   Object ->
   Either FieldError (Path b t)
-decodePathE o = do
-  ValidUtf8String s <- nestedDecode o
-  first (const (FieldError "Invalid path")) (decodePath s)
+decodePathE = decodePathWith decodePath
 
 instance (
     Typeable b,
@@ -346,6 +353,12 @@ instance (
   ) => MsgpackDecode (Path b t) where
     fromMsgpack =
       toDecodeError . decodePathE
+
+instance MsgpackDecode (SomeBase File) where
+  fromMsgpack = toDecodeError . decodePathWith parseSomeFile
+
+instance MsgpackDecode (SomeBase Dir) where
+  fromMsgpack = toDecodeError . decodePathWith parseSomeDir
 
 timeUnit ::
   Typeable a =>
