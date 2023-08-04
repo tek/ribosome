@@ -73,6 +73,7 @@
           "text"
           "typed-process"
         ];
+        reexported-modules = ["Data.MessagePack"];
       };
 
       test = {
@@ -132,6 +133,7 @@
           "prettyprinter"
           "ribosome-host"
         ];
+        reexported-modules = ["Data.MessagePack"];
       };
 
       test = {

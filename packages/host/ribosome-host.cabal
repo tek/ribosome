@@ -108,6 +108,8 @@ library
       Ribosome.Host.TH.Api.GenerateData
       Ribosome.Host.TH.Api.Param
       Ribosome.Host.TH.Api.Sig
+  reexported-modules:
+      Data.MessagePack
   hs-source-dirs:
       lib
   default-extensions:

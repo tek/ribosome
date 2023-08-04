@@ -112,6 +112,8 @@ library
       Ribosome.Syntax.Cons
       Ribosome.Syntax.Dsl
       Ribosome.Text
+  reexported-modules:
+      Data.MessagePack
   hs-source-dirs:
       lib
   default-extensions:
