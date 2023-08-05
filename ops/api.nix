@@ -60,5 +60,23 @@ with lib;
       program = "${import ./boot.nix {inherit self config; }}";
     };
 
+    outputs.packages.plugin = let
+
+      name = config.exe;
+
+      dir = config.outputs.packages.${name};
+
+      plugin = config.pkgs.writeTextFile {
+        inherit name;
+        destination = "/plugin/${name}.vim";
+        text = ''
+        let s:args = get(g:, '${name}_cli_args', [])
+        let s:opts = { 'rpc': v:true, 'cwd': '${dir}', }
+        call jobstart(['${dir}/bin/${name}'] + s:args, s:opts)
+        '';
+      };
+
+    in config.pkgs.vimUtils.toVimPlugin plugin;
+
   };
 }
