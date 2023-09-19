@@ -7,6 +7,7 @@
   };
 
   outputs = {self, hix, chiasma, ...}: hix.lib.pro ({config, lib, ...}: {
+    ghcVersions = lib.mkForce [];
     main = "ribosome-menu";
     depsFull = [chiasma];
     compat.enable = false;
