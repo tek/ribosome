@@ -71,7 +71,7 @@ library
     , messagepack
     , polysemy ==1.9.*
     , polysemy-plugin ==0.4.*
-    , prelate ==0.6.*
+    , prelate >=0.6 && <0.8
     , ribosome
     , ribosome-host
   mixins:
@@ -136,7 +136,7 @@ test-suite integration-test
     , polysemy-plugin ==0.4.*
     , polysemy-process
     , polysemy-test
-    , prelate ==0.6.*
+    , prelate >=0.6 && <0.8
     , ribosome
     , ribosome-host
     , ribosome-host-test

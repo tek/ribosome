@@ -167,7 +167,7 @@ library
     , polysemy-log
     , polysemy-plugin ==0.4.*
     , polysemy-process
-    , prelate ==0.6.*
+    , prelate >=0.6 && <0.8
     , template-haskell
     , text
     , typed-process
@@ -252,7 +252,7 @@ test-suite ribosome-host-test
     , polysemy-conc
     , polysemy-plugin ==0.4.*
     , polysemy-test
-    , prelate ==0.6.*
+    , prelate >=0.6 && <0.8
     , ribosome-host
     , tasty
   mixins:

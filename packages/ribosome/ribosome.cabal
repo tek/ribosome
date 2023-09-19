@@ -163,7 +163,7 @@ library
     , path-io
     , polysemy ==1.9.*
     , polysemy-plugin ==0.4.*
-    , prelate ==0.6.*
+    , prelate >=0.6 && <0.8
     , prettyprinter
     , ribosome-host
   mixins:
@@ -236,7 +236,7 @@ test-suite ribosome-test
     , polysemy-conc
     , polysemy-plugin ==0.4.*
     , polysemy-test
-    , prelate ==0.6.*
+    , prelate >=0.6 && <0.8
     , ribosome
     , ribosome-host
     , ribosome-host-test

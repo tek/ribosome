@@ -9,7 +9,6 @@
   outputs = {self, hix, chiasma, ...}: hix.lib.pro ({config, lib, ...}: {
     main = "ribosome-menu";
     depsFull = [chiasma];
-    compiler = "ghc94";
     compat.enable = false;
     gen-overrides.enable = true;
     hackage = {
@@ -32,7 +31,7 @@
         enable = true;
         package = {
           name = "prelate";
-          version = "^>= 0.6";
+          version = ">= 0.6 && < 0.8";
         };
         module = "Prelate";
       };
@@ -261,6 +260,7 @@
           "tasty"
           "tasty-hedgehog"
           "transformers"
+          "zeugma"
         ];
       };
 

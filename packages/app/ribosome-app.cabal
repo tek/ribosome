@@ -97,7 +97,7 @@ library
     , polysemy ==1.9.*
     , polysemy-chronos
     , polysemy-plugin ==0.4.*
-    , prelate ==0.6.*
+    , prelate >=0.6 && <0.8
     , rainbow
     , ribosome-host
   mixins:
@@ -150,7 +150,7 @@ executable ribosome
       base ==4.*
     , polysemy ==1.9.*
     , polysemy-plugin ==0.4.*
-    , prelate ==0.6.*
+    , prelate >=0.6 && <0.8
     , ribosome-app
   mixins:
       base hiding (Prelude)
@@ -208,7 +208,7 @@ test-suite ribosome-app-test
     , polysemy ==1.9.*
     , polysemy-plugin ==0.4.*
     , polysemy-test
-    , prelate ==0.6.*
+    , prelate >=0.6 && <0.8
     , ribosome-app
     , tasty
   mixins:

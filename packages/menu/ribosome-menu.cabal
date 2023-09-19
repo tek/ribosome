@@ -141,7 +141,7 @@ library
     , polysemy-chronos
     , polysemy-conc
     , polysemy-plugin ==0.4.*
-    , prelate ==0.6.*
+    , prelate >=0.6 && <0.8
     , ribosome
     , ribosome-host
     , streamly
@@ -212,7 +212,7 @@ test-suite ribosome-menu-test
     , polysemy-chronos
     , polysemy-plugin ==0.4.*
     , polysemy-test
-    , prelate ==0.6.*
+    , prelate >=0.6 && <0.8
     , ribosome
     , ribosome-host
     , ribosome-host-test
@@ -222,6 +222,7 @@ test-suite ribosome-menu-test
     , tasty
     , tasty-hedgehog
     , transformers
+    , zeugma
   mixins:
       base hiding (Prelude)
     , prelate (Prelate as Prelude)
@@ -279,7 +280,7 @@ benchmark ribosome-menu-bench
     , polysemy-conc
     , polysemy-plugin ==0.4.*
     , polysemy-test
-    , prelate ==0.6.*
+    , prelate >=0.6 && <0.8
     , ribosome
     , ribosome-host
     , ribosome-menu

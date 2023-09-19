@@ -92,7 +92,7 @@ library
     , polysemy-chronos
     , polysemy-plugin ==0.4.*
     , polysemy-test
-    , prelate ==0.6.*
+    , prelate >=0.6 && <0.8
     , ribosome
     , ribosome-host
     , ribosome-host-test
@@ -155,7 +155,7 @@ test-suite ribosome-test-test
     , polysemy ==1.9.*
     , polysemy-plugin ==0.4.*
     , polysemy-test
-    , prelate ==0.6.*
+    , prelate >=0.6 && <0.8
     , ribosome
     , ribosome-host
     , ribosome-test
