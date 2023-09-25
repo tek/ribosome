@@ -6,7 +6,7 @@ import qualified Data.Text as Text
 import Path (reldir, relfile)
 import Polysemy.Chronos (interpretTimeChronosConstant)
 import qualified Polysemy.Test as Test
-import Polysemy.Test (UnitTest, runTestAuto, (===))
+import Polysemy.Test (TestError (TestError), UnitTest, runTestAuto, (===))
 import System.IO (stderr)
 import Time (mkDatetime)
 
@@ -24,7 +24,7 @@ test_newProject :: UnitTest
 test_newProject =
   runTestAuto $ interpretTimeChronosConstant testTime do
     dir <- Test.tempDir [reldir|new-project|]
-    names <- fromEither (ProjectNames.parse "test-project")
+    names <- fromEither (first TestError (ProjectNames.parse "test-project"))
     runRainbowErrorAnd stderr (fail "project generation failed") do
       newProject def NewProject {
         project = Project {
