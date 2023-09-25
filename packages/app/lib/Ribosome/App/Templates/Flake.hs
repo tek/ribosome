@@ -71,7 +71,7 @@ flakeNix (FlakeUrl flakeUrl) (ProjectName name) author maintainer (Branch branch
         enable = true;
         package = {
           name = "prelate";
-          version = "^>= 0.6";
+          version = ">= 0.6 && < 0.8";
         };
         module = "Prelate";
       };
