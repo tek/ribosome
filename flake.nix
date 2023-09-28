@@ -39,9 +39,10 @@
       dependencies = ["polysemy ^>= 1.9" "polysemy-plugin ^>= 0.4"];
     };
 
-    overrides = { hackage, pkgs, jailbreak, ... }: {
+    overrides = {hackage, pkgs, jailbreak, ...}: {
       fuzzyfind = jailbreak (hackage "3.0.1" "17lk2i3gq5kg7h2a4cax6n4lz2mh0qqyrw34lccnwr7nlvpg4var");
-      streamly = hackage "0.8.3" "1w8nhss2rcpbphw2b0d86z7jqxpx38gfn4ahdmd7afg65gzx5bq3";
+      streamly = jailbreak (hackage "0.8.3" "1w8nhss2rcpbphw2b0d86z7jqxpx38gfn4ahdmd7afg65gzx5bq3");
+      unicode-data = hackage "0.3.1" "0pw8cq3spzqdbpyvg026qqyfdva40php7gd728cc56csawpahyx7";
     };
 
     buildInputs = pkgs: [pkgs.neovim pkgs.tmux pkgs.xterm];

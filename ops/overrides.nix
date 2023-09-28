@@ -390,6 +390,31 @@ mkDerivation {
 ;
 }
 ;
+  unicode-data = {
+  meta = {
+    sha256 = "0pw8cq3spzqdbpyvg026qqyfdva40php7gd728cc56csawpahyx7";
+    ver = "0.3.1";
+  };
+  drv = { mkDerivation, base, deepseq, hspec, hspec-discover, lib, tasty
+, tasty-bench
+}:
+mkDerivation {
+  pname = "unicode-data";
+  version = "0.3.1";
+  src = /nix/store/dgk7n201b9diibh12ajmb12g7dvqs2xm-source;
+  isLibrary = true;
+  isExecutable = true;
+  libraryHaskellDepends = [ base ];
+  testHaskellDepends = [ base hspec ];
+  testToolDepends = [ hspec-discover ];
+  benchmarkHaskellDepends = [ base deepseq tasty tasty-bench ];
+  homepage = "http://github.com/composewell/unicode-data";
+  description = "Access Unicode Character Database (UCD)";
+  license = lib.licenses.asl20;
+}
+;
+}
+;
   zeugma = {
   meta = {
     sha256 = "0gahqhbg6hskq4abg9mg9mwvzif63c22mjkxyvvvk9r3jmg9xj8l";
@@ -804,6 +829,31 @@ mkDerivation {
   homepage = "https://streamly.composewell.com";
   description = "Dataflow programming and declarative concurrency";
   license = lib.licenses.bsd3;
+}
+;
+}
+;
+  unicode-data = {
+  meta = {
+    sha256 = "0pw8cq3spzqdbpyvg026qqyfdva40php7gd728cc56csawpahyx7";
+    ver = "0.3.1";
+  };
+  drv = { mkDerivation, base, deepseq, hspec, hspec-discover, lib, tasty
+, tasty-bench
+}:
+mkDerivation {
+  pname = "unicode-data";
+  version = "0.3.1";
+  src = /nix/store/dgk7n201b9diibh12ajmb12g7dvqs2xm-source;
+  isLibrary = true;
+  isExecutable = true;
+  libraryHaskellDepends = [ base ];
+  testHaskellDepends = [ base hspec ];
+  testToolDepends = [ hspec-discover ];
+  benchmarkHaskellDepends = [ base deepseq tasty tasty-bench ];
+  homepage = "http://github.com/composewell/unicode-data";
+  description = "Access Unicode Character Database (UCD)";
+  license = lib.licenses.asl20;
 }
 ;
 }
