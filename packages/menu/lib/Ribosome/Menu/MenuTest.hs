@@ -211,8 +211,8 @@ testMenu conf initial maps =
 testStaticMenu ::
   ∀ result s r .
   MenuState s =>
+  Member (Stop RpcError) r =>
   Members MenuTestIOStack r =>
-  Members (MenuTestDeps s result) r =>
   [MenuItem (Item s)] ->
   TestMenuConfig ->
   s ->
@@ -233,7 +233,7 @@ testNvimMenu ::
   Members MenuTestIOStack r =>
   Members (MenuTestDeps s result) r =>
   Member (EventConsumer Event) r =>
-  Members [Rpc, Rpc !! RpcError, Settings !! SettingError, Scratch !! RpcError, Stop RpcError] r =>
+  Members [Rpc !! RpcError, Settings !! SettingError, Scratch !! RpcError, Stop RpcError] r =>
   TestMenuConfig ->
   s ->
   ScratchOptions ->
@@ -257,8 +257,7 @@ testStaticNvimMenu ::
   ∀ result s r .
   MenuState s =>
   Members MenuTestIOStack r =>
-  Member (EventConsumer Event) r =>
-  Members [Rpc, Rpc !! RpcError, Settings !! SettingError, Scratch !! RpcError, Stop RpcError] r =>
+  Members [EventConsumer Event, Rpc !! RpcError, Settings !! SettingError, Scratch !! RpcError, Stop RpcError] r =>
   [MenuItem (Item s)] ->
   TestMenuConfig ->
   s ->
@@ -277,8 +276,7 @@ testStaticNvimMenuSimple ::
   Item s ~ () =>
   MenuState s =>
   Members MenuTestIOStack r =>
-  Member (EventConsumer Event) r =>
-  Members [Rpc, Rpc !! RpcError, Settings !! SettingError, Scratch !! RpcError, Stop RpcError] r =>
+  Members [EventConsumer Event, Rpc !! RpcError, Settings !! SettingError, Scratch !! RpcError, Stop RpcError] r =>
   [NonEmpty Text] ->
   TestMenuConfig ->
   s ->
@@ -292,8 +290,7 @@ testNativeMenu' ::
   ∀ result s r .
   MenuState s =>
   Members MenuTestIOStack r =>
-  Member (EventConsumer Event) r =>
-  Members [Rpc, Rpc !! RpcError, Settings !! SettingError, Scratch !! RpcError, Stop RpcError] r =>
+  Members [EventConsumer Event, Rpc !! RpcError, Settings !! SettingError, Scratch !! RpcError, Stop RpcError] r =>
   SerialT IO (MenuItem (Item s)) ->
   TestMenuConfig ->
   s ->
@@ -313,7 +310,7 @@ testNativeMenu ::
   ∀ result s r .
   MenuState s =>
   Members MenuTestIOStack r =>
-  Members [EventConsumer Event, Rpc, Rpc !! RpcError, Settings !! SettingError, Scratch !! RpcError, Stop RpcError] r =>
+  Members [EventConsumer Event, Rpc !! RpcError, Settings !! SettingError, Scratch !! RpcError, Stop RpcError] r =>
   SerialT IO (MenuItem (Item s)) ->
   TestMenuConfig ->
   s ->

@@ -153,12 +153,11 @@ itemsChangeFilter =
 test_initialFilter :: UnitTest
 test_initialFilter =
   runTest do
-    runTestMenu startInsert do
-      testError $ testStaticMenu its def (modal Substring) mempty do
-        sendPrompt (Prompt 1 Insert "abc")
-        waitEvent "substring refined" (Query Refined)
-        awaitCurrent ["xabc"]
-        quit
+    testError $ testStaticMenu its noItemsConf (modal Substring) mempty do
+      sendPrompt (Prompt 1 Insert "abc")
+      waitEvent "substring refined" (Query Refined)
+      awaitCurrent ["xabc"]
+      quit
   where
     its =
       simpleMenuItem () <$> itemsChangeFilter
@@ -166,27 +165,26 @@ test_initialFilter =
 test_changeFilter :: UnitTest
 test_changeFilter =
   runTest do
-    runTestMenu startInsert do
-      testError $ testStaticMenu its def (modal Substring) maps do
-        sendPrompt (Prompt 1 Insert "abc")
-        waitEvent "substring refined" (Query Refined)
-        awaitCurrent ["xabc"]
-        sendPromptEvent False (Mapping "f")
-        waitEvent "fuzzy reset" (Query Reset)
-        awaitCurrent ["xabc", "xaxBxcx"]
-        sendPrompt (Prompt 1 Insert "ab")
-        waitEvent "delete c reset" (Query Reset)
-        awaitCurrent ["ab", "xabc", "xaxBxcx", "xaxbx"]
-        sendPromptEvent False (Mapping "s")
-        waitEvent "substring reset" (Query Reset)
-        awaitCurrent ["xabc", "ab"]
-        sendPromptEvent False (Mapping "p")
-        waitEvent "prefix reset" (Query Reset)
-        awaitCurrent ["ab"]
-        sendPrompt (Prompt 1 Insert "b.c?")
-        sendPromptEvent False (Mapping "r")
-        awaitCurrent ["xaxbx", "xabc", "xaxBxcx"]
-        quit
+    testError $ testStaticMenu its def (modal Substring) maps do
+      sendPrompt (Prompt 1 Insert "abc")
+      waitEvent "substring refined" (Query Refined)
+      awaitCurrent ["xabc"]
+      sendPromptEvent False (Mapping "f")
+      waitEvent "fuzzy reset" (Query Reset)
+      awaitCurrent ["xabc", "xaxBxcx"]
+      sendPrompt (Prompt 1 Insert "ab")
+      waitEvent "delete c reset" (Query Reset)
+      awaitCurrent ["ab", "xabc", "xaxBxcx", "xaxbx"]
+      sendPromptEvent False (Mapping "s")
+      waitEvent "substring reset" (Query Reset)
+      awaitCurrent ["xabc", "ab"]
+      sendPromptEvent False (Mapping "p")
+      waitEvent "prefix reset" (Query Reset)
+      awaitCurrent ["ab"]
+      sendPrompt (Prompt 1 Insert "b.c?")
+      sendPromptEvent False (Mapping "r")
+      awaitCurrent ["xaxbx", "xabc", "xaxBxcx"]
+      quit
   where
     its =
       simpleMenuItem () <$> itemsChangeFilter
