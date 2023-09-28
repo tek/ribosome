@@ -15,9 +15,9 @@ import Ribosome.Menu.Data.Filter (Filter (Substring))
 import Ribosome.Menu.Data.MenuItem (simpleMenuItemLines)
 import Ribosome.Menu.Data.MenuResult (MenuResult (Success))
 import Ribosome.Menu.Data.State (modal)
-import Ribosome.Menu.Effect.MenuTest (MenuTest, quit, result, sendMappingWait)
+import Ribosome.Menu.Effect.MenuTest (MenuTest, quit, result, sendMappingPrompt)
 import qualified Ribosome.Menu.Effect.MenuUi as MenuUi
-import Ribosome.Menu.Interpreter.MenuFilter (defaultFilter)
+import Ribosome.Menu.Interpreter.MenuFilter (interpretFilter)
 import Ribosome.Menu.Mappings (defaultMappings)
 import Ribosome.Menu.MenuTest (runTestMenu, testStaticNvimMenu)
 import Ribosome.Menu.Prompt.Data.PromptConfig (startInsert)
@@ -36,7 +36,7 @@ cycle ::
   Sem r ()
 cycle char items target line = do
   withFrozenCallStack do
-    sendMappingWait char
+    sendMappingPrompt char
     target <-- bufferContent items.buffer
     line <-- windowLine items.window
 
@@ -101,12 +101,12 @@ bufferTarget3 =
 test_multiline :: UnitTest
 test_multiline =
   testEmbed_ do
-    runTestMenu startInsert $ defaultFilter do
-      r <- testError $ testStaticNvimMenu its False def (modal Substring) (menuScratchSized 7 & #maxSize ?~ 7) maps do
+    runTestMenu startInsert $ interpretFilter do
+      r <- testError $ testStaticNvimMenu its def (modal Substring) (menuScratchSized 7 & #maxSize ?~ 7) maps do
         items <- MenuUi.itemsScratch
         bufferTarget1 <-- bufferContent items.buffer
         6 <-- windowLine items.window
-        sendMappingWait "k"
+        sendMappingPrompt "k"
         1 <-- windowLine items.window
         up items bufferTarget2 0
         up items bufferTarget3 0
@@ -114,7 +114,7 @@ test_multiline =
         down items bufferTarget2 2
         down items bufferTarget1 6
         down items bufferTarget3 0
-        sendMappingWait "<cr>"
+        sendMappingPrompt "<cr>"
         quit
         result
       Success (Just (simpleMenuItemLines () ["8", "9"])) === r
@@ -141,8 +141,8 @@ crampedTarget3 =
 test_multilineCramped :: UnitTest
 test_multilineCramped =
   testEmbed_ do
-    runTestMenu startInsert $ defaultFilter do
-      r <- testError $ testStaticNvimMenu its False def (modal Substring) (menuScratchSized 2 & #maxSize ?~ 2) maps do
+    runTestMenu startInsert $ interpretFilter do
+      r <- testError $ testStaticNvimMenu its def (modal Substring) (menuScratchSized 2 & #maxSize ?~ 2) maps do
         items <- MenuUi.itemsScratch
         crampedTarget1 <-- bufferContent items.buffer
         0 <-- windowLine items.window
@@ -150,7 +150,7 @@ test_multilineCramped =
         up items crampedTarget3 0
         up items crampedTarget1 0
         down items crampedTarget3 0
-        sendMappingWait "<cr>"
+        sendMappingPrompt "<cr>"
         quit
         result
       Success (Just (simpleMenuItemLines () (NonEmpty.last itemsCramped))) === r

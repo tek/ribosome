@@ -19,7 +19,6 @@ import Ribosome.Menu.Class.MenuState (MenuState)
 import Ribosome.Menu.Combinators (sortEntries)
 import qualified Ribosome.Menu.Data.Entry as Entry
 import Ribosome.Menu.Data.Filter (Filter (Fuzzy))
-import Ribosome.Menu.Data.FilterMode (FilterMode)
 import qualified Ribosome.Menu.Data.MenuEvent as MenuEvent
 import Ribosome.Menu.Data.MenuEvent (MenuEvent)
 import qualified Ribosome.Menu.Data.MenuItem as MenuItem
@@ -32,11 +31,12 @@ import Ribosome.Menu.Effect.MenuTest (MenuTest)
 import qualified Ribosome.Menu.Effect.MenuUi as MenuUi
 import Ribosome.Menu.Effect.MenuUi (MenuUi, ScopedMenuUi)
 import Ribosome.Menu.Interpreter.Menu (interpretMenus)
-import Ribosome.Menu.Interpreter.MenuFilter (defaultFilter)
+import Ribosome.Menu.Interpreter.MenuFilter (interpretFilter)
 import Ribosome.Menu.Interpreter.MenuTest (TestTimeout, failTimeout)
 import Ribosome.Menu.Items (currentEntries)
 import Ribosome.Menu.Loop (addMenuUi, runMenu)
-import Ribosome.Menu.MenuTest (MenuTestIOStack, MenuTestStack, MenuTestWith, menuTestLoop, runTestMenu)
+import qualified Ribosome.Menu.MenuTest
+import Ribosome.Menu.MenuTest (MenuTestIOStack, MenuTestStack, MenuTestWith, confSet, menuTestLoop, runTestMenu)
 import Ribosome.Menu.Prompt.Data.Prompt (Prompt (Prompt), PromptText)
 import Ribosome.Menu.Prompt.Data.PromptConfig (startInsert)
 import qualified Ribosome.Menu.Prompt.Data.PromptEvent as PromptEvent
@@ -94,7 +94,7 @@ type PromptTest i =
   Menus (Modal Filter i) :
   UiMenus () (Modal Filter i) :
   UiMenus () (Modal Filter i) !! RpcError :
-  MenuFilter (FilterMode Filter) :
+  MenuFilter :
   Stop RpcError :
   SimpleTestMenu ++
   MenuTestStack i ()
@@ -106,20 +106,22 @@ promptTest ::
   Members [Hedgehog IO, Error TestError, Fail, Log, Resource, Race, Mask, Async, Embed IO, Final IO] r =>
   InterpretersFor (PromptTest i) r
 promptTest sem =
-  runTestMenu @_ @i startInsert $
+  runTestMenu @_ @i (fromMaybe def conf.prompt) $
   runSimpleTestMenu $
   testError $
-  defaultFilter $
+  interpretFilter $
   interpretMenus $
   resumeReportFail $
   addMenuUi () do
     items <- ask
     runMenu items (modal Fuzzy) $
       bundleMenuEngine $
-      menuTestLoop @_ @(Modal Filter i) False startInsert (const (Just enqueuePrompt)) $
+      menuTestLoop @_ @(Modal Filter i) conf (const (Just enqueuePrompt)) $
       subscribe @MenuEvent do
         assertItems []
         sem
+  where
+    conf = confSet #prompt startInsert (confSet #initialItems False def)
 
 assertPrompt ::
   HasCallStack =>

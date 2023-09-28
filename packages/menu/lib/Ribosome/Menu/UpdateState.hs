@@ -7,21 +7,13 @@ import Exon (exon)
 import qualified Log
 
 import qualified Ribosome.Menu.Class.MenuState as MenuState
-import Ribosome.Menu.Class.MenuState (
-  Filter,
-  MenuState (Item, histories),
-  entries,
-  entryCount,
-  history,
-  itemCount,
-  items,
-  )
+import Ribosome.Menu.Class.MenuState (MenuState (Item, histories), entries, entryCount, history, itemCount, items)
 import Ribosome.Menu.Combinators (addHistory, updateEntries)
 import Ribosome.Menu.Data.Entry (Entries, entriesLength)
 import qualified Ribosome.Menu.Data.MenuEvent as MenuEvent
 import Ribosome.Menu.Data.MenuEvent (MenuEvent, QueryEvent (Modal, Refined, Reset))
 import Ribosome.Menu.Data.MenuItem (MenuItem)
-import Ribosome.Menu.Data.State (MenuQuery (MenuQuery))
+import Ribosome.Menu.Data.MenuQuery (MenuQuery (MenuQuery))
 import Ribosome.Menu.Effect.MenuFilter (FilterJob (Initial, Refine), MenuFilter, menuFilter)
 import Ribosome.Menu.Lens (use, (%=), (+=), (.=))
 import qualified Ribosome.Menu.Prompt.Data.Prompt as Prompt
@@ -29,17 +21,17 @@ import Ribosome.Menu.Prompt.Data.Prompt (PromptChange, PromptText (PromptText))
 
 refilter ::
   MenuState s =>
-  Members [MenuFilter (Filter s), State s] r =>
+  Members [MenuFilter, State s] r =>
   MenuQuery ->
   FilterJob (Item s) (Entries (Item s)) ->
   Sem r ()
 refilter query job = do
-  filterMode <- use MenuState.filterMode
+  filterMode <- use MenuState.mode
   updateEntries query =<< menuFilter filterMode query job
 
 refineFiltered ::
   MenuState s =>
-  Members [MenuFilter (Filter s), State s] r =>
+  Members [MenuFilter, State s] r =>
   MenuQuery ->
   Entries (Item s) ->
   Sem r QueryEvent
@@ -48,7 +40,7 @@ refineFiltered query ents =
 
 resetFiltered ::
   MenuState s =>
-  Members [MenuFilter (Filter s), State s] r =>
+  Members [MenuFilter, State s] r =>
   MenuQuery ->
   Sem r (Maybe QueryEvent)
 resetFiltered query = do
@@ -57,7 +49,7 @@ resetFiltered query = do
 
 historyOr ::
   MenuState s =>
-  Members [MenuFilter (Filter s), State s] r =>
+  Members [MenuFilter, State s] r =>
   (MenuQuery -> Sem r (Maybe QueryEvent)) ->
   MenuQuery ->
   Sem r (Maybe QueryEvent)
@@ -78,7 +70,7 @@ historyOr noMatch query@(MenuQuery (encodeUtf8 -> queryBs)) = do
 -- also it appears not to reliably solve the race condition
 appendFilter ::
   MenuState s =>
-  Members [MenuFilter (Filter s), State s] r =>
+  Members [MenuFilter, State s] r =>
   MenuQuery ->
   Sem r (Maybe QueryEvent)
 appendFilter query = do
@@ -89,7 +81,7 @@ appendFilter query = do
 
 promptChange ::
   MenuState s =>
-  Members [MenuFilter (Filter s), State s] r =>
+  Members [MenuFilter, State s] r =>
   PromptChange ->
   MenuQuery ->
   Sem r (Maybe QueryEvent)
@@ -101,7 +93,7 @@ promptChange = \case
 
 insertItems ::
   MenuState s =>
-  Members [MenuFilter (Filter s), State s, Log] r =>
+  Members [MenuFilter, State s, Log] r =>
   [MenuItem (Item s)] ->
   Sem r ()
 insertItems new = do
@@ -109,7 +101,7 @@ insertItems new = do
   itemCount += newCount
   let newI = IntMap.fromList (zip [fromIntegral index..] new)
   items %= IntMap.union newI
-  filterMode <- use MenuState.filterMode
+  filterMode <- use MenuState.mode
   query <- use MenuState.query
   ents <- menuFilter filterMode query (Initial newI)
   entries %= IntMap.unionWith (<>) ents
@@ -123,7 +115,7 @@ insertItems new = do
 
 promptItemUpdate ::
   MenuState s =>
-  Members [MenuFilter (Filter s), State s] r =>
+  Members [MenuFilter, State s] r =>
   PromptChange ->
   PromptText ->
   Sem r (Maybe QueryEvent)
@@ -137,7 +129,7 @@ diffPrompt (PromptText new) (MenuQuery old)
 
 updateQuery ::
   MenuState s =>
-  Members [MenuFilter (Filter s), State s, Log] r =>
+  Members [MenuFilter, State s, Log] r =>
   Maybe PromptText ->
   Sem r (Maybe QueryEvent)
 updateQuery = \case
@@ -151,7 +143,7 @@ updateQuery = \case
 
 queryEvent ::
   MenuState s =>
-  Members [MenuFilter (Filter s), State s, Events MenuEvent, Log] r =>
+  Members [MenuFilter, State s, Events MenuEvent, Log] r =>
   Maybe PromptText ->
   Sem r ()
 queryEvent =

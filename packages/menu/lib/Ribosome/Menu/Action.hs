@@ -4,10 +4,11 @@ import qualified Ribosome.Menu.Class.MenuMode as MenuMode
 import Ribosome.Menu.Class.MenuState (MenuState (Item, Mode, mode))
 import Ribosome.Menu.Combinators (numVisible, overEntries)
 import qualified Ribosome.Menu.Data.MenuAction as MenuAction
-import Ribosome.Menu.Data.MenuAction (MenuAction)
+import Ribosome.Menu.Data.MenuAction (MenuAction, RenderAnchor (AnchorIndex, AnchorLine))
 import Ribosome.Menu.Data.MenuItem (MenuItem)
 import Ribosome.Menu.Effect.Menu (Menu, basicState, menuState, modifyCursor, readCursor, viewState)
 import Ribosome.Menu.ItemLens (focus)
+import Ribosome.Menu.Items (deleteSelected)
 import Ribosome.Menu.Lens (use, (%=), (.=))
 import Ribosome.Menu.Prompt.Data.Prompt (Prompt)
 
@@ -34,9 +35,17 @@ menuOk :: Sem r (Maybe (MenuAction a))
 menuOk =
   pure (Just MenuAction.Continue)
 
-menuRender :: Sem r (Maybe (MenuAction a))
+menuRender :: RenderAnchor -> Sem r (Maybe (MenuAction a))
 menuRender =
-  act MenuAction.Render
+  act . MenuAction.Render
+
+menuRenderLine :: Sem r (Maybe (MenuAction a))
+menuRenderLine =
+  menuRender AnchorLine
+
+menuRenderIndex :: Sem r (Maybe (MenuAction a))
+menuRenderIndex =
+  menuRender AnchorIndex
 
 menuQuit :: Sem r (Maybe (MenuAction a))
 menuQuit =
@@ -66,7 +75,7 @@ menuCycle ::
   MenuWidget s r a
 menuCycle offset = do
   cycleMenu offset
-  menuRender
+  menuRenderIndex
 
 -- TODO this can:
 -- - Return when the focus was found
@@ -78,7 +87,7 @@ toggleSelected ::
 toggleSelected = do
   basicState do
     cur <- readCursor
-    #entries %= overEntries \ index ->
+    #primary . #entries %= overEntries \ index ->
       if index == fromIntegral cur
       then #selected %~ not
       else id
@@ -89,15 +98,15 @@ menuToggle ::
   MenuWidget s r a
 menuToggle = do
   toggleSelected
-  menuRender
+  menuRenderIndex
 
 menuToggleAll ::
   MenuState s =>
   MenuWidget s r a
 menuToggleAll = do
   basicState do
-    #entries %= overEntries (const (#selected %~ not))
-  menuRender
+    #primary . #entries %= overEntries (const (#selected %~ not))
+  menuRenderIndex
 
 menuUpdatePrompt ::
   Prompt ->
@@ -112,7 +121,7 @@ menuChangeMode ::
 menuChangeMode m = do
   menuState do
     mode .= m
-  menuRender
+  menuRenderLine
 
 menuCycleFilter ::
   ∀ s r a .
@@ -122,7 +131,7 @@ menuCycleFilter = do
   menuState do
     cur <- use mode
     mode .= (MenuMode.cycleFilter @(Item s) cur)
-  menuRender
+  menuRenderLine
 
 menuFocusItem ::
   MenuState s =>
@@ -131,3 +140,11 @@ menuFocusItem =
   menuState do
     selection <- use focus
     menuSuccess selection
+
+menuDelete ::
+  MenuState s =>
+  MenuWidget s r a
+menuDelete =
+  menuState do
+    deleteSelected
+    menuRenderIndex

@@ -9,32 +9,31 @@ import Ribosome.Api.Buffer (bufferContent, buflisted)
 import Ribosome.Host.Api.Data (bufferGetName, vimGetBuffers, vimGetWindows)
 import Ribosome.Menu.Action (MenuWidget, menuOk, menuSuccess)
 import qualified Ribosome.Menu.Class.MenuMode as MenuMode
-import Ribosome.Menu.Class.MenuMode (MenuMode (cycleFilter, filterMode, renderExtra, renderFilter))
+import Ribosome.Menu.Class.MenuMode (MenuMode (cycleFilter, renderExtra, renderFilter))
 import qualified Ribosome.Menu.Class.MenuState as MenuState
 import Ribosome.Menu.Class.MenuState (MenuState (renderStatus), entries)
 import Ribosome.Menu.Combinators (sortEntries)
 import Ribosome.Menu.Data.CursorIndex (CursorIndex (CursorIndex))
-import Ribosome.Menu.Data.Filter (Filter (Fuzzy))
-import Ribosome.Menu.Data.FilterMode (FilterMode (FilterMode))
+import Ribosome.Menu.Data.Filter (Filter (Fuzzy), basicMatcher)
 import Ribosome.Menu.Data.MenuEvent (MenuEvent (Rendered))
-import qualified Ribosome.Menu.Data.MenuItem
 import qualified Ribosome.Menu.Data.MenuResult as MenuResult
 import Ribosome.Menu.Data.State (Modal, modal)
 import Ribosome.Menu.Effect.Menu (readCursor, readState)
 import qualified Ribosome.Menu.Effect.MenuTest as MenuTest
-import Ribosome.Menu.Effect.MenuTest (sendMapping, sendMappingWait, waitEvent)
+import Ribosome.Menu.Effect.MenuTest (sendMapping, sendMappingPrompt, waitEvent)
 import qualified Ribosome.Menu.Effect.MenuUi as MenuUi
 import Ribosome.Menu.Interpreter.Menu (interpretSingleWindowMenu, promptInput)
-import Ribosome.Menu.Interpreter.MenuFilter (defaultFilter)
+import Ribosome.Menu.Interpreter.MenuFilter (interpretFilter)
 import Ribosome.Menu.Loop (menuMaps, runMenuUi, windowMenu, withMenuUi)
 import Ribosome.Menu.Mappings (Mappings, defaultMappings)
-import Ribosome.Menu.MenuTest (testStaticNvimMenu)
+import Ribosome.Menu.MenuTest (confSet, testStaticNvimMenu)
 import Ribosome.Menu.Prompt.Data.Prompt (Prompt (Prompt))
 import Ribosome.Menu.Prompt.Data.PromptConfig (onlyInsert, startInsert)
 import Ribosome.Menu.Prompt.Data.PromptEvent (PromptEvent (Mapping, Update))
 import qualified Ribosome.Menu.Prompt.Data.PromptMode as PromptMode
 import Ribosome.Menu.Prompt.Run (SyncChar, nosync, withPromptInputSync)
 import Ribosome.Menu.Scratch (menuScratch, menuScratchSized)
+import Ribosome.Menu.Test.DeleteCursorTest (test_deleteCursor)
 import Ribosome.Menu.Test.Run (unitTestTimes)
 import Ribosome.Menu.Test.Util (mkItems, staticMenuItems)
 import Ribosome.Test.Embed (testEmbed_)
@@ -90,7 +89,7 @@ nativeChars =
 
 test_nativeWindow :: UnitTest
 test_nativeWindow =
-  testEmbed_ $ defaultFilter $ interpretSingleWindowMenu $ runMenuUi (mkItems items) (modal Fuzzy) do
+  testEmbed_ $ interpretFilter $ interpretSingleWindowMenu $ runMenuUi (mkItems items) (modal Fuzzy) do
     result <- flip (withMenuUi opts) mappings \ m -> do
       withPromptInputSync nativeChars do
         menuMaps (insertAt @2 <$> m)
@@ -103,7 +102,7 @@ test_nativeWindow =
 
 test_interruptWindow :: UnitTest
 test_interruptWindow =
-  testEmbed_ $ defaultFilter $ interpretSingleWindowMenu $ runMenuUi (mkItems items) (modal Fuzzy) do
+  testEmbed_ $ interpretFilter $ interpretSingleWindowMenu $ runMenuUi (mkItems items) (modal Fuzzy) do
     result <- flip (withMenuUi opts) mappings \ m -> do
       withPromptInputSync ["i", "<c-c>", "<cr>"] do
         menuMaps (insertAt @2 <$> m)
@@ -115,7 +114,7 @@ test_interruptWindow =
 
 test_windowOnlyInsert :: UnitTest
 test_windowOnlyInsert =
-  testEmbed_ $ defaultFilter $ interpretSingleWindowMenu $ runMenuUi (mkItems items) (modal Fuzzy) do
+  testEmbed_ $ interpretFilter $ interpretSingleWindowMenu $ runMenuUi (mkItems items) (modal Fuzzy) do
       result <- flip (withMenuUi opts) mappings \ m -> do
         withPromptInputSync ["i", nosync "<esc>", "<cr>"] do
           menuMaps (insertAt @2 <$> m)
@@ -126,8 +125,8 @@ test_windowOnlyInsert =
 
 test_quit :: UnitTest
 test_quit =
-  testEmbed_ $ defaultFilter do
-    result <- testStaticNvimMenu @() @(Modal Filter Text) [] False def (modal Fuzzy) (menuScratchSized 4) defaultMappings do
+  testEmbed_ $ interpretFilter do
+    result <- testStaticNvimMenu @() @(Modal Filter Text) [] def (modal Fuzzy) (menuScratchSized 4) defaultMappings do
       sendMapping "<esc>"
       MenuTest.result
     MenuResult.Aborted === result
@@ -135,10 +134,10 @@ test_quit =
 
 test_scrollUp :: UnitTest
 test_scrollUp =
-  testEmbed_ $ defaultFilter do
-    MenuResult.Success a <- testStaticNvimMenu its False def (modal Fuzzy) (menuScratch & #maxSize ?~ 4) maps do
+  testEmbed_ do
+    MenuResult.Success a <- testStaticNvimMenu its def (modal Fuzzy) (menuScratch & #maxSize ?~ 4) maps do
       waitEvent "initial render" Rendered
-      traverse_ sendMappingWait (replicate 20 "k" <> ["<cr>"])
+      traverse_ sendMappingPrompt (replicate 20 "k" <> ["<cr>"])
       MenuTest.result
     4 === length a
   where
@@ -165,20 +164,17 @@ data TestState =
   deriving stock (Eq, Show, Generic)
 
 instance MenuMode Text TestMode where
-  type Filter TestMode =
-    FilterMode Filter
 
-  cycleFilter (TestMode {..}) =
+  cycleFilter TestMode {..} =
     TestMode {mode = cycleFilter mode, ..}
 
-  renderFilter (TestMode {mode}) =
+  renderFilter TestMode {mode} =
     renderFilter mode
 
-  renderExtra (TestMode {count}) _ =
+  renderExtra TestMode {count} _ =
     Just [exon|count: #{show count}|]
 
-  filterMode (TestMode mode _) =
-    FilterMode mode (Just . (.text))
+  matcher TestMode {mode} = basicMatcher mode
 
 instance MenuState TestState where
   type Item TestState = Text
@@ -196,15 +192,16 @@ instance MenuState TestState where
 -- TODO withPromptInputSync here is partially ineffective since it sets menuSync, which should be read by the main loop.
 test_bottomStatus :: UnitTest
 test_bottomStatus =
-  testSocketTmux $ defaultFilter do
-    result <- testStaticNvimMenu @() [] True def (TestState (modal (TestMode Fuzzy 0)) "empty") def defaultMappings do
-      waitEvent "initial render" Rendered
+  testSocketTmux $ interpretFilter do
+    result <- testStaticNvimMenu @() [] conf (TestState (modal (TestMode Fuzzy 0)) "empty") def defaultMappings do
       status <- MenuUi.statusScratch
       assertEq ["message: empty"] . drop 1 =<< bufferContent (status ^. #buffer)
       awaitScreenshot False "menu-bottom-status" 0
       withPromptInputSync [nosync "<esc>"] do
         MenuTest.result
     MenuResult.Aborted === result
+  where
+    conf = confSet #nativePrompt True def
 
 test_nvimMenu :: TestTree
 test_nvimMenu =
@@ -214,5 +211,6 @@ test_nvimMenu =
     unitTestTimes 10 "interrupt window" test_interruptWindow,
     unitTest "close scratch when quitting" test_quit,
     unitTest "scroll up" test_scrollUp,
-    requireX (unitTestTimes 3 "extra bottom status message") test_bottomStatus
+    requireX (unitTestTimes 3 "extra bottom status message") test_bottomStatus,
+    unitTest "correctness of cursor after delete" test_deleteCursor
   ]

@@ -36,12 +36,12 @@ library
       Ribosome.Menu.Data.CursorLine
       Ribosome.Menu.Data.Entry
       Ribosome.Menu.Data.Filter
-      Ribosome.Menu.Data.FilterMode
       Ribosome.Menu.Data.Menu
       Ribosome.Menu.Data.MenuAction
       Ribosome.Menu.Data.MenuConfig
       Ribosome.Menu.Data.MenuEvent
       Ribosome.Menu.Data.MenuItem
+      Ribosome.Menu.Data.MenuQuery
       Ribosome.Menu.Data.MenuResult
       Ribosome.Menu.Data.MenuStatus
       Ribosome.Menu.Data.MenuView
@@ -155,6 +155,7 @@ test-suite ribosome-menu-test
   type: exitcode-stdio-1.0
   main-is: Main.hs
   other-modules:
+      Ribosome.Menu.Test.DeleteCursorTest
       Ribosome.Menu.Test.FilterTest
       Ribosome.Menu.Test.Menu
       Ribosome.Menu.Test.MenuTest

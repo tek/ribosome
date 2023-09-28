@@ -1,6 +1,10 @@
 module Ribosome.Menu.Data.RenderEvent where
 
-newtype RenderEvent =
-  RenderEvent { unRenderEvent :: Text }
+import Ribosome.Menu.Data.MenuAction (RenderAnchor)
+
+data RenderEvent =
+  RenderEvent {
+    desc :: Text,
+    anchor :: RenderAnchor
+  }
   deriving stock (Eq, Show)
-  deriving newtype (IsString)

@@ -1,6 +1,8 @@
 module Ribosome.Menu.Data.NvimMenuState where
 
-import Ribosome.Menu.Data.Entry (Entry)
+import qualified Ribosome.Menu.Data.Entry
+import Ribosome.Menu.Data.Entry (Entry, ItemIndex)
+import qualified Ribosome.Menu.Data.MenuItem
 import Ribosome.Menu.Data.MenuView (EntryIndex, MenuView)
 
 data PartialEntry a =
@@ -8,7 +10,12 @@ data PartialEntry a =
     entry :: Entry a,
     visibleLines :: Word
   }
-  deriving stock (Eq, Show, Generic)
+  deriving stock (Eq, Show, Generic, Functor)
+
+partialLength :: Maybe (PartialEntry a) -> Word
+partialLength = \case
+  Just e -> e.visibleLines
+  Nothing -> 0
 
 data EntrySlice i =
   EntrySlice {
@@ -23,18 +30,24 @@ data EntrySlice i =
     entry :: PartialEntry i,
     index :: EntryIndex
   }
-  deriving stock (Eq, Show, Generic)
+  deriving stock (Eq, Show, Generic, Functor)
 
 sliceRange :: EntrySlice i -> (EntryIndex, EntryIndex)
 sliceRange = \case
   EntrySlice {..} -> (indexBot, indexTop)
   OnlyPartialEntry {index} -> (index, index)
 
+sliceLength :: EntrySlice i -> Word
+sliceLength = \case
+  EntrySlice {full, partialBot, partialTop} ->
+    sum (full <&> \ e -> e.item.lines) + partialLength partialBot + partialLength partialTop
+  OnlyPartialEntry {entry} -> entry.visibleLines
+
 data SliceIndexes =
   SliceIndexes {
-    full :: [(Word, Bool)],
-    partialBot :: Maybe (Word, Word, Bool),
-    partialTop :: Maybe (Word, Word, Bool)
+    full :: [(ItemIndex, Bool)],
+    partialBot :: Maybe (ItemIndex, Word, Bool),
+    partialTop :: Maybe (ItemIndex, Word, Bool)
   }
   deriving stock (Eq, Show, Generic)
   deriving anyclass (Default)

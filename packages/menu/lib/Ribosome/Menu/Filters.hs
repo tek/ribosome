@@ -5,22 +5,21 @@ import qualified Data.IntMap.Strict as IntMap
 import qualified Data.Text as Text
 import Text.FuzzyFind (Alignment (Alignment), bestMatch)
 
+import Ribosome.Menu.Class.MenuMode (Extractor, Matcher)
 import qualified Ribosome.Menu.Data.Entry as Entry
 import Ribosome.Menu.Data.Entry (Entries, Entry (Entry))
 import qualified Ribosome.Menu.Data.MenuItem as MenuItem
 import Ribosome.Menu.Data.MenuItem (Items, MenuItem)
 import qualified Ribosome.Menu.Stream.ParMap as Stream
 
-type Matcher i =
-  (MenuItem i -> Maybe Text) -> Entry i -> Maybe (Int, Entry i)
-
 entry :: Int -> MenuItem i -> Entry i
 entry index item =
   Entry item (fromIntegral index) False
 
 filterPar ::
-  (MenuItem i -> Maybe Text) ->
-  Matcher i ->
+  ∀ a i .
+  Extractor i a ->
+  Matcher i a ->
   [Entry i] ->
   IO (Entries i)
 filterPar ex f =
@@ -28,8 +27,9 @@ filterPar ex f =
   Stream.parMapMaybeIO 100 (f ex)
 
 initPar ::
-  (MenuItem i -> Maybe Text) ->
-  Matcher i ->
+  ∀ a i .
+  Extractor i a ->
+  Matcher i a ->
   Items i ->
   IO (Entries i)
 initPar ex f =
@@ -38,8 +38,9 @@ initPar ex f =
   IntMap.toList
 
 refinePar ::
-  (MenuItem i -> Maybe Text) ->
-  Matcher i ->
+  ∀ a i .
+  Extractor i a ->
+  Matcher i a ->
   Entries i ->
   IO (Entries i)
 refinePar ex f =
@@ -56,25 +57,25 @@ matchOrEmpty predicate = \case
   Nothing ->
     False
 
-matchAll :: Matcher i
+matchAll :: Matcher i a
 matchAll _ e =
   Just (0, e)
 
 matchSimple ::
   (Text -> Bool) ->
-  Matcher i
+  Matcher i Text
 matchSimple predicate ex e =
   bool Nothing (Just (0, e)) (matchOrEmpty predicate (ex (e ^. #item)))
 
-matchSubstring :: Text -> Matcher i
+matchSubstring :: Text -> Matcher i Text
 matchSubstring query =
   matchSimple (Text.isInfixOf query)
 
-matchPrefix :: Text -> Matcher i
+matchPrefix :: Text -> Matcher i Text
 matchPrefix query =
   matchSimple (Text.isPrefixOf query)
 
-matchRegex :: Regex -> Matcher i
+matchRegex :: Regex -> Matcher i Text
 matchRegex query =
   matchSimple (has (rx . match))
   where
@@ -82,7 +83,7 @@ matchRegex query =
       regexing query
 
 -- |If the first arg is 'True', matches fuzzily but preserves the order of items for the empty query.
-matchFuzzy :: Bool -> String -> Matcher i
+matchFuzzy :: Bool -> String -> Matcher i Text
 -- |If the query is empty, score shorter strings higher.
 matchFuzzy False "" _ e =
   Just (-(Text.length e.item.text), e)

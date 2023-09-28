@@ -6,6 +6,7 @@ import Streamly.Prelude (SerialT)
 
 import Ribosome.Menu.Class.MenuState (Item, MenuState (core))
 import Ribosome.Menu.Data.CursorIndex (CursorIndex)
+import Ribosome.Menu.Data.MenuAction (RenderAnchor)
 import Ribosome.Menu.Data.MenuItem (MenuItem)
 import Ribosome.Menu.Data.State (Core, ModalState)
 import Ribosome.Menu.Data.WindowConfig (WindowConfig)
@@ -27,7 +28,7 @@ data MenuCore :: Effect where
   PromptQuit :: MenuCore m ()
   PromptUpdated :: Prompt -> MenuCore m ()
   PromptLooped :: MenuCore m ()
-  Render :: MenuCore m ()
+  Render :: RenderAnchor -> MenuCore m ()
 
 makeSem ''MenuCore
 
@@ -184,5 +185,5 @@ menuState ::
 menuState action =
   useCursor \ cursor ->
     useState \ s -> do
-      (WithCursor newItems newCursor,ult) <- runState (WithCursor s cursor) action
-      pure (newItems, (newCursor,ult))
+      (WithCursor newItems newCursor, ult) <- runState (WithCursor s cursor) action
+      pure (newItems, (newCursor, ult))

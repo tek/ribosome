@@ -19,25 +19,25 @@ import Ribosome.Menu.Data.MenuEvent (MenuEvent (Query), QueryEvent (Refined, Res
 import qualified Ribosome.Menu.Data.MenuItem as MenuItem
 import Ribosome.Menu.Data.MenuItem (simpleMenuItem)
 import Ribosome.Menu.Data.MenuResult (MenuResult (Success))
-import Ribosome.Menu.Data.State (Core (Core), Modal (Modal), modal)
+import Ribosome.Menu.Data.State (Core (Core), Modal (Modal), Primary (Primary), modal)
 import Ribosome.Menu.Data.WithCursor (WithCursor (WithCursor))
 import Ribosome.Menu.Effect.Menu (menuState)
 import Ribosome.Menu.Effect.MenuTest (
   quit,
   result,
   sendMapping,
-  sendMappingWait,
+  sendMappingPrompt,
   sendPrompt,
   sendPromptEvent,
   sendStaticItems,
   waitEvent,
   )
-import Ribosome.Menu.Interpreter.MenuFilter (defaultFilter)
+import Ribosome.Menu.Interpreter.MenuFilter (interpretFilter)
 import Ribosome.Menu.ItemLens (selected', selectedOnly, unselected)
 import Ribosome.Menu.Items (deleteSelected, popSelection)
 import Ribosome.Menu.Lens (use)
 import Ribosome.Menu.Mappings (defaultMappings)
-import Ribosome.Menu.MenuTest (runTestMenu, testMenu, testStaticMenu)
+import Ribosome.Menu.MenuTest (TestMenuConfig, confSet, runTestMenu, testMenu, testStaticMenu)
 import Ribosome.Menu.Prompt.Data.Prompt (Prompt (Prompt))
 import Ribosome.Menu.Prompt.Data.PromptConfig (startInsert)
 import Ribosome.Menu.Prompt.Data.PromptEvent (PromptEvent (Mapping, Update))
@@ -46,6 +46,9 @@ import Ribosome.Menu.Test.Menu (assertItems, awaitCurrent, promptTest, setPrompt
 import Ribosome.Menu.Test.RefineManyTest (test_fastPromptAcc, test_refineMany)
 import Ribosome.Menu.Test.Run (unitTestTimes)
 import Ribosome.Test.Error (testError)
+
+noItemsConf :: TestMenuConfig
+noItemsConf = confSet #initialItems False def
 
 items1 :: [Text]
 items1 =
@@ -67,8 +70,8 @@ items2 =
     "longitem"
     ]
 
-test_pureMenuFilter :: UnitTest
-test_pureMenuFilter = do
+test_pureFilter :: UnitTest
+test_pureFilter = do
   runTest $ promptTest @() do
     sendStaticItems "filter initial" (simpleMenuItem () <$> items2)
     assertItems items2
@@ -96,13 +99,13 @@ exec =
     fs <- use sortedEntries
     menuSuccess (view (#item . #text) <$> fs)
 
-test_pureMenuExecute :: UnitTest
-test_pureMenuExecute = do
+test_pureExecute :: UnitTest
+test_pureExecute = do
   runUnitTest do
-    runTestMenu def $ defaultFilter do
-      r <- testError $ testMenu def (modal Fuzzy) [("<cr>", exec)] do
+    runTestMenu def $ interpretFilter do
+      r <- testError $ testMenu noItemsConf (modal Fuzzy) [("<cr>", exec)] do
         sendStaticItems "exec initial" (simpleMenuItem () <$> items3)
-        sendMappingWait "<cr>"
+        sendMappingPrompt "<cr>"
         result
       Success items3 === r
 
@@ -129,11 +132,11 @@ execMulti =
     selection <- use selected'
     menuSuccess (fmap (.text) <$> selection)
 
-test_menuMultiMark :: UnitTest
-test_menuMultiMark = do
+test_multiMark :: UnitTest
+test_multiMark = do
   runTest do
-    runTestMenu startInsert $ defaultFilter do
-      r <- testError $ testMenu def (modal Fuzzy) (defaultMappings <> [("<cr>", execMulti)]) do
+    runTestMenu startInsert $ interpretFilter do
+      r <- testError $ testMenu noItemsConf (modal Fuzzy) (defaultMappings <> [("<cr>", execMulti)]) do
         sendStaticItems "initial" (simpleMenuItem () <$> itemsMulti)
         traverse_ sendMapping charsMulti
         result
@@ -151,7 +154,7 @@ itemsChangeFilter =
 test_initialFilter :: UnitTest
 test_initialFilter =
   runTest do
-    runTestMenu startInsert $ defaultFilter do
+    runTestMenu startInsert $ interpretFilter do
       testError $ testStaticMenu its def (modal Substring) mempty do
         sendPrompt (Prompt 1 Insert "abc")
         waitEvent "substring refined" (Query Refined)
@@ -164,7 +167,7 @@ test_initialFilter =
 test_changeFilter :: UnitTest
 test_changeFilter =
   runTest do
-    runTestMenu startInsert $ defaultFilter do
+    runTestMenu startInsert $ interpretFilter do
       testError $ testStaticMenu its def (modal Substring) maps do
         sendPrompt (Prompt 1 Insert "abc")
         waitEvent "substring refined" (Query Refined)
@@ -221,22 +224,22 @@ execToggle =
     use selectedOnly >>= maybe menuQuit \ selection ->
       menuSuccess ((.text) <$> selection)
 
-test_menuToggle :: UnitTest
-test_menuToggle = do
+test_toggle :: UnitTest
+test_toggle = do
   runTest do
-    runTestMenu startInsert $ defaultFilter do
-      r <- testError $ testMenu startInsert (modal Fuzzy) (defaultMappings <> [("<cr>", execToggle)]) do
+    runTestMenu startInsert $ interpretFilter do
+      r <- testError $ testMenu (confSet #prompt startInsert noItemsConf) (modal Fuzzy) (defaultMappings <> [("<cr>", execToggle)]) do
         sendStaticItems "initial" (simpleMenuItem () <$> itemsToggle)
         traverse_ (sendPromptEvent True) charsToggle
         result
       Success ["abc", "a"] === r
 
-test_menuDeleteSelected :: UnitTest
-test_menuDeleteSelected = do
+test_deleteSelected :: UnitTest
+test_deleteSelected = do
   runTestAuto do
-    targetSel === IntMap.elems ((.text) <$> updatedSel ^. #state . #core . #items)
+    targetSel === IntMap.elems ((.text) <$> updatedSel ^. #state . #core . #primary . #items)
     2 === updatedSel ^. #cursor
-    targetFoc === IntMap.elems ((.text) <$> updatedFoc ^. #state . #core . #items)
+    targetFoc === IntMap.elems ((.text) <$> updatedFoc ^. #state . #core . #primary . #items)
     (([0], [9]), 9) === second (length . sortEntries) (popSelection 0 unselectedEntries)
     75000 === length (sortEntries (snd (popSelection manyCursor manyEntries)))
     (([30000], [70000]), 100000) === second (length . sortEntries) (popSelection manyCursor manyUnselectedEntries)
@@ -251,7 +254,7 @@ test_menuDeleteSelected = do
       targetFoc =
         ["0", "1", "2", "3", "5", "6", "7"]
       menu ent =
-        WithCursor (Modal (Core its ent 7 0 mempty) mempty Fuzzy) 3
+        WithCursor (Modal (Core (Primary its ent mempty) 7 0) mempty Fuzzy) 3
       its =
         IntMap.fromList [(n, simpleMenuItem () (show n)) | n <- [0..7]]
       entriesSel =
@@ -272,27 +275,27 @@ test_menuDeleteSelected = do
       manyCursor =
         30000
 
-test_menuUnselectedCursor :: UnitTest
-test_menuUnselectedCursor =
+test_unselectedCursor :: UnitTest
+test_unselectedCursor =
   runTestAuto do
     [2, 4] === ((.meta) <$> MTL.evalState (Lens.use unselected) menu)
   where
     menu =
-      WithCursor (Modal (Core mempty entries 0 0 mempty) mempty Fuzzy) 1
+      WithCursor (Modal (Core (Primary mempty entries mempty) 0 0) mempty Fuzzy) 1
     entries =
       simpleIntEntries [2, 3, 4]
 
-test_menu :: TestTree
-test_menu =
+test_basic :: TestTree
+test_basic =
   testGroup "basic" [
-    unitTestTimes 100 "filter items" test_pureMenuFilter,
-    unitTestTimes 100 "execute an action" test_pureMenuExecute,
-    unitTestTimes 100 "mark multiple items" test_menuMultiMark,
+    unitTestTimes 100 "filter items" test_pureFilter,
+    unitTestTimes 100 "execute an action" test_pureExecute,
+    unitTestTimes 100 "mark multiple items" test_multiMark,
     unitTestTimes 100 "initial filter race" test_initialFilter,
     unitTestTimes 3 "change filter" test_changeFilter,
-    unitTestTimes 100 "toggle selection items" test_menuToggle,
+    unitTestTimes 100 "toggle selection items" test_toggle,
     unitTestTimes 3 "refine large number of items" test_refineMany,
     unitTestTimes 3 "send many prompts in quick succession" test_fastPromptAcc,
-    unitTest "delete selected" test_menuDeleteSelected,
-    unitTest "unselected items with no selected items" test_menuUnselectedCursor
+    unitTest "delete selected" test_deleteSelected,
+    unitTest "unselected items with no selected items" test_unselectedCursor
   ]

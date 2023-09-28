@@ -39,13 +39,13 @@ instance IsString ReportContext where
   fromString =
     ReportContext . pure . toText
 
--- |An report with different messages intended to be sent to Neovim and the log, respectively.
+-- |A report with different messages intended to be sent to Neovim and the log, respectively.
 --
 -- Used by request handlers and expected by the RPC dispatcher.
 --
 -- Also contains the 'Severity' of the report, or minimum log level, which determines whether the report should be
 -- logged and echoed in Neovim, and what kind of highlighting should be used in Neovim (red for errors, orange for
--- warnings, none for infomrational errors).
+-- warnings, none for informational errors).
 --
 -- The log message may span multiple lines.
 data Report where

@@ -6,15 +6,18 @@ import Data.Semigroup (Sum (Sum, getSum))
 import qualified Ribosome.Menu.Data.MenuItem
 import Ribosome.Menu.Data.MenuItem (MenuItem, simpleMenuItem, simpleMenuItemLines)
 
--- TODO use ItemIndex, which refers to the original insertion index.
--- EntryIndex refers to the effective visible item list, not to be used here.
+newtype ItemIndex =
+  ItemIndex { value :: Word }
+  deriving stock (Eq, Show, Generic)
+  deriving newtype (Num, Real, Enum, Integral, Ord)
+
 data Entry a =
   Entry {
     item :: MenuItem a,
-    index :: Word,
+    index :: ItemIndex,
     selected :: Bool
   }
-  deriving stock (Eq, Show, Generic)
+  deriving stock (Eq, Show, Generic, Functor)
 
 instance Eq a => Ord (Entry a) where
   compare =
@@ -29,11 +32,11 @@ fromList =
 
 intEntries :: [(Int, Word)] -> Entries Word
 intEntries nums =
-  fromList [(score, Entry (simpleMenuItem i (show i)) i False) | (score, i) <- nums]
+  fromList [(score, Entry (simpleMenuItem i (show i)) (ItemIndex i) False) | (score, i) <- nums]
 
 multi :: Word -> NonEmpty Text -> Entry Word
 multi i ls =
-  Entry (simpleMenuItemLines i ls) i False
+  Entry (simpleMenuItemLines i ls) (ItemIndex i) False
 
 multis :: [(Int, Word, NonEmpty Text)] -> Entries Word
 multis es =

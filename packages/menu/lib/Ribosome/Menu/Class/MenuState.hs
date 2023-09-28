@@ -2,11 +2,11 @@ module Ribosome.Menu.Class.MenuState where
 
 import Data.Trie (Trie)
 
-import qualified Ribosome.Menu.Class.MenuMode as MenuMode
 import Ribosome.Menu.Class.MenuMode (MenuMode)
 import Ribosome.Menu.Data.Entry (Entries)
 import Ribosome.Menu.Data.MenuItem (Items)
-import Ribosome.Menu.Data.State (Core, MenuQuery, Modal)
+import Ribosome.Menu.Data.MenuQuery (MenuQuery)
+import Ribosome.Menu.Data.State (Core, Modal)
 import Ribosome.Menu.Data.WithCursor (WithCursor)
 
 class (
@@ -24,9 +24,6 @@ class (
 
   renderStatus :: s -> Int -> [Text]
   renderStatus _ _ = []
-
-type Filter s =
-  MenuMode.Filter (Mode s)
 
 instance (
     MenuMode i m,
@@ -64,13 +61,13 @@ items ::
   MenuState s =>
   Lens s s (Items (Item s)) (Items (Item s))
 items =
-  core . #items
+  core . #primary . #items
 
 entries ::
   MenuState s =>
   Lens s s (Entries (Item s)) (Entries (Item s))
 entries =
-  core . #entries
+  core . #primary . #entries
 
 itemCount ::
   MenuState s =>
@@ -86,12 +83,6 @@ entryCount =
 
 query ::
   MenuState s =>
-  Lens s s MenuQuery MenuQuery
+  Lens' s MenuQuery
 query =
-  core . #query
-
-filterMode ::
-  MenuState s =>
-  SimpleGetter s (Filter s (Item s))
-filterMode =
-  mode . to MenuMode.filterMode
+  core . #primary . #query

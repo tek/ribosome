@@ -44,8 +44,8 @@ menuAction ::
 menuAction = \case
   MenuAction.Continue ->
     pure PromptAction.Continue
-  MenuAction.Render ->
-    PromptAction.Continue <$ Menu.render
+  MenuAction.Render anchor ->
+    PromptAction.Continue <$ Menu.render anchor
   MenuAction.UpdatePrompt prompt ->
     pure (PromptAction.Update prompt)
   MenuAction.Quit result ->

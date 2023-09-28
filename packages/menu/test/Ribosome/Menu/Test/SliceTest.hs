@@ -4,11 +4,16 @@ import qualified Data.IntMap.Strict as IntMap
 import qualified Data.Text as Text
 import Exon (exon)
 import Polysemy.Test (Hedgehog, UnitTest, assertJust, evalMaybe, (===))
+import Test.Tasty (TestTree, testGroup)
+import Zeugma (runTest, unitTest)
 
+import Ribosome.Menu.Class.MenuMode (MenuMode (extract, matcher))
 import Ribosome.Menu.Data.CursorIndex (CursorIndex)
 import Ribosome.Menu.Data.CursorLine (CursorLine)
 import qualified Ribosome.Menu.Data.Entry as Entries
 import Ribosome.Menu.Data.Entry (Entries, Entry)
+import Ribosome.Menu.Data.Filter (Filter (Regex))
+import Ribosome.Menu.Data.MenuAction (RenderAnchor (AnchorLine))
 import qualified Ribosome.Menu.Data.MenuItem
 import qualified Ribosome.Menu.Data.MenuView
 import Ribosome.Menu.Data.MenuView (EntryIndex, MenuView (MenuView), ViewRange (ViewRange))
@@ -16,24 +21,42 @@ import qualified Ribosome.Menu.Data.NvimMenuState
 import Ribosome.Menu.Data.NvimMenuState (
   EntrySlice (EntrySlice, OnlyPartialEntry),
   NvimMenuState (NvimMenuState),
-  PartialEntry (PartialEntry), sliceRange,
+  PartialEntry (PartialEntry),
+  sliceRange,
   )
+import Ribosome.Menu.Effect.MenuFilter (FilterJob (Refine), menuFilter)
+import Ribosome.Menu.Interpreter.MenuFilter (interpretFilter)
 import Ribosome.Menu.NvimRenderer (
   AvailLines,
   entrySliceBot,
   entrySliceCursor,
+  entrySliceForChange,
   entrySliceTop,
   findCursorLine,
   updateMenuState,
+  viewChange,
   )
-import Test.Tasty (TestTree, testGroup)
-import Zeugma (unitTest)
-import Zeugma (runTest)
+
+mkEntryLines :: EntryIndex -> EntryIndex -> [(EntryIndex, CursorLine)]
+mkEntryLines bot top =
+  zip [bot .. top] [1,3 .. ]
+
+mkView :: EntryIndex -> EntryIndex -> CursorLine -> CursorIndex -> MenuView
+mkView bottom top cursorLine cursor =
+  MenuView {
+    range = Just ViewRange {
+      bottom,
+      top,
+      cursorLine = cursorLine,
+      entryLines = mkEntryLines bottom top
+    },
+    cursor
+  }
 
 view :: MenuView
 view =
   MenuView {
-    range = Just (ViewRange 1 4 4),
+    range = Just (ViewRange 1 4 4 [(1, 2), (2, 4), (3, 6), (4, 8)]),
     cursor = 2
   }
 
@@ -42,7 +65,7 @@ state = NvimMenuState {view, slice = def}
 
 scoreN :: Word -> Word -> Int -> [Word -> (Int, Word, NonEmpty Text)]
 scoreN ln s n =
-  replicate n (\ index -> (fromIntegral s, index, two))
+  replicate n \ index -> (fromIntegral s, index, two)
   where
     two = [exon|line 1 (#{show s})|] :| [[exon|line #{show i}|] | i <- [2..ln]]
 
@@ -83,7 +106,7 @@ ents =
 renderEnt :: Entry Word -> [Text]
 renderEnt e
   | h :| t <- e.item.render
-  , i <- show e.index
+  , i <- show e.index.value
   = [exon|[#{i}] #{h}|] : (indent (Text.length i + 3) <$> t)
   where
     indent i t = [exon|#{toText (replicate i ' ')}#{t}|]
@@ -91,9 +114,9 @@ renderEnt e
 renderEntsL :: [Entry Word] -> [Text]
 renderEntsL es = renderEnt =<< es
 
-renderEnts :: Entries Word -> Text
+renderEnts :: Entries Word -> [Text]
 renderEnts es =
-  Text.unlines ("" : renderEntsL (IntMap.toAscList es >>= reverse . toList . snd))
+  renderEntsL (IntMap.toAscList es >>= reverse . toList . snd)
 
 renderSliceL :: EntrySlice Word -> [Text]
 renderSliceL = \case
@@ -500,39 +523,145 @@ test_slicePartial =
     testPartial2
     testPartial3
 
-targetState :: [Text]
-targetState =
+entsFilter :: Entries Word
+entsFilter =
+  mkEnts [
+    score 2 1,
+    score 4 1,
+    score 6 1,
+    score 8 1
+  ]
+
+targetFilter :: [Text]
+targetFilter =
   [
-    "[3] line 1 (4)",
-    "-------",
+    "[0] line 1 (2)",
     "    line 2",
-    "[2] line 1 (4)",
+    "[1] line 1 (4)",
     "    line 2",
-    "[5] line 1 (6)",
+    "[2] line 1 (6)",
     "    line 2",
-    "[4] line 1 (6)",
-    "    line 2",
-    "[7] line 1 (8)",
-    "    line 2",
-    "[6] line 1 (8)",
-    "-------",
+    "[3] line 1 (8)",
     "    line 2"
   ]
 
-test_sliceState :: UnitTest
-test_sliceState =
+viewFilter :: ViewRange
+viewFilter =
+  ViewRange 4 7 5 [(4, 1), (5, 3), (6, 5), (7, 7)]
+
+test_sliceFilter :: UnitTest
+test_sliceFilter =
   runTest do
-    (newState, result) <- runState state $ updateMenuState ents 3 10
+    let change = viewChange AnchorLine (Just viewFilter) 2
+    slice <- evalMaybe (entrySliceForChange entsFilter 2 8 change)
+    let (bottom, top) = sliceRange slice
+    (targetFilter, 0, 3, 5) === (renderSliceL slice, bottom, top, findCursorLine 2 slice)
+
+newtype TestMode =
+  TestMode Filter
+  deriving stock (Eq, Show, Ord)
+
+instance MenuMode Word TestMode where
+  matcher (TestMode f) = matcher f
+  extract _ = Just . show . (.meta)
+
+targetStateFilter :: [Text]
+targetStateFilter =
+  [
+    "[6] line 1 (8)",
+    "    line 2",
+    "[4] line 1 (6)",
+    "    line 2",
+    "[2] line 1 (4)",
+    "    line 2"
+  ]
+
+test_sliceStateFilter :: UnitTest
+test_sliceStateFilter =
+  runTest do
+    entsF <- interpretFilter $ menuFilter (TestMode Regex) "[0246]" (Refine ents)
+    (newState, result) <- runState state0 $ updateMenuState AnchorLine entsF 2 6
     (slice, changed) <- evalMaybe result
     True === changed
     newView === newState.view
-    targetState === renderSliceL slice
+    targetStateFilter === renderSliceL slice
   where
+    state0 = NvimMenuState {view = view0, slice = def}
+
+    view0 =
+      MenuView {
+        range = Just ViewRange {
+          bottom = 3,
+          top = 5,
+          cursorLine = 3,
+          entryLines = [(3, 1), (4, 3), (5, 5)]
+        },
+        cursor = 4
+      }
+
     newView =
       MenuView {
-        range = Just (ViewRange 1 4 6),
-        cursor = 3
+        range = Just ViewRange {
+          bottom = 1,
+          top = 3,
+          cursorLine = 3,
+          entryLines = [(1, 1), (2, 3), (3, 5)]
+        },
+        cursor = 2
       }
+
+initialFilterExcess :: [Text]
+initialFilterExcess =
+  [
+    "[7] line 1 (0)",
+    "    line 2",
+    "[6] line 1 (0)",
+    "    line 2",
+    "[5] line 1 (0)",
+    "    line 2",
+    "[4] line 1 (0)",
+    "    line 2",
+    "[3] line 1 (0)",
+    "    line 2",
+    "[2] line 1 (0)",
+    "    line 2",
+    "[1] line 1 (0)",
+    "    line 2",
+    "[0] line 1 (0)",
+    "    line 2"
+  ]
+
+targetStateFilterExcess :: [Text]
+targetStateFilterExcess =
+  [
+    "[6] line 1 (0)",
+    "    line 2",
+    "[5] line 1 (0)",
+    "    line 2",
+    "[4] line 1 (0)",
+    "    line 2"
+  ]
+
+entsF0 :: Entries Word
+entsF0 =
+  mkEnts [
+    score 0 8
+  ]
+
+test_sliceStateFilterExcess :: UnitTest
+test_sliceStateFilterExcess =
+  runTest do
+    initialFilterExcess === renderEnts entsF0
+    entsF <- interpretFilter $ menuFilter (TestMode Regex) "[456]" (Refine entsF0)
+    (newState, result) <- runState state0 $ updateMenuState AnchorLine entsF 5 16
+    (slice, changed) <- evalMaybe result
+    True === changed
+    newView === newState.view
+    targetStateFilterExcess === renderSliceL slice
+  where
+    state0 = NvimMenuState {view = view0, slice = def}
+    view0 = mkView 0 7 15 7
+    newView = mkView 0 2 5 2
 
 test_slice :: TestTree
 test_slice =
@@ -541,5 +670,10 @@ test_slice =
     unitTest "cursor at bottom" test_sliceBot,
     unitTest "cursor moved" test_sliceCursor,
     unitTest "only partials" test_slicePartial,
-    unitTest "state" test_sliceState
+    unitTest "after filter" test_sliceFilter,
+    testGroup "state" [
+      unitTest "state" test_sliceStateFilter
+      -- ,
+      -- unitTest "state" test_sliceStateFilterExcess
+    ]
   ]

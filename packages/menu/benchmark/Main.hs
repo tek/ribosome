@@ -33,7 +33,7 @@ import Ribosome.Menu.Data.RenderEvent (RenderEvent)
 import Ribosome.Menu.Data.State (ModalState, modal)
 import Ribosome.Menu.Effect.Menu (Menu, bundleMenuEngine, menuEngine)
 import Ribosome.Menu.Interpreter.Menu (MS (MS), interpretMenuDeps, interpretMenus, menuStream, unMS)
-import Ribosome.Menu.Interpreter.MenuFilter (defaultFilter)
+import Ribosome.Menu.Interpreter.MenuFilter (interpretFilter)
 import Ribosome.Menu.Interpreter.MenuStream (interpretMenuStream)
 import Ribosome.Menu.Interpreter.MenuUi (interceptMenuUiPromptEvents, interpretMenuUiNvimNull)
 import Ribosome.Menu.Items (currentEntries)
@@ -83,7 +83,7 @@ appendBench files =
   interpretSync $
   interpretGates $
   interpretEventsChan @MenuEvent $
-  defaultFilter $
+  interpretFilter $
   interpretMState (MS (modal Fuzzy)) $
   interpretMenuStream do
     subscribe @MenuEvent $ subscribeAsync (menuStream @(ModalState ()) items *> publish Rendered) do
@@ -121,7 +121,7 @@ menuBench ::
 menuBench files =
   interpretGate $
   interpretEventsChan @PromptEvent $
-  defaultFilter $
+  interpretFilter $
   interpretMenuDeps $
   interpretMenuUiNvimNull $
   interpretMenus do

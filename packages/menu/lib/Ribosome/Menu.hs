@@ -5,6 +5,7 @@ module Ribosome.Menu (
   module Ribosome.Menu.Data.MenuAction,
   module Ribosome.Menu.Data.MenuEvent,
   module Ribosome.Menu.Data.MenuItem,
+  module Ribosome.Menu.Data.MenuQuery,
   module Ribosome.Menu.Data.State,
   module Ribosome.Menu.Data.WindowConfig,
   module Ribosome.Menu.Effect.MenuFilter,
@@ -29,7 +30,6 @@ module Ribosome.Menu (
   module Ribosome.Menu.Prompt.Run,
 ) where
 
-
 import Ribosome.Menu.Action (
   MenuSem,
   MenuWidget,
@@ -38,6 +38,8 @@ import Ribosome.Menu.Action (
   menuOk,
   menuQuit,
   menuRender,
+  menuRenderIndex,
+  menuRenderLine,
   menuSuccess,
   menuToggle,
   menuToggleAll,
@@ -48,8 +50,9 @@ import Ribosome.Menu.Data.Filter
 import Ribosome.Menu.Data.MenuAction
 import Ribosome.Menu.Data.MenuEvent (MenuEvent (..), QueryEvent (..))
 import Ribosome.Menu.Data.MenuItem (Items, MenuItem (MenuItem), simpleMenuItem)
+import Ribosome.Menu.Data.MenuQuery
 import Ribosome.Menu.Data.MenuResult (MenuResult (..))
-import Ribosome.Menu.Data.State (Core, MenuQuery (MenuQuery), Modal, ModalState, modal)
+import Ribosome.Menu.Data.State (Core, Modal, ModalState, Primary, modal)
 import Ribosome.Menu.Data.WindowConfig (WindowConfig (WindowConfig), WindowOptions (WindowOptions), toWindowConfig)
 import Ribosome.Menu.Effect.Menu (
   Menu,
@@ -82,11 +85,7 @@ import Ribosome.Menu.Effect.Menu (
   )
 import Ribosome.Menu.Effect.MenuFilter (MenuFilter (..))
 import Ribosome.Menu.Effect.MenuStream (MenuStream)
-import Ribosome.Menu.Effect.MenuUi (
-  MenuUi,
-  PureMenu,
-  WindowMenu,
-  )
+import Ribosome.Menu.Effect.MenuUi (MenuUi, PureMenu, WindowMenu)
 import Ribosome.Menu.Interpreter.Menu (
   MenuLoopDeps,
   MenuLoopIO,
@@ -94,16 +93,13 @@ import Ribosome.Menu.Interpreter.Menu (
   NvimMenus,
   interpretMenuDeps,
   interpretMenus,
-  interpretWindowMenu,
   interpretSingleWindowMenu,
+  interpretWindowMenu,
   promptInput,
   )
-import Ribosome.Menu.Interpreter.MenuFilter (defaultFilter)
+import Ribosome.Menu.Interpreter.MenuFilter (interpretFilter)
 import Ribosome.Menu.Interpreter.MenuStream (interpretMenuStream)
-import Ribosome.Menu.Interpreter.MenuUi (
-  interpretMenuUiNull,
-  interpretMenuUiNvimNull,
-  )
+import Ribosome.Menu.Interpreter.MenuUi (interpretMenuUiNull, interpretMenuUiNvimNull)
 import Ribosome.Menu.ItemLens (
   entriesByIndex,
   focus,

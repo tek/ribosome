@@ -8,7 +8,7 @@ import Lens.Micro.Mtl (view)
 
 import Ribosome.Menu.Class.MenuState (MenuState (Item, mode), entries, entryCount, history, query)
 import Ribosome.Menu.Data.Entry (Entries, Entry, entriesLength)
-import Ribosome.Menu.Data.State (MenuQuery (MenuQuery))
+import Ribosome.Menu.Data.MenuQuery (MenuQuery (MenuQuery))
 import Ribosome.Menu.Lens (use, (%=), (.=))
 
 addHistory ::
@@ -123,3 +123,15 @@ popEntries f =
       case f i e of
         Just a -> ((i + 1, a : as), r)
         Nothing -> ((i + 1, as), r |> e)
+
+lookupEntryIndex :: Int -> Entries i -> Maybe (Entry i)
+lookupEntryIndex index =
+  snd . IntMap.foldr' score (0, Nothing)
+  where
+    score ents (cur, Nothing)
+      | Just target <- Seq.lookup (index - cur) ents
+      = (0, Just target)
+      | otherwise
+      = (cur + Seq.length ents, Nothing)
+
+    score _ (_, Just target) = (0, Just target)

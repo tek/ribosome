@@ -1,8 +1,6 @@
 module Ribosome.Menu.Interpreter.MenuTest where
 
 import Conc (Consume, interpretAtomic, interpretQueueTBM, interpretSync, resultToMaybe, timeout_)
-import qualified Data.Set as Set
-import qualified Data.Text as Text
 import Exon (exon)
 import Polysemy.Chronos (ChronosTime, interpretTimeChronos)
 import qualified Queue
@@ -132,15 +130,28 @@ waitEvent ::
 waitEvent desc target =
   waitEventPred [exon|#{desc} (#{show target})|] (target ==)
 
+waitEventsPred ::
+  Members [Reader TestTimeout, Consume MenuEvent, AtomicState WaitState, Fail, Race] r =>
+  Text ->
+  [MenuEvent -> Bool] ->
+  Sem r ()
+waitEventsPred desc targets =
+  evalState targets $ waitEventPredM desc \ e -> do
+    modify' (removeEvent e)
+    gets null
+  where
+    removeEvent e = \case
+      [] -> []
+      (h : t) | h e -> t
+      (h : t) -> h : removeEvent e t
+
 waitEvents ::
   Members [Reader TestTimeout, Consume MenuEvent, AtomicState WaitState, Fail, Race] r =>
   Text ->
-  Set MenuEvent ->
+  [MenuEvent] ->
   Sem r ()
-waitEvents desc targets =
-  evalState targets $ waitEventPredM [exon|#{desc} (#{Text.intercalate ", " (show <$> toList targets)})|] \ e -> do
-    modify' (Set.delete e)
-    gets Set.null
+waitEvents desc evs =
+  waitEventsPred desc ((==) <$> evs)
 
 waitItemsDone ::
   Members [Reader TestTimeout, Consume MenuEvent, AtomicState WaitState, Fail, Race] r =>
@@ -213,12 +224,8 @@ interpretMenuTestQueuesWith =
       waitItemsDone [exon|WaitItemsDone (#{desc})|]
     SendPromptEvent wait e ->
       sendPromptEvent wait e
-    WaitEventPred desc f ->
-      waitEventPred desc f
-    WaitEvent desc e ->
-      waitEventPred desc (e ==)
-    WaitEvents desc es ->
-      waitEvents desc es
+    WaitEventsPred desc f ->
+      waitEventsPred desc f
     Result ->
       failTimeout "menu result" Sync.block
     NextEvent ->

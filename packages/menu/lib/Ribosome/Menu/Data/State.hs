@@ -4,21 +4,23 @@ import qualified Data.Map.Strict as Map
 import Data.Trie (Trie)
 
 import Ribosome.Menu.Data.Entry (Entries)
-import qualified Ribosome.Menu.Data.Filter as Filter
+import Ribosome.Menu.Data.Filter (Filter)
 import Ribosome.Menu.Data.MenuItem (Items)
+import Ribosome.Menu.Data.MenuQuery (MenuQuery)
 
-newtype MenuQuery =
-  MenuQuery { unMenuQuery :: Text }
-  deriving stock (Eq, Show)
-  deriving newtype (Semigroup, Monoid, Ord, IsString)
+data Primary i =
+  Primary {
+    items :: Items i,
+    entries :: Entries i,
+    query :: MenuQuery
+  }
+  deriving stock (Eq, Show, Generic)
 
 data Core i =
   Core {
-    items :: Items i,
-    entries :: Entries i,
+    primary :: Primary i,
     itemCount :: Word,
-    entryCount :: Word,
-    query :: MenuQuery
+    entryCount :: Word
   }
   deriving stock (Eq, Show, Generic)
 
@@ -30,17 +32,13 @@ data Modal mode i =
   }
   deriving stock (Eq, Show, Generic)
 
-type ModalState i =
-  Modal Filter.Filter i
+type ModalState i = Modal Filter i
 
 modal ::
   mode ->
   Modal mode i
 modal =
-  Modal (Core mempty mempty 0 0 mempty) Map.empty
+  Modal (Core (Primary mempty mempty mempty) 0 0) Map.empty
 
-instance (
-    Default mode
-  ) => Default (Modal mode i) where
-    def =
-      modal def
+instance Default mode => Default (Modal mode i) where
+  def = modal def

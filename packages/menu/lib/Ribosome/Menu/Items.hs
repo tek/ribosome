@@ -23,7 +23,7 @@ import Ribosome.Menu.Effect.Menu (Menu, readState, viewMenu)
 import Ribosome.Menu.ItemLens (focus, selected, selected')
 import Ribosome.Menu.Lens (use, (%=), (.=))
 
--- |Run an action with the focused entry if the menu is non-empty.
+-- | Run an action with the focused entry if the menu is non-empty.
 withFocusItem ::
   MenuState s =>
   Member (Menu s) r =>
@@ -32,7 +32,7 @@ withFocusItem ::
 withFocusItem f =
   traverse f =<< viewMenu focus
 
--- |Run an action with the focused entry if the menu is non-empty, extracting the item payload.
+-- | Run an action with the focused entry if the menu is non-empty, extracting the item payload.
 withFocus' ::
   MenuState s =>
   Member (Menu s) r =>
@@ -41,7 +41,7 @@ withFocus' ::
 withFocus' f =
   withFocusItem (f . (.meta))
 
--- |Run an action with the focused entry and quit the menu with the returned value.
+-- | Run an action with the focused entry and quit the menu with the returned value.
 -- If the menu was empty, do nothing (i.e. skip the event).
 withFocus ::
   MenuState s =>
@@ -51,7 +51,7 @@ withFocus ::
 withFocus f =
   Just . maybe MenuAction.Continue MenuAction.success <$> withFocus' f
 
--- |Run an action with the selection or the focused entry if the menu is non-empty.
+-- | Run an action with the selection or the focused entry if the menu is non-empty.
 withSelectionItems ::
   MenuState s =>
   Member (Menu s) r =>
@@ -60,7 +60,7 @@ withSelectionItems ::
 withSelectionItems f =
   traverse f =<< viewMenu selected'
 
--- |Run an action with the selection or the focused entry if the menu is non-empty, extracting the item payloads.
+-- | Run an action with the selection or the focused entry if the menu is non-empty, extracting the item payloads.
 withSelection' ::
   MenuState s =>
   Member (Menu s) r =>
@@ -69,7 +69,7 @@ withSelection' ::
 withSelection' f =
   traverse f =<< viewMenu selected
 
--- |Run an action with the selection or the focused entry and quit the menu with the returned value.
+-- | Run an action with the selection or the focused entry and quit the menu with the returned value.
 -- If the menu was empty, do nothing (i.e. skip the event).
 withSelection ::
   MenuState s =>
@@ -79,7 +79,7 @@ withSelection ::
 withSelection f =
   Just . maybe MenuAction.Continue MenuAction.success <$> withSelection' f
 
--- |Run an action with each entry in the selection or the focused entry and quit the menu with '()'.
+-- | Run an action with each entry in the selection or the focused entry and quit the menu with '()'.
 -- If the menu was empty, do nothing (i.e. skip the event).
 traverseSelection_ ::
   MenuState s =>
@@ -96,14 +96,14 @@ adaptCursorAfterDeletion deleted (CursorIndex curs) =
     f z i =
       if i <= curs && i > 0 then z - 1 else z
 
--- |Remove all entries for which @f@ returns @Just (Right b)@, or if none are matched, the last one for which @f@
+-- | Remove all entries for which @f@ returns @Just (Right b)@, or if none are matched, the last one for which @f@
 -- returns @Just (Left a)@.
 -- Return either:
 -- * If some entries produced 'Right', the list of values contained in those 'Right's and @ents@ with those items
 --   removed, in a 'Right'.
 -- * If only a 'Left' was produced, the value contained in that 'Left', the score that indexes the 'IntMap', and the
---   index in the 'Seq' in the 'IntMap''s value.
--- * If no entry produced a 'Just', an empty list and the original @ents@ in a 'Left'.
+--   index in the 'Seq' in the 'IntMap''s value, in a 'Left'.
+-- * If no entry produced a 'Just', an empty list and the original @ents@ in a 'Right'.
 popEntriesFallback ::
   (Int -> Entry i -> Maybe (Either a b)) ->
   Entries i ->

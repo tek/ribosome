@@ -12,7 +12,8 @@ data ViewRange =
   ViewRange {
     bottom :: EntryIndex,
     top :: EntryIndex,
-    cursorLine :: CursorLine
+    cursorLine :: CursorLine,
+    entryLines :: [(EntryIndex, CursorLine)]
   }
   deriving stock (Eq, Show, Generic)
 

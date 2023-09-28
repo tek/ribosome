@@ -1,8 +1,9 @@
 module Ribosome.Menu.Effect.MenuTest where
 
 import qualified Data.Text as Text
+import Exon (exon)
 
-import Ribosome.Menu.Data.MenuEvent (MenuEvent)
+import Ribosome.Menu.Data.MenuEvent (MenuEvent (Rendered))
 import Ribosome.Menu.Data.MenuItem (MenuItem, simpleMenuItem)
 import Ribosome.Menu.Data.MenuResult (MenuResult)
 import Ribosome.Menu.Prompt.Data.Prompt (Prompt (Prompt), PromptText (PromptText))
@@ -15,9 +16,7 @@ data MenuTest i a :: Effect where
   ItemsDone :: Text -> MenuTest i a m ()
   WaitItemsDone :: Text -> MenuTest i a m ()
   SendPromptEvent :: Bool -> PromptEvent -> MenuTest i a m ()
-  WaitEventPred :: Text -> (MenuEvent -> Bool) -> MenuTest i a m ()
-  WaitEvent :: Text -> MenuEvent -> MenuTest i a m ()
-  WaitEvents :: Text -> Set MenuEvent -> MenuTest i a m ()
+  WaitEventsPred :: Text -> [MenuEvent -> Bool] -> MenuTest i a m ()
   Result :: MenuTest i a m (MenuResult a)
   NextEvent :: MenuTest i a m MenuEvent
   Quit :: MenuTest i a m ()
@@ -40,6 +39,30 @@ sendStaticItems ::
 sendStaticItems desc items = do
   traverse_ sendItem items
   itemsDone desc
+
+waitEventPred ::
+  Member (MenuTest i a) r =>
+  Text ->
+  (MenuEvent -> Bool) ->
+  Sem r ()
+waitEventPred desc ev =
+  waitEventsPred desc [ev]
+
+waitEvents ::
+  Member (MenuTest i a) r =>
+  Text ->
+  [MenuEvent] ->
+  Sem r ()
+waitEvents desc evs =
+  waitEventsPred [exon|#{desc} (#{Text.intercalate ", " (show <$> evs)})|] ((==) <$> evs)
+
+waitEvent ::
+  Member (MenuTest i a) r =>
+  Text ->
+  MenuEvent ->
+  Sem r ()
+waitEvent desc ev =
+  waitEvents desc [ev]
 
 sendPromptEvents ::
   Member (MenuTest i a) r =>
@@ -77,11 +100,11 @@ setPrompt ::
 setPrompt t =
   sendPrompt (Prompt (Text.length (coerce t)) Normal t)
 
-sendMappingWait ::
+sendMappingPrompt ::
   Member (MenuTest i a) r =>
   Text ->
   Sem r ()
-sendMappingWait m =
+sendMappingPrompt m =
   sendPromptEvent True (PromptEvent.Mapping m)
 
 sendMapping ::
@@ -90,3 +113,11 @@ sendMapping ::
   Sem r ()
 sendMapping m =
   sendPromptEvent False (PromptEvent.Mapping m)
+
+sendMappingRender ::
+  Member (MenuTest i a) r =>
+  Text ->
+  Sem r ()
+sendMappingRender m = do
+  sendMapping m
+  waitEvent [exon|Render for mapping #{m}|] Rendered
