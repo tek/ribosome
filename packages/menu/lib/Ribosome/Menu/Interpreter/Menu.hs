@@ -17,12 +17,13 @@ import Ribosome.Effect.Scratch (Scratch)
 import Ribosome.Effect.Settings (Settings)
 import Ribosome.Host.Data.Event (Event)
 import Ribosome.Host.Data.RpcError (RpcError, rpcError)
-import Ribosome.Host.Effect.MState (MState, ScopedMState, mread, muse)
+import Ribosome.Host.Effect.MState (MState, ScopedMState, mread, mstate, muse)
 import Ribosome.Host.Effect.Rpc (Rpc)
 import Ribosome.Host.Interpret (type (|>))
 import Ribosome.Host.Interpreter.MState (interpretMState, interpretMStates)
-import Ribosome.Menu.Class.MenuState (MenuState (Item, mode))
-import Ribosome.Menu.Data.CursorIndex (CursorIndex)
+import Ribosome.Menu.Class.MenuState (MenuState (Item, mode), entries)
+import Ribosome.Menu.Data.CursorIndex (CursorIndex (CursorIndex))
+import Ribosome.Menu.Data.Entry (entriesLength)
 import Ribosome.Menu.Data.MenuAction (RenderAnchor (AnchorLine))
 import Ribosome.Menu.Data.MenuConfig (MenuConfig, menuSync)
 import qualified Ribosome.Menu.Data.MenuEvent as MenuEvent
@@ -87,6 +88,17 @@ data MenuSync =
   MenuSync
   deriving stock (Eq, Show)
 
+clampCursor ::
+  MenuState s =>
+  s ->
+  CursorIndex ->
+  (CursorIndex, CursorIndex)
+clampCursor s cursor =
+  (validCursor, validCursor)
+  where
+    validCursor = min (CursorIndex (total - 1)) cursor
+    total = entriesLength (s ^. entries)
+
 renderEvent ::
   MenuState s =>
   Members [MState (MS s), MState CursorIndex, MenuUi !! RpcError, Events MenuEvent, Log] r =>
@@ -95,7 +107,7 @@ renderEvent ::
 renderEvent (RenderEvent desc anchor) = do
   Log.debug [exon|menu render: #{desc}|]
   MS s <- mread
-  c <- mread
+  c <- mstate (clampCursor s)
   resume @_ @MenuUi
     do
       MenuUi.render (RenderMenu.fromState (WithCursor s c) anchor)
@@ -285,11 +297,11 @@ interpretSingleWindowMenu ::
   ∀ s eres r .
   MenuState s =>
   Members MenuLoopIO r =>
-  Member MenuFilter r =>
   Members (NvimMenuIO eres) r =>
-  InterpretersFor (WindowMenus s !! RpcError : MenuLoopDeps) r
+  InterpretersFor (WindowMenus s !! RpcError : MenuFilter : MenuLoopDeps) r
 interpretSingleWindowMenu =
   interpretMenuDeps .
+  interpretFilter .
   interpretMenuUiWindow .
   interpretMenus .
   raiseUnder

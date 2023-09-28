@@ -653,7 +653,7 @@ test_sliceStateFilterExcess =
   runTest do
     initialFilterExcess === renderEnts entsF0
     entsF <- interpretFilter $ menuFilter (TestMode Regex) "[456]" (Refine entsF0)
-    (newState, result) <- runState state0 $ updateMenuState AnchorLine entsF 5 16
+    (newState, result) <- runState state0 $ updateMenuState AnchorLine entsF 2 16
     (slice, changed) <- evalMaybe result
     True === changed
     newView === newState.view
@@ -672,8 +672,7 @@ test_slice =
     unitTest "only partials" test_slicePartial,
     unitTest "after filter" test_sliceFilter,
     testGroup "state" [
-      unitTest "state" test_sliceStateFilter
-      -- ,
-      -- unitTest "state" test_sliceStateFilterExcess
+      unitTest "state" test_sliceStateFilter,
+      unitTest "state" test_sliceStateFilterExcess
     ]
   ]

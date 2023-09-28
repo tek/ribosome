@@ -155,6 +155,7 @@ test-suite ribosome-menu-test
   type: exitcode-stdio-1.0
   main-is: Main.hs
   other-modules:
+      Ribosome.Menu.Test.CursorClampTest
       Ribosome.Menu.Test.DeleteCursorTest
       Ribosome.Menu.Test.FilterTest
       Ribosome.Menu.Test.Menu

@@ -32,7 +32,6 @@ import Ribosome.Menu.Effect.MenuTest (
   sendStaticItems,
   waitEvent,
   )
-import Ribosome.Menu.Interpreter.MenuFilter (interpretFilter)
 import Ribosome.Menu.ItemLens (selected', selectedOnly, unselected)
 import Ribosome.Menu.Items (deleteSelected, popSelection)
 import Ribosome.Menu.Lens (use)
@@ -102,7 +101,7 @@ exec =
 test_pureExecute :: UnitTest
 test_pureExecute = do
   runUnitTest do
-    runTestMenu def $ interpretFilter do
+    runTestMenu def do
       r <- testError $ testMenu noItemsConf (modal Fuzzy) [("<cr>", exec)] do
         sendStaticItems "exec initial" (simpleMenuItem () <$> items3)
         sendMappingPrompt "<cr>"
@@ -135,7 +134,7 @@ execMulti =
 test_multiMark :: UnitTest
 test_multiMark = do
   runTest do
-    runTestMenu startInsert $ interpretFilter do
+    runTestMenu startInsert do
       r <- testError $ testMenu noItemsConf (modal Fuzzy) (defaultMappings <> [("<cr>", execMulti)]) do
         sendStaticItems "initial" (simpleMenuItem () <$> itemsMulti)
         traverse_ sendMapping charsMulti
@@ -154,7 +153,7 @@ itemsChangeFilter =
 test_initialFilter :: UnitTest
 test_initialFilter =
   runTest do
-    runTestMenu startInsert $ interpretFilter do
+    runTestMenu startInsert do
       testError $ testStaticMenu its def (modal Substring) mempty do
         sendPrompt (Prompt 1 Insert "abc")
         waitEvent "substring refined" (Query Refined)
@@ -167,7 +166,7 @@ test_initialFilter =
 test_changeFilter :: UnitTest
 test_changeFilter =
   runTest do
-    runTestMenu startInsert $ interpretFilter do
+    runTestMenu startInsert do
       testError $ testStaticMenu its def (modal Substring) maps do
         sendPrompt (Prompt 1 Insert "abc")
         waitEvent "substring refined" (Query Refined)
@@ -227,7 +226,7 @@ execToggle =
 test_toggle :: UnitTest
 test_toggle = do
   runTest do
-    runTestMenu startInsert $ interpretFilter do
+    runTestMenu startInsert do
       r <- testError $ testMenu (confSet #prompt startInsert noItemsConf) (modal Fuzzy) (defaultMappings <> [("<cr>", execToggle)]) do
         sendStaticItems "initial" (simpleMenuItem () <$> itemsToggle)
         traverse_ (sendPromptEvent True) charsToggle

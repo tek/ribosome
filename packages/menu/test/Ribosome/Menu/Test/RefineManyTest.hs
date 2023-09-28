@@ -9,7 +9,6 @@ import Ribosome.Menu.Data.MenuEvent (MenuEvent (Query), QueryEvent (Modal, Refin
 import Ribosome.Menu.Data.MenuItem (MenuItem, simpleMenuItem)
 import Ribosome.Menu.Data.State (modal)
 import Ribosome.Menu.Effect.MenuTest (itemsDone, quit, sendPrompt, waitEvent)
-import Ribosome.Menu.Interpreter.MenuFilter (interpretFilter)
 import Ribosome.Menu.MenuTest (runTestMenu, testStaticMenu)
 import Ribosome.Menu.Prompt.Data.Prompt (Prompt (Prompt))
 import Ribosome.Menu.Prompt.Data.PromptConfig (startInsert)
@@ -26,7 +25,7 @@ items factor =
 test_refineMany :: UnitTest
 test_refineMany = do
   runTest do
-    runTestMenu startInsert $ interpretFilter do
+    runTestMenu startInsert do
       testError $ testStaticMenu (items factor) def (modal Substring) mempty do
         itemsDone "initial"
         sendPrompt (Prompt 1 Insert "1")
@@ -51,7 +50,7 @@ test_refineMany = do
 test_fastPromptAcc :: UnitTest
 test_fastPromptAcc = do
   runTest do
-    runTestMenu startInsert $ interpretFilter do
+    runTestMenu startInsert do
       testError $ testStaticMenu (items factor) def (modal Substring) mempty do
         itemsDone "initial"
         sendPrompt (Prompt 1 Insert "1")

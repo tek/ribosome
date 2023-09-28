@@ -26,7 +26,6 @@ import Ribosome.Menu.Data.MenuEvent (MenuEvent (Query, Rendered), QueryEvent (Re
 import Ribosome.Menu.Data.MenuItem (MenuItem, simpleMenuItemLines)
 import Ribosome.Menu.Data.WindowConfig (WindowConfig (WindowConfig))
 import Ribosome.Menu.Effect.Menu (MenuEngine, MenuEngineStack, Menus, bundleMenuEngine, waitPrompt)
-import Ribosome.Menu.Effect.MenuFilter (MenuFilter)
 import qualified Ribosome.Menu.Effect.MenuTest as MenuTest
 import Ribosome.Menu.Effect.MenuTest (MenuTest, waitEvents)
 import Ribosome.Menu.Interpreter.Menu (MenuLoopDeps, interpretMenuDeps, interpretMenus)
@@ -278,7 +277,7 @@ testStaticNvimMenuSimple ::
   Item s ~ () =>
   MenuState s =>
   Members MenuTestIOStack r =>
-  Members [EventConsumer Event, MenuFilter] r =>
+  Member (EventConsumer Event) r =>
   Members [Rpc, Rpc !! RpcError, Settings !! SettingError, Scratch !! RpcError, Stop RpcError] r =>
   [NonEmpty Text] ->
   TestMenuConfig ->
@@ -293,7 +292,7 @@ testNativeMenu' ::
   ∀ result s r .
   MenuState s =>
   Members MenuTestIOStack r =>
-  Members [EventConsumer Event, MenuFilter] r =>
+  Member (EventConsumer Event) r =>
   Members [Rpc, Rpc !! RpcError, Settings !! SettingError, Scratch !! RpcError, Stop RpcError] r =>
   SerialT IO (MenuItem (Item s)) ->
   TestMenuConfig ->
@@ -319,8 +318,7 @@ testNativeMenu ::
   TestMenuConfig ->
   s ->
   ScratchOptions ->
-  Mappings s (MenuTestEffects s result ++ MenuTestStack (Item s) result |> MenuFilter ++ r) result ->
-  InterpretersFor (MenuTestEffects s result ++ MenuTestStack (Item s) result |> MenuFilter) r
+  Mappings s (MenuTestEffects s result ++ MenuTestStack (Item s) result ++ r) result ->
+  InterpretersFor (MenuTestEffects s result ++ MenuTestStack (Item s) result) r
 testNativeMenu items conf initial options maps =
-  interpretFilter .
   testNativeMenu' items conf initial options maps

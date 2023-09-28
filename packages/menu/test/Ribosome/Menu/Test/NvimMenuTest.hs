@@ -23,7 +23,6 @@ import qualified Ribosome.Menu.Effect.MenuTest as MenuTest
 import Ribosome.Menu.Effect.MenuTest (sendMapping, sendMappingPrompt, waitEvent)
 import qualified Ribosome.Menu.Effect.MenuUi as MenuUi
 import Ribosome.Menu.Interpreter.Menu (interpretSingleWindowMenu, promptInput)
-import Ribosome.Menu.Interpreter.MenuFilter (interpretFilter)
 import Ribosome.Menu.Loop (menuMaps, runMenuUi, windowMenu, withMenuUi)
 import Ribosome.Menu.Mappings (Mappings, defaultMappings)
 import Ribosome.Menu.MenuTest (confSet, testStaticNvimMenu)
@@ -89,7 +88,7 @@ nativeChars =
 
 test_nativeWindow :: UnitTest
 test_nativeWindow =
-  testEmbed_ $ interpretFilter $ interpretSingleWindowMenu $ runMenuUi (mkItems items) (modal Fuzzy) do
+  testEmbed_ $ interpretSingleWindowMenu $ runMenuUi (mkItems items) (modal Fuzzy) do
     result <- flip (withMenuUi opts) mappings \ m -> do
       withPromptInputSync nativeChars do
         menuMaps (insertAt @2 <$> m)
@@ -102,7 +101,7 @@ test_nativeWindow =
 
 test_interruptWindow :: UnitTest
 test_interruptWindow =
-  testEmbed_ $ interpretFilter $ interpretSingleWindowMenu $ runMenuUi (mkItems items) (modal Fuzzy) do
+  testEmbed_ $ interpretSingleWindowMenu $ runMenuUi (mkItems items) (modal Fuzzy) do
     result <- flip (withMenuUi opts) mappings \ m -> do
       withPromptInputSync ["i", "<c-c>", "<cr>"] do
         menuMaps (insertAt @2 <$> m)
@@ -114,7 +113,7 @@ test_interruptWindow =
 
 test_windowOnlyInsert :: UnitTest
 test_windowOnlyInsert =
-  testEmbed_ $ interpretFilter $ interpretSingleWindowMenu $ runMenuUi (mkItems items) (modal Fuzzy) do
+  testEmbed_ $ interpretSingleWindowMenu $ runMenuUi (mkItems items) (modal Fuzzy) do
       result <- flip (withMenuUi opts) mappings \ m -> do
         withPromptInputSync ["i", nosync "<esc>", "<cr>"] do
           menuMaps (insertAt @2 <$> m)
@@ -125,7 +124,7 @@ test_windowOnlyInsert =
 
 test_quit :: UnitTest
 test_quit =
-  testEmbed_ $ interpretFilter do
+  testEmbed_ do
     result <- testStaticNvimMenu @() @(Modal Filter Text) [] def (modal Fuzzy) (menuScratchSized 4) defaultMappings do
       sendMapping "<esc>"
       MenuTest.result
@@ -192,7 +191,7 @@ instance MenuState TestState where
 -- TODO withPromptInputSync here is partially ineffective since it sets menuSync, which should be read by the main loop.
 test_bottomStatus :: UnitTest
 test_bottomStatus =
-  testSocketTmux $ interpretFilter do
+  testSocketTmux do
     result <- testStaticNvimMenu @() [] conf (TestState (modal (TestMode Fuzzy 0)) "empty") def defaultMappings do
       status <- MenuUi.statusScratch
       assertEq ["message: empty"] . drop 1 =<< bufferContent (status ^. #buffer)

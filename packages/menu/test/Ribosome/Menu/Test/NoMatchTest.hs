@@ -5,7 +5,6 @@ import Polysemy.Test (UnitTest)
 import Ribosome.Menu.Data.Filter (Filter (Substring))
 import Ribosome.Menu.Data.State (modal)
 import Ribosome.Menu.Effect.MenuTest (quit, setPromptWait)
-import Ribosome.Menu.Interpreter.MenuFilter (interpretFilter)
 import Ribosome.Menu.MenuTest (runTestMenu, testStaticNvimMenuSimple)
 import Ribosome.Menu.Prompt.Data.PromptConfig (startInsert)
 import Ribosome.Menu.Scratch (menuScratchSized)
@@ -29,7 +28,7 @@ initialBuffer =
 test_filterNoMatch :: UnitTest
 test_filterNoMatch =
   testEmbed_ do
-    runTestMenu startInsert $ interpretFilter do
+    runTestMenu startInsert do
       testError $ testStaticNvimMenuSimple itemsNoMatch def (modal Substring) (menuScratchSized 4) mempty do
         awaitItemsBuffer initialBuffer
         setPromptWait "3"

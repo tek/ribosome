@@ -1,6 +1,7 @@
 module Main where
 
 import Polysemy.Test (unitTest)
+import Ribosome.Menu.Test.CursorClampTest (test_clampCursor)
 import Ribosome.Menu.Test.FilterTest (test_filterFuzzy)
 import Ribosome.Menu.Test.MenuTest (test_basic)
 import Ribosome.Menu.Test.MultilineTest (test_multiline, test_multilineCramped)
@@ -18,7 +19,8 @@ tests =
     test_slice,
     unitTest "multiline menu entries" test_multiline,
     unitTest "multiline with little space" test_multilineCramped,
-    unitTest "query with no match" test_filterNoMatch
+    unitTest "query with no match" test_filterNoMatch,
+    unitTest "clamp cursor after refining" test_clampCursor
   ]
 
 main :: IO ()
