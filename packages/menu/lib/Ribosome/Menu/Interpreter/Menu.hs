@@ -46,6 +46,7 @@ import qualified Ribosome.Menu.Effect.MenuStream as MenuStream
 import Ribosome.Menu.Effect.MenuStream (MenuStream)
 import qualified Ribosome.Menu.Effect.MenuUi as MenuUi
 import Ribosome.Menu.Effect.MenuUi (MenuUi, ScopedMenuUi)
+import Ribosome.Menu.Integral (subClamp)
 import Ribosome.Menu.Interpreter.MenuFilter (interpretFilter)
 import Ribosome.Menu.Interpreter.MenuStream (interpretMenuStream)
 import Ribosome.Menu.Interpreter.MenuUiPure (interpretMenuUiPure)
@@ -96,7 +97,7 @@ clampCursor ::
 clampCursor s cursor =
   (validCursor, validCursor)
   where
-    validCursor = min (CursorIndex (total - 1)) cursor
+    validCursor = min (CursorIndex (subClamp @Word total 1)) cursor
     total = entriesLength (s ^. entries)
 
 renderEvent ::

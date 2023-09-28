@@ -59,6 +59,7 @@ library
       Ribosome.Menu.Effect.MenuTest
       Ribosome.Menu.Effect.MenuUi
       Ribosome.Menu.Filters
+      Ribosome.Menu.Integral
       Ribosome.Menu.Interpreter.Menu
       Ribosome.Menu.Interpreter.MenuFilter
       Ribosome.Menu.Interpreter.MenuStream

@@ -42,6 +42,7 @@ import Ribosome.Menu.Data.NvimMenuState (
   sliceRange,
   )
 import Ribosome.Menu.Data.RenderMenu (RenderMenu)
+import Ribosome.Menu.Integral (subClamp)
 import Ribosome.Menu.Lens (view, (.=), (<.=))
 import Ribosome.Syntax.Cons (syntaxMatch)
 
@@ -49,17 +50,6 @@ newtype AvailLines =
   AvailLines Word
   deriving stock (Eq, Show, Generic)
   deriving newtype (Num, Real, Enum, Integral, Ord)
-
-subClamp ::
-  ∀ a b .
-  Ord b =>
-  Num b =>
-  Integral a =>
-  b ->
-  a ->
-  b
-subClamp a (fromIntegral -> b) | b < a = a - b
-                               | otherwise = 0
 
 -- TODO use signs instead of this
 marker :: Char
