@@ -324,14 +324,7 @@ import Ribosome.Host.Effect.Reports (Reports, storedReports)
 import Ribosome.Host.Effect.Rpc (Rpc, async, channelId, notify, sync)
 import Ribosome.Host.Effect.UserError (UserError)
 import Ribosome.Host.Error (ignoreRpcError, onRpcError)
-import Ribosome.Host.Handler (
-  completeBuiltin,
-  completeWith,
-  rpc,
-  rpcAutocmd,
-  rpcCommand,
-  rpcFunction,
-  )
+import Ribosome.Host.Handler (completeBuiltin, completeWith, rpc, rpcAutocmd, rpcCommand, rpcFunction)
 import Ribosome.Host.Handler.Codec (HandlerArg (handlerArg), HandlerCodec (handlerCodec))
 import Ribosome.Host.Handler.Command (CommandHandler (commandOptions))
 import Ribosome.Host.Interpreter.Handlers (interpretHandlers, noHandlers, withHandlers)

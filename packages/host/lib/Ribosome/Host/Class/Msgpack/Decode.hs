@@ -41,6 +41,16 @@ import Ribosome.Host.Class.Msgpack.Util (
 class GMsgpackDecode (dt :: DatatypeInfo) (ass :: [[Type]]) where
   gfromMsgpack :: Object -> Either FieldError (SOP I ass)
 
+fromMsgpackGeneric ::
+  ∀ a ass .
+  Typeable a =>
+  ReifySOP a ass =>
+  GMsgpackDecode (GDatatypeInfoOf a) (GCode a) =>
+  Object ->
+  Either DecodeError a
+fromMsgpackGeneric =
+  toDecodeError . fmap gto . gfromMsgpack @(GDatatypeInfoOf a)
+
 -- |Class of values that can be decoded from MessagePack 'Object's.
 class MsgpackDecode a where
   -- |Decode a value from a MessagePack 'Object'.
@@ -53,8 +63,7 @@ class MsgpackDecode a where
     GMsgpackDecode (GDatatypeInfoOf a) (GCode a) =>
     Object ->
     Either DecodeError a
-  fromMsgpack =
-    toDecodeError . fmap gto . gfromMsgpack @(GDatatypeInfoOf a)
+  fromMsgpack = fromMsgpackGeneric
 
 nestedDecode ::
   MsgpackDecode a =>

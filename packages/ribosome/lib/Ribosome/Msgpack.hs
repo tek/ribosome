@@ -9,8 +9,8 @@ module Ribosome.Msgpack (
 ) where
 
 import Ribosome.Host.Class.Msgpack.Array (msgpackArray)
-import Ribosome.Host.Class.Msgpack.Decode (MissingKey (..), pattern Msgpack, MsgpackDecode (..))
-import Ribosome.Host.Class.Msgpack.Encode (MsgpackEncode (..))
+import Ribosome.Host.Class.Msgpack.Decode (MissingKey (..), pattern Msgpack, MsgpackDecode (..), fromMsgpackGeneric)
+import Ribosome.Host.Class.Msgpack.Encode (MsgpackEncode (..), toMsgpackGeneric)
 import Ribosome.Host.Class.Msgpack.Error (
   DecodeError (..),
   FieldError (..),

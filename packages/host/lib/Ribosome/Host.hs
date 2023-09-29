@@ -58,8 +58,8 @@ module Ribosome.Host (
 
 import Ribosome.Host.Api.Data (Buffer, Tabpage, Window)
 import Ribosome.Host.Class.Msgpack.Array (msgpackArray)
-import Ribosome.Host.Class.Msgpack.Decode (MsgpackDecode (fromMsgpack))
-import Ribosome.Host.Class.Msgpack.Encode (MsgpackEncode (toMsgpack))
+import Ribosome.Host.Class.Msgpack.Decode (MsgpackDecode (fromMsgpack), fromMsgpackGeneric)
+import Ribosome.Host.Class.Msgpack.Encode (MsgpackEncode (toMsgpack), toMsgpackGeneric)
 import Ribosome.Host.Class.Msgpack.Map (msgpackMap)
 import Ribosome.Host.Data.Args
 import Ribosome.Host.Data.Bang (Bang (Bang, NoBang))
@@ -103,7 +103,6 @@ import Ribosome.Host.Effect.MState (
   stateToMState,
   withMState,
   )
-
 import Ribosome.Host.Effect.Reports (Reports)
 import Ribosome.Host.Effect.Responses (Responses)
 import Ribosome.Host.Effect.Rpc (Rpc, async, notify, sync)

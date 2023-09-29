@@ -11,7 +11,7 @@ import Generics.SOP.Type.Metadata (
   DatatypeInfo (ADT, Newtype),
   FieldInfo (FieldInfo),
   )
-import Path (Path, toFilePath, SomeBase, prjSomeBase)
+import Path (Path, SomeBase, prjSomeBase, toFilePath)
 import Time (
   MicroSeconds (unMicroSeconds),
   MilliSeconds (unMilliSeconds),
@@ -87,6 +87,15 @@ instance (
     gtoMsgpack (SOP (S ns)) =
       case ns of
 
+toMsgpackGeneric ::
+  ∀ a ass .
+  ConstructSOP a ass =>
+  GMsgpackEncode (GDatatypeInfoOf a) (GCode a) =>
+  a ->
+  Object
+toMsgpackGeneric =
+  gtoMsgpack @(GDatatypeInfoOf a) . gfrom
+
 -- |Class of values that can be encoded to MessagePack 'Object's.
 class MsgpackEncode a where
   -- |Encode a value to MessagePack.
@@ -99,8 +108,7 @@ class MsgpackEncode a where
     GMsgpackEncode (GDatatypeInfoOf a) (GCode a) =>
     a ->
     Object
-  toMsgpack =
-    gtoMsgpack @(GDatatypeInfoOf a) . gfrom
+  toMsgpack = toMsgpackGeneric
 
 instance (
     MsgpackEncode k,
