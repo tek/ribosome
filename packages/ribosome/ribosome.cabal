@@ -46,6 +46,7 @@ library
       Ribosome.Api.Tabpage
       Ribosome.Api.Tags
       Ribosome.Api.Undo
+      Ribosome.Api.Variable
       Ribosome.Api.Window
       Ribosome.Cli
       Ribosome.Data.CliConfig
@@ -184,6 +185,7 @@ test-suite ribosome-test
       Ribosome.Test.ScratchTest
       Ribosome.Test.SettingTest
       Ribosome.Test.UndoTest
+      Ribosome.Test.VariableTest
       Ribosome.Test.Wait
       Ribosome.Test.WatcherTest
       Ribosome.Test.WindowTest

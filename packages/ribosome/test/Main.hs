@@ -7,6 +7,7 @@ import Ribosome.Test.PersistTest (test_persist)
 import Ribosome.Test.ScratchTest (test_scratch)
 import Ribosome.Test.SettingTest (test_settings)
 import Ribosome.Test.UndoTest (test_undo)
+import Ribosome.Test.VariableTest (test_variable)
 import Ribosome.Test.WatcherTest (test_varWatcher)
 import Ribosome.Test.WindowTest (test_window)
 import Test.Tasty (TestTree, defaultMain, testGroup)
@@ -21,7 +22,8 @@ tests =
     unitTest "persist" test_persist,
     test_window,
     test_settings,
-    unitTest "undo" test_undo
+    unitTest "undo" test_undo,
+    test_variable
   ]
 
 main :: IO ()
