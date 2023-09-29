@@ -18,6 +18,7 @@ module Ribosome.Api (
   module Ribosome.Api.Tabpage,
   module Ribosome.Api.Undo,
   module Ribosome.Api.Window,
+  module Ribosome.Api.Variable,
   module Ribosome.Host.Api.Data,
 ) where
 
@@ -37,6 +38,7 @@ import Ribosome.Api.Syntax
 import Ribosome.Api.Tabpage
 import Ribosome.Api.Tags
 import Ribosome.Api.Undo
+import Ribosome.Api.Variable
 import Ribosome.Api.Window
 import Ribosome.Data.FileBuffer (FileBuffer (FileBuffer))
 import Ribosome.Host.Api.Data
