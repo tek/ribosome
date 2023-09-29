@@ -41,6 +41,7 @@ import Ribosome.Host.Class.Msgpack.Util (
 class GMsgpackDecode (dt :: DatatypeInfo) (ass :: [[Type]]) where
   gfromMsgpack :: Object -> Either FieldError (SOP I ass)
 
+-- | Decode a value from a MessagePack 'Object' using the result type's 'Generic' instance.
 fromMsgpackGeneric ::
   ∀ a ass .
   Typeable a =>

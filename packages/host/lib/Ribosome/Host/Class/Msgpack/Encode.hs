@@ -87,6 +87,7 @@ instance (
     gtoMsgpack (SOP (S ns)) =
       case ns of
 
+-- | Encode a value to a MessagePack 'Object' using its type's 'Generic' instance.
 toMsgpackGeneric ::
   ∀ a ass .
   ConstructSOP a ass =>
