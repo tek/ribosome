@@ -149,11 +149,11 @@ menuStream items = do
       msState (queryEvent ((.text) <$> p))
       RenderEvent "query update" AnchorLine <$ Sync.putTry MenuSync
 
-sendPrompt ::
+updateQuery ::
   Members [Reader MenuConfig, Queue (Maybe Prompt), Sync MenuSync, Log] r =>
   Maybe Prompt ->
   Sem r ()
-sendPrompt new = do
+updateQuery new = do
   Queue.write new
   whenM (asks (view #sync)) do
     Log.debug "menu: Waiting for query update"
@@ -252,15 +252,17 @@ interpretMenus =
         Menu.ReadState ->
           pureT . (.unMS) =<< mread
         Menu.UseState f -> do
-          (a, promptChange) <- muse $ viaMS \ s -> do
+          (a, modeChange) <- muse $ viaMS \ s -> do
             (newS, a) <- mstateT f s
             pure (newS, (a, s ^. mode /= newS ^. mode))
-          when promptChange (sendPrompt Nothing)
+          when modeChange (updateQuery Nothing)
           pure a
     MenuEngine (Bundle (There Here) e) ->
       case e of
-        MenuUi.RenderPrompt consumerChange prompt ->
-          pureT =<< restop (MenuUi.renderPrompt consumerChange prompt)
+        MenuUi.RenderPrompt consumerChange prompt -> do
+          restop (MenuUi.renderPrompt consumerChange prompt)
+          publish (MenuEvent.PromptUpdated prompt)
+          unitT
         MenuUi.PromptEvent ->
           pureT =<< restop MenuUi.promptEvent
         MenuUi.Render m ->
@@ -279,9 +281,8 @@ interpretMenus =
           pureT =<< tag @"prompt" gate
         Menu.PromptQuit ->
           pureT =<< Queue.close
-        Menu.PromptUpdated new -> do
-          publish (MenuEvent.PromptUpdated new)
-          sendPrompt (Just new)
+        Menu.UpdateQuery new -> do
+          updateQuery (Just new)
           unitT
         Menu.Render anchor -> do
           Queue.write (RenderEvent "consumer" anchor)
@@ -291,14 +292,14 @@ interpretMenus =
     MenuEngine (Bundle (There (There (There e))) _) ->
       case e of
 
-type NvimMenuIO eres =
+type NvimMenuIO =
   [Settings !! SettingError, Rpc !! RpcError, Scratch !! RpcError, EventConsumer Event, Final IO]
 
 interpretSingleWindowMenu ::
-  ∀ s eres r .
+  ∀ s r .
   MenuState s =>
   Members MenuLoopIO r =>
-  Members (NvimMenuIO eres) r =>
+  Members NvimMenuIO r =>
   InterpretersFor (WindowMenus s !! RpcError : MenuFilter : MenuLoopDeps) r
 interpretSingleWindowMenu =
   interpretMenuDeps .
@@ -308,10 +309,10 @@ interpretSingleWindowMenu =
   raiseUnder
 
 promptInputFilter ::
-  ∀ s eres r .
+  ∀ s r .
   MenuState s =>
   Members MenuLoopIO r =>
-  Members (NvimMenuIO eres) r =>
+  Members NvimMenuIO r =>
   Member MenuFilter r =>
   [PromptEvent] ->
   InterpretersFor (WindowMenus s !! RpcError : MenuLoopDeps |> ChronosTime) r
@@ -324,10 +325,10 @@ promptInputFilter events =
   menuSync
 
 promptInput ::
-  ∀ s eres r .
+  ∀ s r .
   MenuState s =>
   Members MenuLoopIO r =>
-  Members (NvimMenuIO eres) r =>
+  Members NvimMenuIO r =>
   [PromptEvent] ->
   InterpretersFor (WindowMenus s !! RpcError : MenuLoopDeps ++ [MenuFilter, ChronosTime]) r
 promptInput events =

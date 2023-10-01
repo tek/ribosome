@@ -1,15 +1,16 @@
-module Ribosome.Menu.MenuTest where
+module Ribosome.Menu.Test.Run where
 
 import Conc (Consume, Gates, timeout_, withAsync_)
-import qualified Data.Map.Strict as Map
 import qualified Data.Text as Text
+import Exon (exon)
 import Lens.Micro.Extras (view)
+import qualified Log
 import qualified Streamly.Prelude as Stream
 import Streamly.Prelude (SerialT)
 import qualified Sync
 import Time (Seconds (Seconds))
 
-import Ribosome.Data.Mapping (MappingLhs)
+import Ribosome.Data.Mapping (MappingSpec)
 import Ribosome.Data.ScratchOptions (ScratchOptions)
 import Ribosome.Data.SettingError (SettingError)
 import Ribosome.Effect.Scratch (Scratch)
@@ -18,16 +19,19 @@ import Ribosome.Host.Data.Event (Event)
 import Ribosome.Host.Data.Report (ReportLog, resumeReportFail)
 import Ribosome.Host.Data.RpcError (RpcError)
 import Ribosome.Host.Effect.Rpc (Rpc)
-import Ribosome.Host.Interpret (type (|>))
 import Ribosome.Host.Interpreter.Log (interpretReportLogLog)
-import Ribosome.Menu.Action (MenuWidget)
+import qualified Ribosome.Menu.App
+import Ribosome.Menu.App (MenuApp, PromptApp, hoistPromptApp)
 import Ribosome.Menu.Class.MenuState (MenuState (Item))
+import Ribosome.Menu.Data.MenuConfig (MenuConfig)
 import Ribosome.Menu.Data.MenuEvent (MenuEvent (Query, Rendered), QueryEvent (Refined))
 import Ribosome.Menu.Data.MenuItem (MenuItem, simpleMenuItemLines)
 import Ribosome.Menu.Data.WindowConfig (WindowConfig (WindowConfig))
-import Ribosome.Menu.Effect.Menu (MenuEngine, MenuEngineStack, Menus, bundleMenuEngine, waitPrompt)
+import Ribosome.Menu.Effect.Menu (MenuLoop, Menus, UiMenus, waitPrompt)
+import Ribosome.Menu.Effect.MenuFilter (MenuFilter)
 import qualified Ribosome.Menu.Effect.MenuTest as MenuTest
 import Ribosome.Menu.Effect.MenuTest (MenuTest, waitEvents)
+import Ribosome.Menu.Effect.MenuUi (ScopedMenuUi)
 import Ribosome.Menu.Interpreter.Menu (MenuLoopDeps, interpretMenuDeps, interpretMenus)
 import Ribosome.Menu.Interpreter.MenuFilter (interpretFilter)
 import Ribosome.Menu.Interpreter.MenuTest (
@@ -39,9 +43,8 @@ import Ribosome.Menu.Interpreter.MenuTest (
   )
 import Ribosome.Menu.Interpreter.MenuUi (interpretMenuUiNvimNull)
 import Ribosome.Menu.Interpreter.MenuUiWindow (interpretMenuUiWindow)
-import Ribosome.Menu.Loop (addMenuUi, lookupMapping, menuLoop', runMenu)
-import Ribosome.Menu.Mappings (Mappings)
-import Ribosome.Menu.Prompt.Data.PromptConfig (PromptConfig)
+import Ribosome.Menu.Loop (menuAppWith, menuLoop, menuParams, withUi)
+import Ribosome.Menu.Prompt.Data.Prompt (PromptModes (StartInsert), PromptState)
 import Ribosome.Menu.Stream.Util (queueStream)
 
 type MenuTestDeps s result =
@@ -63,14 +66,11 @@ type MenuTestIOStack =
     Final IO
   ]
 
-type MenuTestLoop s result =
+type TestLoop s result =
   [MenuTest (Item s) result, Consume MenuEvent]
 
-type MenuTestWith s result =
-  MenuTestLoop s result ++ MenuEngineStack s |> MenuEngine s
-
-type MenuTestEffects s result =
-  MenuTestWith s result ++ [Menus s, ReportLog]
+type MenuAppTest s result =
+  TestLoop s result ++ MenuLoop s ++ [EventConsumer MenuEvent, Reader MenuConfig]
 
 type MenuTestStack i result =
   Reader (SerialT IO (MenuItem i)) : MenuLoopDeps ++ MenuTestResources i result
@@ -79,10 +79,21 @@ data TestMenuConfig =
   TestMenuConfig {
     nativePrompt :: Maybe Bool,
     initialItems :: Maybe Bool,
-    prompt :: Maybe PromptConfig
+    prompt :: Maybe PromptState,
+    addBuiltin :: Maybe Bool,
+    addDefault :: Maybe Bool
   }
   deriving stock (Eq, Show, Generic)
   deriving anyclass (Default)
+
+type MenuTestAppStack s result =
+  MenuTest (Item s) result : MenuLoop s
+
+type PromptTestApp s r result =
+  PromptApp s (MenuTestAppStack s result ++ r) result
+
+type MenuTestApp s r result =
+  MenuApp s (MenuTestAppStack s result ++ r) result
 
 confDefault :: Lens' TestMenuConfig (Maybe a) -> a -> TestMenuConfig -> TestMenuConfig
 confDefault attr a =
@@ -92,58 +103,71 @@ confSet :: Lens' TestMenuConfig (Maybe a) -> a -> TestMenuConfig -> TestMenuConf
 confSet attr a =
   attr .~ Just a
 
+noItems :: TestMenuConfig -> TestMenuConfig
+noItems = confSet #initialItems False
+
+noItemsConf :: TestMenuConfig
+noItemsConf = noItems def
+
+startInsert :: TestMenuConfig -> TestMenuConfig
+startInsert =
+  confSet #prompt (def & #modes .~ StartInsert)
+
+startInsertConf :: TestMenuConfig
+startInsertConf = startInsert def
+
 runTestMenuWith ::
   ∀ u i result r .
   TimeUnit u =>
   Members MenuTestIOStack r =>
   u ->
-  PromptConfig ->
   InterpretersFor (MenuTestStack i result) r
-runTestMenuWith timeout pconf sem =
-  interpretMenuTestResources timeout pconf $ interpretMenuDeps do
+runTestMenuWith timeout sem =
+  interpretMenuTestResources timeout $ interpretMenuDeps do
     items <- queueStream
     runReader items sem
 
 runTestMenu ::
   ∀ result i r .
   Members MenuTestIOStack r =>
-  PromptConfig ->
   InterpretersFor (MenuTestStack i result) r
 runTestMenu =
-  runTestMenuWith @_ @i (Seconds 5)
+  runTestMenuWith (Seconds 5)
 
 runStaticTestMenuWith ::
   ∀ result i u r .
   TimeUnit u =>
   Members MenuTestIOStack r =>
   u ->
-  PromptConfig ->
   [MenuItem i] ->
   InterpretersFor (MenuTestStack i result) r
-runStaticTestMenuWith timeout pconf items =
-  interpretMenuTestResources timeout pconf .
+runStaticTestMenuWith timeout items =
+  interpretMenuTestResources timeout .
   interpretMenuDeps .
   runReader (Stream.fromList items)
 
 runStaticTestMenu ::
   ∀ i a r .
   Members MenuTestIOStack r =>
-  PromptConfig ->
   [MenuItem i] ->
   InterpretersFor (MenuTestStack i a) r
 runStaticTestMenu =
-  runStaticTestMenuWith @_ @i (Seconds 5)
+  runStaticTestMenuWith (Seconds 5)
 
 withEventLog ::
   Members [MenuTest i result, AtomicState WaitState, Resource, Embed IO] r =>
+  TestMenuConfig ->
   Sem r a ->
   Sem r a
-withEventLog =
+withEventLog conf =
   flip onException do
     MenuTest.quit
     -- want this to always be printed, but using Log.crit sends it to nvim as well, and adding StderrLog just for this
     -- seems overblown
-    embed . putStrLn . toString . format =<< atomicGets (view #events)
+    events <- atomicGets (view #events)
+    embed do
+      putStrLn (toString (format events))
+      putStrLn (show conf)
   where
     format evs =
       Text.unlines ("wait events:" : (("  " <>) . show <$> reverse evs))
@@ -152,26 +176,26 @@ menuTestLoop ::
   ∀ result s r .
   Show (Item s) =>
   Members MenuTestIOStack r =>
-  Members (MenuEngineStack s) r =>
+  Members (MenuLoop s) r =>
   Members (MenuTestResources (Item s) result) r =>
   Members [ReportLog, EventConsumer MenuEvent] r =>
   TestMenuConfig ->
-  (MappingLhs -> Maybe (MenuWidget s (MenuTestLoop s result ++ r) result)) ->
-  InterpretersFor (MenuTestLoop s result) r
-menuTestLoop conf mappings sem = do
+  PromptApp s (TestLoop s result ++ r) result ->
+  InterpretersFor (TestLoop s result) r
+menuTestLoop conf app sem = do
   TestTimeout timeout <- ask
-  interpretMenuTest nativePrompt pconf $ insertAt @2 $ withEventLog do
-    withAsync_ (Sync.putWait timeout =<< menuLoop' mappings) do
+  Log.debug [exon|Test config: #{show conf}|]
+  interpretMenuTest nativePrompt $ withEventLog conf do
+    withAsync_ (Sync.putWait timeout =<< menuLoop app) do
       timeout_ (fail "prompt didn't start") timeout waitPrompt
       waitEvents "initial prompt update and renders" initialEvents
-      sem
+      insertAt @2 sem
   where
     initialEvents = [Query Refined, Rendered] <> if initialItems then [Rendered] else []
     nativePrompt = fromMaybe False conf.nativePrompt
     initialItems = fromMaybe True conf.initialItems
-    pconf = fromMaybe def conf.prompt
 
-testMenuWith ::
+promptTestApp ::
   ∀ result s r .
   Show (Item s) =>
   Members MenuTestIOStack r =>
@@ -180,13 +204,60 @@ testMenuWith ::
   Members [Reader (SerialT IO (MenuItem (Item s))), Menus s, ReportLog] r =>
   TestMenuConfig ->
   s ->
-  (MappingLhs -> Maybe (MenuWidget s (MenuTestWith s result ++ r) result)) ->
-  InterpretersFor (MenuTestWith s result) r
-testMenuWith conf initial mappings sem = do
+  PromptTestApp s r result ->
+  InterpretersFor (TestLoop s result ++ MenuLoop s) r
+promptTestApp conf initial app sem = do
   items <- ask
-  runMenu items initial $ bundleMenuEngine (menuTestLoop conf mappings sem)
+  menuParams items initial do
+    menuTestLoop conf (hoistPromptApp (insertAt @3) app) (insertAt @5 sem)
+
+type TestMenuEffects ui s result =
+  [
+    UiMenus ui s,
+    UiMenus ui s !! RpcError,
+    MenuFilter,
+    ReportLog
+  ]
+
+interpretTestMenuLocal ::
+  ∀ ui s result r .
+  MenuState s =>
+  Member (ScopedMenuUi ui) r =>
+  Members MenuLoopDeps r =>
+  Members MenuTestIOStack r =>
+  InterpretersFor (TestMenuEffects ui s result) r
+interpretTestMenuLocal =
+  interpretReportLogLog .
+  interpretFilter .
+  interpretMenus .
+  resumeReportFail
 
 testMenu ::
+  ∀ ui result s r .
+  MenuState s =>
+  Members MenuLoopDeps r =>
+  Members MenuTestIOStack r =>
+  Member (ScopedMenuUi ui) r =>
+  Member (Reader (SerialT IO (MenuItem (Item s)))) r =>
+  Members (MenuTestDeps s result) r =>
+  ([MappingSpec] -> ui) ->
+  TestMenuConfig ->
+  s ->
+  MenuTestApp s r result ->
+  InterpretersFor (TestLoop s result ++ MenuLoop s) r
+testMenu ui conf initial app sem =
+  interpretTestMenuLocal do
+    menuAppWith addBuiltin addDefault prompt app \ papp ->
+      withUi (ui papp.mappings) do
+        promptTestApp conf' initial (hoistPromptApp (insertAt @6) papp) $ insertAt @5 sem
+  where
+    -- TODO should this be in headlessTestMenu?
+    conf' = confDefault #nativePrompt False conf
+    addBuiltin = fromMaybe True conf.addBuiltin
+    addDefault = fromMaybe True conf.addDefault
+    prompt = fromMaybe def conf.prompt
+
+headlessTestMenu ::
   ∀ result s r .
   MenuState s =>
   Members MenuLoopDeps r =>
@@ -195,18 +266,12 @@ testMenu ::
   Members (MenuTestDeps s result) r =>
   TestMenuConfig ->
   s ->
-  Mappings s (MenuTestEffects s result ++ r) result ->
-  InterpretersFor (MenuTestEffects s result) r
-testMenu conf initial maps =
-  interpretReportLogLog .
+  MenuTestApp s r result ->
+  InterpretersFor (TestLoop s result ++ MenuLoop s) r
+headlessTestMenu conf initial app =
   interpretMenuUiNvimNull .
-  interpretFilter .
-  interpretMenus .
-  resumeReportFail .
-  addMenuUi () .
-  raiseUnder .
-  raiseUnder3 .
-  testMenuWith (confDefault #nativePrompt False conf) initial (lookupMapping maps)
+  testMenu (const ()) conf initial (insertAt @6 <$> app) .
+  insertAt @5
 
 testStaticMenu ::
   ∀ result s r .
@@ -216,16 +281,16 @@ testStaticMenu ::
   [MenuItem (Item s)] ->
   TestMenuConfig ->
   s ->
-  Mappings s (MenuTestEffects s result ++ MenuTestStack (Item s) result ++ r) result ->
-  InterpretersFor (MenuTestEffects s result ++ MenuTestStack (Item s) result) r
-testStaticMenu items conf initial maps =
-  runStaticTestMenu @(Item s) pconf items .
-  testMenu @_ @s (confDefault #initialItems (not (null items)) conf') initial maps
-  where
-    pconf = fromMaybe def conf'.prompt
-    conf' = confDefault #prompt def conf
+  MenuTestApp s r result ->
+  InterpretersFor (MenuAppTest s result) r
+testStaticMenu items conf initial app =
+  runStaticTestMenu @(Item s) items .
+  subsume .
+  subsume .
+  headlessTestMenu (confDefault #initialItems (not (null items)) conf) initial (insertAt @6 <$> app) .
+  insertAt @7
 
-testNvimMenu ::
+nvimTestMenu ::
   ∀ result s r .
   MenuState s =>
   Member (Reader (SerialT IO (MenuItem (Item s)))) r =>
@@ -237,20 +302,13 @@ testNvimMenu ::
   TestMenuConfig ->
   s ->
   ScratchOptions ->
-  Mappings s (MenuTestEffects s result ++ r) result ->
-  InterpretersFor (MenuTestEffects s result) r
-testNvimMenu conf initial options maps =
-  interpretReportLogLog .
+  MenuTestApp s r result ->
+  InterpretersFor (TestLoop s result ++ MenuLoop s) r
+nvimTestMenu conf initial options app =
   interpretMenuUiWindow .
-  interpretFilter .
-  interpretMenus .
-  resumeReportFail .
-  addMenuUi (WindowConfig pconf options (Just def) (Map.keys maps)) .
-  raiseUnder .
-  raiseUnder3 .
-  testMenuWith conf' initial (lookupMapping maps)
+  testMenu (WindowConfig options (Just def)) conf' initial (insertAt @6 <$> app) .
+  insertAt @5
   where
-    pconf = fromMaybe def conf'.prompt
     conf' = confDefault #prompt def conf
 
 testStaticNvimMenu ::
@@ -262,13 +320,15 @@ testStaticNvimMenu ::
   TestMenuConfig ->
   s ->
   ScratchOptions ->
-  Mappings s (MenuTestEffects s result ++ MenuTestStack (Item s) result ++ r) result ->
-  InterpretersFor (MenuTestEffects s result ++ MenuTestStack (Item s) result) r
-testStaticNvimMenu items conf initial options maps =
-  runStaticTestMenu @(Item s) pconf items .
-  testNvimMenu @_ @s conf' initial options maps
+  MenuTestApp s r result ->
+  InterpretersFor (MenuAppTest s result) r
+testStaticNvimMenu items conf initial options app =
+  runStaticTestMenu @(Item s) items .
+  subsume .
+  subsume .
+  nvimTestMenu conf' initial options (insertAt @6 <$> app) .
+  insertAt @7
   where
-    pconf = fromMaybe def conf'.prompt
     conf' = confDefault #prompt def conf
 
 testStaticNvimMenuSimple ::
@@ -281,30 +341,10 @@ testStaticNvimMenuSimple ::
   TestMenuConfig ->
   s ->
   ScratchOptions ->
-  Mappings s (MenuTestEffects s result ++ MenuTestStack (Item s) result ++ r) result ->
-  InterpretersFor (MenuTestEffects s result ++ MenuTestStack (Item s) result) r
+  MenuTestApp s r result ->
+  InterpretersFor (MenuAppTest s result) r
 testStaticNvimMenuSimple items =
   testStaticNvimMenu (simpleMenuItemLines () <$> items)
-
-testNativeMenu' ::
-  ∀ result s r .
-  MenuState s =>
-  Members MenuTestIOStack r =>
-  Members [EventConsumer Event, Rpc !! RpcError, Settings !! SettingError, Scratch !! RpcError, Stop RpcError] r =>
-  SerialT IO (MenuItem (Item s)) ->
-  TestMenuConfig ->
-  s ->
-  ScratchOptions ->
-  Mappings s (MenuTestEffects s result ++ MenuTestStack (Item s) result ++ r) result ->
-  InterpretersFor (MenuTestEffects s result ++ MenuTestStack (Item s) result) r
-testNativeMenu' items conf initial options maps =
-  interpretMenuTestResources (Seconds 5) pconf .
-  interpretMenuDeps .
-  runReader items .
-  testNvimMenu @_ @s conf' initial options maps
-  where
-    pconf = fromMaybe def conf'.prompt
-    conf' = confDefault #nativePrompt True (confDefault #prompt def conf)
 
 testNativeMenu ::
   ∀ result s r .
@@ -315,7 +355,15 @@ testNativeMenu ::
   TestMenuConfig ->
   s ->
   ScratchOptions ->
-  Mappings s (MenuTestEffects s result ++ MenuTestStack (Item s) result ++ r) result ->
-  InterpretersFor (MenuTestEffects s result ++ MenuTestStack (Item s) result) r
-testNativeMenu items conf initial options maps =
-  testNativeMenu' items conf initial options maps
+  MenuTestApp s r result ->
+  InterpretersFor (MenuAppTest s result) r
+testNativeMenu items conf initial options app =
+  interpretMenuTestResources (Seconds 5) .
+  interpretMenuDeps .
+  runReader items .
+  subsume .
+  subsume .
+  nvimTestMenu conf' initial options (insertAt @6 <$> app) .
+  insertAt @7
+  where
+    conf' = confDefault #nativePrompt True (confDefault #prompt def conf)

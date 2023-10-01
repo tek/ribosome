@@ -3,7 +3,7 @@ module Ribosome.Menu.Data.NvimMenuState where
 import qualified Ribosome.Menu.Data.Entry
 import Ribosome.Menu.Data.Entry (Entry, ItemIndex)
 import qualified Ribosome.Menu.Data.MenuItem
-import Ribosome.Menu.Data.MenuView (EntryIndex, MenuView)
+import Ribosome.Menu.Data.MenuView (EntryIndex)
 
 data PartialEntry a =
   PartialEntry {
@@ -51,13 +51,3 @@ data SliceIndexes =
   }
   deriving stock (Eq, Show, Generic)
   deriving anyclass (Default)
-
-data NvimMenuState =
-  NvimMenuState {
-    view :: MenuView,
-    slice :: SliceIndexes
-  }
-  deriving stock (Eq, Show, Generic)
-
-instance Default NvimMenuState where
-  def = NvimMenuState def def

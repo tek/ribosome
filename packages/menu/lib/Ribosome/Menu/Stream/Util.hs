@@ -16,7 +16,7 @@ takeUntilNothing ::
 takeUntilNothing s =
   fromJust <$> Stream.takeWhile isJust s
 
-repeatUntilNothing :: 
+repeatUntilNothing ::
   ∀ t m a .
   Monad m =>
   Monad (t m) =>

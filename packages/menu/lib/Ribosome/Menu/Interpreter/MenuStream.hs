@@ -16,8 +16,8 @@ interpretMenuStream ::
 interpretMenuStream =
   interpretFinal \case
     MenuStream items promptEventsM queryUpdateM insertM renderEventM exhaustedM -> do
-      s <- getInitialStateS
-      Inspector (ins :: ∀ y . f y -> Maybe y) <- getInspectorS
+      (s :: f ()) <- getInitialStateS
+      Inspector ins <- getInspectorS
       promptEvents <- runS promptEventsM
       queryUpdate <- bindS queryUpdateM
       insertItems <- bindS insertM

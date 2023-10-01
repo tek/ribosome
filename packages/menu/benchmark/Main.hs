@@ -38,7 +38,7 @@ import Ribosome.Menu.Interpreter.MenuStream (interpretMenuStream)
 import Ribosome.Menu.Interpreter.MenuUi (interceptMenuUiPromptEvents, interpretMenuUiNvimNull)
 import Ribosome.Menu.Items (currentEntries)
 import Ribosome.Menu.Loop (addMenuUi, lookupMapping, menuLoop', runMenu)
-import Ribosome.Menu.Mappings (defaultMappings)
+import Ribosome.Menu.App (defaultHandlers)
 import Ribosome.Menu.Prompt.Data.Prompt (Prompt (Prompt))
 import qualified Ribosome.Menu.Prompt.Data.PromptEvent as PromptEvent
 import Ribosome.Menu.Prompt.Data.PromptEvent (PromptEvent)
@@ -126,7 +126,7 @@ menuBench files =
   interpretMenuUiNvimNull $
   interpretMenus do
     resumeBootError $ addMenuUi () $ runMenu items (modal Fuzzy) $ bundleMenuEngine $ interceptMenuUiPromptEvents do
-      subscribe @MenuEvent $ subscribeAsync (menuLoop' (lookupMapping defaultMappings) *> signal) do
+      subscribe @MenuEvent $ subscribeAsync (menuLoop' (lookupMapping defaultHandlers) *> signal) do
         consumeElem Exhausted
         publishPrompt 1 "a"
         consumeElem (Query Refined)

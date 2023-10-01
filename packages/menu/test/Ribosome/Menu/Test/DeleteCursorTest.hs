@@ -11,8 +11,8 @@ import Ribosome.Menu.Data.State (modal)
 import qualified Ribosome.Menu.Effect.MenuTest as MenuTest
 import Ribosome.Menu.Effect.MenuTest (sendMappingRender)
 import qualified Ribosome.Menu.Effect.MenuUi as MenuUi
-import Ribosome.Menu.Mappings (defaultMappings)
-import Ribosome.Menu.MenuTest (testStaticNvimMenu)
+import Ribosome.Menu.App (defaultHandlers)
+import Ribosome.Menu.Test.Run (testStaticNvimMenu)
 import Ribosome.Menu.Scratch (menuScratch)
 import Ribosome.Menu.Test.Util (staticMenuItems)
 import Ribosome.Test.Embed (testEmbed_)
@@ -30,6 +30,6 @@ test_deleteCursor =
       assertEq ["3", "4", "5", "6"] =<< bufferContent scr.buffer
       MenuTest.quit
   where
-    maps = defaultMappings <> [("d", menuDelete)]
+    maps = defaultHandlers <> [("d", menuDelete)]
 
     its = staticMenuItems (reverse (show <$> [1 :: Int .. 8]))

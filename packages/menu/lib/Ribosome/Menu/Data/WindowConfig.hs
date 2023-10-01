@@ -1,16 +1,16 @@
 module Ribosome.Menu.Data.WindowConfig where
 
-import qualified Data.Map.Strict as Map
-
 import Ribosome.Data.Mapping (MappingSpec)
 import Ribosome.Data.ScratchOptions (ScratchOptions)
-import Ribosome.Menu.Prompt.Data.PromptConfig (PromptConfig)
+import Ribosome.Menu.Prompt.Data.Prompt (PromptState)
 
 data WindowOptions =
   WindowOptions {
-    prompt :: PromptConfig,
+    prompt :: PromptState,
     items :: ScratchOptions,
-    status :: Maybe ScratchOptions
+    status :: Maybe ScratchOptions,
+    builtinHandlers :: Bool,
+    defaultHandlers :: Bool
   }
   deriving stock (Eq, Show, Generic)
 
@@ -19,12 +19,13 @@ instance Default WindowOptions where
     WindowOptions {
       prompt = def,
       items = def,
-      status = Just def
+      status = Just def,
+      builtinHandlers = True,
+      defaultHandlers = True
     }
 
 data WindowConfig =
   WindowConfig {
-    prompt :: PromptConfig,
     items :: ScratchOptions,
     status :: Maybe ScratchOptions,
     mappings :: [MappingSpec]
@@ -34,7 +35,6 @@ data WindowConfig =
 instance Default WindowConfig where
   def =
     WindowConfig {
-      prompt = def,
       items = def,
       status = Just def,
       mappings = mempty
@@ -42,7 +42,7 @@ instance Default WindowConfig where
 
 toWindowConfig ::
   WindowOptions ->
-  Map MappingSpec a ->
+  [MappingSpec] ->
   WindowConfig
-toWindowConfig WindowOptions {..} maps =
-  WindowConfig {mappings = Map.keys maps, ..}
+toWindowConfig WindowOptions {..} mappings =
+  WindowConfig {..}

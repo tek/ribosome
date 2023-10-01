@@ -29,6 +29,7 @@ library
   exposed-modules:
       Ribosome.Menu
       Ribosome.Menu.Action
+      Ribosome.Menu.App
       Ribosome.Menu.Class.MenuMode
       Ribosome.Menu.Class.MenuState
       Ribosome.Menu.Combinators
@@ -36,6 +37,7 @@ library
       Ribosome.Menu.Data.CursorLine
       Ribosome.Menu.Data.Entry
       Ribosome.Menu.Data.Filter
+      Ribosome.Menu.Data.InputParams
       Ribosome.Menu.Data.Menu
       Ribosome.Menu.Data.MenuAction
       Ribosome.Menu.Data.MenuConfig
@@ -71,14 +73,12 @@ library
       Ribosome.Menu.Items
       Ribosome.Menu.Lens
       Ribosome.Menu.Loop
-      Ribosome.Menu.Mappings
       Ribosome.Menu.MenuState
-      Ribosome.Menu.MenuTest
+      Ribosome.Menu.Test.Run
       Ribosome.Menu.NvimRenderer
       Ribosome.Menu.Prompt
       Ribosome.Menu.Prompt.Data.Codes
       Ribosome.Menu.Prompt.Data.Prompt
-      Ribosome.Menu.Prompt.Data.PromptConfig
       Ribosome.Menu.Prompt.Data.PromptEvent
       Ribosome.Menu.Prompt.Data.PromptInputEvent
       Ribosome.Menu.Prompt.Data.PromptListening
@@ -156,16 +156,18 @@ test-suite ribosome-menu-test
   type: exitcode-stdio-1.0
   main-is: Main.hs
   other-modules:
+      Ribosome.Menu.Test.BasicTest
+      Ribosome.Menu.Test.BottomStatusTest
       Ribosome.Menu.Test.CursorClampTest
       Ribosome.Menu.Test.DeleteCursorTest
+      Ribosome.Menu.Test.EditTest
       Ribosome.Menu.Test.FilterTest
       Ribosome.Menu.Test.Menu
-      Ribosome.Menu.Test.MenuTest
       Ribosome.Menu.Test.MultilineTest
+      Ribosome.Menu.Test.NativeInputTest
       Ribosome.Menu.Test.NoMatchTest
       Ribosome.Menu.Test.NvimMenuTest
       Ribosome.Menu.Test.RefineManyTest
-      Ribosome.Menu.Test.Run
       Ribosome.Menu.Test.SliceTest
       Ribosome.Menu.Test.Util
   hs-source-dirs:

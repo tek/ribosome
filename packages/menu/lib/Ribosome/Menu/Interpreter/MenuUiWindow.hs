@@ -10,10 +10,16 @@ import Prelude hiding (group)
 
 import qualified Ribosome.Api.Mode as Api
 import Ribosome.Api.Option (withOption)
-import Ribosome.Api.Window (closeWindow, currentCursor, setCursor, windowExec)
+import Ribosome.Api.Window (closeWindow, currentCursor, setCursor)
 import qualified Ribosome.Data.FloatOptions as FloatOptions
 import Ribosome.Data.FloatOptions (FloatAnchor (NW, SW), FloatRelative (Editor))
-import Ribosome.Data.Mapping (Mapping, MappingId (MappingId), MappingLhs (MappingLhs), MappingSpec (MappingSpec))
+import Ribosome.Data.Mapping (
+  MapMode (MapInsert),
+  Mapping,
+  MappingId (MappingId),
+  MappingLhs (MappingLhs),
+  MappingSpec (MappingSpec),
+  )
 import Ribosome.Data.Mode (NvimMode (NvimMode))
 import Ribosome.Data.ScratchOptions (ScratchOptions, ensureName, scratch)
 import qualified Ribosome.Data.ScratchState as Scratch
@@ -44,16 +50,14 @@ import Ribosome.Host.Data.RpcError (RpcError, rpcError)
 import Ribosome.Host.Effect.Rpc (Rpc)
 import Ribosome.Lens ((<|>~))
 import Ribosome.Mapping (eventMapping)
-import Ribosome.Menu.Data.NvimMenuState (NvimMenuState)
+import Ribosome.Menu.Data.MenuView (MenuView)
 import Ribosome.Menu.Data.WindowConfig (WindowConfig (WindowConfig))
 import Ribosome.Menu.Effect.MenuUi (
   MenuUi (ItemsScratch, PromptEvent, PromptScratch, Render, RenderPrompt, StatusScratch),
   WindowMenu (WindowMenu),
   )
-import qualified Ribosome.Menu.Mappings as Mappings
 import Ribosome.Menu.NvimRenderer (menuSyntax, renderNvimMenu)
-import Ribosome.Menu.Prompt.Data.Prompt (Prompt (Prompt), PromptText (PromptText))
-import Ribosome.Menu.Prompt.Data.PromptConfig (PromptConfig (OnlyInsert), isStartInsert)
+import Ribosome.Menu.Prompt.Data.Prompt (CursorCol (CursorCol), Prompt (Prompt), PromptText (PromptText))
 import qualified Ribosome.Menu.Prompt.Data.PromptEvent as PromptEvent
 import Ribosome.Menu.Prompt.Data.PromptEvent (PromptEvent)
 import qualified Ribosome.Menu.Prompt.Data.PromptMode as PromptMode
@@ -73,17 +77,21 @@ stripTermcode :: Text -> Text
 stripTermcode t =
   fromMaybe t (t ^? [regex|<(.*)>|] . group 0)
 
+insertSpec :: MappingLhs -> MappingSpec
+insertSpec lhs =
+  MappingSpec lhs [MapInsert]
+
 interruptMapping :: MappingSpec
 interruptMapping =
-  Mappings.insert "<c-c>"
+  insertSpec "<c-c>"
 
 crMapping :: MappingSpec
 crMapping =
-  Mappings.insert "<cr>"
+  insertSpec "<cr>"
 
 escMapping :: MappingSpec
 escMapping =
-  Mappings.insert "<esc>"
+  insertSpec "<esc>"
 
 mappingEvent :: EventName
 mappingEvent =
@@ -101,53 +109,52 @@ promptMode =
     _ ->
       Nothing
 
-handleEsc ::
-  Members [Rpc !! RpcError, EventConsumer Event, Events PromptEvent, Log] r =>
-  PromptConfig ->
-  Sem r ()
-handleEsc pconf = do
-  resuming (\ e -> Log.debug [exon|Menu window <esc>: #{rpcError e}|]) do
-    Log.debug "MenuMapping: <esc>"
-    if pconf == OnlyInsert
-    then publish (PromptEvent.Quit Nothing)
-    else do
-      promptMode >>= traverse_ \case
-        PromptMode.Normal ->
-          publish (PromptEvent.Quit Nothing)
-        PromptMode.Insert -> do
-          nvimCommand "stopinsert"
-          publish PromptEvent.Ignore
-
 publishPrompt ::
   Members [Events PromptEvent, Rpc !! RpcError, Log] r =>
   Text ->
   Sem r ()
 publishPrompt text =
-  resuming (\ e -> Log.debug [exon|Buffer event error: #{rpcError e}|]) do
+  resuming logError do
     promptMode >>= traverse_ \ m -> do
       (_, cursor) <- currentCursor
-      let prompt = Prompt cursor m (PromptText text)
+      let prompt = Prompt (CursorCol cursor) m (PromptText text)
       Log.debug [exon|BufLinesEvent: #{show prompt}|]
       publish (PromptEvent.Update prompt)
+  where
+    logError e = Log.debug [exon|Buffer event error: #{rpcError e}|]
+
+setMode ::
+  Member Rpc r =>
+  PromptMode ->
+  Sem r ()
+setMode = \case
+  PromptMode.Normal -> nvimCommand "stopinsert"
+  PromptMode.Insert -> nvimCommand "startinsert"
+
+updateMode ::
+  Members [Rpc, Log] r =>
+  PromptMode ->
+  Sem r ()
+updateMode target = do
+  current <- promptMode
+  unless (current == Just target) do
+    Log.debug [exon|Updating window mode to #{show target}|]
+    setMode target
 
 promptBufferEvents ::
   Members [Rpc !! RpcError, EventConsumer Event, Events PromptEvent, Log, Gate] r =>
-  PromptConfig ->
   Sem r ()
-promptBufferEvents pconf =
+promptBufferEvents =
   subscribe @Event do
     Log.debug "Subscribed to buffer updates"
     signal
-    publishPrompt ""
     forever do
       consume >>= \case
-        BufLinesEvent {linedata = [text]} -> do
+        BufLinesEvent {linedata = [text]} ->
           publishPrompt text
-        MenuMapping (MappingId "<esc>") ->
-          handleEsc pconf
         MenuMapping (MappingId lhs) -> do
           Log.debug [exon|MenuMapping: #{lhs}|]
-          publish (PromptEvent.Mapping lhs)
+          publish (PromptEvent.Mapping (MappingLhs lhs))
         _ ->
           unit
 
@@ -252,7 +259,7 @@ withMainScratch ::
   Members [Settings !! SettingError, Rpc, Rpc !! RpcError, Scratch, Stop RpcError, Log, Resource, Embed IO] r =>
   ScratchOptions ->
   Maybe ScratchOptions ->
-  ((ScratchState, Maybe ScratchState) -> Sem (AtomicState NvimMenuState : r) a) ->
+  ((ScratchState, Maybe ScratchState) -> Sem (AtomicState MenuView : r) a) ->
   Sem r a
 withMainScratch itemsOpt statusOpt use = do
   whenM (Settings.or True Settings.menuCloseFloats) closeFloats
@@ -275,7 +282,7 @@ withMainScratch itemsOpt statusOpt use = do
       #syntax <>~ []
 
 type WindowScope =
-  [Consume PromptEvent, AtomicState NvimMenuState]
+  [Consume PromptEvent, AtomicState MenuView]
 
 -- For some reason, Neovim stays in expectation of a typed character after the menu was closed, so this sends another
 -- @<esc>@.
@@ -291,29 +298,26 @@ flushInput = do
 withBufferPromptEvents ::
   Members [EventConsumer PromptEvent, Events PromptEvent] r =>
   Members [Rpc, Rpc !! RpcError, EventConsumer Event, Log, Gates, Resource, Race, Async] r =>
-  PromptConfig ->
   Buffer ->
   Sem (Consume PromptEvent : r) a ->
   Sem r a
-withBufferPromptEvents pconf buf sem =
+withBufferPromptEvents buf sem =
   subscribe @PromptEvent do
     void (nvimBufAttach buf False mempty)
-    withAsyncGated_ (promptBufferEvents pconf) do
+    withAsyncGated_ promptBufferEvents do
       sem
 
 withPrompt ::
   Member (EventConsumer Event) r =>
   Members [Scratch, Rpc, Rpc !! RpcError, Stop RpcError, Log, Resource, Gates, Race, Async, Embed IO] r =>
-  PromptConfig ->
   [MappingSpec] ->
   (Int, Int, Int, Int) ->
   (ScratchState -> Sem (Consume PromptEvent : r) a) ->
   Sem r a
-withPrompt pconf mappings geo use =
+withPrompt mappings geo use =
   interpretEventsChan @PromptEvent $ bracket acquire release \ s -> do
-    when (isStartInsert pconf) (windowExec s.window "startinsert")
     windowSetOption s.window "cursorline" False
-    withBufferPromptEvents pconf s.buffer do
+    withBufferPromptEvents s.buffer do
       insertAt @1 (use s)
   where
     acquire =
@@ -329,11 +333,11 @@ windowResources ::
   WindowConfig ->
   (WindowMenu -> Sem (WindowScope ++ r) a) ->
   Sem r a
-windowResources (WindowConfig pconf itemsOpt statusOpt mappings) use =
+windowResources (WindowConfig itemsOpt statusOpt mappings) use =
   restop @_ @Rpc $ restop @_ @Scratch do
     geo <- geometry
     withMainScratch (itemsOptions geo itemsOpt) (statusOptions geo <$> statusOpt) \ (itemsScratch, statusScratch) ->
-      withPrompt pconf mappings geo \ promptScratch ->
+      withPrompt mappings geo \ promptScratch ->
         withOption "hlsearch" False do
           insertAt @2 (use (WindowMenu itemsScratch statusScratch promptScratch))
 
@@ -344,9 +348,11 @@ interpretMenuUiWindow ::
   InterpreterFor (Scoped WindowConfig (MenuUi !! RpcError) !! RpcError) r
 interpretMenuUiWindow =
   interpretScopedRWith @WindowScope windowResources \ (WindowMenu itemsScratch statusScratch promptScratch) -> \case
-    RenderPrompt True (Prompt cursor _ (PromptText text)) -> do
-      void (restop (Scratch.update (promptScratch.id) ([text] :: [Text])))
-      restop (setCursor (promptScratch.window) 0 cursor)
+    RenderPrompt True (Prompt (CursorCol cursor) mode (PromptText text)) -> do
+      restop @RpcError @Rpc do
+        updateMode mode
+        setCursor promptScratch.window 0 cursor
+      void (restop (Scratch.update promptScratch.id ([text] :: [Text])))
     RenderPrompt False _ ->
       unit
     PromptEvent ->

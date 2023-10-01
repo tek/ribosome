@@ -20,7 +20,6 @@ import Ribosome.Menu.Data.MenuView (EntryIndex, MenuView (MenuView), ViewRange (
 import qualified Ribosome.Menu.Data.NvimMenuState
 import Ribosome.Menu.Data.NvimMenuState (
   EntrySlice (EntrySlice, OnlyPartialEntry),
-  NvimMenuState (NvimMenuState),
   PartialEntry (PartialEntry),
   sliceRange,
   )
@@ -59,9 +58,6 @@ view =
     range = Just (ViewRange 1 4 4 [(1, 2), (2, 4), (3, 6), (4, 8)]),
     cursor = 2
   }
-
-state :: NvimMenuState
-state = NvimMenuState {view, slice = def}
 
 scoreN :: Word -> Word -> Int -> [Word -> (Int, Word, NonEmpty Text)]
 scoreN ln s n =
@@ -580,13 +576,11 @@ test_sliceStateFilter :: UnitTest
 test_sliceStateFilter =
   runTest do
     entsF <- interpretFilter $ menuFilter (TestMode Regex) "[0246]" (Refine ents)
-    (newState, result) <- runState state0 $ updateMenuState AnchorLine entsF 2 6
-    (slice, changed) <- evalMaybe result
-    True === changed
-    newView === newState.view
+    (newView, result) <- runState view0 $ updateMenuState AnchorLine entsF 2 6
+    slice <- evalMaybe result
+    target === newView
     targetStateFilter === renderSliceL slice
   where
-    state0 = NvimMenuState {view = view0, slice = def}
 
     view0 =
       MenuView {
@@ -599,7 +593,7 @@ test_sliceStateFilter =
         cursor = 4
       }
 
-    newView =
+    target =
       MenuView {
         range = Just ViewRange {
           bottom = 1,
@@ -653,15 +647,13 @@ test_sliceStateFilterExcess =
   runTest do
     initialFilterExcess === renderEnts entsF0
     entsF <- interpretFilter $ menuFilter (TestMode Regex) "[456]" (Refine entsF0)
-    (newState, result) <- runState state0 $ updateMenuState AnchorLine entsF 2 16
-    (slice, changed) <- evalMaybe result
-    True === changed
-    newView === newState.view
+    (newView, result) <- runState view0 $ updateMenuState AnchorLine entsF 2 16
+    slice <- evalMaybe result
+    target === newView
     targetStateFilterExcess === renderSliceL slice
   where
-    state0 = NvimMenuState {view = view0, slice = def}
     view0 = mkView 0 7 15 7
-    newView = mkView 0 2 5 2
+    target = mkView 0 2 5 2
 
 test_slice :: TestTree
 test_slice =

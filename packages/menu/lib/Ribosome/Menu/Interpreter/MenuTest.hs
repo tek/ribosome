@@ -14,11 +14,8 @@ import Ribosome.Menu.Data.MenuResult (MenuResult)
 import Ribosome.Menu.Effect.MenuTest (MenuTest (..))
 import qualified Ribosome.Menu.Effect.MenuUi as MenuUi
 import Ribosome.Menu.Effect.MenuUi (MenuUi)
-import Ribosome.Menu.Prompt.Data.Prompt (Prompt)
-import Ribosome.Menu.Prompt.Data.PromptConfig (PromptConfig)
 import qualified Ribosome.Menu.Prompt.Data.PromptEvent as PromptEvent
 import Ribosome.Menu.Prompt.Data.PromptEvent (PromptEvent)
-import Ribosome.Menu.Prompt.Run (pristinePrompt)
 
 newtype TestTimeout =
   TestTimeout { unTestTimeout :: NanoSeconds }
@@ -56,7 +53,7 @@ interceptMenuQueue ::
   Sem r a
 interceptMenuQueue =
   interceptH \case
-    MenuUi.PromptEvent -> do
+    MenuUi.PromptEvent ->
       pureT =<< failQueue "MenuUi PromptEvent" Queue.read
     MenuUi.RenderPrompt c p ->
       pureT =<< MenuUi.renderPrompt c p
@@ -161,16 +158,6 @@ waitItemsDone desc =
   unlessM (atomicView #exhausted) do
     waitEvents desc [Exhausted, Rendered]
 
-updatePrompt ::
-  Member (AtomicState Prompt) r =>
-  PromptEvent ->
-  Sem r Bool
-updatePrompt = \case
-  PromptEvent.Update new ->
-    True <$ atomicPut new
-  _ ->
-    pure False
-
 waitPromptUpdate ::
   Members [Reader TestTimeout, Consume MenuEvent, AtomicState WaitState, Fail, Race] r =>
   Text ->
@@ -187,33 +174,22 @@ nextEvent =
   failTimeout "next event" consume
 
 sendPromptEvent ::
-  Members [Reader TestTimeout, Consume MenuEvent, Queue PromptEvent, AtomicState Prompt, AtomicState WaitState, Fail, Race] r =>
+  Members [Reader TestTimeout, Consume MenuEvent, Queue PromptEvent, AtomicState WaitState, Fail, Race] r =>
   Bool ->
   PromptEvent ->
   Sem r ()
 sendPromptEvent wait e = do
-  isUpdate <- updatePrompt e
   failTimeout [exon|send #{show e}|] (Queue.write e)
-  when (wait && isUpdate) do
+  when wait do
     waitPromptUpdate [exon|send #{show e}|]
-
-withPromptInit ::
-  Members [Reader TestTimeout, Consume MenuEvent, Queue PromptEvent, AtomicState Prompt, Fail, Race] r =>
-  Sem r a ->
-  Sem r a
-withPromptInit sem = do
-  p <- atomicGet
-  failTimeout "initialize prompt" (Queue.write (PromptEvent.Update p))
-  sem
 
 interpretMenuTestQueuesWith ::
   ∀ i a r .
   Show i =>
   Members [Queue PromptEvent, Queue (MenuItem i), Sync (MenuResult a), Reader TestTimeout, Fail] r =>
-  Members [AtomicState Prompt, AtomicState WaitState, Consume MenuEvent, Race, Log] r =>
+  Members [AtomicState WaitState, Consume MenuEvent, Race, Log] r =>
   InterpreterFor (MenuTest i a) r
 interpretMenuTestQueuesWith =
-  withPromptInit .
   interpret \case
     SendItem item ->
       failTimeout (show item) (Queue.write item)
@@ -236,15 +212,12 @@ interpretMenuTestQueuesWith =
 interpretMenuTestQueues ::
   ∀ i a r .
   Show i =>
-  Members [EventConsumer MenuEvent, AtomicState Prompt, AtomicState WaitState] r =>
+  Members [EventConsumer MenuEvent, AtomicState WaitState] r =>
   Members [Queue PromptEvent, Queue (MenuItem i), Sync (MenuResult a), Reader TestTimeout, Log, Fail, Race] r =>
-  PromptConfig ->
   InterpretersFor [MenuTest i a, Consume MenuEvent] r
-interpretMenuTestQueues pconf =
+interpretMenuTestQueues =
   subscribe @MenuEvent .
-  runReader pconf .
-  interpretMenuTestQueuesWith .
-  raiseUnder
+  interpretMenuTestQueuesWith
 
 type MenuTestResources i result =
   [
@@ -252,7 +225,6 @@ type MenuTestResources i result =
     Queue (MenuItem i),
     Sync (MenuResult result),
     Reader TestTimeout,
-    AtomicState Prompt,
     AtomicState WaitState,
     ChronosTime
   ]
@@ -261,12 +233,10 @@ interpretMenuTestResources ::
   TimeUnit u =>
   Members [Resource, Race, Embed IO] r =>
   u ->
-  PromptConfig ->
   InterpretersFor (MenuTestResources i a) r
-interpretMenuTestResources timeout pconf =
+interpretMenuTestResources timeout =
   interpretTimeChronos .
   interpretAtomic (WaitState False mempty) .
-  interpretAtomic (pristinePrompt pconf) .
   runReader (TestTimeout (convert timeout)) .
   interpretSync .
   interpretQueueTBM @(MenuItem _) 64 .
@@ -278,8 +248,7 @@ interpretMenuTest ::
   Members [MenuUi, Log, Fail, Resource, Race, Embed IO] r =>
   Member (EventConsumer MenuEvent) r =>
   Bool ->
-  PromptConfig ->
   InterpretersFor [MenuTest i result, Consume MenuEvent] r
-interpretMenuTest nativePrompt pconf =
-  interpretMenuTestQueues pconf .
+interpretMenuTest nativePrompt =
+  interpretMenuTestQueues .
   (if nativePrompt then id else interceptMenuQueue)

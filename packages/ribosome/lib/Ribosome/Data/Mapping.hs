@@ -11,13 +11,13 @@ import Ribosome.Host.Data.RpcName (RpcName)
 -- |The sequence of keys that triggers a mapping.
 newtype MappingLhs =
   MappingLhs { unMappingLhs :: Text }
-  deriving stock (Eq, Show)
+  deriving stock (Eq, Show, Generic)
   deriving newtype (IsString, Ord)
 
 -- |This ID type is intended to carry information about what buffer or other component triggered a mapping, if needed.
 newtype MappingId =
   MappingId { unMappingId :: Text }
-  deriving stock (Eq, Show)
+  deriving stock (Eq, Show, Generic)
   deriving newtype (IsString, Ord, MsgpackDecode, MsgpackEncode)
 
 -- |All possible variants of Neovim's @map@ commands, causing mappings to be registered for different modes.

@@ -3,13 +3,14 @@ module Ribosome.Menu.Effect.MenuTest where
 import qualified Data.Text as Text
 import Exon (exon)
 
+import Ribosome.Data.Mapping (MappingLhs)
+import qualified Ribosome.Menu.Data.MenuEvent as MenuEvent
 import Ribosome.Menu.Data.MenuEvent (MenuEvent (Rendered))
 import Ribosome.Menu.Data.MenuItem (MenuItem, simpleMenuItem)
 import Ribosome.Menu.Data.MenuResult (MenuResult)
-import Ribosome.Menu.Prompt.Data.Prompt (Prompt (Prompt), PromptText (PromptText))
+import Ribosome.Menu.Prompt.Data.Prompt (Prompt)
 import qualified Ribosome.Menu.Prompt.Data.PromptEvent as PromptEvent
 import Ribosome.Menu.Prompt.Data.PromptEvent (PromptEvent)
-import Ribosome.Menu.Prompt.Data.PromptMode (PromptMode (Normal))
 
 data MenuTest i a :: Effect where
   SendItem :: MenuItem i -> MenuTest i a m ()
@@ -86,38 +87,56 @@ sendPrompt ::
 sendPrompt p =
   sendPromptEvent False (PromptEvent.Update p)
 
+sendPromptRender ::
+  Member (MenuTest i a) r =>
+  Prompt ->
+  Sem r ()
+sendPromptRender p = do
+  sendPrompt p
+  waitEvent [exon|Render for prompt #{show p}|] Rendered
+
 setPromptWait ::
   Member (MenuTest i a) r =>
-  PromptText ->
+  Text ->
   Sem r ()
 setPromptWait t =
-  sendPromptWait (Prompt (Text.length (coerce t)) Normal t)
+  sendPromptWait (fromText t)
 
 setPrompt ::
   Member (MenuTest i a) r =>
-  PromptText ->
+  Text ->
   Sem r ()
 setPrompt t =
-  sendPrompt (Prompt (Text.length (coerce t)) Normal t)
+  sendPrompt (fromText t)
+
+sendMappingQuery ::
+  Member (MenuTest i a) r =>
+  MappingLhs ->
+  Sem r ()
+sendMappingQuery m =
+  sendPromptEvent True (PromptEvent.Mapping m)
 
 sendMappingPrompt ::
   Member (MenuTest i a) r =>
-  Text ->
+  MappingLhs ->
   Sem r ()
-sendMappingPrompt m =
-  sendPromptEvent True (PromptEvent.Mapping m)
+sendMappingPrompt m = do
+  sendPromptEvent False (PromptEvent.Mapping m)
+  waitEventsPred [exon|Prompt update for mapping ##{m}|] $ pure \case
+    MenuEvent.PromptUpdated _ -> True
+    _ -> False
 
 sendMapping ::
   Member (MenuTest i a) r =>
-  Text ->
+  MappingLhs ->
   Sem r ()
 sendMapping m =
   sendPromptEvent False (PromptEvent.Mapping m)
 
 sendMappingRender ::
   Member (MenuTest i a) r =>
-  Text ->
+  MappingLhs ->
   Sem r ()
 sendMappingRender m = do
   sendMapping m
-  waitEvent [exon|Render for mapping #{m}|] Rendered
+  waitEvent [exon|Render for mapping ##{m}|] Rendered

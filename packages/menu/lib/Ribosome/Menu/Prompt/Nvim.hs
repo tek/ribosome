@@ -6,20 +6,20 @@ import Prelude hiding (consume)
 import Ribosome.Api.Window (redraw)
 import qualified Ribosome.Host.Api.Data as ApiData (vimCommand)
 import Ribosome.Host.Api.Data (
+  nvimFeedkeys,
+  nvimReplaceTermcodes,
   vimCallFunction,
   vimCommand,
   vimCommandOutput,
   vimGetOption,
   vimSetOption,
-  nvimFeedkeys,
-  nvimReplaceTermcodes,
   )
 import Ribosome.Host.Class.Msgpack.Encode (toMsgpack)
 import Ribosome.Host.Data.RpcError (RpcError)
 import qualified Ribosome.Host.Effect.Rpc as Rpc
 import Ribosome.Host.Effect.Rpc (Rpc)
 import Ribosome.Host.Modify (silentBang)
-import Ribosome.Menu.Prompt.Data.Prompt (Prompt (Prompt), PromptText (PromptText))
+import Ribosome.Menu.Prompt.Data.Prompt (CursorCol (CursorCol), Prompt (Prompt), PromptText (PromptText))
 import Ribosome.Text (escapeQuotes)
 
 promptFragment :: Text -> Text -> [Text]
@@ -30,7 +30,7 @@ nvimRenderPrompt ::
   Member Rpc r =>
   Prompt ->
   Sem r ()
-nvimRenderPrompt (Prompt cursor _ (PromptText text)) =
+nvimRenderPrompt (Prompt (CursorCol cursor) _ (PromptText text)) =
   silentBang do
     Rpc.sync (fold calls)
   where

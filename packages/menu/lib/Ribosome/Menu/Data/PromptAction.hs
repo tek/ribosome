@@ -1,11 +1,11 @@
 module Ribosome.Menu.Data.PromptAction where
 
-import Ribosome.Menu.Prompt.Data.Prompt (Prompt)
+import Ribosome.Menu.Prompt.Data.Prompt (PromptState)
 
 data PromptAction a =
   Continue
   |
   Quit a
   |
-  Update Prompt
+  Update PromptState
   deriving stock (Eq, Show)

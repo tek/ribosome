@@ -10,13 +10,20 @@ import Ribosome.Menu.Effect.Menu (Menu, basicState, menuState, modifyCursor, rea
 import Ribosome.Menu.ItemLens (focus)
 import Ribosome.Menu.Items (deleteSelected)
 import Ribosome.Menu.Lens (use, (%=), (.=))
-import Ribosome.Menu.Prompt.Data.Prompt (Prompt)
+import qualified Ribosome.Menu.Prompt.Data.Prompt
+import Ribosome.Menu.Prompt.Data.Prompt (
+  Prompt (Prompt),
+  PromptControl (PromptControlApp, PromptControlItems),
+  PromptModes (OnlyInsert),
+  PromptState (PromptState),
+  )
+import qualified Ribosome.Menu.Prompt.Data.PromptMode as PromptMode
 
 type MenuActionSem r a =
   Sem r (Maybe (MenuAction a))
 
 type MenuSem s r a =
-  Sem (Menu s : Reader Prompt : r) a
+  Sem (Menu s : Reader PromptState : r) a
 
 type MenuWidget s r a =
   MenuSem s r (Maybe (MenuAction a))
@@ -39,13 +46,17 @@ menuRender :: RenderAnchor -> Sem r (Maybe (MenuAction a))
 menuRender =
   act . MenuAction.Render
 
-menuRenderLine :: Sem r (Maybe (MenuAction a))
-menuRenderLine =
-  menuRender AnchorLine
+menuUpdatePrompt ::
+  Prompt ->
+  MenuActionSem r a
+menuUpdatePrompt prompt =
+  act (MenuAction.UpdatePrompt prompt)
 
-menuRenderIndex :: Sem r (Maybe (MenuAction a))
-menuRenderIndex =
-  menuRender AnchorIndex
+menuUpdatePromptState ::
+  PromptState ->
+  MenuActionSem r a
+menuUpdatePromptState prompt =
+  act (MenuAction.UpdatePromptState prompt)
 
 menuQuit :: Sem r (Maybe (MenuAction a))
 menuQuit =
@@ -56,6 +67,14 @@ menuSuccess ::
   Sem r (Maybe (MenuAction a))
 menuSuccess ma =
   act (MenuAction.success ma)
+
+menuRenderLine :: Sem r (Maybe (MenuAction a))
+menuRenderLine =
+  menuRender AnchorLine
+
+menuRenderIndex :: Sem r (Maybe (MenuAction a))
+menuRenderIndex =
+  menuRender AnchorIndex
 
 cycleMenu ::
   MenuState s =>
@@ -76,6 +95,18 @@ menuCycle ::
 menuCycle offset = do
   cycleMenu offset
   menuRenderIndex
+
+menuUp ::
+  MenuState s =>
+  MenuWidget s r a
+menuUp =
+  menuCycle 1
+
+menuDown ::
+  MenuState s =>
+  MenuWidget s r a
+menuDown =
+  menuCycle (-1)
 
 -- TODO this can:
 -- - Return when the focus was found
@@ -107,12 +138,6 @@ menuToggleAll = do
   basicState do
     #primary . #entries %= overEntries (const (#selected %~ not))
   menuRenderIndex
-
-menuUpdatePrompt ::
-  Prompt ->
-  MenuActionSem r a
-menuUpdatePrompt prompt =
-  act (MenuAction.UpdatePrompt prompt)
 
 menuChangeMode ::
   MenuState s =>
@@ -148,3 +173,31 @@ menuDelete =
   menuState do
     deleteSelected
     menuRenderIndex
+
+menuAttachPrompt ::
+  Maybe Prompt ->
+  MenuWidget s r a
+menuAttachPrompt new = do
+  PromptState {..} <- ask
+  act (MenuAction.UpdatePromptState PromptState {prompt = fromMaybe prompt new, control = PromptControlApp, ..})
+
+menuDetachPrompt ::
+  Maybe Prompt ->
+  MenuWidget s r a
+menuDetachPrompt new = do
+  PromptState {..} <- ask
+  act (MenuAction.UpdatePromptState PromptState {prompt = fromMaybe prompt new, control = PromptControlItems, ..})
+
+menuEsc :: MenuWidget s r a
+menuEsc =
+  ask >>= \case
+    PromptState {control = PromptControlApp, prompt = Prompt {mode = PromptMode.Normal}} ->
+      menuDetachPrompt Nothing
+
+    PromptState {modes, prompt = Prompt {mode = PromptMode.Insert, ..}, ..}
+      | OnlyInsert <- modes
+      -> menuQuit
+      | otherwise
+      -> menuUpdatePromptState PromptState {prompt = Prompt {mode = PromptMode.Normal, ..}, ..}
+
+    _ -> menuQuit

@@ -26,32 +26,32 @@ data MenuCore :: Effect where
   StartPrompt :: MenuCore m ()
   WaitPrompt :: MenuCore m ()
   PromptQuit :: MenuCore m ()
-  PromptUpdated :: Prompt -> MenuCore m ()
+  UpdateQuery :: Prompt -> MenuCore m ()
   PromptLooped :: MenuCore m ()
   Render :: RenderAnchor -> MenuCore m ()
 
 makeSem ''MenuCore
 
-type MenuEngineStack s =
+type MenuLoop s =
   [Menu s, MenuUi, MenuCore]
 
 newtype MenuEngine s m a =
-  MenuEngine { unMenuEngine :: Bundle (MenuEngineStack s) m a }
+  MenuEngine { unMenuEngine :: Bundle (MenuLoop s) m a }
 
 menuEngine ::
   ∀ e s r .
   Member (MenuEngine s) r =>
-  Member e (MenuEngineStack s) =>
+  Member e (MenuLoop s) =>
   InterpreterFor e r
 menuEngine =
   transform MenuEngine .
   sendBundle .
-  raiseUnder @(Bundle (MenuEngineStack s))
+  raiseUnder @(Bundle (MenuLoop s))
 
 bundleMenuEngine ::
   ∀ s r .
   Member (MenuEngine s) r =>
-  InterpretersFor (MenuEngineStack s) r
+  InterpretersFor (MenuLoop s) r
 bundleMenuEngine =
   menuEngine @MenuCore .
   menuEngine @MenuUi .

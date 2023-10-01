@@ -4,7 +4,7 @@ import qualified Data.IntMap.Strict as IntMap
 import Lens.Micro.Mtl (view)
 
 import Ribosome.Menu.Class.MenuState (MenuState (Item), entries)
-import Ribosome.Menu.Combinators (filterEntries, foldEntries, sortedEntries, lookupEntryIndex)
+import Ribosome.Menu.Combinators (filterEntries, foldEntries, lookupEntryIndex, sortedEntries)
 import qualified Ribosome.Menu.Data.Entry as Entry
 import Ribosome.Menu.Data.Entry (Entry)
 import qualified Ribosome.Menu.Data.MenuItem as MenuItem
@@ -53,12 +53,25 @@ itemsByEntryIndex ::
 itemsByEntryIndex indexes menu =
   nonEmpty ((.item) <$> entriesByIndex indexes menu)
 
+getFocusEntry ::
+  MenuState s =>
+  WithCursor s ->
+  Maybe (Entry (Item s))
+getFocusEntry s =
+  lookupEntryIndex (fromIntegral (s ^. #cursor)) (s ^. entries)
+
+focusEntry ::
+  MenuState s =>
+  SimpleGetter (WithCursor s) (Maybe (Entry (Item s)))
+focusEntry =
+  to getFocusEntry
+
 getFocus ::
   MenuState s =>
   WithCursor s ->
   Maybe (MenuItem (Item s))
 getFocus s =
-  (.item) <$> lookupEntryIndex (fromIntegral (s ^. #cursor)) (s ^. entries)
+  (.item) <$> getFocusEntry s
 
 focus ::
   MenuState s =>

@@ -69,6 +69,28 @@ overEntries f =
     transSeq i e =
       (i + 1, f i e)
 
+overEntry ::
+  Int ->
+  (Entry i -> Entry i) ->
+  Entries i ->
+  Entries i
+overEntry target f =
+  snd . trans 0
+  where
+    trans =
+      IntMap.mapAccumRWithKey transSeq
+    transSeq base _ es
+      | target < base -- short circuit, don't care about base anymore
+      = (base, es)
+      | offset >= 0 && offset < count
+      = (next, es & ix offset %~ f)
+      | otherwise
+      = (next, es)
+      where
+        next = base + count
+        count = length es
+        offset = target - base
+
 foldEntries ::
   (a -> Int -> Entry i -> a) ->
   a ->

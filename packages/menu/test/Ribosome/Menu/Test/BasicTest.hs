@@ -1,14 +1,15 @@
-module Ribosome.Menu.Test.MenuTest where
+module Ribosome.Menu.Test.BasicTest where
 
 import qualified Control.Monad.Trans.State.Strict as MTL
 import qualified Data.IntMap.Strict as IntMap
 import qualified Lens.Micro.Mtl as Lens
 import Lens.Micro.Mtl (view)
 import Polysemy (run)
-import Polysemy.Test (UnitTest, runTestAuto, unitTest, (===))
+import Polysemy.Test (UnitTest, assertEq, runTestAuto, unitTest, unitTestTimes, (===))
 import Test.Tasty (TestTree, testGroup)
 
-import Ribosome.Host.Test.Run (runTest, runUnitTest)
+import Ribosome.Data.Mapping (MappingLhs)
+import Ribosome.Host.Test.Run (runTest)
 import Ribosome.Menu.Action (MenuWidget, menuChangeMode, menuQuit, menuSuccess)
 import Ribosome.Menu.Class.MenuState (MenuState)
 import Ribosome.Menu.Combinators (sortEntries, sortedEntries)
@@ -26,28 +27,24 @@ import Ribosome.Menu.Effect.MenuTest (
   quit,
   result,
   sendMapping,
-  sendMappingPrompt,
+  sendMappingRender,
   sendPrompt,
   sendPromptEvent,
+  sendPromptWait,
   sendStaticItems,
+  setPromptWait,
   waitEvent,
   )
 import Ribosome.Menu.ItemLens (selected', selectedOnly, unselected)
-import Ribosome.Menu.Items (deleteSelected, popSelection)
+import Ribosome.Menu.Items (currentEntries, deleteSelected, popSelection)
 import Ribosome.Menu.Lens (use)
-import Ribosome.Menu.Mappings (defaultMappings)
-import Ribosome.Menu.MenuTest (TestMenuConfig, confSet, runTestMenu, testMenu, testStaticMenu)
+import Ribosome.Menu.Test.Run (headlessTestMenu, noItemsConf, runTestMenu, startInsert, testStaticMenu)
 import Ribosome.Menu.Prompt.Data.Prompt (Prompt (Prompt))
-import Ribosome.Menu.Prompt.Data.PromptConfig (startInsert)
-import Ribosome.Menu.Prompt.Data.PromptEvent (PromptEvent (Mapping, Update))
+import Ribosome.Menu.Prompt.Data.PromptEvent (PromptEvent (Mapping))
 import Ribosome.Menu.Prompt.Data.PromptMode (PromptMode (Insert))
-import Ribosome.Menu.Test.Menu (assertItems, awaitCurrent, promptTest, setPrompt)
+import Ribosome.Menu.Test.Menu (awaitCurrent)
 import Ribosome.Menu.Test.RefineManyTest (test_fastPromptAcc, test_refineMany)
-import Ribosome.Menu.Test.Run (unitTestTimes)
 import Ribosome.Test.Error (testError)
-
-noItemsConf :: TestMenuConfig
-noItemsConf = confSet #initialItems False def
 
 items1 :: [Text]
 items1 =
@@ -71,13 +68,13 @@ items2 =
 
 test_pureFilter :: UnitTest
 test_pureFilter = do
-  runTest $ promptTest @() do
+  runTest $ runTestMenu $ testError $ headlessTestMenu noItemsConf (modal Fuzzy) [("<cr>", exec)] do
     sendStaticItems "filter initial" (simpleMenuItem () <$> items2)
-    assertItems items2
-    setPrompt "1" "l"
-    assertItems ["long", "long-item", "longitem"]
-    setPrompt "1" "l-"
-    assertItems ["long-item"]
+    assertEq items2 =<< currentEntries
+    setPromptWait "l"
+    assertEq ["long", "long-item", "longitem"] =<< currentEntries
+    setPromptWait "l-"
+    assertEq ["long-item"] =<< currentEntries
 
 chars3 :: [Text]
 chars3 =
@@ -88,7 +85,7 @@ items3 =
   [
     "item1",
     "item2"
-    ]
+  ]
 
 exec ::
   MenuState s =>
@@ -100,15 +97,15 @@ exec =
 
 test_pureExecute :: UnitTest
 test_pureExecute = do
-  runUnitTest do
-    runTestMenu def do
-      r <- testError $ testMenu noItemsConf (modal Fuzzy) [("<cr>", exec)] do
+  runTest do
+    runTestMenu do
+      r <- testError $ headlessTestMenu noItemsConf (modal Fuzzy) [("<cr>", exec)] do
         sendStaticItems "exec initial" (simpleMenuItem () <$> items3)
-        sendMappingPrompt "<cr>"
+        sendMapping "<cr>"
         result
       Success items3 === r
 
-charsMulti :: [Text]
+charsMulti :: [MappingLhs]
 charsMulti =
   ["k", "k", "<space>", "<space>", "<space>", "<space>", "j", "<space>", "<cr>"]
 
@@ -134,8 +131,8 @@ execMulti =
 test_multiMark :: UnitTest
 test_multiMark = do
   runTest do
-    runTestMenu startInsert do
-      r <- testError $ testMenu noItemsConf (modal Fuzzy) (defaultMappings <> [("<cr>", execMulti)]) do
+    runTestMenu do
+      r <- testError $ headlessTestMenu noItemsConf (modal Fuzzy) [("<cr>", execMulti)] do
         sendStaticItems "initial" (simpleMenuItem () <$> itemsMulti)
         traverse_ sendMapping charsMulti
         result
@@ -166,13 +163,13 @@ test_changeFilter :: UnitTest
 test_changeFilter =
   runTest do
     testError $ testStaticMenu its def (modal Substring) maps do
-      sendPrompt (Prompt 1 Insert "abc")
+      sendPrompt "abc"
       waitEvent "substring refined" (Query Refined)
       awaitCurrent ["xabc"]
       sendPromptEvent False (Mapping "f")
       waitEvent "fuzzy reset" (Query Reset)
       awaitCurrent ["xabc", "xaxBxcx"]
-      sendPrompt (Prompt 1 Insert "ab")
+      sendPrompt "ab"
       waitEvent "delete c reset" (Query Reset)
       awaitCurrent ["ab", "xabc", "xaxBxcx", "xaxbx"]
       sendPromptEvent False (Mapping "s")
@@ -181,7 +178,7 @@ test_changeFilter =
       sendPromptEvent False (Mapping "p")
       waitEvent "prefix reset" (Query Reset)
       awaitCurrent ["ab"]
-      sendPrompt (Prompt 1 Insert "b.c?")
+      sendPrompt "b.c?"
       sendPromptEvent False (Mapping "r")
       awaitCurrent ["xaxbx", "xabc", "xaxBxcx"]
       quit
@@ -189,16 +186,12 @@ test_changeFilter =
     its =
       simpleMenuItem () <$> itemsChangeFilter
     maps =
-      defaultMappings <> [
+      [
         ("f", menuChangeMode Fuzzy),
         ("s", menuChangeMode Substring),
         ("p", menuChangeMode Prefix),
         ("r", menuChangeMode Regex)
       ]
-
-charsToggle :: [PromptEvent]
-charsToggle =
-  Update "a" : (Mapping <$> ["k", "<space>", "*", "<cr>"])
 
 itemsToggle :: [Text]
 itemsToggle =
@@ -224,10 +217,14 @@ execToggle =
 test_toggle :: UnitTest
 test_toggle = do
   runTest do
-    runTestMenu startInsert do
-      r <- testError $ testMenu (confSet #prompt startInsert noItemsConf) (modal Fuzzy) (defaultMappings <> [("<cr>", execToggle)]) do
+    runTestMenu do
+      r <- testError $ headlessTestMenu (startInsert noItemsConf) (modal Fuzzy) [("<cr>", execToggle)] do
         sendStaticItems "initial" (simpleMenuItem () <$> itemsToggle)
-        traverse_ (sendPromptEvent True) charsToggle
+        sendPromptWait "a"
+        sendMappingRender "k"
+        sendMappingRender "<space>"
+        sendMappingRender "*"
+        sendMappingRender "<cr>"
         result
       Success ["abc", "a"] === r
 

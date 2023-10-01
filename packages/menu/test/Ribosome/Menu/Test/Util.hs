@@ -9,7 +9,7 @@ staticMenuItems ::
   [Text] ->
   [MenuItem Text]
 staticMenuItems =
-  fmap (simpleMenuItem "name")
+  fmap \ t -> simpleMenuItem t t
 
 mkItems ::
   [Text] ->

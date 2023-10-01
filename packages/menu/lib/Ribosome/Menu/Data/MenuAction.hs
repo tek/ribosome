@@ -4,7 +4,7 @@ import Exon (exon)
 
 import qualified Ribosome.Menu.Data.MenuResult as MenuResult
 import Ribosome.Menu.Data.MenuResult (MenuResult)
-import Ribosome.Menu.Prompt.Data.Prompt (Prompt)
+import Ribosome.Menu.Prompt.Data.Prompt (Prompt, PromptState)
 
 -- | What to attempt to keep fixed when rendering updated state.
 data RenderAnchor =
@@ -25,6 +25,8 @@ data MenuAction a =
   Render RenderAnchor
   |
   UpdatePrompt Prompt
+  |
+  UpdatePromptState PromptState
   |
   Quit (MenuResult a)
   deriving stock (Eq, Show, Functor)
@@ -47,4 +49,5 @@ describe = \case
   Continue -> "Continue"
   Render a -> [exon|Render #{show a}|]
   UpdatePrompt p -> [exon|UpdatePrompt #{show p}|]
+  UpdatePromptState p -> [exon|UpdatePromptState #{show p}|]
   Quit res -> [exon|Quit #{MenuResult.describe res}|]

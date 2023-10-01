@@ -4,14 +4,14 @@ import Polysemy.Test (UnitTest, assertEq)
 
 import Ribosome.Api.Buffer (bufferContent)
 import qualified Ribosome.Data.ScratchState
+import Ribosome.Menu.App (defaultHandlers)
 import Ribosome.Menu.Data.Filter (Filter (Substring))
 import Ribosome.Menu.Data.MenuEvent (MenuEvent (Query), QueryEvent (Refined))
 import Ribosome.Menu.Data.State (modal)
 import qualified Ribosome.Menu.Effect.MenuTest as MenuTest
 import Ribosome.Menu.Effect.MenuTest (sendMappingRender, sendPrompt, waitEvent)
 import qualified Ribosome.Menu.Effect.MenuUi as MenuUi
-import Ribosome.Menu.Mappings (defaultMappings)
-import Ribosome.Menu.MenuTest (testStaticNvimMenu)
+import Ribosome.Menu.Test.Run (testStaticNvimMenu)
 import Ribosome.Menu.Prompt.Data.Prompt (Prompt (Prompt))
 import Ribosome.Menu.Prompt.Data.PromptMode (PromptMode (Insert))
 import Ribosome.Menu.Scratch (menuScratch)
@@ -30,6 +30,6 @@ test_clampCursor = do
       assertWait (bufferContent scr.buffer) (assertEq ["11", "12", "13"])
       MenuTest.quit
   where
-    maps = defaultMappings
+    maps = defaultHandlers
 
     its = staticMenuItems (reverse ["11", "12", "13", "44", "55", "66", "77", "88", "99"])

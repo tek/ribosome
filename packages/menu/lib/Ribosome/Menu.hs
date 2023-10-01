@@ -19,12 +19,11 @@ module Ribosome.Menu (
   module Ribosome.Menu.Interpreter.MenuUi,
   module Ribosome.Menu.ItemLens,
   module Ribosome.Menu.Items,
-  module Ribosome.Menu.Mappings,
+  module Ribosome.Menu.App,
   module Ribosome.Menu.Lens,
   module Ribosome.Menu.Loop,
   module Ribosome.Menu.Scratch,
   module Ribosome.Menu.Prompt.Data.Prompt,
-  module Ribosome.Menu.Prompt.Data.PromptConfig,
   module Ribosome.Menu.Prompt.Data.PromptListening,
   module Ribosome.Menu.Prompt.Data.PromptMode,
   module Ribosome.Menu.Prompt.Run,
@@ -45,6 +44,7 @@ import Ribosome.Menu.Action (
   menuToggleAll,
   menuUpdatePrompt,
   )
+import Ribosome.Menu.App (MenuApp, defaultHandlers, insert, promptControl)
 import Ribosome.Menu.Data.Entry (Entries, Entry)
 import Ribosome.Menu.Data.Filter
 import Ribosome.Menu.Data.MenuAction
@@ -125,11 +125,21 @@ import Ribosome.Menu.Items (
   withSelectionItems,
   )
 import Ribosome.Menu.Lens (use, view, (%=), (+=), (.=), (<.=))
-import Ribosome.Menu.Loop (addMenuUi, menu, menuLoop, runMenu, runMenuUi, staticWindowMenu, windowMenu, withMenuUi)
-import Ribosome.Menu.Mappings (Mappings, defaultMappings, insert)
-import Ribosome.Menu.Prompt.Data.Prompt (Prompt (Prompt), PromptText (PromptText))
-import Ribosome.Menu.Prompt.Data.PromptConfig
+import Ribosome.Menu.Loop (
+  headlessMenu,
+  menuApp,
+  menuAppWith,
+  menuLoop,
+  menuParams,
+  runPromptApp,
+  staticWindowMenu,
+  uiMenu,
+  windowMenu,
+  withUi,
+  withUi',
+  )
+import Ribosome.Menu.Prompt.Data.Prompt (Prompt (Prompt), PromptModes (..), PromptText (PromptText))
 import Ribosome.Menu.Prompt.Data.PromptListening
 import Ribosome.Menu.Prompt.Data.PromptMode (PromptMode (..))
-import Ribosome.Menu.Prompt.Run (pristinePrompt, withPromptInput)
+import Ribosome.Menu.Prompt.Run (withPromptInput)
 import Ribosome.Menu.Scratch (ensureSize, menuScratch, menuScratchSized)

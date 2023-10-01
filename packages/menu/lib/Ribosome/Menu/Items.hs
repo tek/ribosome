@@ -9,8 +9,8 @@ import qualified Data.Sequence as Seq
 import Data.Sequence ((|>))
 import Prelude hiding (unify)
 
-import Ribosome.Menu.Class.MenuState (MenuState (Item, mode), entries, history, items)
-import Ribosome.Menu.Combinators (sortedEntries)
+import Ribosome.Menu.Class.MenuState (MenuState (Item, histories, mode), entries, history, items)
+import Ribosome.Menu.Combinators (overEntry, sortedEntries)
 import Ribosome.Menu.Data.CursorIndex (CursorIndex (CursorIndex))
 import qualified Ribosome.Menu.Data.Entry
 import Ribosome.Menu.Data.Entry (Entries, Entry)
@@ -19,11 +19,30 @@ import Ribosome.Menu.Data.MenuAction (MenuAction)
 import qualified Ribosome.Menu.Data.MenuItem as MenuItem
 import Ribosome.Menu.Data.MenuItem (MenuItem)
 import Ribosome.Menu.Data.WithCursor (WithCursor)
-import Ribosome.Menu.Effect.Menu (Menu, readState, viewMenu)
-import Ribosome.Menu.ItemLens (focus, selected, selected')
+import Ribosome.Menu.Effect.Menu (Menu, menuState, readState, viewMenu)
+import Ribosome.Menu.ItemLens (focus, focusEntry, selected, selected')
 import Ribosome.Menu.Lens (use, (%=), (.=))
 
 -- | Run an action with the focused entry if the menu is non-empty.
+withFocusEntry' ::
+  MenuState s =>
+  Member (Menu s) r =>
+  (Entry (Item s) -> Sem r (Maybe a)) ->
+  Sem r (Maybe a)
+withFocusEntry' f =
+  fmap join . traverse f =<< viewMenu focusEntry
+
+-- | Run an action with the focused entry and quit the menu with the returned value.
+-- If the menu was empty, do nothing (i.e. skip the event).
+withFocusEntry ::
+  MenuState s =>
+  Member (Menu s) r =>
+  (Entry (Item s) -> Sem r a) ->
+  Sem r (Maybe (MenuAction a))
+withFocusEntry f =
+  Just . maybe MenuAction.Continue MenuAction.success <$> withFocusEntry' (fmap Just . f)
+
+-- | Run an action with the focused entry's item if the menu is non-empty.
 withFocusItem ::
   MenuState s =>
   Member (Menu s) r =>
@@ -32,16 +51,16 @@ withFocusItem ::
 withFocusItem f =
   traverse f =<< viewMenu focus
 
--- | Run an action with the focused entry if the menu is non-empty, extracting the item payload.
+-- | Run an action with the focused entry's item if the menu is non-empty, extracting the item payload.
 withFocus' ::
   MenuState s =>
   Member (Menu s) r =>
-  (Item s -> Sem r a) ->
+  (Item s -> Sem r (Maybe a)) ->
   Sem r (Maybe a)
 withFocus' f =
-  withFocusItem (f . (.meta))
+  join <$> withFocusItem (f . (.meta))
 
--- | Run an action with the focused entry and quit the menu with the returned value.
+-- | Run an action with the focused entry's item and quit the menu with the returned value.
 -- If the menu was empty, do nothing (i.e. skip the event).
 withFocus ::
   MenuState s =>
@@ -49,7 +68,7 @@ withFocus ::
   (Item s -> Sem r a) ->
   Sem r (Maybe (MenuAction a))
 withFocus f =
-  Just . maybe MenuAction.Continue MenuAction.success <$> withFocus' f
+  Just . maybe MenuAction.Continue MenuAction.success <$> withFocus' (fmap Just . f)
 
 -- | Run an action with the selection or the focused entry if the menu is non-empty.
 withSelectionItems ::
@@ -64,10 +83,10 @@ withSelectionItems f =
 withSelection' ::
   MenuState s =>
   Member (Menu s) r =>
-  (NonEmpty (Item s) -> Sem r a) ->
+  (NonEmpty (Item s) -> Sem r (Maybe a)) ->
   Sem r (Maybe a)
 withSelection' f =
-  traverse f =<< viewMenu selected
+  fmap join . traverse f =<< viewMenu selected
 
 -- | Run an action with the selection or the focused entry and quit the menu with the returned value.
 -- If the menu was empty, do nothing (i.e. skip the event).
@@ -77,7 +96,7 @@ withSelection ::
   (NonEmpty (Item s) -> Sem r a) ->
   Sem r (Maybe (MenuAction a))
 withSelection f =
-  Just . maybe MenuAction.Continue MenuAction.success <$> withSelection' f
+  Just . maybe MenuAction.Continue MenuAction.success <$> withSelection' (fmap Just . f)
 
 -- | Run an action with each entry in the selection or the focused entry and quit the menu with '()'.
 -- If the menu was empty, do nothing (i.e. skip the event).
@@ -167,3 +186,25 @@ currentEntries ::
   Sem r [Text]
 currentEntries =
   toListOf (sortedEntries . each . #item . #text) <$> readState
+
+updateEntry ::
+  MenuState s =>
+  Member (State s) r =>
+  Int ->
+  Entry (Item s) ->
+  Sem r ()
+updateEntry index newEntry = do
+  entries %= overEntry index (const newEntry)
+  items . ix (fromIntegral newEntry.index) .= newEntry.item
+
+modifyFocus ::
+  MenuState s =>
+  Member (Menu s) r =>
+  (Entry (Item s) -> Entry (Item s)) ->
+  Sem r ()
+modifyFocus f =
+  menuState do
+    CursorIndex curs <- use #cursor
+    use focusEntry >>= traverse_ \ e -> do
+      updateEntry (fromIntegral curs) (f e)
+      histories .= mempty

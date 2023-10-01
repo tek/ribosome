@@ -35,7 +35,6 @@ import Ribosome.Menu.Data.MenuView (EntryIndex (EntryIndex), MenuView (MenuView)
 import qualified Ribosome.Menu.Data.NvimMenuState
 import Ribosome.Menu.Data.NvimMenuState (
   EntrySlice (EntrySlice, OnlyPartialEntry),
-  NvimMenuState,
   PartialEntry (PartialEntry),
   SliceIndexes (SliceIndexes),
   sliceLength,
@@ -43,7 +42,7 @@ import Ribosome.Menu.Data.NvimMenuState (
   )
 import Ribosome.Menu.Data.RenderMenu (RenderMenu)
 import Ribosome.Menu.Integral (subClamp)
-import Ribosome.Menu.Lens (view, (.=), (<.=))
+import Ribosome.Menu.Lens (view)
 import Ribosome.Syntax.Cons (syntaxMatch)
 
 newtype AvailLines =
@@ -404,32 +403,26 @@ sliceEntryLines EntrySlice {..} =
 sliceEntryLines OnlyPartialEntry {index, entry} =
   [(index, CursorLine (subClamp @Word entry.entry.item.lines 1))]
 
--- TODO remember to fix the correctness of the cursor when this is done:
--- when items are refined, the cursor may become out of bounds, but it is not corrected, since it isn't even available
--- at that location.
--- this causes the view to become entirely wrong, pressing <cr> for an action does nothing at all
---
 -- TODO When the new slice is empty, the range has to be reset.
 -- As it is, filtering until no items are matched and backspacing will start with a bad range.
 updateMenuState ::
-  Member (State NvimMenuState) r =>
+  Member (State MenuView) r =>
   RenderAnchor ->
   Entries i ->
   CursorIndex ->
   AvailLines ->
-  Sem r (Maybe (EntrySlice i, Bool))
+  Sem r (Maybe (EntrySlice i))
 updateMenuState anchor ents newCursor scratchMax = do
   old <- get
-  let change = viewChange anchor old.view.range newCursor
+  let change = viewChange anchor old.range newCursor
       maybeSlice = entrySliceForChange ents newCursor scratchMax change
   for maybeSlice \ slice -> do
     let
       cursorLine = findCursorLine newCursor slice
       (bottom, top) = sliceRange slice
       entryLines = sliceEntryLines slice
-    #view .= MenuView (Just ViewRange {bottom, top, cursorLine, entryLines}) newCursor
-    newIndexes <- #slice <.= (sliceIndexes slice)
-    pure (slice, newIndexes /= old.slice)
+    put (MenuView (Just ViewRange {bottom, top, cursorLine, entryLines}) newCursor)
+    pure slice
 
 runS ::
   Member (AtomicState s) r =>
@@ -440,7 +433,7 @@ runS ma = do
   a <$ atomicPut s'
 
 updateMenu ::
-  Members [Scratch, AtomicState NvimMenuState, Reader (RenderMenu i), Rpc, Rpc !! RpcError, Log] r =>
+  Members [Scratch, AtomicState MenuView, Reader (RenderMenu i), Rpc, Rpc !! RpcError, Log] r =>
   ScratchState ->
   Sem r ()
 updateMenu scratch =
@@ -454,10 +447,9 @@ updateMenu scratch =
 
     clear = void (Scratch.update scratch.id (mempty @[_]))
 
-    update (visible, changed) = do
-      when changed do
-        void (Scratch.update scratch.id (toList =<< renderSlice visible))
-      gets (.view.range) >>= traverse_ \ range -> do
+    update slice = do
+      void (Scratch.update scratch.id (toList =<< renderSlice slice))
+      gets (.range) >>= traverse_ \ range -> do
         alignContent
         count <- nvimBufLineCount scratch.buffer
         let windowLine = subClamp count (1 + range.cursorLine)
@@ -506,7 +498,7 @@ updateStatus scr = do
 
 renderNvimMenu ::
   ∀ i r .
-  Member (AtomicState NvimMenuState) r =>
+  Member (AtomicState MenuView) r =>
   Members [Reader (RenderMenu i), Rpc !! RpcError, Scratch !! RpcError, Log, Stop RpcError, Embed IO] r =>
   ScratchState ->
   Maybe ScratchState ->
