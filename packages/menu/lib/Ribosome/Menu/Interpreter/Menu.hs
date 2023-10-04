@@ -54,7 +54,7 @@ import Ribosome.Menu.Interpreter.MenuUiWindow (interpretMenuUiWindow)
 import qualified Ribosome.Menu.Prompt.Data.Prompt as Prompt
 import Ribosome.Menu.Prompt.Data.Prompt (Prompt)
 import Ribosome.Menu.Prompt.Data.PromptEvent (PromptEvent)
-import Ribosome.Menu.UpdateState (insertItems, queryEvent)
+import Ribosome.Menu.UpdateState (insertItems, updateQuery)
 
 newtype MS s =
   MS { unMS :: s }
@@ -146,14 +146,15 @@ menuStream items = do
       RenderEvent "new items" AnchorLine <$ publish Inserted
     update p = do
       Log.debug "menu: schedule query update"
-      msState (queryEvent ((.text) <$> p))
+      event <- msState (updateQuery ((.text) <$> p))
+      for_ event \ qe -> publish (MenuEvent.Query qe)
       RenderEvent "query update" AnchorLine <$ Sync.putTry MenuSync
 
-updateQuery ::
+updateMenuQuery ::
   Members [Reader MenuConfig, Queue (Maybe Prompt), Sync MenuSync, Log] r =>
   Maybe Prompt ->
   Sem r ()
-updateQuery new = do
+updateMenuQuery new = do
   Queue.write new
   whenM (asks (view #sync)) do
     Log.debug "menu: Waiting for query update"
@@ -255,7 +256,7 @@ interpretMenus =
           (a, modeChange) <- muse $ viaMS \ s -> do
             (newS, a) <- mstateT f s
             pure (newS, (a, s ^. mode /= newS ^. mode))
-          when modeChange (updateQuery Nothing)
+          when modeChange (updateMenuQuery Nothing)
           pure a
     MenuEngine (Bundle (There Here) e) ->
       case e of
@@ -282,7 +283,7 @@ interpretMenus =
         Menu.PromptQuit ->
           pureT =<< Queue.close
         Menu.UpdateQuery new -> do
-          updateQuery (Just new)
+          updateMenuQuery (Just new)
           unitT
         Menu.Render anchor -> do
           Queue.write (RenderEvent "consumer" anchor)

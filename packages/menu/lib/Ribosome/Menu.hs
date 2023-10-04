@@ -24,7 +24,6 @@ module Ribosome.Menu (
   module Ribosome.Menu.Loop,
   module Ribosome.Menu.Scratch,
   module Ribosome.Menu.Prompt.Data.Prompt,
-  module Ribosome.Menu.Prompt.Data.PromptListening,
   module Ribosome.Menu.Prompt.Data.PromptMode,
   module Ribosome.Menu.Prompt.Run,
 ) where
@@ -44,7 +43,7 @@ import Ribosome.Menu.Action (
   menuToggleAll,
   menuUpdatePrompt,
   )
-import Ribosome.Menu.App (MenuApp, defaultHandlers, insert, promptControl)
+import Ribosome.Menu.App (MenuApp, PromptApp, builtinHandlers, defaultHandlers, insert, promptControl, withInsert)
 import Ribosome.Menu.Data.Entry (Entries, Entry)
 import Ribosome.Menu.Data.Filter
 import Ribosome.Menu.Data.MenuAction
@@ -139,7 +138,6 @@ import Ribosome.Menu.Loop (
   withUi',
   )
 import Ribosome.Menu.Prompt.Data.Prompt (Prompt (Prompt), PromptModes (..), PromptText (PromptText))
-import Ribosome.Menu.Prompt.Data.PromptListening
 import Ribosome.Menu.Prompt.Data.PromptMode (PromptMode (..))
 import Ribosome.Menu.Prompt.Run (withPromptInput)
 import Ribosome.Menu.Scratch (ensureSize, menuScratch, menuScratchSized)

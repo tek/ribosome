@@ -53,6 +53,7 @@ library
       Ribosome.Menu.Data.RenderEvent
       Ribosome.Menu.Data.RenderMenu
       Ribosome.Menu.Data.State
+      Ribosome.Menu.Data.TestMenuConfig
       Ribosome.Menu.Data.WindowConfig
       Ribosome.Menu.Data.WithCursor
       Ribosome.Menu.Effect.Menu
@@ -74,14 +75,12 @@ library
       Ribosome.Menu.Lens
       Ribosome.Menu.Loop
       Ribosome.Menu.MenuState
-      Ribosome.Menu.Test.Run
       Ribosome.Menu.NvimRenderer
       Ribosome.Menu.Prompt
       Ribosome.Menu.Prompt.Data.Codes
       Ribosome.Menu.Prompt.Data.Prompt
       Ribosome.Menu.Prompt.Data.PromptEvent
       Ribosome.Menu.Prompt.Data.PromptInputEvent
-      Ribosome.Menu.Prompt.Data.PromptListening
       Ribosome.Menu.Prompt.Data.PromptMode
       Ribosome.Menu.Prompt.Nvim
       Ribosome.Menu.Prompt.Run
@@ -90,6 +89,10 @@ library
       Ribosome.Menu.Stream.Accumulate
       Ribosome.Menu.Stream.ParMap
       Ribosome.Menu.Stream.Util
+      Ribosome.Menu.Test
+      Ribosome.Menu.Test.Loop
+      Ribosome.Menu.Test.Main
+      Ribosome.Menu.Test.Run
       Ribosome.Menu.UpdateState
   hs-source-dirs:
       lib

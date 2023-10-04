@@ -59,7 +59,7 @@ insert :: AppTrigger -> AppTrigger
 insert = modesLens .~ [MapInsert]
 
 type MenuApp s r result =
-  Map (AppTrigger) (MenuWidget s r result)
+  Map AppTrigger (MenuWidget s r result)
 
 inputMatrix :: AppTrigger -> MenuWidget s r result -> [(InputParams, MenuWidget s r result)]
 inputMatrix (AppMapping lhs InputDomain {..}) widget =
@@ -94,7 +94,7 @@ builtinHandlers :: MenuApp s r result
 builtinHandlers =
   [
     (withInsert "<esc>", menuEsc),
-    ("<c-c>", menuQuit),
+    (withInsert "<c-c>", menuQuit),
     (AppPrompt PromptControlItems, menuOk)
   ]
 

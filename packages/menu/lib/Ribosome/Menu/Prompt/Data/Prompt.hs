@@ -1,7 +1,7 @@
 module Ribosome.Menu.Prompt.Data.Prompt where
 
 import qualified Ribosome.Menu.Prompt.Data.PromptMode as PromptMode
-import Ribosome.Menu.Prompt.Data.PromptMode (PromptMode)
+import Ribosome.Menu.Prompt.Data.PromptMode (PromptMode, PromptMode(Insert))
 
 data PromptModes =
   StartNormal
@@ -14,8 +14,8 @@ data PromptModes =
 instance Default PromptModes where
   def = StartNormal
 
-isStartInsert :: PromptModes -> Bool
-isStartInsert = \case
+shouldStartInsert :: PromptModes -> Bool
+shouldStartInsert = \case
   StartNormal -> False
   StartInsert -> True
   OnlyInsert -> True
@@ -73,3 +73,8 @@ data PromptState =
   }
   deriving stock (Eq, Show, Generic)
   deriving anyclass (Default)
+
+initPrompt :: PromptState -> PromptState
+initPrompt s@PromptState {..}
+  | shouldStartInsert modes = PromptState {prompt = prompt & #mode .~ Insert, ..}
+  | otherwise = s

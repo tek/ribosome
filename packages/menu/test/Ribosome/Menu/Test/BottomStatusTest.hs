@@ -12,10 +12,11 @@ import Ribosome.Menu.Class.MenuState (MenuState (renderStatus))
 import Ribosome.Menu.Data.Filter (Filter (Fuzzy), basicMatcher)
 import qualified Ribosome.Menu.Data.MenuResult as MenuResult
 import Ribosome.Menu.Data.State (Modal, modal)
+import Ribosome.Menu.Data.TestMenuConfig (confSet)
 import qualified Ribosome.Menu.Effect.MenuTest as MenuTest
 import qualified Ribosome.Menu.Effect.MenuUi as MenuUi
-import Ribosome.Menu.Test.Run (confSet, testStaticNvimMenu)
 import Ribosome.Menu.Prompt.Run (nosync, withPromptInputSync)
+import Ribosome.Menu.Test.Run (testStaticNvimMenu)
 import Ribosome.Test.Screenshot (awaitScreenshot)
 import Ribosome.Test.SocketTmux (testSocketTmux)
 

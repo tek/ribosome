@@ -10,8 +10,7 @@ import qualified Ribosome.Menu.Class.MenuState as MenuState
 import Ribosome.Menu.Class.MenuState (MenuState (Item, histories), entries, entryCount, history, itemCount, items)
 import Ribosome.Menu.Combinators (addHistory, updateEntries)
 import Ribosome.Menu.Data.Entry (Entries, entriesLength)
-import qualified Ribosome.Menu.Data.MenuEvent as MenuEvent
-import Ribosome.Menu.Data.MenuEvent (MenuEvent, QueryEvent (Modal, Refined, Reset))
+import Ribosome.Menu.Data.MenuEvent (QueryEvent (Modal, Refined, Reset))
 import Ribosome.Menu.Data.MenuItem (MenuItem)
 import Ribosome.Menu.Data.MenuQuery (MenuQuery (MenuQuery))
 import Ribosome.Menu.Effect.MenuFilter (FilterJob (Initial, Refine), MenuFilter, menuFilter)
@@ -140,11 +139,3 @@ updateQuery = \case
   Nothing -> do
     Log.debug "query reset"
     historyOr resetFiltered =<< use MenuState.query
-
-queryEvent ::
-  MenuState s =>
-  Members [MenuFilter, State s, Events MenuEvent, Log] r =>
-  Maybe PromptText ->
-  Sem r ()
-queryEvent =
-  traverse_ (publish . MenuEvent.Query) <=< updateQuery

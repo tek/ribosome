@@ -21,6 +21,7 @@ import qualified Ribosome.Menu.Data.MenuItem as MenuItem
 import Ribosome.Menu.Data.MenuItem (simpleMenuItem)
 import Ribosome.Menu.Data.MenuResult (MenuResult (Success))
 import Ribosome.Menu.Data.State (Core (Core), Modal (Modal), Primary (Primary), modal)
+import Ribosome.Menu.Data.TestMenuConfig (noItemsConf, startInsert)
 import Ribosome.Menu.Data.WithCursor (WithCursor (WithCursor))
 import Ribosome.Menu.Effect.Menu (menuState)
 import Ribosome.Menu.Effect.MenuTest (
@@ -38,12 +39,13 @@ import Ribosome.Menu.Effect.MenuTest (
 import Ribosome.Menu.ItemLens (selected', selectedOnly, unselected)
 import Ribosome.Menu.Items (currentEntries, deleteSelected, popSelection)
 import Ribosome.Menu.Lens (use)
-import Ribosome.Menu.Test.Run (headlessTestMenu, noItemsConf, runTestMenu, startInsert, testStaticMenu)
 import Ribosome.Menu.Prompt.Data.Prompt (Prompt (Prompt))
 import Ribosome.Menu.Prompt.Data.PromptEvent (PromptEvent (Mapping))
 import Ribosome.Menu.Prompt.Data.PromptMode (PromptMode (Insert))
+import Ribosome.Menu.Test.Main (headlessTestMenu)
 import Ribosome.Menu.Test.Menu (awaitCurrent)
 import Ribosome.Menu.Test.RefineManyTest (test_fastPromptAcc, test_refineMany)
+import Ribosome.Menu.Test.Run (runTestMenu, testStaticMenu)
 import Ribosome.Test.Error (testError)
 
 items1 :: [Text]

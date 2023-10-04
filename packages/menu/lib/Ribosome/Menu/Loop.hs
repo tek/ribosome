@@ -16,7 +16,8 @@ import Ribosome.Menu.Data.InputParams (
   InputMode,
   InputParams (InputParams),
   InputTrigger (InputMapping, InputPrompt),
-  promptMode, describeInputMode,
+  describeInputMode,
+  promptMode,
   )
 import qualified Ribosome.Menu.Data.MenuAction as MenuAction
 import Ribosome.Menu.Data.MenuAction (MenuAction)
@@ -42,7 +43,12 @@ import Ribosome.Menu.Effect.Menu (
 import qualified Ribosome.Menu.Effect.MenuUi as MenuUi
 import Ribosome.Menu.Effect.MenuUi (MenuUi)
 import qualified Ribosome.Menu.Prompt.Data.Prompt
-import Ribosome.Menu.Prompt.Data.Prompt (Prompt, PromptControl (PromptControlApp, PromptControlItems), PromptState)
+import Ribosome.Menu.Prompt.Data.Prompt (
+  Prompt,
+  PromptControl (PromptControlApp, PromptControlItems),
+  PromptState,
+  initPrompt,
+  )
 import qualified Ribosome.Menu.Prompt.Data.PromptEvent as PromptEvent
 import Ribosome.Menu.Prompt.Data.PromptEvent (PromptEvent)
 
@@ -182,12 +188,14 @@ menuLoop' ::
   PromptState ->
   InputDispatch s r result ->
   Sem r (MenuResult result)
-menuLoop' prompt dispatch = do
+menuLoop' promptConf dispatch = do
   Log.debug "Starting prompt loop"
   MenuUi.renderPrompt True prompt.prompt
   Menu.startPrompt
   Menu.updateQuery prompt.prompt
   loopM (menuStep (fmap (insertAt @2) . dispatch)) prompt
+  where
+    prompt = initPrompt promptConf
 
 menuLoop ::
   ∀ s result r .
