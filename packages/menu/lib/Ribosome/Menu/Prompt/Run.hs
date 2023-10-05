@@ -18,20 +18,30 @@ withPromptInput ::
 withPromptInput interval chrs =
   withAsync_ (waitPrompt *> syntheticInput (convert <$> interval) chrs)
 
+data SyncMode =
+  NoSync
+  |
+  RegularSync
+  |
+  UpdatingSync
+  deriving stock (Eq, Show, Generic)
+
 data SyncChar =
   SyncChar {
     char :: Text,
-    sync :: Bool
+    sync :: SyncMode
   }
   deriving stock (Eq, Show, Generic)
 
 instance IsString SyncChar where
   fromString c =
-    SyncChar (fromString c) True
+    SyncChar (fromString c) RegularSync
 
 nosync :: SyncChar -> SyncChar
-nosync =
-  #sync .~ False
+nosync = #sync .~ NoSync
+
+updating :: SyncChar -> SyncChar
+updating = #sync .~ UpdatingSync
 
 withPromptInputSync ::
   Members [Reader MenuConfig, MenuCore] r =>
@@ -45,7 +55,12 @@ withPromptInputSync chrs =
     for_ chrs \ (SyncChar {..}) -> do
       sleep (MilliSeconds 1)
       void (feedKey char)
-      when sync (consumeElem PromptLoop)
+      case sync of
+        NoSync -> unit
+        RegularSync -> consumeElem PromptLoop
+        UpdatingSync -> do
+          consumeElem PromptLoop
+          consumeElem PromptLoop
 
 withPromptInputFk ::
   Members [MenuCore, Rpc, Resource, Race, Async, Time t d] r =>

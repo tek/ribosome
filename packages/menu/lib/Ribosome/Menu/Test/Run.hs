@@ -70,7 +70,6 @@ testStaticNvimMenu items conf initial options app =
     conf' =
       confSet #items (Stream.fromList items) $
       confDefault #initialItems (not (null items)) $
-      -- confDefault #prompt def $
       conf
 
 testStaticNvimMenuSimple ::

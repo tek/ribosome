@@ -1,6 +1,16 @@
 module Ribosome.Menu.Interpreter.MenuUiWindow where
 
-import Conc (Consume, Gate, Gates, interpretAtomic, interpretEventsChan, withAsyncGated_)
+import Conc (
+  Consume,
+  Gate,
+  Gates,
+  Lock,
+  interpretAtomic,
+  interpretEventsChan,
+  interpretLockReentrant,
+  lock,
+  withAsyncGated_,
+  )
 import Control.Lens.Regex.Text (group, match, regex)
 import qualified Data.Text as Text
 import Exon (exon)
@@ -109,13 +119,21 @@ promptMode =
     _ ->
       Nothing
 
+lockAs ::
+  ∀ k r a .
+  Member (Lock @@ k) r =>
+  Sem r a ->
+  Sem r a
+lockAs =
+  tag @k . lock . raise
+
 publishPrompt ::
-  Members [Events PromptEvent, Rpc !! RpcError, Log] r =>
+  Members [Events PromptEvent, Rpc !! RpcError, Lock @@ "prompt", Log] r =>
   Text ->
   Sem r ()
 publishPrompt text =
   resuming logError do
-    promptMode >>= traverse_ \ m -> do
+    lockAs @"prompt" $ promptMode >>= traverse_ \ m -> do
       (_, cursor) <- currentCursor
       let prompt = Prompt (CursorCol cursor) m (PromptText text)
       Log.debug [exon|BufLinesEvent: #{show prompt}|]
@@ -141,8 +159,19 @@ updateMode target = do
     Log.debug [exon|Updating window mode to #{show target}|]
     setMode target
 
+updatePrompt ::
+  Members [Scratch !! RpcError, Rpc !! RpcError, Stop RpcError, Log] r =>
+  ScratchState ->
+  Prompt ->
+  Sem r ()
+updatePrompt promptScratch (Prompt (CursorCol cursor) mode (PromptText text)) = do
+  void (restop (Scratch.update promptScratch.id ([text] :: [Text])))
+  restop @RpcError @Rpc do
+    updateMode mode
+    setCursor promptScratch.window 0 cursor
+
 promptBufferEvents ::
-  Members [Rpc !! RpcError, EventConsumer Event, Events PromptEvent, Log, Gate] r =>
+  Members [Rpc !! RpcError, EventConsumer Event, Events PromptEvent, Lock @@ "prompt", Log, Gate] r =>
   Sem r ()
 promptBufferEvents =
   subscribe @Event do
@@ -281,9 +310,6 @@ withMainScratch itemsOpt statusOpt use = do
     withStatusSyntax =
       #syntax <>~ []
 
-type WindowScope =
-  [Consume PromptEvent, AtomicState MenuView]
-
 -- For some reason, Neovim stays in expectation of a typed character after the menu was closed, so this sends another
 -- @<esc>@.
 --
@@ -296,7 +322,7 @@ flushInput = do
   nvimFeedkeys key "int" False
 
 withBufferPromptEvents ::
-  Members [EventConsumer PromptEvent, Events PromptEvent] r =>
+  Members [EventConsumer PromptEvent, Events PromptEvent, Lock @@ "prompt"] r =>
   Members [Rpc, Rpc !! RpcError, EventConsumer Event, Log, Gates, Resource, Race, Async] r =>
   Buffer ->
   Sem (Consume PromptEvent : r) a ->
@@ -308,7 +334,7 @@ withBufferPromptEvents buf sem =
       sem
 
 withPrompt ::
-  Member (EventConsumer Event) r =>
+  Members [EventConsumer Event, Lock @@ "prompt"] r =>
   Members [Scratch, Rpc, Rpc !! RpcError, Stop RpcError, Log, Resource, Gates, Race, Async, Embed IO] r =>
   [MappingSpec] ->
   (Int, Int, Int, Int) ->
@@ -326,33 +352,33 @@ withPrompt mappings geo use =
       Scratch.delete s.id
       flushInput
 
+type WindowScope =
+  [Consume PromptEvent, AtomicState MenuView, Lock @@ "prompt"]
+
 windowResources ::
   Member Log r =>
   Members [Settings !! SettingError, Gates, Embed IO] r =>
-  Members [Scratch !! RpcError, Rpc !! RpcError, Stop RpcError, EventConsumer Event, Resource, Race, Async] r =>
+  Members [Scratch !! RpcError, Rpc !! RpcError, Stop RpcError, EventConsumer Event, Resource, Race, Async, Mask] r =>
   WindowConfig ->
   (WindowMenu -> Sem (WindowScope ++ r) a) ->
   Sem r a
 windowResources (WindowConfig itemsOpt statusOpt mappings) use =
-  restop @_ @Rpc $ restop @_ @Scratch do
+  restop @_ @Rpc $ restop @_ @Scratch $ interpretLockReentrant $ untag do
     geo <- geometry
     withMainScratch (itemsOptions geo itemsOpt) (statusOptions geo <$> statusOpt) \ (itemsScratch, statusScratch) ->
       withPrompt mappings geo \ promptScratch ->
         withOption "hlsearch" False do
-          insertAt @2 (use (WindowMenu itemsScratch statusScratch promptScratch))
+          insertAt @3 (use (WindowMenu itemsScratch statusScratch promptScratch))
 
 -- TODO see how a 'buftype=prompt' looks
 interpretMenuUiWindow ::
-  Members [Log, Gates, Resource, Race, Async, Embed IO] r =>
+  Members [Log, Gates, Resource, Race, Async, Mask, Embed IO] r =>
   Members [Scratch !! RpcError, Rpc !! RpcError, Settings !! SettingError, EventConsumer Event] r =>
   InterpreterFor (Scoped WindowConfig (MenuUi !! RpcError) !! RpcError) r
 interpretMenuUiWindow =
   interpretScopedRWith @WindowScope windowResources \ (WindowMenu itemsScratch statusScratch promptScratch) -> \case
-    RenderPrompt True (Prompt (CursorCol cursor) mode (PromptText text)) -> do
-      restop @RpcError @Rpc do
-        updateMode mode
-        setCursor promptScratch.window 0 cursor
-      void (restop (Scratch.update promptScratch.id ([text] :: [Text])))
+    RenderPrompt True prompt -> do
+      tag @"prompt" $ lock $ updatePrompt promptScratch prompt
     RenderPrompt False _ ->
       unit
     PromptEvent ->

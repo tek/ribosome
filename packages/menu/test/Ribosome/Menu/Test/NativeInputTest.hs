@@ -1,15 +1,17 @@
 module Ribosome.Menu.Test.NativeInputTest where
 
+import Conc (timeoutStop)
 import Lens.Micro.Mtl (view)
 import Polysemy.Chronos (ChronosTime)
-import Polysemy.Test (UnitTest, assertEq, unitTestTimes, (===))
+import Polysemy.Test (UnitTest, assertEq, unitTest, unitTestTimes, (===))
 import Test.Tasty (TestTree, testGroup)
+import Time (Seconds (Seconds))
 
 import Ribosome.Host.Api.Data (vimGetWindows)
 import Ribosome.Host.Data.RpcError (RpcError)
 import Ribosome.Host.Effect.Rpc (Rpc)
-import Ribosome.Menu.Action (MenuWidget, menuOk, menuSuccess)
-import Ribosome.Menu.App (MenuApp)
+import Ribosome.Menu.Action (MenuWidget, menuOk, menuSuccess, menuUpdatePrompt)
+import Ribosome.Menu.App (MenuApp, withInsert, insert)
 import Ribosome.Menu.Class.MenuState (MenuState, entries)
 import Ribosome.Menu.Combinators (sortEntries)
 import Ribosome.Menu.Data.CursorIndex (CursorIndex (CursorIndex))
@@ -22,7 +24,8 @@ import Ribosome.Menu.Effect.Menu (readCursor, readState)
 import Ribosome.Menu.Interpreter.Menu (MenuLoopIO, NvimMenuIO, interpretSingleWindowMenu)
 import Ribosome.Menu.Loop (menuLoop, windowMenuApp)
 import Ribosome.Menu.Prompt.Data.Prompt (onlyInsert, startInsert)
-import Ribosome.Menu.Prompt.Run (SyncChar, nosync, withPromptInputSync)
+import Ribosome.Menu.Prompt.Data.PromptMode (PromptMode (Insert))
+import Ribosome.Menu.Prompt.Run (SyncChar, nosync, withPromptInputSync, updating)
 import Ribosome.Menu.Scratch (menuScratchSized)
 import Ribosome.Menu.Test.Util (mkItems)
 import Ribosome.Test.Embed (testEmbed_)
@@ -45,7 +48,7 @@ app ::
   MenuState s =>
   MenuApp s r Text
 app =
-  [("<cr>", currentEntry)]
+  [(withInsert "<cr>", currentEntry), (insert "<c-e>", menuUpdatePrompt ("item" & #mode .~ Insert))]
 
 nativeTest ::
   Members MenuLoopIO r =>
@@ -57,7 +60,7 @@ nativeTest ::
 nativeTest opts chars =
   interpretSingleWindowMenu $ windowMenuApp (mkItems items) (modal Fuzzy) opts app \ papp ->
     withPromptInputSync chars do
-      menuLoop papp
+      timeoutStop "timed out" (Seconds 3) (menuLoop papp)
 
 test_nativeBasic :: UnitTest
 test_nativeBasic =
@@ -89,10 +92,20 @@ test_nativeOnlyInsert =
     opts =
       def & #prompt . #modes .~ onlyInsert
 
+test_nativeSetPrompt :: UnitTest
+test_nativeSetPrompt =
+  testEmbed_ do
+    result <- nativeTest opts [updating "<c-e>", "3", "<cr>"]
+    MenuResult.Success "item3" === result
+  where
+    opts =
+      def & #prompt . #modes .~ startInsert
+
 test_nativeInput :: TestTree
 test_nativeInput =
   testGroup "native input" [
     unitTestTimes 10 "basic" test_nativeBasic,
     unitTestTimes 10 "interrupt window" test_nativeInterrupt,
-    unitTestTimes 10 "quit on esc in onlyInsert mode" test_nativeOnlyInsert
+    unitTestTimes 10 "quit on esc in onlyInsert mode" test_nativeOnlyInsert,
+    unitTest "preserve cursor after setting the prompt" test_nativeSetPrompt
   ]

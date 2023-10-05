@@ -13,7 +13,7 @@ newtype TestTimeout =
   deriving stock (Eq, Show)
 
 instance Show (SerialT IO (MenuItem i)) where
-  showsPrec _ _ = showString "stream"
+  showsPrec _ _ = showString "<stream>"
 
 data TestMenuConfig i =
   TestMenuConfig {
