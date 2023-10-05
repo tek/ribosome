@@ -3,20 +3,11 @@ module Ribosome.Menu.Prompt.Run where
 import Conc (Gates, consumeElem, subscribeAsync, withAsync_)
 import Time (MilliSeconds (MilliSeconds), convert, sleep)
 
-import Ribosome.Api.Input (feedKey, syntheticInput, syntheticInputFk)
+import Ribosome.Api.Input (feedKey, feedKeys)
 import Ribosome.Host.Effect.Rpc (Rpc)
 import Ribosome.Menu.Data.MenuConfig (MenuConfig, menuSync)
 import Ribosome.Menu.Data.MenuEvent (MenuEvent (PromptLoop))
 import Ribosome.Menu.Effect.Menu (MenuCore, waitPrompt)
-
-withPromptInput ::
-  Members [MenuCore, Rpc, Resource, Race, Async, Time t d] r =>
-  Maybe MilliSeconds ->
-  [Text] ->
-  Sem r a ->
-  Sem r a
-withPromptInput interval chrs =
-  withAsync_ (waitPrompt *> syntheticInput (convert <$> interval) chrs)
 
 data SyncMode =
   NoSync
@@ -62,11 +53,11 @@ withPromptInputSync chrs =
           consumeElem PromptLoop
           consumeElem PromptLoop
 
-withPromptInputFk ::
+withPromptInput ::
   Members [MenuCore, Rpc, Resource, Race, Async, Time t d] r =>
   Maybe MilliSeconds ->
   [Text] ->
   Sem r a ->
   Sem r a
-withPromptInputFk interval chrs =
-  withAsync_ (waitPrompt *> syntheticInputFk (convert <$> interval) chrs)
+withPromptInput interval chrs =
+  withAsync_ (waitPrompt *> feedKeys (convert <$> interval) chrs)

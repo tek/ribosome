@@ -25,7 +25,6 @@ module Ribosome.Menu (
   module Ribosome.Menu.Scratch,
   module Ribosome.Menu.Prompt.Data.Prompt,
   module Ribosome.Menu.Prompt.Data.PromptMode,
-  module Ribosome.Menu.Prompt.Run,
 ) where
 
 import Ribosome.Menu.Action (
@@ -139,5 +138,4 @@ import Ribosome.Menu.Loop (
   )
 import Ribosome.Menu.Prompt.Data.Prompt (Prompt (Prompt), PromptModes (..), PromptText (PromptText))
 import Ribosome.Menu.Prompt.Data.PromptMode (PromptMode (..))
-import Ribosome.Menu.Prompt.Run (withPromptInput)
 import Ribosome.Menu.Scratch (ensureSize, menuScratch, menuScratchSized)

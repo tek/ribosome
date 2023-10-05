@@ -11,7 +11,7 @@ import Ribosome.Host.Api.Data (vimGetWindows)
 import Ribosome.Host.Data.RpcError (RpcError)
 import Ribosome.Host.Effect.Rpc (Rpc)
 import Ribosome.Menu.Action (MenuWidget, menuOk, menuSuccess, menuUpdatePrompt)
-import Ribosome.Menu.App (MenuApp, withInsert, insert)
+import Ribosome.Menu.App (MenuApp, insert, withInsert)
 import Ribosome.Menu.Class.MenuState (MenuState, entries)
 import Ribosome.Menu.Combinators (sortEntries)
 import Ribosome.Menu.Data.CursorIndex (CursorIndex (CursorIndex))
@@ -25,7 +25,7 @@ import Ribosome.Menu.Interpreter.Menu (MenuLoopIO, NvimMenuIO, interpretSingleWi
 import Ribosome.Menu.Loop (menuLoop, windowMenuApp)
 import Ribosome.Menu.Prompt.Data.Prompt (onlyInsert, startInsert)
 import Ribosome.Menu.Prompt.Data.PromptMode (PromptMode (Insert))
-import Ribosome.Menu.Prompt.Run (SyncChar, nosync, withPromptInputSync, updating)
+import Ribosome.Menu.Prompt.Run (SyncChar, nosync, updating, withPromptInputSync)
 import Ribosome.Menu.Scratch (menuScratchSized)
 import Ribosome.Menu.Test.Util (mkItems)
 import Ribosome.Test.Embed (testEmbed_)
@@ -65,7 +65,7 @@ nativeTest opts chars =
 test_nativeBasic :: UnitTest
 test_nativeBasic =
   testEmbed_ do
-    result <- nativeTest opts ["i", "t", "e", "<esc>", "k", "<c-k>", "k", "<cr>"]
+    result <- nativeTest opts ["i", "t", "e", updating "<esc>", "k", "<c-k>", "k", "<cr>"]
     MenuResult.Success "item4" === result
   where
     opts =
