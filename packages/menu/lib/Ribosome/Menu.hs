@@ -41,6 +41,9 @@ import Ribosome.Menu.Action (
   menuToggle,
   menuToggleAll,
   menuUpdatePrompt,
+  menuUpdatePromptState,
+  menuAttachPrompt,
+  menuDetachPrompt,
   )
 import Ribosome.Menu.App (MenuApp, PromptApp, builtinHandlers, defaultHandlers, insert, promptControl, withInsert)
 import Ribosome.Menu.Data.Entry (Entries, Entry)

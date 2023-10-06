@@ -6,7 +6,7 @@ import qualified Log
 import qualified Streamly.Prelude as Stream
 import Streamly.Prelude (SerialT)
 
-import Ribosome.Data.Mapping (MappingLhs (MappingLhs), MappingSpec)
+import Ribosome.Data.Mapping (MappingLhs, MappingSpec)
 import Ribosome.Host.Data.RpcError (RpcError)
 import Ribosome.Menu.Action (MenuActionSem)
 import qualified Ribosome.Menu.App
@@ -68,15 +68,6 @@ menuAction = \case
     pure (PromptAction.Update new)
   MenuAction.Quit result ->
     pure (PromptAction.Quit result)
-
-mappingResult ::
-  Members [MenuCore, Reader PromptState, Log] r =>
-  MappingLhs ->
-  MenuAction result ->
-  Sem r (PromptAction (MenuResult result))
-mappingResult (MappingLhs trigger) action = do
-  Log.debug [exon|menu mapping #{trigger}: #{MenuAction.describe action}|]
-  menuAction action
 
 handleMapping ::
   Members [MenuCore, Reader PromptState, Log] r =>
