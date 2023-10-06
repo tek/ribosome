@@ -56,11 +56,11 @@ import Ribosome.Menu.App (
   promptControl,
   withInsert,
   )
-import Ribosome.Menu.Data.Entry (Entries, Entry)
+import Ribosome.Menu.Data.Entry (Entries, Entry (..))
 import Ribosome.Menu.Data.Filter
 import Ribosome.Menu.Data.MenuAction
 import Ribosome.Menu.Data.MenuEvent (MenuEvent (..), QueryEvent (..))
-import Ribosome.Menu.Data.MenuItem (Items, MenuItem (MenuItem), simpleMenuItem)
+import Ribosome.Menu.Data.MenuItem (Items, MenuItem (..), simpleMenuItem)
 import Ribosome.Menu.Data.MenuQuery
 import Ribosome.Menu.Data.MenuResult (MenuResult (..))
 import Ribosome.Menu.Data.State (Core, Modal, ModalState, Primary, modal)
@@ -127,7 +127,9 @@ import Ribosome.Menu.ItemLens (
   )
 import Ribosome.Menu.Items (
   deleteSelected,
+  modifyFocus,
   traverseSelection_,
+  updateEntry,
   withFocus,
   withFocus',
   withFocusItem,
@@ -149,6 +151,6 @@ import Ribosome.Menu.Loop (
   withUi,
   withUi',
   )
-import Ribosome.Menu.Prompt.Data.Prompt (Prompt (Prompt), PromptModes (..), PromptText (PromptText))
+import Ribosome.Menu.Prompt.Data.Prompt (Prompt (..), PromptModes (..), PromptState (..), PromptText (..))
 import Ribosome.Menu.Prompt.Data.PromptMode (PromptMode (..))
 import Ribosome.Menu.Scratch (ensureSize, menuScratch, menuScratchSized)
