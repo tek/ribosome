@@ -43,6 +43,9 @@ domain = #_AppMapping . _2
 modesLens :: Traversal' AppTrigger (NonEmpty MapMode)
 modesLens = domain . #modes
 
+controlLens :: Traversal' AppTrigger (Maybe PromptControl)
+controlLens = domain . #prompt
+
 modifyModes :: (NonEmpty MapMode -> NonEmpty MapMode) -> AppTrigger -> AppTrigger
 modifyModes f = modesLens %~ f
 
@@ -57,6 +60,12 @@ withInsert = withMode MapInsert
 
 insert :: AppTrigger -> AppTrigger
 insert = modesLens .~ [MapInsert]
+
+onlyPrompt :: AppTrigger -> AppTrigger
+onlyPrompt = controlLens ?~ PromptControlApp
+
+notPrompt :: AppTrigger -> AppTrigger
+notPrompt = controlLens ?~ PromptControlItems
 
 type MenuApp s r result =
   Map AppTrigger (MenuWidget s r result)

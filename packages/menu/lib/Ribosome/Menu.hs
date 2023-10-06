@@ -30,7 +30,9 @@ module Ribosome.Menu (
 import Ribosome.Menu.Action (
   MenuSem,
   MenuWidget,
+  menuAttachPrompt,
   menuCycle,
+  menuDetachPrompt,
   menuIgnore,
   menuOk,
   menuQuit,
@@ -42,10 +44,18 @@ import Ribosome.Menu.Action (
   menuToggleAll,
   menuUpdatePrompt,
   menuUpdatePromptState,
-  menuAttachPrompt,
-  menuDetachPrompt,
   )
-import Ribosome.Menu.App (MenuApp, PromptApp, builtinHandlers, defaultHandlers, insert, promptControl, withInsert)
+import Ribosome.Menu.App (
+  MenuApp,
+  PromptApp,
+  builtinHandlers,
+  defaultHandlers,
+  insert,
+  notPrompt,
+  onlyPrompt,
+  promptControl,
+  withInsert,
+  )
 import Ribosome.Menu.Data.Entry (Entries, Entry)
 import Ribosome.Menu.Data.Filter
 import Ribosome.Menu.Data.MenuAction
