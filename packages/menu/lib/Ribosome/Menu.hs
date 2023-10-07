@@ -128,6 +128,7 @@ import Ribosome.Menu.ItemLens (
 import Ribosome.Menu.Items (
   deleteSelected,
   modifyFocus,
+  modifyFocus',
   traverseSelection_,
   updateEntry,
   withFocus,

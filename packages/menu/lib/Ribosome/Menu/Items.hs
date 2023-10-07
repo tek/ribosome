@@ -197,14 +197,25 @@ updateEntry index newEntry = do
   entries %= overEntry index (const newEntry)
   items . ix (fromIntegral newEntry.index) .= newEntry.item
 
+modifyFocus' ::
+  ∀ s a r .
+  MenuState s =>
+  Member (Menu s) r =>
+  (Entry (Item s) -> (Entry (Item s), a)) ->
+  Sem r (Maybe a)
+modifyFocus' f =
+  menuState do
+    CursorIndex curs <- use #cursor
+    use focusEntry >>= traverse \ e -> do
+      let (new, result) = f e
+      updateEntry (fromIntegral curs) new
+      histories .= mempty
+      pure result
+
 modifyFocus ::
   MenuState s =>
   Member (Menu s) r =>
   (Entry (Item s) -> Entry (Item s)) ->
   Sem r ()
 modifyFocus f =
-  menuState do
-    CursorIndex curs <- use #cursor
-    use focusEntry >>= traverse_ \ e -> do
-      updateEntry (fromIntegral curs) (f e)
-      histories .= mempty
+  void $ modifyFocus' \ e -> (f e, ())
