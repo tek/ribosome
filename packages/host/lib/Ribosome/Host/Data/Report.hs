@@ -55,10 +55,14 @@ data Report where
     severity :: !Severity
   } -> Report
 
+instance Eq Report where
+  Report luser llog lseverity == Report ruser rlog rseverity =
+    luser == ruser && llog == rlog && lseverity == rseverity
+
 instance Show Report where
   showsPrec d Report {..} =
     showParen (d > 10)
-    [exon|LogReport { user = #{showsPrec 11 user}, log = #{showsPrec 11 log}, severity = #{showsPrec 11 severity} }|]
+    [exon|Report { user = #{showsPrec 11 user}, log = #{showsPrec 11 log}, severity = #{showsPrec 11 severity} }|]
 
 instance IsString Report where
   fromString (toText -> s) =
