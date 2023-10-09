@@ -71,8 +71,8 @@ import Ribosome.Host.Data.Execution (Execution (Async, Sync))
 import Ribosome.Host.Data.HostConfig (HostConfig (..), LogConfig (..), setStderr)
 import Ribosome.Host.Data.Range (Range (Range), RangeStyle (..))
 import Ribosome.Host.Data.Report (
-  LogReport (LogReport),
-  Report (Report),
+  LogReport (..),
+  Report (..),
   ReportContext (..),
   Reportable (toReport),
   basicReport,
