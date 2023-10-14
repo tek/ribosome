@@ -48,13 +48,18 @@ syntaxItemDetailCmd (SyntaxGroup grp) = \case
 
 syntaxItemCmd :: SyntaxItem -> [Text]
 syntaxItemCmd (SyntaxItem grp detail options params next contains contained) =
-  syntaxItemDetailCmd grp detail <> [
-    unwords (nubOrd (options <> containedOpt)),
-    joinEquals (withParam (coerce <$> contains) "contains" (withParam (coerce <$> next) "nextgroup" params))
-  ]
+  syntaxItemDetailCmd grp detail <> neSingle (unwords allOpt) <> neSingle allParams
   where
+    allOpt = nubOrd (options <> containedOpt)
+
+    allParams = joinEquals (withParam (coerce <$> contains) "contains" (withParam (coerce <$> next) "nextgroup" params))
+
+    neSingle t | Text.null t = []
+               | otherwise = [t]
+
     containedOpt =
       if contained then ["contained"] else []
+
     withParam val =
       if null val
       then const id
@@ -75,6 +80,10 @@ hilinkCmd (HiLink (SyntaxGroup grp) (SyntaxGroup target)) =
 syntaxCmds :: Syntax -> [[Text]]
 syntaxCmds (Syntax items highlights hilinks) =
   (syntaxItemCmd <$> items) <> (highlightCmd <$> highlights) <> (hilinkCmd <$> hilinks)
+
+syntaxCmdlines :: Syntax -> [Text]
+syntaxCmdlines s =
+  Text.unwords <$> syntaxCmds s
 
 catCmd ::
   MonadRpc m =>

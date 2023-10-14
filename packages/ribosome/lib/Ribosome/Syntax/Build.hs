@@ -24,9 +24,6 @@ compileItem i = do
     & #contains %~ (<> contains)
 
 -- |Compile 'Alg'.
---
--- @contains@ and @next@ are reset on the left in Chain and Contain because they need to propagate to the end of a
--- subtree (right).
 spin ::
   Members [Writer [SyntaxItem], Writer [(Map Text Text, [SyntaxGroup])], Writer [HiLink], Reader Building] r =>
   Alg ->
@@ -36,13 +33,20 @@ spin = \case
     compiled <- compileItem i
     [compiled ^. #group] <$ tell [compiled]
   Chain l r -> do
+    -- @r@ should only ever match when requested by @l@.
+    -- Set @contained@ to prevent @r@ from matching at top level.
+    -- @contains@ propagates to both since there's no obvious interpretation of @(l >- r) #> i@.
     next <- local (#contained .~ True) (spin r)
-    local ((#next .~ next) . (#contains .~ [])) (spin l)
+    -- Set @next@ on @l@ to force @r@ afterwards.
+    local (#next .~ next) (spin l)
   Choice l r ->
+    -- Everything propagates to both alternatives.
     spin l <> spin r
   Contain l r -> do
+    -- Set @contained@ to prevent @r@ from matching at top level.
     next <- local ((#contained .~ True) . (#next .~ [])) (spin r)
-    local ((#contains .~ next) . (#next .~ [])) (spin l)
+    -- Set @contains@ to allow @r@ in @l@.
+    local (#contains .~ next) (spin l)
   Prefix pref s ->
     local (#prefix <>~ pref) (spin s)
   Hi vals s -> do
