@@ -27,6 +27,9 @@ data Filter =
   }
   deriving stock (Eq, Show, Ord)
 
+instance Default Filter where
+  def = Filter def False
+
 filterWith :: FilterMethod -> Filter
 filterWith method =
   Filter {method, sortLength = False}
