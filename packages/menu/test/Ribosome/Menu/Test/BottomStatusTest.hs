@@ -9,7 +9,7 @@ import qualified Ribosome.Menu.Class.MenuMode as MenuMode
 import Ribosome.Menu.Class.MenuMode (MenuMode (cycleFilter, renderExtra, renderFilter))
 import qualified Ribosome.Menu.Class.MenuState as MenuState
 import Ribosome.Menu.Class.MenuState (MenuState (renderStatus))
-import Ribosome.Menu.Data.Filter (Filter (Fuzzy), basicMatcher)
+import Ribosome.Menu.Data.Filter (Filter, basicMatcher, fuzzy)
 import qualified Ribosome.Menu.Data.MenuResult as MenuResult
 import Ribosome.Menu.Data.State (Modal, modal)
 import Ribosome.Menu.Data.TestMenuConfig (confSet)
@@ -64,7 +64,7 @@ instance MenuState TestState where
 test_bottomStatus :: UnitTest
 test_bottomStatus =
   testSocketTmux do
-    result <- testStaticNvimMenu @() [] conf (TestState (modal (TestMode Fuzzy 0)) "empty") def defaultHandlers do
+    result <- testStaticNvimMenu @() [] conf (TestState (modal (TestMode fuzzy 0)) "empty") def defaultHandlers do
       status <- MenuUi.statusScratch
       assertEq ["message: empty"] . drop 1 =<< bufferContent (status ^. #buffer)
       awaitScreenshot False "menu-bottom-status" 0

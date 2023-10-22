@@ -12,7 +12,7 @@ import Ribosome.Data.ScratchState (ScratchState)
 import Ribosome.Host.Effect.Rpc (Rpc)
 import Ribosome.Menu.Action (menuFocusItem)
 import Ribosome.Menu.App (defaultHandlers)
-import Ribosome.Menu.Data.Filter (Filter (Substring))
+import Ribosome.Menu.Data.Filter (substring)
 import Ribosome.Menu.Data.MenuItem (simpleMenuItemLines)
 import Ribosome.Menu.Data.MenuResult (MenuResult (Success))
 import Ribosome.Menu.Data.State (modal)
@@ -99,7 +99,7 @@ bufferTarget3 =
 test_multiline :: UnitTest
 test_multiline =
   testEmbed_ do
-    r <- testError $ testStaticNvimMenu its def (modal Substring) (menuScratchSized 7 & #maxSize ?~ 7) maps do
+    r <- testError $ testStaticNvimMenu its def (modal substring) (menuScratchSized 7 & #maxSize ?~ 7) maps do
       items <- MenuUi.itemsScratch
       bufferTarget1 <-- bufferContent items.buffer
       6 <-- windowLine items.window
@@ -138,7 +138,7 @@ crampedTarget3 =
 test_multilineCramped :: UnitTest
 test_multilineCramped =
   testEmbed_ do
-    r <- testError $ testStaticNvimMenu its def (modal Substring) (menuScratchSized 2 & #maxSize ?~ 2) maps do
+    r <- testError $ testStaticNvimMenu its def (modal substring) (menuScratchSized 2 & #maxSize ?~ 2) maps do
       items <- MenuUi.itemsScratch
       crampedTarget1 <-- bufferContent items.buffer
       0 <-- windowLine items.window

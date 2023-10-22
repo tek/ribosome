@@ -12,7 +12,7 @@ import Ribosome.Menu.Data.CursorIndex (CursorIndex)
 import Ribosome.Menu.Data.CursorLine (CursorLine)
 import qualified Ribosome.Menu.Data.Entry as Entries
 import Ribosome.Menu.Data.Entry (Entries, Entry)
-import Ribosome.Menu.Data.Filter (Filter (Regex))
+import Ribosome.Menu.Data.Filter (Filter, regex)
 import Ribosome.Menu.Data.MenuAction (RenderAnchor (AnchorLine))
 import qualified Ribosome.Menu.Data.MenuItem
 import qualified Ribosome.Menu.Data.MenuView
@@ -575,7 +575,7 @@ targetStateFilter =
 test_sliceStateFilter :: UnitTest
 test_sliceStateFilter =
   runTest do
-    entsF <- interpretFilter $ menuFilter (TestMode Regex) "[0246]" (Refine ents)
+    entsF <- interpretFilter $ menuFilter (TestMode regex) "[0246]" (Refine ents)
     (newView, result) <- runState view0 $ updateMenuState AnchorLine entsF 2 6
     slice <- evalMaybe result
     target === newView
@@ -646,7 +646,7 @@ test_sliceStateFilterExcess :: UnitTest
 test_sliceStateFilterExcess =
   runTest do
     initialFilterExcess === renderEnts entsF0
-    entsF <- interpretFilter $ menuFilter (TestMode Regex) "[456]" (Refine entsF0)
+    entsF <- interpretFilter $ menuFilter (TestMode regex) "[456]" (Refine entsF0)
     (newView, result) <- runState view0 $ updateMenuState AnchorLine entsF 2 16
     slice <- evalMaybe result
     target === newView

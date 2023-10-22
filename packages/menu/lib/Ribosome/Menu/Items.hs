@@ -183,8 +183,15 @@ deleteSelected = do
 currentEntries ::
   MenuState s =>
   Member (Menu s) r =>
-  Sem r [Text]
+  Sem r [MenuItem (Item s)]
 currentEntries =
+  toListOf (sortedEntries . each . #item) <$> readState
+
+currentEntriesText ::
+  MenuState s =>
+  Member (Menu s) r =>
+  Sem r [Text]
+currentEntriesText =
   toListOf (sortedEntries . each . #item . #text) <$> readState
 
 updateEntry ::

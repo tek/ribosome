@@ -7,7 +7,7 @@ import Ribosome.Menu.Class.MenuMode (Matcher, MenuMode (cycleFilter, renderExtra
 import Ribosome.Menu.Data.MenuQuery (MenuQuery (MenuQuery))
 import Ribosome.Menu.Filters (matchAll, matchFuzzy, matchPrefix, matchRegex, matchSubstring)
 
-data Filter =
+data FilterMethod =
   Substring
   |
   Fuzzy
@@ -17,19 +17,42 @@ data Filter =
   Regex
   deriving stock (Eq, Show, Ord)
 
-instance Default Filter where
+instance Default FilterMethod where
   def = Fuzzy
+
+data Filter =
+  Filter {
+    method :: FilterMethod,
+    sortLength :: Bool
+  }
+  deriving stock (Eq, Show, Ord)
+
+filterWith :: FilterMethod -> Filter
+filterWith method =
+  Filter {method, sortLength = False}
+
+substring :: Filter
+substring = filterWith Substring
+
+fuzzy :: Filter
+fuzzy = filterWith Fuzzy
+
+prefix :: Filter
+prefix = filterWith Prefix
+
+regex :: Filter
+regex = filterWith Regex
 
 -- TODO this probably needs an error type that is displayed in the status window or echoed
 basicMatcher :: Filter -> MenuQuery -> Matcher i Text
 basicMatcher _ "" =
   matchAll
-basicMatcher f (MenuQuery query) =
-  case f of
+basicMatcher Filter {..} (MenuQuery query) =
+  case method of
     Substring ->
       matchSubstring query
     Fuzzy ->
-      matchFuzzy True (toString query)
+      matchFuzzy (not sortLength) (toString query)
     Prefix ->
       matchPrefix query
     Regex ->
@@ -37,17 +60,21 @@ basicMatcher f (MenuQuery query) =
 
 instance MenuMode i Filter where
 
-  cycleFilter = \case
-    Substring -> Fuzzy
-    Fuzzy -> Prefix
-    Prefix -> Regex
-    Regex -> Substring
+  cycleFilter Filter {..} =
+    Filter {method = newMethod, ..}
+    where
+      newMethod = case method of
+        Substring -> Fuzzy
+        Fuzzy -> Prefix
+        Prefix -> Regex
+        Regex -> Substring
 
-  renderFilter = \case
-    Substring -> "substring"
-    Fuzzy -> "fuzzy"
-    Prefix -> "prefix"
-    Regex -> "regex"
+  renderFilter Filter {method} =
+    case method of
+      Substring -> "substring"
+      Fuzzy -> "fuzzy"
+      Prefix -> "prefix"
+      Regex -> "regex"
 
   renderExtra _ _ =
     Nothing

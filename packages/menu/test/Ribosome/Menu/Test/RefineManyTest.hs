@@ -4,7 +4,7 @@ import qualified Data.List.NonEmpty as NonEmpty
 import Polysemy.Test (UnitTest)
 
 import Ribosome.Host.Test.Run (runTest)
-import Ribosome.Menu.Data.Filter (Filter (Substring))
+import Ribosome.Menu.Data.Filter (substring)
 import Ribosome.Menu.Data.MenuEvent (MenuEvent (Query), QueryEvent (Modal, Refined))
 import Ribosome.Menu.Data.MenuItem (MenuItem, simpleMenuItem)
 import Ribosome.Menu.Data.State (modal)
@@ -24,7 +24,7 @@ items factor =
 test_refineMany :: UnitTest
 test_refineMany = do
   runTest do
-    testError $ testStaticMenu (items factor) def (modal Substring) mempty do
+    testError $ testStaticMenu (items factor) def (modal substring) mempty do
       itemsDone "initial"
       sendPrompt (Prompt 1 Insert "1")
       waitEvent "1" (Query Refined)
@@ -48,7 +48,7 @@ test_refineMany = do
 test_fastPromptAcc :: UnitTest
 test_fastPromptAcc = do
   runTest do
-    testError $ testStaticMenu (items factor) def (modal Substring) mempty do
+    testError $ testStaticMenu (items factor) def (modal substring) mempty do
       itemsDone "initial"
       sendPrompt (Prompt 1 Insert "1")
       sendPrompt (Prompt 2 Insert "12")

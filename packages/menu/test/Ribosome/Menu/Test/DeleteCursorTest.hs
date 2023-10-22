@@ -6,21 +6,21 @@ import Ribosome.Api.Buffer (bufferContent)
 import Ribosome.Api.Window (windowLine)
 import qualified Ribosome.Data.ScratchState
 import Ribosome.Menu.Action (menuDelete)
-import Ribosome.Menu.Data.Filter (Filter (Fuzzy))
+import Ribosome.Menu.App (defaultHandlers)
+import Ribosome.Menu.Data.Filter (fuzzy)
 import Ribosome.Menu.Data.State (modal)
 import qualified Ribosome.Menu.Effect.MenuTest as MenuTest
 import Ribosome.Menu.Effect.MenuTest (sendMappingRender)
 import qualified Ribosome.Menu.Effect.MenuUi as MenuUi
-import Ribosome.Menu.App (defaultHandlers)
-import Ribosome.Menu.Test.Run (testStaticNvimMenu)
 import Ribosome.Menu.Scratch (menuScratch)
+import Ribosome.Menu.Test.Run (testStaticNvimMenu)
 import Ribosome.Menu.Test.Util (staticMenuItems)
 import Ribosome.Test.Embed (testEmbed_)
 
 test_deleteCursor :: UnitTest
 test_deleteCursor =
   testEmbed_ do
-    testStaticNvimMenu its def (modal Fuzzy) (menuScratch & #maxSize ?~ 4) maps do
+    testStaticNvimMenu its def (modal fuzzy) (menuScratch & #maxSize ?~ 4) maps do
       scr <- MenuUi.itemsScratch
       sendMappingRender "j"
       sendMappingRender "d"

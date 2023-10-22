@@ -11,7 +11,7 @@ import Ribosome.Menu.Class.MenuState (MenuState)
 import Ribosome.Menu.Effect.Menu (Menu)
 import qualified Ribosome.Menu.Effect.MenuUi as MenuUi
 import Ribosome.Menu.Effect.MenuUi (MenuUi)
-import Ribosome.Menu.Items (currentEntries)
+import Ribosome.Menu.Items (currentEntriesText)
 import Ribosome.Test.Wait (assertWait, (<--))
 
 -- | Wait until the filtered items satisfy the supplied assertion.
@@ -23,7 +23,7 @@ assertCurrent ::
   Sem r a
 assertCurrent target =
   withFrozenCallStack do
-    assertWait currentEntries target
+    assertWait currentEntriesText target
 
 assertItemCount ::
   MenuState s =>

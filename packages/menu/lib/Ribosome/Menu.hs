@@ -57,7 +57,7 @@ import Ribosome.Menu.App (
   withInsert,
   )
 import Ribosome.Menu.Data.Entry (Entries, Entry (..))
-import Ribosome.Menu.Data.Filter
+import Ribosome.Menu.Data.Filter (Filter (..), FilterMethod (..), fuzzy, prefix, regex, substring)
 import Ribosome.Menu.Data.MenuAction
 import Ribosome.Menu.Data.MenuEvent (MenuEvent (..), QueryEvent (..))
 import Ribosome.Menu.Data.MenuItem (Items, MenuItem (..), simpleMenuItem)

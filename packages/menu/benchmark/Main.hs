@@ -36,7 +36,7 @@ import Ribosome.Menu.Interpreter.Menu (MS (MS), interpretMenuDeps, interpretMenu
 import Ribosome.Menu.Interpreter.MenuFilter (interpretFilter)
 import Ribosome.Menu.Interpreter.MenuStream (interpretMenuStream)
 import Ribosome.Menu.Interpreter.MenuUi (interceptMenuUiPromptEvents, interpretMenuUiNvimNull)
-import Ribosome.Menu.Items (currentEntries)
+import Ribosome.Menu.Items (currentEntriesText)
 import Ribosome.Menu.Loop (addMenuUi, lookupMapping, menuLoop', runMenu)
 import Ribosome.Menu.App (defaultHandlers)
 import Ribosome.Menu.Prompt.Data.Prompt (Prompt (Prompt))
@@ -140,7 +140,7 @@ menuBench files =
         consumeElem (Query Refined)
         publish (PromptEvent.Quit Nothing)
         gate
-        len <- length <$> menuEngine @(Menu _) currentEntries
+        len <- length <$> menuEngine @(Menu _) currentEntriesText
         if len == 1401
         then unit
         else Base.throw (userError [exon|length is #{show len}|])

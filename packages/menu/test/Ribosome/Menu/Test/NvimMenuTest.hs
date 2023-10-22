@@ -11,21 +11,21 @@ import Ribosome.Menu.App (MenuApp, defaultHandlers)
 import Ribosome.Menu.Class.MenuState (MenuState, entries)
 import Ribosome.Menu.Combinators (sortEntries)
 import Ribosome.Menu.Data.CursorIndex (CursorIndex (CursorIndex))
-import Ribosome.Menu.Data.Filter (Filter (Fuzzy))
+import Ribosome.Menu.Data.Filter (fuzzy)
 import Ribosome.Menu.Data.MenuEvent (MenuEvent (Rendered))
 import qualified Ribosome.Menu.Data.MenuResult as MenuResult
-import Ribosome.Menu.Data.State (Modal, modal)
+import Ribosome.Menu.Data.State (modal)
 import Ribosome.Menu.Effect.Menu (readCursor, readState)
 import qualified Ribosome.Menu.Effect.MenuTest as MenuTest
 import Ribosome.Menu.Effect.MenuTest (sendMapping, sendMappingRender, waitEvent)
 import Ribosome.Menu.Interpreter.Menu (promptInput)
 import Ribosome.Menu.Loop (windowMenu)
-import Ribosome.Menu.Test.Run (testStaticNvimMenu)
 import Ribosome.Menu.Prompt.Data.Prompt (Prompt (Prompt), startInsert)
 import Ribosome.Menu.Prompt.Data.PromptEvent (PromptEvent (Mapping, Update))
 import qualified Ribosome.Menu.Prompt.Data.PromptMode as PromptMode
 import Ribosome.Menu.Scratch (menuScratch, menuScratchSized)
 import Ribosome.Menu.Test.DeleteCursorTest (test_deleteCursor)
+import Ribosome.Menu.Test.Run (testStaticNvimMenu)
 import Ribosome.Menu.Test.Util (mkItems, staticMenuItems)
 import Ribosome.Test.Embed (testEmbed_)
 
@@ -63,7 +63,7 @@ app =
 test_pureInput :: UnitTest
 test_pureInput =
   testEmbed_ $ promptInput pureEvents do
-    result <- windowMenu (mkItems items) (modal Fuzzy) opts app
+    result <- windowMenu (mkItems items) (modal fuzzy) opts app
     MenuResult.Success "item4" === result
   where
     opts =
@@ -74,7 +74,7 @@ test_pureInput =
 test_quit :: UnitTest
 test_quit =
   testEmbed_ do
-    result <- testStaticNvimMenu @() @(Modal Filter Text) [] def (modal Fuzzy) (menuScratchSized 4) defaultHandlers do
+    result <- testStaticNvimMenu @() [] def (modal @Text fuzzy) (menuScratchSized 4) defaultHandlers do
       sendMapping "<esc>"
       MenuTest.result
     MenuResult.Aborted === result
@@ -83,7 +83,7 @@ test_quit =
 test_scrollUp :: UnitTest
 test_scrollUp =
   testEmbed_ do
-    MenuResult.Success a <- testStaticNvimMenu its def (modal Fuzzy) (menuScratch & #maxSize ?~ 4) maps do
+    MenuResult.Success a <- testStaticNvimMenu its def (modal fuzzy) (menuScratch & #maxSize ?~ 4) maps do
       waitEvent "initial render" Rendered
       traverse_ sendMappingRender (replicate 20 "k")
       sendMapping "<cr>"

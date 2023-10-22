@@ -15,7 +15,7 @@ import Ribosome.Menu.App (MenuApp, insert, withInsert)
 import Ribosome.Menu.Class.MenuState (MenuState, entries)
 import Ribosome.Menu.Combinators (sortEntries)
 import Ribosome.Menu.Data.CursorIndex (CursorIndex (CursorIndex))
-import Ribosome.Menu.Data.Filter (Filter (Fuzzy))
+import Ribosome.Menu.Data.Filter (fuzzy)
 import qualified Ribosome.Menu.Data.MenuResult as MenuResult
 import Ribosome.Menu.Data.MenuResult (MenuResult)
 import Ribosome.Menu.Data.State (modal)
@@ -58,7 +58,7 @@ nativeTest ::
   [SyncChar] ->
   Sem r (MenuResult Text)
 nativeTest opts chars =
-  interpretSingleWindowMenu $ windowMenuApp (mkItems items) (modal Fuzzy) opts app \ papp ->
+  interpretSingleWindowMenu $ windowMenuApp (mkItems items) (modal fuzzy) opts app \ papp ->
     withPromptInputSync chars do
       timeoutStop "timed out" (Seconds 3) (menuLoop papp)
 

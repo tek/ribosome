@@ -35,6 +35,7 @@ data Modal mode i =
 type ModalState i = Modal Filter i
 
 modal ::
+  ∀ i mode .
   mode ->
   Modal mode i
 modal =
