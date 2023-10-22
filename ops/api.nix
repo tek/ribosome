@@ -57,14 +57,14 @@ with lib;
 
     outputs.apps.boot = {
       type = "app";
-      program = "${import ./boot.nix {inherit self config; }}";
+      program = "${import ./boot.nix { inherit self config; }}";
     };
 
     outputs.packages.plugin = let
 
       name = config.exe;
 
-      dir = config.outputs.packages.${name};
+      dir = config.outputs.packages.${name}.min;
 
       plugin = config.pkgs.writeTextFile {
         inherit name;
