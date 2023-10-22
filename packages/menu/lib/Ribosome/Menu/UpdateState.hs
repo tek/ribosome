@@ -103,7 +103,7 @@ insertItems new = do
   filterMode <- use MenuState.mode
   query <- use MenuState.query
   ents <- menuFilter filterMode query (Initial newI)
-  entries %= IntMap.unionWith (<>) ents
+  entries %= IntMap.unionWith (flip (<>)) ents
   let newEntriesCount = entriesLength ents
   entryCount += newEntriesCount
   histories .= mempty

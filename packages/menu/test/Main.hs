@@ -1,11 +1,11 @@
 module Main where
 
 import Polysemy.Test (unitTest, unitTestTimes)
+import Ribosome.Menu.Test.BasicTest (test_basic)
 import Ribosome.Menu.Test.BottomStatusTest (test_bottomStatus)
 import Ribosome.Menu.Test.CursorClampTest (test_clampCursor)
 import Ribosome.Menu.Test.EditTest (test_editMode)
-import Ribosome.Menu.Test.FilterTest (test_filterFuzzy)
-import Ribosome.Menu.Test.BasicTest (test_basic)
+import Ribosome.Menu.Test.FilterTest (test_filterFuzzy, test_filterNoSort)
 import Ribosome.Menu.Test.MultilineTest (test_multiline, test_multilineCramped)
 import Ribosome.Menu.Test.NativeInputTest (test_nativeInput)
 import Ribosome.Menu.Test.NoMatchTest (test_filterNoMatch)
@@ -22,6 +22,7 @@ tests =
     test_nativeInput,
     requireX (unitTestTimes 3 "extra bottom status message") test_bottomStatus,
     unitTest "fuzzy filter" test_filterFuzzy,
+    unitTest "fuzzy filter without sorting on empty query" test_filterNoSort,
     test_slice,
     unitTest "multiline menu entries" test_multiline,
     unitTest "multiline with little space" test_multilineCramped,
