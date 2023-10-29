@@ -25,20 +25,28 @@ import Ribosome.Menu.Data.InputParams (
   )
 import Ribosome.Menu.Prompt.Data.Prompt (PromptControl (PromptControlApp, PromptControlItems), PromptState)
 
+newtype TriggerPrio =
+  TriggerPrio Int
+  deriving stock (Eq, Show, Generic)
+  deriving newtype (Num, Real, Enum, Integral, Ord)
+
 data AppTrigger =
-  AppMapping MappingLhs InputDomain
+  AppMapping TriggerPrio MappingLhs InputDomain
   |
-  AppPrompt PromptControl
+  AppPrompt TriggerPrio PromptControl
   deriving stock (Eq, Show, Ord, Generic)
 
+userPrioValue :: TriggerPrio
+userPrioValue = 5
+
 instance IsString AppTrigger where
-  fromString key = AppMapping (fromString key) (InputDomain {modes = [MapNormal], prompt = Nothing})
+  fromString key = AppMapping userPrioValue (fromString key) (InputDomain {modes = [MapNormal], prompt = Nothing})
 
 type InputDispatch s r result =
   InputParams -> Maybe (MenuWidget s r result)
 
 domain :: Traversal' AppTrigger InputDomain
-domain = #_AppMapping . _2
+domain = #_AppMapping . _3
 
 modesLens :: Traversal' AppTrigger (NonEmpty MapMode)
 modesLens = domain . #modes
@@ -67,13 +75,24 @@ onlyPrompt = controlLens ?~ PromptControlApp
 notPrompt :: AppTrigger -> AppTrigger
 notPrompt = controlLens ?~ PromptControlItems
 
+triggerPrio :: TriggerPrio -> AppTrigger -> AppTrigger
+triggerPrio new = \case
+  AppMapping _ lhs dom -> AppMapping new lhs dom
+  AppPrompt _ ctrl -> AppPrompt new ctrl
+
+builtinPrio :: AppTrigger -> AppTrigger
+builtinPrio = triggerPrio 0
+
+userPrio :: AppTrigger -> AppTrigger
+userPrio = triggerPrio userPrioValue
+
 type MenuApp s r result =
   Map AppTrigger (MenuWidget s r result)
 
-inputMatrix :: AppTrigger -> MenuWidget s r result -> [(InputParams, MenuWidget s r result)]
-inputMatrix (AppMapping lhs InputDomain {..}) widget =
+inputMatrix :: AppTrigger -> MenuWidget s r result -> [(InputParams, (TriggerPrio, MenuWidget s r result))]
+inputMatrix (AppMapping prio lhs InputDomain {..}) widget =
   [
-    (InputParams {trigger = InputMapping lhs, mode = InputMode {mode = m, prompt = p}}, widget)
+    (InputParams {trigger = InputMapping lhs, mode = InputMode {mode = m, prompt = p}}, (prio, widget))
     | m <- toList modes
     , p <- controls prompt
   ]
@@ -81,9 +100,9 @@ inputMatrix (AppMapping lhs InputDomain {..}) widget =
     controls = \case
       Just p -> [p]
       Nothing -> [PromptControlApp, PromptControlItems]
-inputMatrix (AppPrompt control) widget =
+inputMatrix (AppPrompt prio control) widget =
   [
-    (InputParams {trigger = InputPrompt, mode = InputMode {mode = m, prompt = control}}, widget)
+    (InputParams {trigger = InputPrompt, mode = InputMode {mode = m, prompt = control}}, (prio, widget))
     | m <- [MapNormal, MapInsert]
   ]
 
@@ -91,27 +110,30 @@ appDispatch :: MenuApp s r result -> InputDispatch s r result
 appDispatch app =
   flip Map.lookup matrix
   where
-    matrix = Map.fromList (uncurry inputMatrix =<< Map.toList app)
+    matrix = snd <$> Map.fromListWith choose (uncurry inputMatrix =<< Map.toList app)
+
+    choose l@(prioL, _) r@(prioR, _) | prioL > prioR = l
+                                     | otherwise = r
 
 appMappings :: MenuApp s r result -> [MappingSpec]
 appMappings app =
   flip mapMaybe (Map.keys app) \case
-    AppMapping lhs InputDomain {modes} -> Just (MappingSpec lhs modes)
-    AppPrompt _ -> Nothing
+    AppMapping _ lhs InputDomain {modes} -> Just (MappingSpec lhs modes)
+    AppPrompt _ _ -> Nothing
 
 builtinHandlers :: MenuApp s r result
 builtinHandlers =
-  [
+  Map.mapKeys builtinPrio [
     (withInsert "<esc>", menuEsc),
     (withInsert "<c-c>", menuQuit),
-    (AppPrompt PromptControlItems, menuOk)
+    (AppPrompt 0 PromptControlItems, menuOk)
   ]
 
 defaultHandlers ::
   MenuState s =>
   MenuApp s r result
 defaultHandlers =
-  [
+  Map.mapKeys builtinPrio [
     ("k", menuUp),
     (withInsert "<c-k>", menuUp),
     ("j", menuDown),
@@ -123,7 +145,7 @@ defaultHandlers =
 
 promptControl :: MenuWidget s r result -> MenuApp s r result -> MenuApp s r result
 promptControl widget =
-  Map.insert (AppPrompt PromptControlApp) widget
+  Map.insert (AppPrompt userPrioValue PromptControlApp) widget
 
 data PromptApp s r result =
   PromptApp {

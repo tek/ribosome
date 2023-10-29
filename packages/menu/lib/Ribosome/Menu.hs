@@ -54,6 +54,7 @@ import Ribosome.Menu.App (
   notPrompt,
   onlyPrompt,
   promptControl,
+  triggerPrio,
   withInsert,
   )
 import Ribosome.Menu.Data.Entry (Entries, Entry (..))

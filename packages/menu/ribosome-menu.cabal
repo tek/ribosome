@@ -172,6 +172,7 @@ test-suite ribosome-menu-test
       Ribosome.Menu.Test.NvimMenuTest
       Ribosome.Menu.Test.RefineManyTest
       Ribosome.Menu.Test.SliceTest
+      Ribosome.Menu.Test.TriggerPrioTest
       Ribosome.Menu.Test.Util
   hs-source-dirs:
       test

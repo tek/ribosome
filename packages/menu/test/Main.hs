@@ -11,6 +11,7 @@ import Ribosome.Menu.Test.NativeInputTest (test_nativeInput)
 import Ribosome.Menu.Test.NoMatchTest (test_filterNoMatch)
 import Ribosome.Menu.Test.NvimMenuTest (test_nvimMenu)
 import Ribosome.Menu.Test.SliceTest (test_slice)
+import Ribosome.Menu.Test.TriggerPrioTest (test_triggerPrio)
 import Ribosome.Test.Skip (requireX)
 import Test.Tasty (TestTree, defaultMain, testGroup)
 
@@ -28,7 +29,8 @@ tests =
     unitTest "multiline with little space" test_multilineCramped,
     unitTest "query with no match" test_filterNoMatch,
     unitTest "clamp cursor after refining" test_clampCursor,
-    unitTest "use the menu as a kv editor" test_editMode
+    unitTest "use the menu as a kv editor" test_editMode,
+    unitTest "trigger priority" test_triggerPrio
   ]
 
 main :: IO ()

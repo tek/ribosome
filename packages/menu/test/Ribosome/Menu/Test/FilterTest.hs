@@ -6,6 +6,7 @@ import Zeugma (runTest)
 
 import Ribosome.Menu.Combinators (sortEntriesText)
 import Ribosome.Menu.Data.Filter (fuzzy)
+import qualified Ribosome.Menu.Data.MenuItem
 import Ribosome.Menu.Data.MenuItem (Items, simpleItems, simpleMenuItem)
 import Ribosome.Menu.Data.State (modal)
 import Ribosome.Menu.Effect.MenuFilter (FilterJob (Initial), menuFilter)
@@ -38,8 +39,7 @@ test_filterNoSort =
     interpretFilter $ interpretMenuUiNvimNull $ interpretMenuDeps $ interpretMenus do
       testError $ withUi () $ menuParams (Stream.fromList noSortItems) (modal fuzzy) do
         assertWait currentEntries (assertEq (length noSortItems) . length)
-        dbgs =<< currentEntriesText
-        unit
+        assertEq ((.text) <$> noSortItems) =<< currentEntriesText
   where
     noSortItems = item <$> [1 :: Int .. 120]
 

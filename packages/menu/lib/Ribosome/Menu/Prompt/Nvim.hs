@@ -1,3 +1,4 @@
+-- | Description: Legacy prompt implementation using @echo@
 module Ribosome.Menu.Prompt.Nvim where
 
 import qualified Data.Text as Text (singleton, splitAt, uncons)
