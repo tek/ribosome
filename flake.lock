@@ -6,11 +6,11 @@
         "prelate": "prelate"
       },
       "locked": {
-        "lastModified": 1695127603,
-        "narHash": "sha256-RebUws5e8twWkBaeaXRbHdR02+Q3FEGeZ4PBqttD/z0=",
+        "lastModified": 1698782950,
+        "narHash": "sha256-XQjAO74MBYB8W0XfFRO4QjWaF4teXAEzIOy+ektTLZ0=",
         "ref": "refs/heads/main",
-        "rev": "402a6d54ae08089b2295ee5573d9ceeba5bb401e",
-        "revCount": 174,
+        "rev": "0928bb804e5bb6de2471eebbfa6317d0ea107cdb",
+        "revCount": 175,
         "type": "git",
         "url": "https://git.tryp.io/tek/chiasma"
       },
@@ -191,15 +191,14 @@
     },
     "hix_9": {
       "inputs": {
-        "nixpkgs": "nixpkgs_9",
-        "thax": "thax_9"
+        "nixpkgs": "nixpkgs_9"
       },
       "locked": {
-        "lastModified": 1695738635,
-        "narHash": "sha256-ohNqVLU6+fEmMUdsT3snd9Ap3rW68P232VXrTihRfdg=",
+        "lastModified": 1698691616,
+        "narHash": "sha256-nlZlxp6UQju+c5J+mvj4Orz+Xmew5A7lJY4HhMd/n3M=",
         "ref": "refs/heads/main",
-        "rev": "7c012b3800929bdabc2ac12c1da734917ab7779a",
-        "revCount": 573,
+        "rev": "b0c5fd50d00da7b04b4d70008c94ba494aad7286",
+        "revCount": 610,
         "type": "git",
         "url": "https://git.tryp.io/tek/hix"
       },
@@ -578,21 +577,6 @@
       }
     },
     "thax_8": {
-      "locked": {
-        "lastModified": 1691091387,
-        "narHash": "sha256-i1dc/XqsIQizZ09o2ltX10zhV/3LCc0ZUqsS7enyN+g=",
-        "owner": "tek",
-        "repo": "thax",
-        "rev": "10fa7482d171739414fc0d829005b4055799e4c6",
-        "type": "github"
-      },
-      "original": {
-        "owner": "tek",
-        "repo": "thax",
-        "type": "github"
-      }
-    },
-    "thax_9": {
       "locked": {
         "lastModified": 1691091387,
         "narHash": "sha256-i1dc/XqsIQizZ09o2ltX10zhV/3LCc0ZUqsS7enyN+g=",
