@@ -234,7 +234,7 @@ instance (
       (opts, args)
       where
         opts =
-          paramOpt @special @state @a <> optsAfter
+          optsAfter <> paramOpt @special @state @a
         args =
           maybeToList (paramArg @special @state @a) <> argsAfter
         (optsAfter, argsAfter) =
