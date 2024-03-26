@@ -42,6 +42,7 @@ import Ribosome.Effect.Settings (Settings)
 import Ribosome.Host.Api.Data (
   Buffer,
   Window,
+  bufferSetOption,
   nvimBufAttach,
   nvimCommand,
   nvimFeedkeys,
@@ -343,6 +344,7 @@ withPrompt ::
 withPrompt mappings geo use =
   interpretEventsChan @PromptEvent $ bracket acquire release \ s -> do
     windowSetOption s.window "cursorline" False
+    bufferSetOption s.buffer "textwidth" (0 :: Int64)
     withBufferPromptEvents s.buffer do
       insertAt @1 (use s)
   where

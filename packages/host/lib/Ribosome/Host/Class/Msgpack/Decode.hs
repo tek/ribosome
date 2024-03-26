@@ -13,7 +13,20 @@ import Generics.SOP.Type.Metadata (
   DatatypeInfo (ADT, Newtype),
   FieldInfo (FieldInfo),
   )
-import Path (Abs, Dir, File, Path, Rel, parseAbsDir, parseAbsFile, parseRelDir, parseRelFile, SomeBase, parseSomeDir, parseSomeFile)
+import Path (
+  Abs,
+  Dir,
+  File,
+  Path,
+  Rel,
+  SomeBase,
+  parseAbsDir,
+  parseAbsFile,
+  parseRelDir,
+  parseRelFile,
+  parseSomeDir,
+  parseSomeFile,
+  )
 import Time (MicroSeconds, MilliSeconds, NanoSeconds, Seconds (Seconds))
 
 import Ribosome.Host.Class.Msgpack.Error (
