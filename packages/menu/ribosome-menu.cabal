@@ -111,6 +111,7 @@ library
       GADTs
       LambdaCase
       LiberalTypeSynonyms
+      MonadComprehensions
       MultiWayIf
       OverloadedLabels
       OverloadedLists
@@ -191,6 +192,7 @@ test-suite ribosome-menu-test
       GADTs
       LambdaCase
       LiberalTypeSynonyms
+      MonadComprehensions
       MultiWayIf
       OverloadedLabels
       OverloadedLists
@@ -258,6 +260,7 @@ benchmark ribosome-menu-bench
       GADTs
       LambdaCase
       LiberalTypeSynonyms
+      MonadComprehensions
       MultiWayIf
       OverloadedLabels
       OverloadedLists
