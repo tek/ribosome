@@ -24,8 +24,7 @@ jobs:
           signingKey: '${{ secrets.CACHIX_SIGNING_KEY }}'
       - name: 'build'
         run: |
-          nix bundle -o static-binary --bundler github:ralismark/nix-appimage .#static
-          mv static-binary test-project
+          cp $(nix run .#appimage) test-project
       - uses: 'marvinpinto/action-automatic-releases@latest'
         name: 'create release'
         with:

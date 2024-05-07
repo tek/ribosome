@@ -53,8 +53,7 @@ jobs:
             access-tokens = github.com=${{ secrets.GITHUB_TOKEN }}#{cachixConf (fromMaybe cachixTek cachix)}#{foldMap (cachixStep . (.cachixName)) cachix}
       - name: 'build'
         run: |
-          nix bundle -o static-binary --bundler github:ralismark/nix-appimage .#static
-          mv static-binary #{name}
+          cp $(nix run .#appimage) #{name}
       - uses: 'marvinpinto/action-automatic-releases@latest'
         name: 'create release'
         with:
