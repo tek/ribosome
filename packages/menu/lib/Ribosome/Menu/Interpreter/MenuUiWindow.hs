@@ -219,6 +219,7 @@ itemsOptions (row, col, height, width) options =
   ensureName menuItemsScratchId options
   & #float <|>~ Just floatOptions
   & #maxSize <|>~ Just (height - 5)
+  & #filetype .~ Just "ribosome-menu-items"
   where
     floatOptions =
       def
@@ -235,6 +236,7 @@ statusOptions (row, col, _, width) options =
   ensureName "ribosome-menu-status" options
   & #float <|>~ Just floatOptions
   & #size <|>~ Just 1
+  & #filetype .~ Just "ribosome-menu-status"
   where
     floatOptions =
       def
@@ -258,6 +260,7 @@ promptOptions (row, col, _, width) custom =
   & #size .~ Just 1
   & #maxSize .~ Just 1
   & #float .~ Just floatOptions
+  & #filetype .~ Just "ribosome-menu-prompt"
   where
     floatOptions =
       def
