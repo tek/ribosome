@@ -53,7 +53,7 @@ import Ribosome.Host.Api.Data (
   windowSetOption,
   )
 import qualified Ribosome.Host.Api.Event as Event
-import Ribosome.Host.Api.Event (pattern BufLinesEvent)
+import Ribosome.Host.Api.Event (pattern BufDetachEvent, pattern BufLinesEvent)
 import Ribosome.Host.Class.Msgpack.Decode (pattern Msgpack)
 import Ribosome.Host.Class.Msgpack.Map (msgpackMap)
 import Ribosome.Host.Data.Event (Event (Event), EventName)
@@ -173,20 +173,28 @@ updatePrompt promptScratch (Prompt (CursorCol cursor) mode (PromptText text)) = 
 
 promptBufferEvents ::
   Members [Rpc !! RpcError, EventConsumer Event, Events PromptEvent, Lock @@ "prompt", Log, Gate] r =>
+  Buffer ->
+  [Buffer] ->
   Sem r ()
-promptBufferEvents =
+promptBufferEvents promptBuffer menuBuffers =
   subscribe @Event do
     Log.debug "Subscribed to buffer updates"
     signal
-    forever do
+    fix \ loop ->
       consume >>= \case
-        BufLinesEvent {linedata = [text]} ->
-          publishPrompt text
+        BufDetachEvent {detachedBuffer}
+          | any (detachedBuffer ==) menuBuffers -> do
+            Log.debug "A menu buffer was closed externally, quitting menu"
+            publish (PromptEvent.Quit (Just "A menu buffer was closed"))
+        BufLinesEvent {buffer, linedata = [text]}
+          | buffer == promptBuffer ->
+            publishPrompt text *> loop
         MenuMapping (MappingId lhs) -> do
           Log.debug [exon|MenuMapping: #{lhs}|]
           publish (PromptEvent.Mapping (MappingLhs lhs))
+          loop
         _ ->
-          unit
+          loop
 
 promptMappings ::
   [MappingSpec] ->
@@ -288,8 +296,18 @@ closeFloats ::
 closeFloats = do
   traverse_ closeWindow =<< filterM isFloat =<< vimGetWindows
 
+-- | Run an action during menu cleanup, logging and discarding errors.
+releaseError ::
+  Show err =>
+  Members [Resumable err eff, Log] r =>
+  Text ->
+  Sem (eff : r) () ->
+  Sem r ()
+releaseError context =
+  resuming \ e -> Log.debug [exon|Menu release error: #{context}: #{show e}|]
+
 withMainScratch ::
-  Members [Settings !! SettingError, Rpc, Rpc !! RpcError, Scratch, Stop RpcError, Log, Resource, Embed IO] r =>
+  Members [Settings !! SettingError, Rpc, Rpc !! RpcError, Scratch !! RpcError, Scratch, Stop RpcError, Log, Resource, Embed IO] r =>
   ScratchOptions ->
   Maybe ScratchOptions ->
   ((ScratchState, Maybe ScratchState) -> Sem (AtomicState MenuView : r) a) ->
@@ -307,8 +325,8 @@ withMainScratch itemsOpt statusOpt use = do
         pure s
       pure (itemScr, statusScr)
     release (it, stMay) = do
-      Scratch.delete (it.id)
-      for_ stMay \ s -> Scratch.delete (s.id)
+      releaseError "delete items scratch" (Scratch.delete it.id)
+      for_ stMay \ s -> releaseError "delete status scratch" (Scratch.delete s.id)
     withItemsSyntax =
       #syntax <>~ [menuSyntax]
     withStatusSyntax =
@@ -328,34 +346,37 @@ flushInput = do
 withBufferPromptEvents ::
   Members [EventConsumer PromptEvent, Events PromptEvent, Lock @@ "prompt"] r =>
   Members [Rpc, Rpc !! RpcError, EventConsumer Event, Log, Gates, Resource, Race, Async] r =>
+  [Buffer] ->
   Buffer ->
   Sem (Consume PromptEvent : r) a ->
   Sem r a
-withBufferPromptEvents buf sem =
+withBufferPromptEvents extraBuffers buf sem =
   subscribe @PromptEvent do
-    void (nvimBufAttach buf False mempty)
-    withAsyncGated_ promptBufferEvents do
+    let allBuffers = buf : extraBuffers
+    for_ allBuffers \ b -> void (nvimBufAttach b False mempty)
+    withAsyncGated_ (promptBufferEvents buf allBuffers) do
       sem
 
 withPrompt ::
   Members [EventConsumer Event, Lock @@ "prompt"] r =>
-  Members [Scratch, Rpc, Rpc !! RpcError, Stop RpcError, Log, Resource, Gates, Race, Async, Embed IO] r =>
+  Members [Scratch !! RpcError, Scratch, Rpc, Rpc !! RpcError, Stop RpcError, Log, Resource, Gates, Race, Async, Embed IO] r =>
+  [Buffer] ->
   [MappingSpec] ->
   (Int, Int, Int, Int) ->
   (ScratchState -> Sem (Consume PromptEvent : r) a) ->
   Sem r a
-withPrompt mappings geo use =
+withPrompt extraBuffers mappings geo use =
   interpretEventsChan @PromptEvent $ bracket acquire release \ s -> do
     windowSetOption s.window "cursorline" False
     bufferSetOption s.buffer "textwidth" (0 :: Int64)
-    withBufferPromptEvents s.buffer do
+    withBufferPromptEvents extraBuffers s.buffer do
       insertAt @1 (use s)
   where
     acquire =
       Scratch.show @_ @[] [] (promptOptions geo mappings)
     release s = do
-      Scratch.delete s.id
-      flushInput
+      releaseError "delete prompt scratch" (Scratch.delete s.id)
+      releaseError "flush input" flushInput
 
 type WindowScope =
   [Consume PromptEvent, AtomicState MenuView, Lock @@ "prompt"]
@@ -371,7 +392,7 @@ windowResources (WindowConfig itemsOpt statusOpt mappings) use =
   restop @_ @Rpc $ restop @_ @Scratch $ interpretLockReentrant $ untag do
     geo <- geometry
     withMainScratch (itemsOptions geo itemsOpt) (statusOptions geo <$> statusOpt) \ (itemsScratch, statusScratch) ->
-      withPrompt mappings geo \ promptScratch ->
+      withPrompt (itemsScratch.buffer : maybe [] (\s -> [s.buffer]) statusScratch) mappings geo \ promptScratch ->
         withOption "hlsearch" False do
           insertAt @3 (use (WindowMenu itemsScratch statusScratch promptScratch))
 

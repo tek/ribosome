@@ -16,3 +16,6 @@ pattern BufLinesEvent {buffer, changedtick, firstline, lastline, linedata, more}
   ] where
     BufLinesEvent b c f l ld m =
       Event "nvim_buf_lines_event" (msgpackArray b c f l ld m)
+
+pattern BufDetachEvent :: Buffer -> Event
+pattern BufDetachEvent {detachedBuffer} <- Event "nvim_buf_detach_event" [Msgpack detachedBuffer]
