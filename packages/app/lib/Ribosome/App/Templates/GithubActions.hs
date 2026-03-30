@@ -4,11 +4,10 @@ import Exon (exon)
 
 import Ribosome.App.Data (
   Branch (Branch),
-  Cachix (Cachix),
+  Cachix (..),
   CachixKey (CachixKey),
   CachixName (CachixName),
   ProjectName (ProjectName),
-  cachixName,
   cachixTek,
   )
 

@@ -3,7 +3,7 @@ module Ribosome.Host.Test.ApiInfoTest where
 import Polysemy.Test (Hedgehog, UnitTest, assertLeft, assertRight, evalEither, runTestAuto, (===))
 
 import Ribosome.Host.Class.Msgpack.Error (renderError)
-import Ribosome.Host.Data.ApiInfo (apiInfo, functions, types)
+import Ribosome.Host.Data.ApiInfo (ApiInfo (..), apiInfo)
 import Ribosome.Host.Data.ApiType (
   ApiPrim (Boolean, Dictionary, Float, Integer, LuaRef, Object, String, Void),
   ApiType (Array, Ext, Prim),
@@ -27,13 +27,14 @@ test_parseType =
     checkType (Array (Prim Object) Nothing) "Array"
     checkType (Prim Float) "Float"
     checkType (Prim String) "String"
+    checkType (Prim Dictionary) "Dict"
     checkType (Prim Dictionary) "Dictionary"
     checkType (Prim Object) "Object"
     checkType (Prim Void) "void"
     checkType (Prim LuaRef) "LuaRef"
     assertLeft err (first renderError (parseApiType "Booleans"))
     info <- evalEither =<< embed apiInfo
-    255 === length info.functions
+    259 === length info.functions
     3 === length info.types
   where
     err =

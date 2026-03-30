@@ -8,17 +8,16 @@ import Ribosome.Data.Mapping (
   MapMode,
   Mapping (Mapping),
   MappingAction (MappingCall, MappingEvent),
-  MappingId (MappingId),
+  MappingId (..),
   MappingLhs (MappingLhs),
   MappingSpec (MappingSpec),
   mapModeShortName,
-  unMappingId,
   )
 import Ribosome.Host.Api.Data (Buffer, nvimBufSetKeymap, nvimSetKeymap)
 import Ribosome.Host.Class.MonadRpc (MonadRpc (atomic))
 import Ribosome.Host.Data.ChannelId (ChannelId (ChannelId))
 import Ribosome.Host.Data.Event (EventName (EventName))
-import Ribosome.Host.Data.RpcHandler (RpcHandler (RpcHandler, rpcName))
+import Ribosome.Host.Data.RpcHandler (RpcHandler (..))
 import Ribosome.Host.Data.RpcName (RpcName (RpcName))
 import qualified Ribosome.Host.Effect.Rpc as Rpc
 import Ribosome.Host.Effect.Rpc (Rpc)

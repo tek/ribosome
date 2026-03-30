@@ -8,7 +8,7 @@
   outputs = {ribosome, ...}: ribosome.lib.pro ({config, lib, ...}: {
     main = "test-project";
     depsFull = [ribosome];
-    compiler = "ghc94";
+    compiler = "ghc912";
     hackage.versionFile = "ops/version.nix";
     gen-overrides.enable = true;
 
@@ -25,10 +25,11 @@
         enable = true;
         package = {
           name = "prelate";
-          version = ">= 0.6 && < 0.8";
+          version = ">= 0.6 && < 0.9";
         };
         module = "Prelate";
       };
+      language = "GHC2021";
       ghc-options = ["-fplugin=Polysemy.Plugin"];
       dependencies = ["polysemy" "polysemy-plugin"];
     };

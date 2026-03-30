@@ -8,7 +8,7 @@ import Language.Haskell.TH (Dec, DecsQ, Name, Q, Type, appT, conT, listT, mkName
 import Prelude hiding (Type)
 
 import qualified Ribosome.Host.Data.ApiInfo as ApiInfo
-import Ribosome.Host.Data.ApiInfo (ApiInfo (ApiInfo), ExtType, ExtTypeMeta, RpcDecl (RpcDecl), apiInfo, unExtType)
+import Ribosome.Host.Data.ApiInfo (ApiInfo (ApiInfo), ExtType (..), ExtTypeMeta, RpcDecl (RpcDecl), apiInfo)
 import Ribosome.Host.Data.ApiType (ApiPrim (..), ApiType (..))
 import Ribosome.Host.Data.LuaRef (LuaRef)
 import Ribosome.Host.TH.Api.Param (Param (Param))

@@ -1,11 +1,11 @@
 cabal-version: 2.2
 
--- This file has been generated from package.yaml by hpack version 0.35.2.
+-- This file has been generated from package.yaml by hpack version 0.38.2.
 --
 -- see: https://github.com/sol/hpack
 
 name:           ribosome-test
-version:        0.9.9.9
+version:        0.1.0.0
 synopsis:       Test tools for Ribosome
 description:    See https://hackage.haskell.org/package/ribosome-test/docs/Ribosome-Test.html
 category:       Neovim
@@ -13,7 +13,7 @@ homepage:       https://github.com/tek/ribosome#readme
 bug-reports:    https://github.com/tek/ribosome/issues
 author:         Torsten Schmits
 maintainer:     hackage@tryp.io
-copyright:      2023 Torsten Schmits
+copyright:      2025 Torsten Schmits
 license:        BSD-2-Clause-Patent
 license-file:   LICENSE
 build-type:     Simple
@@ -60,8 +60,10 @@ library
       LiberalTypeSynonyms
       MonadComprehensions
       MultiWayIf
+      NoFieldSelectors
       OverloadedLabels
       OverloadedLists
+      OverloadedRecordDot
       OverloadedStrings
       PackageImports
       PartialTypeSignatures
@@ -77,8 +79,6 @@ library
       UndecidableInstances
       UnicodeSyntax
       ViewPatterns
-      OverloadedRecordDot
-      NoFieldSelectors
   ghc-options: -fplugin=Polysemy.Plugin -Wall -Widentities -Wincomplete-uni-patterns -Wmissing-deriving-strategies -Wredundant-constraints -Wunused-type-patterns -Wunused-packages
   build-depends:
       base ==4.*
@@ -93,7 +93,7 @@ library
     , polysemy-chronos
     , polysemy-plugin ==0.4.*
     , polysemy-test
-    , prelate >=0.6 && <0.8
+    , prelate >=0.6 && <0.9
     , ribosome
     , ribosome-host
     , ribosome-host-test
@@ -131,8 +131,10 @@ test-suite ribosome-test-test
       LiberalTypeSynonyms
       MonadComprehensions
       MultiWayIf
+      NoFieldSelectors
       OverloadedLabels
       OverloadedLists
+      OverloadedRecordDot
       OverloadedStrings
       PackageImports
       PartialTypeSignatures
@@ -148,8 +150,6 @@ test-suite ribosome-test-test
       UndecidableInstances
       UnicodeSyntax
       ViewPatterns
-      OverloadedRecordDot
-      NoFieldSelectors
   ghc-options: -fplugin=Polysemy.Plugin -threaded -rtsopts -with-rtsopts=-N -Wall -Widentities -Wincomplete-uni-patterns -Wmissing-deriving-strategies -Wredundant-constraints -Wunused-type-patterns -Wunused-packages
   build-depends:
       base ==4.*
@@ -157,7 +157,7 @@ test-suite ribosome-test-test
     , polysemy ==1.9.*
     , polysemy-plugin ==0.4.*
     , polysemy-test
-    , prelate >=0.6 && <0.8
+    , prelate >=0.6 && <0.9
     , ribosome
     , ribosome-host
     , ribosome-test

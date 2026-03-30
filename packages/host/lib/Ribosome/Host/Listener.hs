@@ -6,7 +6,7 @@ import qualified Polysemy.Log as Log
 import qualified Polysemy.Process as Process
 import Polysemy.Process (Process)
 
-import Ribosome.Host.Data.Request (RequestId (unRequestId), TrackedRequest (TrackedRequest))
+import Ribosome.Host.Data.Request (RequestId (..), TrackedRequest (TrackedRequest))
 import Ribosome.Host.Data.Response (Response, TrackedResponse (TrackedResponse), formatResponse)
 import Ribosome.Host.Data.RpcError (RpcError)
 import qualified Ribosome.Host.Data.RpcMessage as RpcMessage

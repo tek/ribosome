@@ -17,7 +17,7 @@ import Ribosome.Host.Effect.Rpc (Rpc)
 import Ribosome.Host.Error (resumeBootError)
 import Ribosome.Host.Interpret (type (|>))
 import Ribosome.Host.Interpreter.Handlers (interpretHandlers)
-import Ribosome.Host.Test.Data.TestConfig (host)
+import Ribosome.Host.Test.Data.TestConfig (TestConfig (..))
 import qualified Ribosome.Host.Test.Run as Host
 import Ribosome.Host.Test.Run (TestStack)
 import Ribosome.Interpreter.VariableWatcher (watchVariables)

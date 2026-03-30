@@ -26,13 +26,11 @@ import Ribosome.Host.Class.Msgpack.Encode (toMsgpack)
 import qualified Ribosome.Host.Data.HostConfig as HostConfig
 import Ribosome.Host.Data.HostConfig (LogConfig (LogConfig))
 import Ribosome.Host.Data.Report (
-  LogReport (LogReport),
-  Report (Report),
+  LogReport (..),
+  Report (..),
   ReportLog,
   prefixReportContext',
-  report,
   reportMessages,
-  severity,
   )
 import Ribosome.Host.Effect.Log (FileLog, StderrLog, fileLog, stderrLog)
 import qualified Ribosome.Host.Effect.Reports as Reports

@@ -8,7 +8,7 @@ import Polysemy.Chronos (ChronosTime, interpretTimeChronos)
 import Polysemy.Test (Hedgehog, Test, TestError (TestError), UnitTest, runTestAuto)
 import Time (mkDatetime)
 
-import Ribosome.Host.Data.BootError (BootError (unBootError))
+import Ribosome.Host.Data.BootError (BootError (..))
 import Ribosome.Host.Data.HostConfig (HostConfig, setStderr)
 import Ribosome.Host.Data.RpcHandler (RpcHandler)
 import Ribosome.Host.Effect.Rpc (Rpc)

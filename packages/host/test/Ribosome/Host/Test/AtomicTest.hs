@@ -22,8 +22,8 @@ atomicPayload :: [Object]
 atomicPayload =
   [
     msgpackArray
-    (Request "nvim_get_option" [toMsgpack @Text "modifiable"])
-    (Request "nvim_get_option" [toMsgpack @Text "modified"])
+    (Request "nvim_get_option" [toMsgpack @Text "hlsearch"])
+    (Request "nvim_get_option" [toMsgpack @Text "ignorecase"])
     (Request "nvim_get_var" [toMsgpack @Text "a"])
     (Request "nvim_get_var" [toMsgpack @Text "b"])
   ]
@@ -53,8 +53,8 @@ test_atomic =
       nvimSetVar "a" (3 :: Int)
       nvimSetVar "b" (7 :: Int)
       (modi, a, b, c) <- Rpc.sync do
-        able <- nvimGetOption "modifiable"
-        modded <- nvimGetOption "modified"
+        able <- nvimGetOption "hlsearch"
+        modded <- nvimGetOption "ignorecase"
         c <- pure 11
         a <- nvimGetVar "a"
         b <- nvimGetVar "b"
@@ -63,11 +63,11 @@ test_atomic =
       (3 :: Int) === a
       (7 :: Int) === b
       (11 :: Int) === c
-      assert . not =<< Rpc.sync (not <$> nvimGetOption "modifiable")
+      assert . not =<< Rpc.sync (not <$> nvimGetOption "hlsearch")
       void tryConsume
       void tryConsume
       assertReq 3 (Request "nvim_call_atomic" atomicPayload)
-      assertReq 4 (Request "nvim_get_option" (msgpackArray ("modifiable" :: Text)))
+      assertReq 4 (Request "nvim_get_option" (msgpackArray ("hlsearch" :: Text)))
       d <- Rpc.sync (pure (1 :: Int))
       1 === d
       nvimSetVar "a" (3 :: Int)
@@ -77,8 +77,8 @@ monadicPayload1 :: [Object]
 monadicPayload1 =
   [
     msgpackArray
-    (Request "nvim_get_option" [toMsgpack @Text "modifiable"])
-    (Request "nvim_get_option" [toMsgpack @Text "modified"])
+    (Request "nvim_get_option" [toMsgpack @Text "hlsearch"])
+    (Request "nvim_get_option" [toMsgpack @Text "ignorecase"])
     (Request "nvim_get_var" [toMsgpack @Text "a"])
   ]
 
@@ -88,22 +88,22 @@ monadicPayload2 =
     msgpackArray
     (Request "nvim_set_var" [toMsgpack @Text "b", toMsgpack @Int 3])
     (Request "nvim_get_var" [toMsgpack @Text "b"])
-    (Request "nvim_set_option" [toMsgpack @Text "modifiable", toMsgpack @Bool False])
-    (Request "nvim_get_option" [toMsgpack @Text "modifiable"])
+    (Request "nvim_set_option" [toMsgpack @Text "hlsearch", toMsgpack @Bool False])
+    (Request "nvim_get_option" [toMsgpack @Text "hlsearch"])
   ]
 
 bindCall :: RpcCall (Bool, Bool, Bool, Int, Int)
 bindCall = do
   (able, modded, a) <- do
-    able <- nvimGetOption "modifiable"
-    modded <- nvimGetOption "modified"
+    able <- nvimGetOption "hlsearch"
+    modded <- nvimGetOption "ignorecase"
     a <- nvimGetVar @Int "a"
     pure (able, modded, a)
   (able', b) <- do
     Data.nvimSetVar "b" a
     b <- nvimGetVar "b"
-    nvimSetOption "modifiable" (not able)
-    able' <- nvimGetOption "modifiable"
+    nvimSetOption "hlsearch" (not able)
+    able' <- nvimGetOption "hlsearch"
     pure (able', b)
   b' <- do
     b'' <- nvimGetVar "b"

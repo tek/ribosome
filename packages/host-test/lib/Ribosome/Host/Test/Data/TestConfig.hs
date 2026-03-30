@@ -1,6 +1,6 @@
 module Ribosome.Host.Test.Data.TestConfig where
 
-import Ribosome.Host.Data.HostConfig (HostConfig (HostConfig), dataLogConc)
+import Ribosome.Host.Data.HostConfig (HostConfig (..), LogConfig (..))
 
 data TestConfig =
   TestConfig {

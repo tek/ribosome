@@ -3,7 +3,7 @@ module Ribosome.Test.Data.TestConfig where
 import qualified Chiasma.Test.Data.TmuxTestConfig as Chiasma
 
 import Ribosome.Data.PluginConfig (PluginConfig (PluginConfig))
-import Ribosome.Host.Data.HostConfig (HostConfig (HostConfig), dataLogConc)
+import Ribosome.Host.Data.HostConfig (HostConfig (..), LogConfig (..))
 
 data TestConfig =
   TestConfig {
