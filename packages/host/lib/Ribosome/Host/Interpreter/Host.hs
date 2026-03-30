@@ -9,7 +9,7 @@ import System.IO.Error (IOError)
 
 import Ribosome.Host.Data.BootError (BootError (BootError))
 import Ribosome.Host.Data.Event (Event (Event), EventName (EventName))
-import Ribosome.Host.Data.Report (LogReport (LogReport), Report (Report), severity)
+import Ribosome.Host.Data.Report (LogReport (LogReport), Report (..))
 import Ribosome.Host.Data.Request (Request (Request), RequestId, RpcMethod (RpcMethod))
 import qualified Ribosome.Host.Data.Response as Response
 import Ribosome.Host.Data.Response (Response)

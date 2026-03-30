@@ -15,14 +15,13 @@ import qualified Polysemy.Log as Log
 import Ribosome.Data.SettingError (SettingError)
 import Ribosome.Effect.Scratch (Scratch)
 import Ribosome.Effect.Settings (Settings)
-import qualified Ribosome.Host.Data.Report as Report
+
 import Ribosome.Host.Data.Report (
   LogReport (LogReport),
-  Report (Report),
+  Report (..),
   ReportContext (ReportContext),
   Reportable (toReport),
   resumeReport,
-  severity,
   )
 import Ribosome.Host.Data.RpcError (RpcError)
 import Ribosome.Host.Effect.Reports (Reports (..), storeReport, storedReports)

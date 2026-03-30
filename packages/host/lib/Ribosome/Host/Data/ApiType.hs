@@ -79,6 +79,7 @@ prim =
     "Integer" -> pure Integer
     "Float" -> pure Float
     "String" -> pure String
+    "Dict" -> pure Dictionary
     "Dictionary" -> pure Dictionary
     "Object" -> pure Object
     "void" -> pure Void

@@ -14,10 +14,10 @@ import Ribosome.Api.Buffer (setBufferContent, wipeBuffer)
 import Ribosome.Api.Syntax (executeWindowSyntax)
 import Ribosome.Api.Tabpage (closeTabpage)
 import Ribosome.Api.Window (closeWindow)
-import Ribosome.Data.FloatOptions (FloatOptions, enter)
+import Ribosome.Data.FloatOptions (FloatOptions (..))
 import Ribosome.Data.PluginName (PluginName (PluginName))
 import Ribosome.Data.ScratchId (ScratchId (ScratchId))
-import Ribosome.Data.ScratchOptions (ScratchOptions (ScratchOptions, filetype, name), focus, mappings, syntax)
+import Ribosome.Data.ScratchOptions (ScratchOptions (..))
 import qualified Ribosome.Data.ScratchState as ScratchState
 import Ribosome.Data.ScratchState (ScratchState (ScratchState))
 import Ribosome.Host.Api.Data (
@@ -46,7 +46,7 @@ import Ribosome.Host.Class.MonadRpc (MonadRpc (atomic))
 import Ribosome.Host.Class.Msgpack.Decode (fromMsgpack)
 import Ribosome.Host.Class.Msgpack.Encode (toMsgpack)
 import Ribosome.Host.Data.RpcError (RpcError)
-import Ribosome.Host.Data.RpcType (AutocmdId (AutocmdId), group)
+import Ribosome.Host.Data.RpcType (AutocmdId (..), AutocmdOptions (..))
 import Ribosome.Host.Effect.Rpc (Rpc)
 import Ribosome.Mapping (activateBufferMappings)
 import Ribosome.PluginName (pluginNamePascalCase)
@@ -194,13 +194,13 @@ setupScratchIn ::
   Maybe Tabpage ->
   ScratchOptions ->
   Sem r ScratchState
-setupScratchIn buffer previous window tab options@(ScratchOptions {..}) = do
+setupScratchIn buffer previous window tabpage options@(ScratchOptions {..}) = do
   validBuffer <- setupScratchBuffer window buffer filetype name
   traverse_ (executeWindowSyntax window) syntax
   activateBufferMappings validBuffer mappings
   unless focus (vimSetCurrentWindow previous)
   auId <- setupDeleteAutocmd name validBuffer
-  let scratch = ScratchState name options validBuffer window previous tab auId
+  let scratch = ScratchState name options validBuffer window previous tabpage auId
   atomicModify' (Map.insert name scratch)
   pure scratch
 

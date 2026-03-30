@@ -8,13 +8,13 @@ import Polysemy.Chronos (ChronosTime, interpretTimeChronos, interpretTimeChronos
 import Polysemy.Test (Hedgehog, Test, TestError (TestError), UnitTest, runTestAuto)
 import Time (mkDatetime)
 
-import Ribosome.Host.Data.BootError (BootError (unBootError))
+import Ribosome.Host.Data.BootError (BootError (..))
 import Ribosome.Host.Data.HostConfig (setStderr)
 import Ribosome.Host.Data.RpcHandler (RpcHandler)
 import Ribosome.Host.Effect.Rpc (Rpc)
 import Ribosome.Host.Embed (HostEmbedStack, embedNvim, embedNvim_)
 import Ribosome.Host.IOStack (LogConfStack, interpretLogConfStack)
-import Ribosome.Host.Test.Data.TestConfig (TestConfig (TestConfig), host)
+import Ribosome.Host.Test.Data.TestConfig (TestConfig (..))
 
 type TestIOStack =
   [

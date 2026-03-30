@@ -42,7 +42,7 @@ import Ribosome.Host.Data.ApiInfo (ExtTypeMeta (ExtTypeMeta))
 import Ribosome.Host.Data.ApiType (ApiType, pattern PolyType)
 import Ribosome.Host.Data.Request (Request (Request), RpcMethod (RpcMethod))
 import Ribosome.Host.TH.Api.Generate (MethodSpec (MethodSpec), generateFromApi, reifyApiType)
-import Ribosome.Host.TH.Api.Param (Param (Param), paramName)
+import Ribosome.Host.TH.Api.Param (Param (..))
 
 msgpackDecodeConstraint :: ApiType -> Q (Maybe Type)
 msgpackDecodeConstraint = \case

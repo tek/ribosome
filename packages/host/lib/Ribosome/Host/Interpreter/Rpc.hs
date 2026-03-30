@@ -10,10 +10,9 @@ import Ribosome.Host.Class.MonadRpc (rpcRequest)
 import Ribosome.Host.Class.Msgpack.Error (DecodeError)
 import Ribosome.Host.Data.ChannelId (ChannelId)
 import Ribosome.Host.Data.Request (
-  Request (Request, method),
+  Request (..),
   RequestId,
   TrackedRequest (TrackedRequest),
-  arguments,
   formatReq,
   formatTrackedReq,
   )

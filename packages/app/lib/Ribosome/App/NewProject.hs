@@ -4,7 +4,7 @@ import qualified Data.Text.IO as Text
 import Polysemy.Chronos (ChronosTime)
 
 import Ribosome.App.Boot (generateBoot)
-import Ribosome.App.Data (Global (..), NewProject (..), Project (..), unPrintDir)
+import Ribosome.App.Data (Global (..), NewProject (..), PrintDir (..), Project (..))
 import qualified Ribosome.App.Data
 import Ribosome.App.Error (RainbowError)
 import Ribosome.App.TemplateTree (writeTemplateTree)

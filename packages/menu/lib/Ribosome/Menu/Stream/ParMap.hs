@@ -2,8 +2,7 @@ module Ribosome.Menu.Stream.ParMap where
 
 import Control.Concurrent (getNumCapabilities)
 import qualified Streamly.Data.Fold as Fold
-import qualified Streamly.Internal.Data.Stream.IsStream.Exception as Stream
-import qualified Streamly.Prelude as Stream
+import qualified Streamly.Internal.Data.Stream.IsStream as Stream
 import Streamly.Prelude (IsStream)
 
 parConcatMap ::
