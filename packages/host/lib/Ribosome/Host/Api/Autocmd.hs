@@ -1,4 +1,4 @@
--- |Helpers for defining autocmds.
+-- | Helpers for defining autocmds.
 module Ribosome.Host.Api.Autocmd where
 
 import Data.MessagePack (Object)
@@ -17,7 +17,7 @@ import Ribosome.Host.Data.RpcType (
   AutocmdPatterns (AutocmdPatterns),
   )
 
--- |Create an @augroup@ if the first argument is 'Just', then call the second argument.
+-- | Create an @augroup@ if the first argument is 'Just', then call the second argument.
 --
 -- The parameter of the callback is a 'Map' suitable to be passed to 'nvimCreateAutocmd', containing the group name.
 withAugroup :: Maybe AutocmdGroup -> (Map Text Object -> RpcCall a) -> RpcCall a
@@ -26,13 +26,13 @@ withAugroup (Just (AutocmdGroup g)) f =
 withAugroup Nothing f =
   f mempty
 
--- |Create an autocmd.
+-- | Create an autocmd.
 autocmd ::
-  -- |Trigger events.
+  -- | Trigger events.
   AutocmdEvents ->
-  -- |Options as defined for @:autocmd@.
+  -- | Options as defined for @:autocmd@.
   AutocmdOptions ->
-  -- |The command to execute.
+  -- | The command to execute.
   Text ->
   RpcCall AutocmdId
 autocmd (AutocmdEvents events) AutocmdOptions {..} cmd =

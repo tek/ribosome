@@ -1,11 +1,11 @@
 {-# options_haddock prune #-}
 
--- |The syntax DSL algebra.
+-- | The syntax DSL algebra.
 module Ribosome.Data.Syntax.Dsl where
 
 import Ribosome.Data.SyntaxItem (SyntaxGroup, SyntaxItem)
 
--- |The syntax DSL algebra.
+-- | The syntax DSL algebra.
 data Alg :: Type where
   Item :: SyntaxItem -> Alg
   Choice :: Alg -> Alg -> Alg

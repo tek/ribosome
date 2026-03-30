@@ -1,4 +1,4 @@
--- |Assertions that are made repeatedly until the succeed
+-- | Assertions that are made repeatedly until the succeed
 module Ribosome.Test.Wait where
 
 import qualified Conc
@@ -8,7 +8,7 @@ import Polysemy.Test (Hedgehog, assertEq, liftH)
 import qualified Polysemy.Time as Time
 import Polysemy.Time (MilliSeconds (MilliSeconds), Seconds (Seconds))
 
--- |Run an action and make an assertion about its result.
+-- | Run an action and make an assertion about its result.
 -- Repeat on failure until the @timeout@ has been exceeded.
 --
 -- Sleeps for @interval@ between attempts.
@@ -39,7 +39,7 @@ assertWaitFor timeout interval acquire test =
         Just e -> liftTest (mkTest (Left e, mempty))
         Nothing -> failWith Nothing "timed out before an assertion was made"
 
--- |Run an action and make an assertion about its result.
+-- | Run an action and make an assertion about its result.
 -- Repeat on failure for three seconds, every 100 milliseconds.
 assertWait ::
   Monad m =>
@@ -52,7 +52,7 @@ assertWait acquire test =
   withFrozenCallStack do
     assertWaitFor (Seconds 3) (MilliSeconds 100) acquire test
 
--- |Run an action and assert that it is equal to the supplied value.
+-- | Run an action and assert that it is equal to the supplied value.
 -- Repeat on failure until the @timeout@ has been exceeded.
 --
 -- Sleeps for @interval@ between attempts.
@@ -73,7 +73,7 @@ assertEqWaitFor timeout interval a ma =
   withFrozenCallStack do
     assertWaitFor timeout interval ma (assertEq a)
 
--- |Run an action and assert that it is equal to the supplied value.
+-- | Run an action and assert that it is equal to the supplied value.
 -- Repeat on failure for three seconds, every 100 milliseconds.
 assertEqWait ::
   Eq a =>
@@ -88,7 +88,7 @@ assertEqWait a ma =
   withFrozenCallStack do
     assertWait ma (assertEq a)
 
--- |Run an action and assert that it is equal to the supplied value.
+-- | Run an action and assert that it is equal to the supplied value.
 -- Repeat on failure for three seconds, every 100 milliseconds.
 becomes ::
   Eq a =>
@@ -103,7 +103,7 @@ becomes ma a =
   withFrozenCallStack do
     assertEqWait a ma
 
--- |Run an action and assert that it is equal to the supplied value.
+-- | Run an action and assert that it is equal to the supplied value.
 -- Repeat on failure for three seconds, every 100 milliseconds.
 --
 -- Operator version of 'assertEqWait':

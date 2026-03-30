@@ -1,7 +1,7 @@
 {-# options_haddock prune #-}
 {-# language NoOverloadedLists #-}
 
--- |Compiler for the syntax DSL algebra, internal.
+-- | Compiler for the syntax DSL algebra, internal.
 module Ribosome.Syntax.Build where
 
 import Data.Tuple.Extra (uncurry3)
@@ -23,7 +23,7 @@ compileItem i = do
     & #next %~ (<> next)
     & #contains %~ (<> contains)
 
--- |Compile 'Alg'.
+-- | Compile 'Alg'.
 spin ::
   Members [Writer [SyntaxItem], Writer [(Map Text Text, [SyntaxGroup])], Writer [HiLink], Reader Building] r =>
   Alg ->
@@ -87,7 +87,7 @@ compile spec =
         runWriterAssocR $ runWriterAssocR do
           fst <$> runWriterAssocR (runReader def (spin spec))
 
--- |Compile a syntax declaration written in the DSL to a 'Syntax', which can be used with
+-- | Compile a syntax declaration written in the DSL to a 'Syntax', which can be used with
 -- 'Ribosome.Api.Syntax.executeWindowSyntax' to apply it to a Neovim window.
 build :: Alg -> Syntax
 build =

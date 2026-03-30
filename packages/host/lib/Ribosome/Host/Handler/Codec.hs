@@ -1,6 +1,6 @@
 {-# options_haddock prune #-}
 
--- |Classes for converting functions to RPC handlers that may have special parameters.
+-- | Classes for converting functions to RPC handlers that may have special parameters.
 module Ribosome.Host.Handler.Codec where
 
 import Data.Aeson (eitherDecodeStrict')
@@ -52,7 +52,7 @@ optArg dflt = \case
     a <- decodeArg o
     pure (rest, a)
 
--- |This class is used by 'HandlerCodec' to decode handler function parameters.
+-- | This class is used by 'HandlerCodec' to decode handler function parameters.
 -- Each parameter may consume zero or arbitrarily many of the RPC message's arguments.
 --
 -- Users may create instances for their types to implement custom decoding, especially for commands, since those don't
@@ -140,9 +140,9 @@ instance (
         Optparse.Failure e -> Left (toText (fst (renderFailure e "Ribosome")))
         Optparse.CompletionInvoked _ -> Left "Internal optparse error"
 
--- |The class of functions that can be converted to canonical RPC handlers of type 'RpcHandlerFun'.
+-- | The class of functions that can be converted to canonical RPC handlers of type 'RpcHandlerFun'.
 class HandlerCodec h r | h -> r where
-  -- |Convert a type containing a 'Sem' to a canonicalized 'RpcHandlerFun' by transforming each function parameter with
+  -- | Convert a type containing a 'Sem' to a canonicalized 'RpcHandlerFun' by transforming each function parameter with
   -- 'HandlerArg'.
   handlerCodec :: h -> RpcHandlerFun r
 

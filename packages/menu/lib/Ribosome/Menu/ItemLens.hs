@@ -119,7 +119,7 @@ menuItemsByIndexes ::
 menuItemsByIndexes indexes =
   maybe [] toList . itemsByEntryIndex indexes
 
--- |Extract either the entries that aren't selected, or, if none are, all but the focused entry.
+-- | Extract either the entries that aren't selected, or, if none are, all but the focused entry.
 -- This needs two passes since the result should be sorted and it's impossible to know whether the focus should be
 -- included or not before the entire dataset was traversed.
 unselectedItems ::

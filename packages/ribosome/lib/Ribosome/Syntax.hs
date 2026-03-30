@@ -1,4 +1,4 @@
--- |Data types and combinators for [Ribosome.Api.Syntax]("Ribosome.Api.Syntax").
+-- | Data types and combinators for [Ribosome.Api.Syntax]("Ribosome.Api.Syntax").
 module Ribosome.Syntax (
   module Ribosome.Syntax.Dsl,
   module Ribosome.Data.Syntax.SyntaxKind,

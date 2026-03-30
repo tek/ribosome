@@ -1,10 +1,10 @@
--- |Helper for encoding values to a heterogeneous MessagePack map.
+-- | Helper for encoding values to a heterogeneous MessagePack map.
 module Ribosome.Host.Class.Msgpack.Map where
 
 import Data.MessagePack (Object)
 import Ribosome.Host.Class.Msgpack.Encode (MsgpackEncode (toMsgpack))
 
--- |Utility class for 'MsgpackMap'.
+-- | Utility class for 'MsgpackMap'.
 class MsgpackMapElem a where
   msgpackMapElem :: a -> Map Text Object
 
@@ -25,9 +25,9 @@ instance (
       (_, Nothing) ->
         mempty
 
--- |This class provides a variadic method for encoding MessagePack maps.
+-- | This class provides a variadic method for encoding MessagePack maps.
 class MsgpackMap a where
-  -- |Encode an arbitrary number of heterogeneously typed values to a single MessagePack map.
+  -- | Encode an arbitrary number of heterogeneously typed values to a single MessagePack map.
   -- This function is variadic, meaning that it takes an arbitrary number of arguments:
   --
   -- >>> msgpackMap ("number", 5 :: Int) ("status", "error" :: Text) ("intensity", 3.14 :: Double) :: Object

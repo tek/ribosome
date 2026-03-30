@@ -1,7 +1,7 @@
--- |Data types for syntax keyword, match, region and verbatim code.
+-- | Data types for syntax keyword, match, region and verbatim code.
 module Ribosome.Data.Syntax.SyntaxKind where
 
--- |A syntax region, defined by patterns for start and end, and optionally a skip pattern.
+-- | A syntax region, defined by patterns for start and end, and optionally a skip pattern.
 --
 -- Offsets define precisely where highlighting begins.
 --
@@ -16,18 +16,18 @@ data SyntaxRegion =
   }
   deriving stock (Eq, Show, Generic)
 
--- |Data type for syntax keyword, match, region and verbatim code.
+-- | Data type for syntax keyword, match, region and verbatim code.
 data SyntaxKind =
-  -- |A list of precise tokens that should be matched.
+  -- | A list of precise tokens that should be matched.
   Keyword { keywords :: NonEmpty Text }
   |
-  -- |A single pattern.
+  -- | A single pattern.
   Match { pattern_ :: Text }
   |
-  -- |A region with start and end patterns.
+  -- | A region with start and end patterns.
   Region SyntaxRegion
   |
-  -- |A command that is not processed by the DSL and inserted verbatim.
+  -- | A command that is not processed by the DSL and inserted verbatim.
   --
   -- Useful for things like @syntax sync@.
   Verbatim { command :: Text }

@@ -1,4 +1,4 @@
--- |Interpreters for basic plugin effects down to 'IO'
+-- | Interpreters for basic plugin effects down to 'IO'
 module Ribosome.IOStack where
 
 import Ribosome.Cli (withCli)
@@ -8,13 +8,13 @@ import Ribosome.Data.PluginName (PluginName)
 import Ribosome.Host.Data.HostConfig (HostConfig)
 import Ribosome.Host.IOStack (BasicStack, runBasicStack)
 
--- |The effects that are shared by all variants (like embedded, remote, socket) of main functions.
+-- | The effects that are shared by all variants (like embedded, remote, socket) of main functions.
 --
 -- Contains logging effects, IO related stuff and the plugin's name in a 'Reader'.
 type BasicPluginStack c =
   Reader PluginName : Reader (CustomConfig c) : BasicStack
 
--- |Execute the basic plugin stack all the way to an 'IO', given the plugin name and logging settings.
+-- | Execute the basic plugin stack all the way to an 'IO', given the plugin name and logging settings.
 runBasicPluginStack ::
   PluginName ->
   HostConfig ->
@@ -26,7 +26,7 @@ runBasicPluginStack name conf custom =
   runReader (CustomConfig custom) .
   runReader name
 
--- |Execute the basic plugin stack all the way to an 'IO' like 'runBasicPluginStack', reading config overrides from
+-- | Execute the basic plugin stack all the way to an 'IO' like 'runBasicPluginStack', reading config overrides from
 -- command line options.
 runCli ::
   PluginConfig c ->

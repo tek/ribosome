@@ -1,9 +1,9 @@
--- |Persisting data across vim sessions
+-- | Persisting data across vim sessions
 module Ribosome.Effect.Persist where
 
 import Path (File, Path, Rel)
 
--- |This effect abstracts storing data of type @a@ in the file system to allow loading it when a plugin starts.
+-- | This effect abstracts storing data of type @a@ in the file system to allow loading it when a plugin starts.
 --
 -- Each distinct type corresponds to a separate copy of this effect. When the same type should be stored in separate
 -- files for different components of the plugin, use 'Tagged'.
@@ -14,17 +14,17 @@ import Path (File, Path, Rel)
 -- The default interpreter delegates file path resolution to the effect 'Ribosome.Persist.PersistPath' and uses JSON to
 -- codec the data.
 data Persist a :: Effect where
-  -- |Store a value in the persistence file or, if the first argument is 'Just', in that file in the persistence
+  -- | Store a value in the persistence file or, if the first argument is 'Just', in that file in the persistence
   -- directory.
   Store :: Maybe (Path Rel File) -> a -> Persist a m ()
-  -- |Load a value from the persistence file or, if the first argument is 'Just', from that file in the persistence
+  -- | Load a value from the persistence file or, if the first argument is 'Just', from that file in the persistence
   -- directory.
   -- Returns 'Nothing' if the file doesn't exist.
   Load :: Maybe (Path Rel File) -> Persist a m (Maybe a)
 
 makeSem_ ''Persist
 
--- |Store a value in the persistence file or, if the first argument is 'Just', in that file in the persistence
+-- | Store a value in the persistence file or, if the first argument is 'Just', in that file in the persistence
 -- directory.
 store ::
   ∀ a r .
@@ -33,7 +33,7 @@ store ::
   a ->
   Sem r ()
 
--- |Load a value from the persistence file or, if the first argument is 'Just', from that file in the persistence
+-- | Load a value from the persistence file or, if the first argument is 'Just', from that file in the persistence
 -- directory.
 -- Returns 'Nothing' if the file doesn't exist.
 load ::
@@ -42,7 +42,7 @@ load ::
   Maybe (Path Rel File) ->
   Sem r (Maybe a)
 
--- |Load a value from the persistence file or, if the first argument is 'Just', from that file in the persistence
+-- | Load a value from the persistence file or, if the first argument is 'Just', from that file in the persistence
 -- directory.
 -- Returns the fallback value if the file doesn't exist.
 loadOr ::
@@ -53,7 +53,7 @@ loadOr ::
 loadOr path a =
   fromMaybe a <$> load path
 
--- |Load a value from the persistence file.
+-- | Load a value from the persistence file.
 -- Returns 'Nothing' if the file doesn't exist.
 loadSingle ::
   Member (Persist a) r =>
@@ -61,7 +61,7 @@ loadSingle ::
 loadSingle =
   load Nothing
 
--- |Load a value from the persistence file.
+-- | Load a value from the persistence file.
 -- Returns the fallback value if the file doesn't exist.
 loadSingleOr ::
   Member (Persist a) r =>
@@ -70,7 +70,7 @@ loadSingleOr ::
 loadSingleOr a =
   fromMaybe a <$> loadSingle
 
--- |Load a value from the specified file in the persistence directory.
+-- | Load a value from the specified file in the persistence directory.
 -- Returns 'Nothing' if the file doesn't exist.
 loadPath ::
   Member (Persist a) r =>
@@ -79,7 +79,7 @@ loadPath ::
 loadPath path =
   load (Just path)
 
--- |Load a value from the specified file in the persistence directory.
+-- | Load a value from the specified file in the persistence directory.
 -- Returns the fallback value if the file doesn't exist.
 loadPathOr ::
   Member (Persist a) r =>

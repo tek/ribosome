@@ -1,4 +1,4 @@
--- |Data types for floating window configuration.
+-- | Data types for floating window configuration.
 module Ribosome.Float (
   module Ribosome.Data.FloatOptions
 ) where

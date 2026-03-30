@@ -1,6 +1,6 @@
 {-# options_haddock prune #-}
 
--- |Compute the command options and arguments based on handler function parameters.
+-- | Compute the command options and arguments based on handler function parameters.
 module Ribosome.Host.Handler.Command where
 
 import Data.MessagePack (Object)
@@ -13,15 +13,15 @@ import Ribosome.Host.Data.CommandMods (CommandMods)
 import Ribosome.Host.Data.CommandRegister (CommandRegister)
 import Ribosome.Host.Data.Range (Range, RangeStyleOpt (rangeStyleArg, rangeStyleOpt))
 
--- |Represents the value for the command option @-nargs@.
+-- | Represents the value for the command option @-nargs@.
 data ArgCount =
-  -- |@-nargs=0@
+  -- | @-nargs=0@
   Zero
   |
-  -- |@-nargs=*@
+  -- | @-nargs=*@
   MinZero
   |
-  -- |@-nargs=+@
+  -- | @-nargs=+@
   MinOne
   deriving stock (Eq, Show)
 
@@ -30,14 +30,14 @@ type family Max (l :: ArgCount) (r :: ArgCount) :: ArgCount where
   Max 'MinZero 'MinOne = 'MinOne
   Max l _ = l
 
--- |Determines how different special command handler parameter types may interact.
+-- | Determines how different special command handler parameter types may interact.
 data OptionState =
   OptionState {
-    -- |Are special option parameters allowed at this position?
+    -- | Are special option parameters allowed at this position?
     allowed :: Bool,
-    -- |The minimum number of arguments that are expected
+    -- | The minimum number of arguments that are expected
     minArgs :: ArgCount,
-    -- |Have all arguments been consumed, by types like 'ArgList'?
+    -- | Have all arguments been consumed, by types like 'ArgList'?
     argsConsumed :: Maybe Type
   }
 
@@ -56,7 +56,7 @@ type family CommandSpecial (a :: Type) :: Bool where
   CommandSpecial (Options _) = 'True
   CommandSpecial _ = 'False
 
--- |Determine the command options and arguments that need to be specified when registering a command, for a special
+-- | Determine the command options and arguments that need to be specified when registering a command, for a special
 -- command option parameter.
 --
 -- See [Command params]("Ribosome#g:command-params") for the list of supported special types.
@@ -73,7 +73,7 @@ class SpecialParam (state :: OptionState) (a :: Type) where
   specialArg =
     Nothing
 
--- |Emit a compile error if a special command option type is used as a handler parameter after a regular, value
+-- | Emit a compile error if a special command option type is used as a handler parameter after a regular, value
 -- parameter.
 --
 -- The parameter @allowed@ is set to 'False' when the first non-option parameter is encountered.
@@ -140,7 +140,7 @@ instance SpecialParam ('OptionState al count 'Nothing) (Options a) where
   type TransSpecial ('OptionState _ count _) (Options a) =
     'OptionState 'True (Max count 'MinZero) ('Just (Options a))
 
--- |Determines whether a regular, value parameter is allowed (it isn't after types like 'ArgList' that consume all
+-- | Determines whether a regular, value parameter is allowed (it isn't after types like 'ArgList' that consume all
 -- remaining arguments), and increases the minimum argument count if the parameter isn't 'Maybe'.
 class RegularParam (state :: OptionState) (isMaybe :: Bool) a where
   type TransRegular state isMaybe a :: OptionState
@@ -165,9 +165,9 @@ instance RegularParam ('OptionState al count 'Nothing) 'False a where
   type TransRegular ('OptionState al count 'Nothing) 'False a =
     'OptionState 'False 'MinOne 'Nothing
 
--- |Determine the command option and parameter that a handler parameter type requires, if any.
+-- | Determine the command option and parameter that a handler parameter type requires, if any.
 class CommandParam (special :: Bool) (state :: OptionState) (a :: Type) where
-  -- |Transition the current 'OptionState'.
+  -- | Transition the current 'OptionState'.
   type TransState special state a :: OptionState
 
   paramOpt :: Map Text Object
@@ -200,7 +200,7 @@ instance (
     type TransState 'False state a =
       TransRegular state (IsMaybe a) a
 
--- |Derive the command options and arguments that should be used when registering the Neovim command, from the
+-- | Derive the command options and arguments that should be used when registering the Neovim command, from the
 -- parameters of the handler function.
 --
 -- See [Command params]("Ribosome#g:command-params") for the list of supported special types.
@@ -209,7 +209,7 @@ instance (
 -- counts the number of command arguments that are required or allowed.
 -- It is transitioned by families in the classes 'CommandParam', 'SpecialParam' and 'RegularParam'.
 class CommandHandler (state :: OptionState) (h :: Type) where
-  -- |Return the list of command options and special arguments determined by the handler function's parameters.
+  -- | Return the list of command options and special arguments determined by the handler function's parameters.
   commandOptions :: (Map Text Object, [Text])
 
 instance CommandHandler ('OptionState _a 'Zero c) (Sem r a) where

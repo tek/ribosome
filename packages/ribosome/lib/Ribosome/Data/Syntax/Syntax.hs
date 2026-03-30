@@ -1,9 +1,9 @@
--- |Data types for the Neovim syntax API.
+-- | Data types for the Neovim syntax API.
 module Ribosome.Data.Syntax.Syntax where
 
 import Ribosome.Data.SyntaxItem (SyntaxGroup, SyntaxItem)
 
--- |Options for a highlight group.
+-- | Options for a highlight group.
 data Highlight =
   Highlight {
     group :: SyntaxGroup,
@@ -11,7 +11,7 @@ data Highlight =
   }
   deriving stock (Eq, Show, Generic)
 
--- |Options for a @:highlight link@ command.
+-- | Options for a @:highlight link@ command.
 data HiLink =
   HiLink {
     group :: SyntaxGroup,
@@ -19,7 +19,7 @@ data HiLink =
   }
   deriving stock (Eq, Show, Generic)
 
--- |A set of syntax settings, consisting of syntax items like @keyword@ and @match@, highlights and highlight links.
+-- | A set of syntax settings, consisting of syntax items like @keyword@ and @match@, highlights and highlight links.
 data Syntax =
   Syntax {
      items :: [SyntaxItem],

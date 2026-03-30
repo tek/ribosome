@@ -1,10 +1,10 @@
--- |Data type for tags.
+-- | Data type for tags.
 module Ribosome.Data.Tag where
 
 import Ribosome.Host.Class.Msgpack.Decode (MsgpackDecode)
 import Ribosome.Host.Class.Msgpack.Encode (MsgpackEncode)
 
--- |The return type of 'Ribosome.Api.taglist', representing a ctags-like entry of a tags file.
+-- | The return type of 'Ribosome.Api.taglist', representing a ctags-like entry of a tags file.
 data Tag =
   Tag {
     name :: Text,

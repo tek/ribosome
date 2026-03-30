@@ -1,6 +1,6 @@
 {-# options_haddock prune, hide #-}
 
--- |An example for the docs.
+-- | An example for the docs.
 module Ribosome.Examples.Example2 where
 
 import Data.MessagePack (Object)

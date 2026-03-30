@@ -29,7 +29,7 @@ import Ribosome.Host.Effect.Reports (Reports (..), storeReport, storedReports)
 import Ribosome.Host.Effect.Rpc (Rpc)
 import Ribosome.Host.Interpreter.Reports
 
--- |Add a segment to the current 'Report' logging context.
+-- | Add a segment to the current 'Report' logging context.
 context ::
   Member (DataLog LogReport) r =>
   Text ->
@@ -38,7 +38,7 @@ context ::
 context ctx =
   Log.local (#context %~ \ (ReportContext cur) -> ReportContext (ctx : cur))
 
--- |Set the current 'Report' logging context.
+-- | Set the current 'Report' logging context.
 setContext ::
   Member (DataLog LogReport) r =>
   ReportContext ->
@@ -47,7 +47,7 @@ setContext ::
 setContext ctx =
   Log.local (#context .~ ctx)
 
--- |Convert a value to 'Report' via 'Reportable' and send it to the log.
+-- | Convert a value to 'Report' via 'Reportable' and send it to the log.
 logReport ::
   Reportable e =>
   Member (DataLog LogReport) r =>
@@ -58,7 +58,7 @@ logReport e =
   where
     r = toReport e
 
--- |Send a 'Report' to the log given a user and log message, with serverity 'Info'.
+-- | Send a 'Report' to the log given a user and log message, with serverity 'Info'.
 info ::
   Member (DataLog LogReport) r =>
   Text ->
@@ -67,7 +67,7 @@ info ::
 info user log =
   logReport Report {severity = Info, ..}
 
--- |Send a 'Report' to the log given a user and log message, with serverity 'Warn'.
+-- | Send a 'Report' to the log given a user and log message, with serverity 'Warn'.
 warn ::
   Member (DataLog LogReport) r =>
   Text ->
@@ -76,7 +76,7 @@ warn ::
 warn user log =
   logReport Report {severity = Warn, ..}
 
--- |Send a 'Report' to the log given a user and log message, with serverity 'Log.Error'.
+-- | Send a 'Report' to the log given a user and log message, with serverity 'Log.Error'.
 error ::
   Member (DataLog LogReport) r =>
   Text ->
@@ -85,7 +85,7 @@ error ::
 error user log =
   logReport Report {severity = Error, ..}
 
--- |Eliminate @'Stop' err@ by converting @err@ to a 'Report' and logging it, continuing execution for a unit action.
+-- | Eliminate @'Stop' err@ by converting @err@ to a 'Report' and logging it, continuing execution for a unit action.
 reportStop ::
   ∀ err r .
   Reportable err =>
@@ -96,7 +96,7 @@ reportStop sem =
   withFrozenCallStack do
     either logReport pure =<< runStop sem
 
--- |Resume an effect by converting the error to a 'Report' and logging it, continuing execution for a unit action.
+-- | Resume an effect by converting the error to a 'Report' and logging it, continuing execution for a unit action.
 resumeLogReport ::
   ∀ eff e r .
   Reportable e =>
@@ -107,7 +107,7 @@ resumeLogReport sem =
   withFrozenCallStack do
     sem !! logReport
 
--- |Resume all plugin effects.
+-- | Resume all plugin effects.
 pluginLogReports ::
   Members [Scratch !! RpcError, Settings !! SettingError, Rpc !! RpcError, Stop Report] r =>
   InterpretersFor [Scratch, Settings, Rpc] r

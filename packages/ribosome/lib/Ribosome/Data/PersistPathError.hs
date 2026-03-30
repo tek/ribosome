@@ -1,4 +1,4 @@
--- |Error for 'Ribosome.PersistPath'.
+-- | Error for 'Ribosome.PersistPath'.
 module Ribosome.Data.PersistPathError where
 
 import Exon (exon)
@@ -8,12 +8,12 @@ import Polysemy.Log (Severity (Error))
 import Ribosome.Host.Data.Report (Report (Report), Reportable (toReport))
 import Ribosome.Host.Path (pathText)
 
--- |The errors emitted by the effect 'Ribosome.PersistPath'.
+-- | The errors emitted by the effect 'Ribosome.PersistPath'.
 data PersistPathError =
-  -- |Cannot determine the cache directory.
+  -- | Cannot determine the cache directory.
   Undefined
   |
-  -- |General permissions error.
+  -- | General permissions error.
   Permissions (Path Abs Dir)
   deriving stock (Eq, Show)
 

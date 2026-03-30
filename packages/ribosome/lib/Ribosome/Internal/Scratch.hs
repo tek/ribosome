@@ -1,6 +1,6 @@
 {-# options_haddock prune #-}
 
--- |Internal logic for 'Ribosome.Scratch'.
+-- | Internal logic for 'Ribosome.Scratch'.
 module Ribosome.Internal.Scratch where
 
 import qualified Data.Map.Strict as Map

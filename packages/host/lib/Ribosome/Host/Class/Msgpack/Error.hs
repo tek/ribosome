@@ -1,6 +1,6 @@
 {-# options_haddock prune #-}
 
--- |Errors for messagepack decoding.
+-- | Errors for messagepack decoding.
 module Ribosome.Host.Class.Msgpack.Error where
 
 import Data.MessagePack (Object (..))
@@ -13,7 +13,7 @@ import Type.Reflection (typeRep)
 
 import Ribosome.Host.Data.Report (Report (Report), Reportable (toReport))
 
--- |A decoding error in a field of a larger type.
+-- | A decoding error in a field of a larger type.
 --
 -- May be nested arbitrarily deep.
 data FieldError =
@@ -26,12 +26,12 @@ instance IsString FieldError where
   fromString =
     FieldError . fromString
 
--- |A messagepack decoding error.
+-- | A messagepack decoding error.
 data DecodeError =
   DecodeError {
-    -- |The name of the type being decoded.
+    -- | The name of the type being decoded.
     mainType :: Text,
-    -- |An error, potentially nested in other types.
+    -- | An error, potentially nested in other types.
     fieldError :: FieldError
   }
   deriving stock (Eq, Show, Generic)
@@ -48,7 +48,7 @@ compileError err =
       NestedFieldError nerr ->
         nest nerr
 
--- |Create a user-friendly message for a 'DecodeError'.
+-- | Create a user-friendly message for a 'DecodeError'.
 renderError :: DecodeError -> Text
 renderError err =
   [exon|Decoding #{mainTypes}: #{fieldMsg}|]
@@ -63,7 +63,7 @@ instance Reportable DecodeError where
       msg =
         renderError err
 
--- |Convert a 'FieldError' in a 'Left' to a 'DecodeError' by adding the type name via 'Typeable'.
+-- | Convert a 'FieldError' in a 'Left' to a 'DecodeError' by adding the type name via 'Typeable'.
 toDecodeError ::
   ∀ a .
   Typeable a =>
@@ -72,7 +72,7 @@ toDecodeError ::
 toDecodeError =
   first (DecodeError (show (typeRep @a)))
 
--- |Create a @'Left' 'DecodeError'@ from a 'Text' by adding the type name via 'Typeable'.
+-- | Create a @'Left' 'DecodeError'@ from a 'Text' by adding the type name via 'Typeable'.
 decodeError ::
   ∀ a .
   Typeable a =>
@@ -123,7 +123,7 @@ incompatibleCon ::
 incompatibleCon target o =
   incompatibleShape target (describe o)
 
--- |Create a 'FieldError' for a field when the 'Object' constructor is wrong, using 'Typeable' to obtain the type name.
+-- | Create a 'FieldError' for a field when the 'Object' constructor is wrong, using 'Typeable' to obtain the type name.
 incompatible ::
   ∀ a .
   Typeable a =>
@@ -132,7 +132,7 @@ incompatible ::
 incompatible =
   incompatibleCon (show (typeRep @a))
 
--- |Create a 'DecodeError' for a type when the 'Object' constructor is wrong, using 'Typeable' to obtain the type name.
+-- | Create a 'DecodeError' for a type when the 'Object' constructor is wrong, using 'Typeable' to obtain the type name.
 decodeIncompatible ::
   ∀ a .
   Typeable a =>

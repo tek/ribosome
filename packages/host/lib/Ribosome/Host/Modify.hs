@@ -1,4 +1,4 @@
--- |Modify 'RpcCall' constructors that contain calls to @nvim_command@.
+-- | Modify 'RpcCall' constructors that contain calls to @nvim_command@.
 --
 -- See @:h :command-modifiers@.
 module Ribosome.Host.Modify where
@@ -20,7 +20,7 @@ import qualified Ribosome.Host.Effect.Rpc as Rpc
 import Ribosome.Host.Effect.Rpc (Rpc)
 import Ribosome.Host.Class.MonadRpc (MonadRpc)
 
--- |Modify an 'RpcCall' constructor if it contains a request for @nvim_command@ by prefixing it with the given string.
+-- | Modify an 'RpcCall' constructor if it contains a request for @nvim_command@ by prefixing it with the given string.
 modifyCall :: Text -> RpcCall a -> RpcCall a
 modifyCall modifier = \case
   RpcRequest (Request "nvim_command" [ObjectString cmd]) decode ->
@@ -28,7 +28,7 @@ modifyCall modifier = \case
   c ->
     c
 
--- |Prefix all @nvim_commands@ called in an action with the given string.
+-- | Prefix all @nvim_commands@ called in an action with the given string.
 modifyCmd ::
   Member Rpc r =>
   Text ->
@@ -45,7 +45,7 @@ modifyCmd modifier =
     Rpc.ChannelId ->
       pureT =<< Rpc.channelId
 
--- |Prefix all @nvim_commands@ called in an action with @silent@.
+-- | Prefix all @nvim_commands@ called in an action with @silent@.
 silent ::
   Member Rpc r =>
   Sem r a ->
@@ -53,7 +53,7 @@ silent ::
 silent =
   modifyCmd "silent"
 
--- |Prefix all @nvim_commands@ called in an action with @silent!@.
+-- | Prefix all @nvim_commands@ called in an action with @silent!@.
 silentBang ::
   Member Rpc r =>
   Sem r a ->
@@ -61,7 +61,7 @@ silentBang ::
 silentBang =
   modifyCmd "silent!"
 
--- |Prefix all @nvim_commands@ called in an action with @noautocmd@.
+-- | Prefix all @nvim_commands@ called in an action with @noautocmd@.
 noautocmd ::
   Member Rpc r =>
   Sem r a ->
@@ -69,7 +69,7 @@ noautocmd ::
 noautocmd =
   modifyCmd "noautocmd"
 
--- |Prefix all @nvim_commands@ called in an action with @windo N@ where @N@ is the number of the given window.
+-- | Prefix all @nvim_commands@ called in an action with @windo N@ where @N@ is the number of the given window.
 windo ::
   MonadRpc m =>
   Window ->
@@ -82,7 +82,7 @@ windo win ma = do
   when (previous /= win) (vimSetCurrentWindow previous)
   pure a
 
--- |Prefix all @nvim_commands@ called in an action with @bufdo N@ where @N@ is the number of the given buffer.
+-- | Prefix all @nvim_commands@ called in an action with @bufdo N@ where @N@ is the number of the given buffer.
 bufdo ::
   Member Rpc r =>
   Buffer ->

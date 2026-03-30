@@ -1,6 +1,6 @@
 {-# options_haddock prune #-}
 
--- |The class for decoding messagepack.
+-- | The class for decoding messagepack.
 module Ribosome.Host.Class.Msgpack.Decode where
 
 import qualified Data.Map.Strict as Map
@@ -65,9 +65,9 @@ fromMsgpackGeneric ::
 fromMsgpackGeneric =
   toDecodeError . fmap gto . gfromMsgpack @(GDatatypeInfoOf a)
 
--- |Class of values that can be decoded from MessagePack 'Object's.
+-- | Class of values that can be decoded from MessagePack 'Object's.
 class MsgpackDecode a where
-  -- |Decode a value from a MessagePack 'Object'.
+  -- | Decode a value from a MessagePack 'Object'.
     --
   -- The default implementation uses generic derivation.
   fromMsgpack :: Object -> Either DecodeError a
@@ -108,11 +108,11 @@ instance (
       [] ->
         incompatibleShape "product type" "too few elements"
 
--- |This class decides what to return when a key in an 'ObjectMap' is missing for a corresponding record field.
+-- | This class decides what to return when a key in an 'ObjectMap' is missing for a corresponding record field.
 --
 -- Primarily used for 'Maybe' fields, since they should decode to 'Nothing' when the key is absent.
 class MissingKey a where
-  -- |Return a fallback value for a missing key in an 'ObjectMap'.
+  -- | Return a fallback value for a missing key in an 'ObjectMap'.
   missingKey :: String -> Map String Object -> Either FieldError a
 
 instance {-# overlappable #-} MissingKey a where
@@ -419,7 +419,7 @@ fromMsgpackText ::
 fromMsgpackText =
   first renderError . fromMsgpack
 
--- |Pattern synonym for decoding an 'Object'.
+-- | Pattern synonym for decoding an 'Object'.
 pattern Msgpack :: ∀ a . MsgpackDecode a => a -> Object
 pattern Msgpack a <- (fromMsgpack -> Right a)
 

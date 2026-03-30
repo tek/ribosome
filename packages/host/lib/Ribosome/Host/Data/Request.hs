@@ -16,12 +16,12 @@ newtype RequestId =
   deriving stock (Eq, Show, Generic)
   deriving newtype (Num, Real, Enum, Integral, Ord, MsgpackDecode, MsgpackEncode)
 
--- |The payload of an RPC request.
+-- | The payload of an RPC request.
 data Request =
   Request {
-    -- |The method, which is either the Neovim API function name or the internal identifier of a Ribosome handler.
+    -- | The method, which is either the Neovim API function name or the internal identifier of a Ribosome handler.
     method :: RpcMethod,
-    -- |The arguments.
+    -- | The arguments.
     arguments :: [Object]
   }
   deriving stock (Eq, Show, Generic)
@@ -30,12 +30,12 @@ instance MsgpackEncode Request where
   toMsgpack (Request m p) =
     ObjectArray [toMsgpack m, toMsgpack p]
 
--- |An RPC request, which is a payload combined with a request ID.
+-- | An RPC request, which is a payload combined with a request ID.
 data TrackedRequest =
   TrackedRequest {
-    -- |The ID is used to associate the response with the sender.
+    -- | The ID is used to associate the response with the sender.
     id :: RequestId,
-    -- |The payload.
+    -- | The payload.
     request :: Request
   }
   deriving stock (Eq, Show)

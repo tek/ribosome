@@ -1,4 +1,4 @@
--- |Interpreters for 'VariableWatcher'
+-- | Interpreters for 'VariableWatcher'
 module Ribosome.Interpreter.VariableWatcher where
 
 import Conc (interpretAtomic, interpretLockReentrant, lockOrSkip_)
@@ -13,14 +13,14 @@ import Ribosome.Host.Data.RpcError (RpcError)
 import Ribosome.Host.Data.RpcHandler (Handler)
 import Ribosome.Host.Effect.Rpc (Rpc)
 
--- |Interpret 'VariableWatcher' by doing nothing.
+-- | Interpret 'VariableWatcher' by doing nothing.
 interpretVariableWatcherNull :: InterpreterFor (VariableWatcher !! Report) r
 interpretVariableWatcherNull =
   interpretResumable \case
     VariableWatcher.Update -> unit
     VariableWatcher.Unwatch _ -> unit
 
--- |Run the handler if the two 'Object's are different.
+-- | Run the handler if the two 'Object's are different.
 runIfDifferent ::
   (Object -> Handler r ()) ->
   Object ->
@@ -29,7 +29,7 @@ runIfDifferent ::
 runIfDifferent handler new old =
   unless (old == new) (handler new)
 
--- |Fetch the current value of the watched variable and call the handler if its value has changed.
+-- | Fetch the current value of the watched variable and call the handler if its value has changed.
 checkVar ::
   Member (Rpc !! RpcError) r =>
   WatchedVariable ->
@@ -41,7 +41,7 @@ checkVar (WatchedVariable var) old handler =
     new <- nvimGetVar var
     new <$ raise (runIfDifferent handler new old)
 
--- |This is a reactive system that is triggered by several frequently sent autocommands to inspect a user-defined set of
+-- | This is a reactive system that is triggered by several frequently sent autocommands to inspect a user-defined set of
 -- Neovim variables for changes.
 -- When a variable's value has been observed to have changed from the previously recorded state, the associated handler
 -- is executed.
@@ -70,7 +70,7 @@ watchVariables vars =
       restop @Report (VariableWatcher.unwatch var)
   . raise . raise
 
--- |Interpret 'VariableWatcher' with 'watchVariables', but eliminate the effect from the stack.
+-- | Interpret 'VariableWatcher' with 'watchVariables', but eliminate the effect from the stack.
 interpretVariableWatcher ::
   Members [Rpc !! RpcError, Resource, Mask, Race, Embed IO] r =>
   Map WatchedVariable (Object -> Handler (VariableWatcher !! Report : r) ()) ->

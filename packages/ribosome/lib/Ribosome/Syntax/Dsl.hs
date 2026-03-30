@@ -1,4 +1,4 @@
--- |DSL for Neovim syntax definitions.
+-- | DSL for Neovim syntax definitions.
 module Ribosome.Syntax.Dsl where
 
 import Prelude hiding (group)
@@ -8,7 +8,7 @@ import qualified Ribosome.Data.Syntax.SyntaxKind as SyntaxKind
 import Ribosome.Data.Syntax.SyntaxKind (SyntaxKind (Match, Region, Verbatim), SyntaxRegion (SyntaxRegion))
 import Ribosome.Data.SyntaxItem (SyntaxGroup, SyntaxItem (SyntaxItem))
 
--- |Declare the right syntax tree to be contained within the left tree, meaning that the top level nodes in the right
+-- | Declare the right syntax tree to be contained within the left tree, meaning that the top level nodes in the right
 -- tree can only match inside of the nodes in the left tree.
 --
 -- On the left side, this sets the @contains@ option.
@@ -21,7 +21,7 @@ import Ribosome.Data.SyntaxItem (SyntaxGroup, SyntaxItem (SyntaxItem))
 
 infixr 5 #>
 
--- |Declare that the right syntax tree should be matched immediately after the left tree.
+-- | Declare that the right syntax tree should be matched immediately after the left tree.
 --
 -- On the left side, this sets the @nextgroup@ option.
 -- It propagates through all choice nodes and down to the innermost node in a chain (@contains@ or @nextgroup@).
@@ -31,7 +31,7 @@ infixr 5 #>
 
 infixr 6 >-
 
--- |Declare that the two syntax trees should both be allowed to match at this point.
+-- | Declare that the two syntax trees should both be allowed to match at this point.
 --
 -- Can be chained for multiple choices.
 (<#>) :: Alg -> Alg -> Alg
@@ -40,7 +40,7 @@ infixr 6 >-
 
 infixr 7 <#>
 
--- |Set a prefix for all syntax groups in the subtree.
+-- | Set a prefix for all syntax groups in the subtree.
 --
 -- In @prefix "Ribosome" (prefix "Long" (match "Word" "..."))@, the inner @match@ will have the group name
 -- @RibosomeLongWord@.
@@ -50,37 +50,37 @@ prefix :: SyntaxGroup -> Alg -> Alg
 prefix =
   Prefix
 
--- |Construct a concrete syntax item.
+-- | Construct a concrete syntax item.
 item :: SyntaxGroup -> SyntaxKind -> Alg
 item grp k =
   Item (SyntaxItem grp k ["skipwhite"] [] [] [] False)
 
--- |Construct a @syntax match@ item.
+-- | Construct a @syntax match@ item.
 match :: SyntaxGroup -> Text -> Alg
 match grp pat =
   item grp (Match pat)
 
--- |Construct a @syntax region@ item.
+-- | Construct a @syntax region@ item.
 region :: SyntaxGroup -> Text -> Text -> Alg
 region grp start end =
   item grp (Region SyntaxRegion {skip = Nothing, startOffset = Nothing, endOffset = Nothing, ..})
 
--- |Construct an item with an explicit syntax command that is not subject to transformations from other combinators.
+-- | Construct an item with an explicit syntax command that is not subject to transformations from other combinators.
 verbatim :: Text -> Alg
 verbatim =
   item "verbatim" . Verbatim
 
--- |Modify all nested syntax items with the specified function.
+-- | Modify all nested syntax items with the specified function.
 modItem :: (SyntaxItem -> SyntaxItem) -> Alg -> Alg
 modItem =
   Mod
 
--- |Modify all nested syntax items with the specified function, operating on the 'SyntaxKind'.
+-- | Modify all nested syntax items with the specified function, operating on the 'SyntaxKind'.
 modKind :: (SyntaxKind -> SyntaxKind) -> Alg -> Alg
 modKind f =
   modItem (#kind %~ f)
 
--- |Set the @skip@ attribute on all nested regions.
+-- | Set the @skip@ attribute on all nested regions.
 skip :: Text -> Alg -> Alg
 skip spec =
   modKind \case
@@ -89,7 +89,7 @@ skip spec =
     k ->
       k
 
--- |Set the @startOffset@ attribute on all nested regions.
+-- | Set the @startOffset@ attribute on all nested regions.
 startOffset :: Text -> Alg -> Alg
 startOffset spec =
   modKind \case
@@ -98,7 +98,7 @@ startOffset spec =
     k ->
       k
 
--- |Set the @endOffset@ attribute on all nested regions.
+-- | Set the @endOffset@ attribute on all nested regions.
 endOffset :: Text -> Alg -> Alg
 endOffset spec =
   modKind \case
@@ -107,27 +107,27 @@ endOffset spec =
     k ->
       k
 
--- |Set an option on all items in the subtree.
+-- | Set an option on all items in the subtree.
 addOption :: Text -> Alg -> Alg
 addOption name =
   modItem (#options <>~ [name])
 
--- |Remove an option from all items in the subtree.
+-- | Remove an option from all items in the subtree.
 removeOption :: Text -> Alg -> Alg
 removeOption name =
   modItem (#options %~ filter (/= name))
 
--- |Set the option @shipwhite@ on all items in the subtree.
+-- | Set the option @shipwhite@ on all items in the subtree.
 ws :: Alg -> Alg
 ws =
   addOption "skipwhite"
 
--- |Remove the option @shipwhite@ from all items in the subtree, which is set by default.
+-- | Remove the option @shipwhite@ from all items in the subtree, which is set by default.
 nows :: Alg -> Alg
 nows =
   removeOption "skipwhite"
 
--- |Add a highlight group to all nodes in the subtree.
+-- | Add a highlight group to all nodes in the subtree.
 --
 -- If the subtree contains more than one node, this creates one @highlight@ and uses @highlight link@ to apply it to the
 -- other groups.
@@ -135,7 +135,7 @@ hi :: Map Text Text -> Alg -> Alg
 hi =
   Hi
 
--- |Add a highlight link to all nodes in the subtree.
+-- | Add a highlight link to all nodes in the subtree.
 link :: SyntaxGroup -> Alg -> Alg
 link =
   Link

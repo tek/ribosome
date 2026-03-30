@@ -1,4 +1,4 @@
--- |Interpreters for 'Reports'.
+-- | Interpreters for 'Reports'.
 module Ribosome.Host.Interpreter.Reports where
 
 import Conc (interpretAtomic)
@@ -11,7 +11,7 @@ import Ribosome.Host.Data.StoredReport (StoredReport)
 import qualified Ribosome.Host.Effect.Reports as Reports
 import Ribosome.Host.Effect.Reports (Reports)
 
--- |Interpret 'Reports' by storing reports in 'AtomicState'.
+-- | Interpret 'Reports' by storing reports in 'AtomicState'.
 interpretReportsAtomic ::
   Members [AtomicState (Map ReportContext [StoredReport]), ChronosTime] r =>
   Int ->
@@ -27,7 +27,7 @@ interpretReportsAtomic maxReports =
     Reports.StoredReports ->
       atomicGet
 
--- |Interpret 'Reports' by storing reports in 'AtomicState' and interpret the state effect.
+-- | Interpret 'Reports' by storing reports in 'AtomicState' and interpret the state effect.
 interpretReports ::
   Members [ChronosTime, Embed IO] r =>
   InterpreterFor Reports r

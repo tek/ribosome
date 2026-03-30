@@ -82,9 +82,9 @@ matchRegex query =
     rx =
       regexing query
 
--- |If the first arg is 'True', matches fuzzily but preserves the order of items for the empty query.
+-- | If the first arg is 'True', matches fuzzily but preserves the order of items for the empty query.
 matchFuzzy :: Bool -> String -> Matcher i Text
--- |If the query is empty, score shorter strings higher.
+-- | If the query is empty, score shorter strings higher.
 matchFuzzy False "" _ e =
   Just (-(Text.length e.item.text), e)
 matchFuzzy True "" _ e =

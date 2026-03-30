@@ -1,4 +1,4 @@
--- |Functions for constructing and activating 'Mapping's
+-- | Functions for constructing and activating 'Mapping's
 module Ribosome.Mapping where
 
 import Data.MessagePack (Object)
@@ -23,7 +23,7 @@ import Ribosome.Host.Data.RpcName (RpcName (RpcName))
 import qualified Ribosome.Host.Effect.Rpc as Rpc
 import Ribosome.Host.Effect.Rpc (Rpc)
 
--- |Generate an atomic call executing a mapping cmd for all modes specified in the 'Mapping' and run it.
+-- | Generate an atomic call executing a mapping cmd for all modes specified in the 'Mapping' and run it.
 mappingCmdWith ::
   MonadRpc m =>
   (Text -> Text -> Text -> Map Text Object -> m ()) ->
@@ -46,7 +46,7 @@ mappingCmdWith call (ChannelId cid) (Mapping action (MappingSpec (MappingLhs lhs
     idArg = \case
       MappingId mi -> [exon|, '#{mi}'|]
 
--- |Generate an atomic call executing a mapping cmd for all modes specified in the 'Mapping' and run it.
+-- | Generate an atomic call executing a mapping cmd for all modes specified in the 'Mapping' and run it.
 mappingCmd ::
   MonadRpc m =>
   ChannelId ->
@@ -55,10 +55,10 @@ mappingCmd ::
 mappingCmd = do
   mappingCmdWith nvimSetKeymap
 
--- |Generate an atomic call executing a buffer mapping cmd for all modes specified in the 'Mapping' and run it.
+-- | Generate an atomic call executing a buffer mapping cmd for all modes specified in the 'Mapping' and run it.
 bufferMappingCmd ::
   MonadRpc m =>
-  -- |Use @<buffer>@ to create a buffer-local mapping.
+  -- | Use @<buffer>@ to create a buffer-local mapping.
   Buffer ->
   ChannelId ->
   Mapping ->
@@ -66,7 +66,7 @@ bufferMappingCmd ::
 bufferMappingCmd buffer =
   mappingCmdWith (nvimBufSetKeymap buffer)
 
--- |Register a mapping globally.
+-- | Register a mapping globally.
 activateMappingOnChan ::
   MonadRpc m =>
   ChannelId ->
@@ -75,7 +75,7 @@ activateMappingOnChan ::
 activateMappingOnChan =
   mappingCmd
 
--- |Register a mapping in the supplied buffer.
+-- | Register a mapping in the supplied buffer.
 activateBufferMappingOnChan ::
   MonadRpc m =>
   Buffer ->
@@ -85,7 +85,7 @@ activateBufferMappingOnChan ::
 activateBufferMappingOnChan buffer =
   bufferMappingCmd buffer
 
--- |Register a mapping globally.
+-- | Register a mapping globally.
 --
 -- This obtains the channel ID and cannot be batched atomically.
 activateMapping ::
@@ -96,7 +96,7 @@ activateMapping m = do
   cid <- Rpc.channelId
   mappingCmd cid m
 
--- |Register a mapping in the supplied buffer.
+-- | Register a mapping in the supplied buffer.
 --
 -- This obtains the channel ID and cannot be batched atomically.
 activateBufferMapping ::
@@ -108,7 +108,7 @@ activateBufferMapping buffer m = do
   cid <- Rpc.channelId
   bufferMappingCmd buffer cid m
 
--- |Register a set of mappings globally.
+-- | Register a set of mappings globally.
 --
 -- This obtains the channel ID and cannot be batched atomically.
 activateMappings ::
@@ -119,7 +119,7 @@ activateMappings m = do
   cid <- Rpc.channelId
   traverse_ (mappingCmd cid) m
 
--- |Register a set of mappings in the supplied buffer.
+-- | Register a set of mappings in the supplied buffer.
 --
 -- This obtains the channel ID and cannot be batched atomically.
 activateBufferMappings ::
@@ -132,7 +132,7 @@ activateBufferMappings buffer m = do
   atomic do
     traverse_ (bufferMappingCmd buffer cid) m
 
--- |Construct a 'Mapping' using the name from the supplied 'RpcHandler'.
+-- | Construct a 'Mapping' using the name from the supplied 'RpcHandler'.
 mappingFor ::
   RpcHandler r ->
   MappingLhs ->
@@ -143,7 +143,7 @@ mappingFor ::
 mappingFor RpcHandler {rpcName} lhs mode =
   Mapping (MappingCall rpcName) (MappingSpec lhs mode)
 
--- |Construct a 'Mapping' using the supplied 'EventName'.
+-- | Construct a 'Mapping' using the supplied 'EventName'.
 eventMapping ::
   EventName ->
   MappingLhs ->

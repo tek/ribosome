@@ -1,4 +1,4 @@
--- |Helper for encoding values to a heterogeneous MessagePack array.
+-- | Helper for encoding values to a heterogeneous MessagePack array.
 module Ribosome.Host.Class.Msgpack.Array where
 
 import Data.MessagePack (Object)
@@ -10,9 +10,9 @@ newtype Acc =
   Acc { unAcc :: Seq Object }
   deriving stock (Eq, Show)
 
--- |This class provides a variadic method for encoding MessagePack arrays.
+-- | This class provides a variadic method for encoding MessagePack arrays.
 class MsgpackArray a where
-  -- |Encode an arbitrary number of heterogeneously typed values to a single MessagePack array.
+  -- | Encode an arbitrary number of heterogeneously typed values to a single MessagePack array.
   -- This function is variadic, meaning that it takes an arbitrary number of arguments:
   --
   -- >>> msgpackArray (5 :: Int) ("error" :: Text) (3.14 :: Double) :: Object

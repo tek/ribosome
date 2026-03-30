@@ -1,4 +1,4 @@
--- |Combinators for creating and manipulating RPC handlers.
+-- | Combinators for creating and manipulating RPC handlers.
 module Ribosome.Host.Handler where
 
 import qualified Data.Text as Text
@@ -20,7 +20,7 @@ import Ribosome.Host.Data.RpcType (
 import Ribosome.Host.Handler.Codec (HandlerCodec (handlerCodec))
 import Ribosome.Host.Handler.Command (CommandHandler (commandOptions), OptionStateZero)
 
--- |Create an 'RpcHandler' that is triggered by a Neovim function of the specified name.
+-- | Create an 'RpcHandler' that is triggered by a Neovim function of the specified name.
 --
 -- The handler can take arbitrary parameters, as long as they are instances of 'Ribosome.MsgpackDecode' (or more
 -- specifically, 'Ribosome.Host.Handler.Codec.HandlerArg'), just like the return type.
@@ -45,17 +45,17 @@ import Ribosome.Host.Handler.Command (CommandHandler (commandOptions), OptionSta
 rpcFunction ::
   ∀ r h .
   HandlerCodec h r =>
-  -- |Name of the Neovim function that will be created.
+  -- | Name of the Neovim function that will be created.
   RpcName ->
-  -- |Execute sync or async.
+  -- | Execute sync or async.
   Execution ->
-  -- |The handler function.
+  -- | The handler function.
   h ->
   RpcHandler r
 rpcFunction name execution h =
   RpcHandler RpcType.Function name execution (handlerCodec h)
 
--- |Create an 'RpcHandler' that is triggered by a Neovim command of the specified name.
+-- | Create an 'RpcHandler' that is triggered by a Neovim command of the specified name.
 --
 -- The handler can take arbitrary parameters, as long as they are instances of 'Ribosome.MsgpackDecode' (or more
 -- specifically, 'Ribosome.Host.Handler.Codec.HandlerArg'), just like the return type.
@@ -71,11 +71,11 @@ rpcCommand ::
   ∀ r h .
   HandlerCodec h r =>
   CommandHandler OptionStateZero h =>
-  -- |Name of the Neovim function that will be created.
+  -- | Name of the Neovim function that will be created.
   RpcName ->
-  -- |Execute sync or async.
+  -- | Execute sync or async.
   Execution ->
-  -- |The handler function.
+  -- | The handler function.
   h ->
   RpcHandler r
 rpcCommand name execution h =
@@ -84,7 +84,7 @@ rpcCommand name execution h =
     (opts, args) =
       commandOptions @OptionStateZero @h
 
--- |Add the given completion to an 'RpcHandler'.
+-- | Add the given completion to an 'RpcHandler'.
 complete ::
   CommandCompletion ->
   RpcHandler r ->
@@ -95,7 +95,7 @@ complete c = \case
   h ->
     h
 
--- |Configure the given 'RpcHandler' to use the specified builtin completion.
+-- | Configure the given 'RpcHandler' to use the specified builtin completion.
 completeBuiltin ::
   Text ->
   RpcHandler r ->
@@ -103,7 +103,7 @@ completeBuiltin ::
 completeBuiltin f =
   complete (CompleteBuiltin f)
 
--- |Create a completion handler that can be used by another handler by wrapping it with 'complete', using the same
+-- | Create a completion handler that can be used by another handler by wrapping it with 'complete', using the same
 -- 'RpcName'.
 completeCustom ::
   RpcName ->
@@ -119,7 +119,7 @@ completeCustom name f = \case
     cn =
       completionName name
 
--- |Add command line completion to another 'RpcHandler' by creating a new handler that calls the given function to
+-- | Add command line completion to another 'RpcHandler' by creating a new handler that calls the given function to
 -- obtain possible completions.
 completeWith ::
   CompleteStyle ->
@@ -132,7 +132,7 @@ completeWith style f main@RpcHandler {rpcName} =
     completeCustom rpcName f style
   ]
 
--- |Create an 'RpcHandler' that is triggered by a Neovim autocommand for the specified event.
+-- | Create an 'RpcHandler' that is triggered by a Neovim autocommand for the specified event.
 -- For a user autocommand, specify @User@ for the event and the event name for the file pattern in 'AutocmdOptions'.
 --
 -- For easier type inference, it is advisable to use @'Handler' r a@ for the return type of the handler instead of using
@@ -141,20 +141,20 @@ rpcAutocmd ::
   ∀ r h .
   HandlerCodec h r =>
   RpcName ->
-  -- |Execute sync or async. While autocommands can not interact with return values, this is still useful to keep Neovim
+  -- | Execute sync or async. While autocommands can not interact with return values, this is still useful to keep Neovim
   -- from continuing execution while the handler is active, which is particularly important for @VimLeave@.
   Execution ->
-  -- |The Neovim event identifier, like @BufWritePre@ or @User@.
+  -- | The Neovim event identifier, like @BufWritePre@ or @User@.
   AutocmdEvents ->
-  -- |Various Neovim options like the file pattern.
+  -- | Various Neovim options like the file pattern.
   AutocmdOptions ->
-  -- |The handler function.
+  -- | The handler function.
   h ->
   RpcHandler r
 rpcAutocmd name execution event options h =
   RpcHandler (RpcType.Autocmd event options) name execution (handlerCodec h)
 
--- |Convenience function for creating a handler that is triggered by both a function and a command of the same name.
+-- | Convenience function for creating a handler that is triggered by both a function and a command of the same name.
 -- See 'rpcFunction' and 'rpcCommand'.
 rpc ::
   ∀ r h .

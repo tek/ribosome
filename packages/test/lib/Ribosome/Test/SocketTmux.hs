@@ -1,4 +1,4 @@
--- |Socket tmux tests start a tmux server, then run a regular Neovim session in a pane and connect to Neovim over a
+-- | Socket tmux tests start a tmux server, then run a regular Neovim session in a pane and connect to Neovim over a
 -- socket.
 module Ribosome.Test.SocketTmux where
 
@@ -28,15 +28,15 @@ import Ribosome.Test.TmuxCommon (TmuxStack, runTmuxNvim)
 import Ribosome.Test.Wait (assertWait)
 import Ribosome.Data.CustomConfig (CustomConfig (CustomConfig))
 
--- |The stack of internal effects for socket tmux tests.
+-- | The stack of internal effects for socket tmux tests.
 type TmuxHandlerStack =
   SocketHandlerEffects ++ Reader (CustomConfig ()) : Reader NvimSocket : TmuxStack
 
--- |The socket tmux test stack with additional effects.
+-- | The socket tmux test stack with additional effects.
 type SocketTmuxWith r =
   TestEffects ++ r ++ TmuxHandlerStack
 
--- |The socket tmux test stack with no additional effects.
+-- | The socket tmux test stack with no additional effects.
 type SocketTmux =
   SocketTmuxWith '[]
 
@@ -44,7 +44,7 @@ nvimCmdline :: Path Abs File -> Text
 nvimCmdline socket =
   [exon|nvim --listen #{pathText socket} -n -u NONE -i NONE --clean|]
 
--- |Create a socket for Neovim to listen on and run a 'Reader' with it.
+-- | Create a socket for Neovim to listen on and run a 'Reader' with it.
 withSocketTmuxNvim ::
   Members [Test, Hedgehog IO, ChronosTime, Error Failure, Race, Embed IO] r =>
   Members [NativeTmux, NativeCommandCodecE, Stop CodecError] r =>
@@ -57,7 +57,7 @@ withSocketTmuxNvim sem = do
   assertWait (pure socket) (assert <=< doesPathExist)
   runReader (NvimSocket socket) sem
 
--- |Run the tmux test stack.
+-- | Run the tmux test stack.
 runSocketTmuxTestConf ::
   HasCallStack =>
   TmuxTestConfig ->
@@ -69,7 +69,7 @@ runSocketTmuxTestConf conf =
   runReader (CustomConfig ()) .
   interpretPluginSocket
 
--- |Run the tmux test stack, using a pty to host tmux.
+-- | Run the tmux test stack, using a pty to host tmux.
 runSocketTmuxTest ::
   HasCallStack =>
   Sem TmuxHandlerStack () ->
@@ -77,7 +77,7 @@ runSocketTmuxTest ::
 runSocketTmuxTest =
   runSocketTmuxTestConf def
 
--- |Run the tmux test stack, using a terminal to tmux tmux.
+-- | Run the tmux test stack, using a terminal to tmux tmux.
 runSocketTmuxGuiTest ::
   HasCallStack =>
   Sem TmuxHandlerStack () ->
@@ -85,16 +85,16 @@ runSocketTmuxGuiTest ::
 runSocketTmuxGuiTest =
   runSocketTmuxTestConf (def & #tmux . #gui .~ True)
 
--- |Run a plugin test against a Neovim process running in a fresh tmux session, connected over a socket.
+-- | Run a plugin test against a Neovim process running in a fresh tmux session, connected over a socket.
 testPluginSocketTmuxConf ::
   ∀ r .
   HasCallStack =>
   Members TmuxHandlerStack (r ++ TmuxHandlerStack) =>
-  -- |Regular test config combined with tmux config
+  -- | Regular test config combined with tmux config
   TmuxTestConfig ->
-  -- |Interpreter for custom effects
+  -- | Interpreter for custom effects
   InterpretersFor r TmuxHandlerStack ->
-  -- |RPC handlers
+  -- | RPC handlers
   [RpcHandler (r ++ TmuxHandlerStack)] ->
   Sem (SocketTmuxWith r) () ->
   UnitTest
@@ -104,31 +104,31 @@ testPluginSocketTmuxConf conf effs handlers =
   withHandlers handlers .
   testPluginEmbed
 
--- |Run a plugin test against a Neovim process running in a fresh tmux session, connected over a socket.
+-- | Run a plugin test against a Neovim process running in a fresh tmux session, connected over a socket.
 testPluginSocketTmux ::
   ∀ r .
   HasCallStack =>
   Members TmuxHandlerStack (r ++ TmuxHandlerStack) =>
-  -- |Interpreter for custom effects
+  -- | Interpreter for custom effects
   InterpretersFor r TmuxHandlerStack ->
-  -- |RPC handlers
+  -- | RPC handlers
   [RpcHandler (r ++ TmuxHandlerStack)] ->
   Sem (SocketTmuxWith r) () ->
   UnitTest
 testPluginSocketTmux =
   testPluginSocketTmuxConf @r def
 
--- |Run a plugin test against a Neovim process running in a fresh tmux session, connected over a socket.
+-- | Run a plugin test against a Neovim process running in a fresh tmux session, connected over a socket.
 testHandlersSocketTmux ::
   HasCallStack =>
-  -- |RPC handlers
+  -- | RPC handlers
   [RpcHandler TmuxHandlerStack] ->
   Sem SocketTmux () ->
   UnitTest
 testHandlersSocketTmux =
   testPluginSocketTmux @'[] id
 
--- |Run a plugin test against a Neovim process running in a fresh tmux session, connected over a socket.
+-- | Run a plugin test against a Neovim process running in a fresh tmux session, connected over a socket.
 testSocketTmux ::
   HasCallStack =>
   Sem SocketTmux () ->
@@ -136,33 +136,33 @@ testSocketTmux ::
 testSocketTmux =
   testHandlersSocketTmux mempty
 
--- |Run a plugin test against a Neovim process running in a fresh tmux session displayed in a terminal, connected over a
+-- | Run a plugin test against a Neovim process running in a fresh tmux session displayed in a terminal, connected over a
 -- socket.
 testPluginSocketTmuxGui ::
   ∀ r .
   HasCallStack =>
   Members TmuxHandlerStack (r ++ TmuxHandlerStack) =>
-  -- |Interpreter for custom effects
+  -- | Interpreter for custom effects
   InterpretersFor r TmuxHandlerStack ->
-  -- |RPC handlers
+  -- | RPC handlers
   [RpcHandler (r ++ TmuxHandlerStack)] ->
   Sem (SocketTmuxWith r) () ->
   UnitTest
 testPluginSocketTmuxGui =
   testPluginSocketTmuxConf @r (def & #tmux . #gui .~ True)
 
--- |Run a plugin test against a Neovim process running in a fresh tmux session displayed in a terminal, connected over a
+-- | Run a plugin test against a Neovim process running in a fresh tmux session displayed in a terminal, connected over a
 -- socket.
 testHandlersSocketTmuxGui ::
   HasCallStack =>
-  -- |RPC handlers
+  -- | RPC handlers
   [RpcHandler TmuxHandlerStack] ->
   Sem SocketTmux () ->
   UnitTest
 testHandlersSocketTmuxGui =
   testPluginSocketTmuxGui @'[] id
 
--- |Run a plugin test against a Neovim process running in a fresh tmux session displayed in a terminal, connected over a
+-- | Run a plugin test against a Neovim process running in a fresh tmux session displayed in a terminal, connected over a
 -- socket.
 testSocketTmuxGui ::
   HasCallStack =>

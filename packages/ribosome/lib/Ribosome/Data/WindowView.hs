@@ -1,10 +1,10 @@
--- |Codec data type for @winsaveview@.
+-- | Codec data type for @winsaveview@.
 module Ribosome.Data.WindowView where
 
 import Ribosome.Host.Class.Msgpack.Decode (MsgpackDecode)
 import Ribosome.Host.Class.Msgpack.Encode (MsgpackEncode)
 
--- |Codec data type for @winsaveview@.
+-- | Codec data type for @winsaveview@.
 data WindowView =
   WindowView {
     lnum :: Int,
@@ -13,7 +13,7 @@ data WindowView =
   deriving stock (Eq, Show, Generic)
   deriving anyclass (MsgpackEncode, MsgpackDecode)
 
--- |Codec data type for @winrestview@.
+-- | Codec data type for @winrestview@.
 data PartialWindowView =
   PartialWindowView {
     lnum :: Maybe Int,
@@ -22,7 +22,7 @@ data PartialWindowView =
   deriving stock (Eq, Show, Generic)
   deriving anyclass (MsgpackEncode, MsgpackDecode)
 
--- |Convert between the return type of @winsaveview@ and the parameter type of @winrestview@.
+-- | Convert between the return type of @winsaveview@ and the parameter type of @winrestview@.
 class AsPartialWindowView a where
   asPartialWindowView :: a -> PartialWindowView
 

@@ -97,9 +97,9 @@ toMsgpackGeneric ::
 toMsgpackGeneric =
   gtoMsgpack @(GDatatypeInfoOf a) . gfrom
 
--- |Class of values that can be encoded to MessagePack 'Object's.
+-- | Class of values that can be encoded to MessagePack 'Object's.
 class MsgpackEncode a where
-  -- |Encode a value to MessagePack.
+  -- | Encode a value to MessagePack.
     --
   -- The default implementation uses generic derivation.
   toMsgpack :: a -> Object

@@ -1,4 +1,4 @@
--- |The effect 'Settings' abstracts Neovim variables
+-- | The effect 'Settings' abstracts Neovim variables
 module Ribosome.Effect.Settings where
 
 import Prelude hiding (get)
@@ -8,16 +8,16 @@ import Ribosome.Data.SettingError (SettingError)
 import Ribosome.Host.Class.Msgpack.Decode (MsgpackDecode)
 import Ribosome.Host.Class.Msgpack.Encode (MsgpackEncode)
 
--- |This effects abstracts Neovim variables with associated defaults.
+-- | This effects abstracts Neovim variables with associated defaults.
 data Settings :: Effect where
-  -- |Get the value of the setting's Neovim variable or return the default if it is undefined.
+  -- | Get the value of the setting's Neovim variable or return the default if it is undefined.
   Get :: MsgpackDecode a => Setting a -> Settings m a
-  -- |Set the value of the setting's Neovim variable.
+  -- | Set the value of the setting's Neovim variable.
   Update :: MsgpackEncode a => Setting a -> a -> Settings m ()
 
 makeSem_ ''Settings
 
--- |Get the value of the setting's Neovim variable or return the default if it is undefined.
+-- | Get the value of the setting's Neovim variable or return the default if it is undefined.
 get ::
   ∀ a r .
   MsgpackDecode a =>
@@ -25,7 +25,7 @@ get ::
   Setting a ->
   Sem r a
 
--- |Set the value of the setting's Neovim variable.
+-- | Set the value of the setting's Neovim variable.
 update ::
   ∀ a r .
   MsgpackEncode a =>
@@ -34,7 +34,7 @@ update ::
   a ->
   Sem r ()
 
--- |Get the setting's value or return the supplied fallback value if the Neovim variable is undefined and the setting
+-- | Get the setting's value or return the supplied fallback value if the Neovim variable is undefined and the setting
 -- has no default value.
 or ::
   MsgpackDecode a =>
@@ -45,7 +45,7 @@ or ::
 or a s =
   a <! get s
 
--- |Get 'Just' the setting's value or return 'Nothing' if the Neovim variable is undefined and the setting has no
+-- | Get 'Just' the setting's value or return 'Nothing' if the Neovim variable is undefined and the setting has no
 -- default value.
 maybe ::
   MsgpackDecode a =>

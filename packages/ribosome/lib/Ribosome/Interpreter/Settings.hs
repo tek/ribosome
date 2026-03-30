@@ -1,4 +1,4 @@
--- |Interpreters for 'Settings'
+-- | Interpreters for 'Settings'
 module Ribosome.Interpreter.Settings where
 
 import Exon (exon)
@@ -15,7 +15,7 @@ import Ribosome.Host.Data.RpcError (RpcError)
 import Ribosome.Host.Effect.Rpc (Rpc)
 import Ribosome.PluginName (pluginName)
 
--- |Assemble the name of a setting variable by prefixing the 'Setting' key with the plugin name if the flag is set.
+-- | Assemble the name of a setting variable by prefixing the 'Setting' key with the plugin name if the flag is set.
 settingVariableName ::
   Member (Reader PluginName) r =>
   Setting a ->
@@ -27,7 +27,7 @@ settingVariableName = \case
     PluginName name <- pluginName
     pure [exon|#{name}_#{key}|]
 
--- |Fetch the value for a setting stored in its Neovim variable.
+-- | Fetch the value for a setting stored in its Neovim variable.
 settingRaw ::
   Members [Rpc, Reader PluginName] r =>
   MsgpackDecode a =>
@@ -36,7 +36,7 @@ settingRaw ::
 settingRaw s =
   nvimGetVar =<< settingVariableName s
 
--- |Return the default value for a setting or stop with an error if none is set.
+-- | Return the default value for a setting or stop with an error if none is set.
 fallback ::
   Members [Reader PluginName, Stop SettingError] r =>
   Setting a ->
@@ -48,7 +48,7 @@ fallback = \case
     n <- settingVariableName s
     stop (SettingError.Unset n)
 
--- |Interpret 'Settings' natively, using Neovim variables.
+-- | Interpret 'Settings' natively, using Neovim variables.
 interpretSettingsRpc ::
   Members [Rpc !! RpcError, Reader PluginName] r =>
   InterpreterFor (Settings !! SettingError) r

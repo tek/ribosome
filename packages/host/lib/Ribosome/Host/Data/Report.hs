@@ -1,4 +1,4 @@
--- |Data structures related to logging and notifying the user
+-- | Data structures related to logging and notifying the user
 module Ribosome.Host.Data.Report where
 
 import qualified Data.Text as Text
@@ -8,29 +8,29 @@ import Fcf.Class.Functor (FMap)
 import Polysemy.Log (Severity (Error))
 import Prelude hiding (tag)
 
--- |The provenance of a report, for use in logs.
+-- | The provenance of a report, for use in logs.
 newtype ReportContext =
   ReportContext { unReportContext :: [Text] }
   deriving stock (Eq, Show)
   deriving newtype (Ord, Semigroup, Monoid)
 
--- |Render a 'ReportContext' by interspersing it with dots, returning 'Nothing' if it is empty.
+-- | Render a 'ReportContext' by interspersing it with dots, returning 'Nothing' if it is empty.
 reportContext' :: ReportContext -> Maybe Text
 reportContext' = \case
   ReportContext [] -> Nothing
   ReportContext c -> Just (Text.intercalate "." c)
 
--- |Render a 'ReportContext' by interspersing it with dots, followed by a colon, returning 'Nothing' if it is empty.
+-- | Render a 'ReportContext' by interspersing it with dots, followed by a colon, returning 'Nothing' if it is empty.
 prefixReportContext' :: ReportContext -> Maybe Text
 prefixReportContext' c =
   flip Text.snoc ':' <$> reportContext' c
 
--- |Render a 'ReportContext' by interspersing it with dots, using @global@ if it is empty.
+-- | Render a 'ReportContext' by interspersing it with dots, using @global@ if it is empty.
 reportContext :: ReportContext -> Text
 reportContext c =
   fromMaybe "global" (reportContext' c)
 
--- |Render a 'ReportContext' by interspersing it with dots, followed by a colon, using @global@ if it is empty.
+-- | Render a 'ReportContext' by interspersing it with dots, followed by a colon, using @global@ if it is empty.
 prefixReportContext :: ReportContext -> Text
 prefixReportContext c =
   Text.snoc (reportContext c) ':'
@@ -39,7 +39,7 @@ instance IsString ReportContext where
   fromString =
     ReportContext . pure . toText
 
--- |A report with different messages intended to be sent to Neovim and the log, respectively.
+-- | A report with different messages intended to be sent to Neovim and the log, respectively.
 --
 -- Used by request handlers and expected by the RPC dispatcher.
 --
@@ -68,25 +68,25 @@ instance IsString Report where
   fromString (toText -> s) =
     Report s [s] Error
 
--- |The type used by request handlers and expected by the RPC dispatcher.
+-- | The type used by request handlers and expected by the RPC dispatcher.
 data LogReport =
   LogReport {
-    -- |The report
+    -- | The report
     report :: Report,
-    -- |Indicates whether this report may be echoed in Neovim
+    -- | Indicates whether this report may be echoed in Neovim
     echo :: Bool,
-    -- |Indicates whether to store this report in the state of 'Ribosome.Reports'
+    -- | Indicates whether to store this report in the state of 'Ribosome.Reports'
     store :: Bool,
-    -- |A list of prefixes used for log messages
+    -- | A list of prefixes used for log messages
     context :: ReportContext
   }
   deriving stock (Show, Generic)
 
--- |Convenience alias for the error report logger.
+-- | Convenience alias for the error report logger.
 type ReportLog =
   DataLog LogReport
 
--- |Construct a 'LogReport' error from a single 'Text'.
+-- | Construct a 'LogReport' error from a single 'Text'.
 simple ::
   HasCallStack =>
   Text ->
@@ -95,7 +95,7 @@ simple msg =
   withFrozenCallStack do
     LogReport (Report msg [msg] Error) True True mempty
 
--- |Stop with a 'LogReport'.
+-- | Stop with a 'LogReport'.
 basicReport ::
   Member (Stop Report) r =>
   HasCallStack =>
@@ -112,7 +112,7 @@ instance IsString LogReport where
     withFrozenCallStack do
       LogReport (Report msg [msg] Error) True True mempty
 
--- |The class of types that are convertible to a 'Report'.
+-- | The class of types that are convertible to a 'Report'.
 --
 -- This is used to create a uniform format for handlers, since control flow is passed on to the internal machinery when
 -- they return.
@@ -144,7 +144,7 @@ instance Reportable Report where
 instance Reportable Void where
   toReport = \case
 
--- |Reinterpret @'Stop' err@ to @'Stop' 'Report'@ if @err@ is an instance of 'Reportable'.
+-- | Reinterpret @'Stop' err@ to @'Stop' 'Report'@ if @err@ is an instance of 'Reportable'.
 mapReport ::
   ∀ e r a .
   Reportable e =>
@@ -157,9 +157,9 @@ mapReport =
 type Stops errs =
   FMap (Pure1 Stop) Fcf.@@ errs
 
--- |Map multiple errors to 'Report'.
+-- | Map multiple errors to 'Report'.
 class MapReports (errs :: [Type]) (r :: EffectRow) where
-  -- |Map multiple errors to 'Report'.
+  -- | Map multiple errors to 'Report'.
   -- This needs the errors specified as type applications.
   --
   -- > mapReports @[RpcError, SettingError]
@@ -177,7 +177,7 @@ instance (
     mapReports =
       mapReports @errs . mapReport @err
 
--- |Convert the effect @eff@ to @'Resumable' err eff@ and @'Stop' 'Report'@ if @err@ is an instance of 'Reportable'.
+-- | Convert the effect @eff@ to @'Resumable' err eff@ and @'Stop' 'Report'@ if @err@ is an instance of 'Reportable'.
 resumeReport ::
   ∀ eff e r a .
   Reportable e =>
@@ -187,9 +187,9 @@ resumeReport ::
 resumeReport =
   resumeHoist toReport
 
--- |Resume multiple effects as 'Report's.
+-- | Resume multiple effects as 'Report's.
 class ResumeReports (effs :: EffectRow) (errs :: [Type]) (r :: EffectRow) where
-  -- |Resume multiple effects as 'Report's.
+  -- | Resume multiple effects as 'Report's.
   -- This needs both effects and errors specified as type applications (though only the shape for the errors).
   --
   -- > resumeReports @[Rpc, Settings] @[_, _]
@@ -207,12 +207,12 @@ instance (
     resumeReports =
       resumeReports @effs @errs . resumeReport @eff @err
 
--- |Extract both user and log messages from an 'Report', for use in tests.
+-- | Extract both user and log messages from an 'Report', for use in tests.
 reportMessages :: Report -> Text
 reportMessages Report {user, log} =
   unlines (user : log)
 
--- |Extract the user message from an instance of 'Reportable'.
+-- | Extract the user message from an instance of 'Reportable'.
 userReport ::
   ∀ e .
   Reportable e =>
@@ -221,7 +221,7 @@ userReport ::
 userReport (toReport -> Report {user}) =
   user
 
--- |Resume an effect with an error that's an instance of 'Reportable' by passing its user message to a function.
+-- | Resume an effect with an error that's an instance of 'Reportable' by passing its user message to a function.
 resumeHoistUserMessage ::
   ∀ err eff err' r .
   Reportable err =>
@@ -231,7 +231,7 @@ resumeHoistUserMessage ::
 resumeHoistUserMessage f =
   resumeHoist (f . userReport)
 
--- |Map an error that's an instance of 'Reportable' by passing its user message to a function.
+-- | Map an error that's an instance of 'Reportable' by passing its user message to a function.
 mapUserMessage ::
   ∀ err err' r .
   Reportable err =>
@@ -241,7 +241,7 @@ mapUserMessage ::
 mapUserMessage f =
   mapStop (f . userReport)
 
--- |Convert an error that's an instance of 'Reportable' to 'Fail', for use in tests.
+-- | Convert an error that's an instance of 'Reportable' to 'Fail', for use in tests.
 stopReportToFail ::
   ∀ e r .
   Member Fail r =>
@@ -251,7 +251,7 @@ stopReportToFail =
   either (fail . toString . userReport) pure <=< runStop
 {-# inline stopReportToFail #-}
 
--- |Resume an effect with an error that's an instance of 'Reportable' by reinterpreting to 'Fail', for use in tests.
+-- | Resume an effect with an error that's an instance of 'Reportable' by reinterpreting to 'Fail', for use in tests.
 resumeReportFail ::
   ∀ eff err r .
   Members [Fail, eff !! err] r =>

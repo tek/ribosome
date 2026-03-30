@@ -1,4 +1,4 @@
--- |API for registers.
+-- | API for registers.
 module Ribosome.Register (
   module Ribosome.Data.Register,
   module Ribosome.Data.RegisterType,

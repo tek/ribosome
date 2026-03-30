@@ -1,18 +1,18 @@
--- |RPC message execution
+-- | RPC message execution
 module Ribosome.Host.Data.Execution where
 
 import Ribosome.Host.Class.Msgpack.Decode (MsgpackDecode (fromMsgpack))
 import Ribosome.Host.Class.Msgpack.Encode (MsgpackEncode (toMsgpack))
 
--- |This type indicates the execution style that Neovim should be instructed to use for RPC messages – synchronous
+-- | This type indicates the execution style that Neovim should be instructed to use for RPC messages – synchronous
 -- requests that block Neovim until a result is returned and asynchronous notifications.
 --
--- 
+--
 data Execution =
-  -- |RPC Request
+  -- | RPC Request
   Sync
   |
-  -- |RPC Notification
+  -- | RPC Notification
   Async
   deriving stock (Eq, Show, Enum, Bounded)
 

@@ -1,4 +1,4 @@
--- |API function for file system paths.
+-- | API function for file system paths.
 module Ribosome.Api.Path where
 
 import Exon (exon)
@@ -12,14 +12,14 @@ import Ribosome.Host.Effect.Rpc (Rpc)
 import Ribosome.Host.Path (pathText)
 import Ribosome.Internal.Path (failInvalidPath)
 
--- |Get Neovim's current working directory.
+-- | Get Neovim's current working directory.
 nvimCwd ::
   MonadRpc m =>
   m (Path Abs Dir)
 nvimCwd =
   Data.vimCallFunction "getcwd" []
 
--- |Set Neovim's current working directory.
+-- | Set Neovim's current working directory.
 nvimSetCwd ::
   MonadRpc m =>
   Path Abs Dir ->
@@ -27,7 +27,7 @@ nvimSetCwd ::
 nvimSetCwd dir =
   nvimCommand [exon|cd #{pathText dir}|]
 
--- |Convert an abstract path to an absolute one, using the supplied directory as the base for relative paths.
+-- | Convert an abstract path to an absolute one, using the supplied directory as the base for relative paths.
 relativePathAt ::
   Path Abs Dir ->
   SomeBase t ->
@@ -38,7 +38,7 @@ relativePathAt cwd = \case
   Rel p ->
     cwd </> p
 
--- |Convert an abstract path to an absolute one, using Neovim's current working directory as the base for relative
+-- | Convert an abstract path to an absolute one, using Neovim's current working directory as the base for relative
 -- paths.
 nvimRelativePath ::
   Member Rpc r =>
@@ -51,7 +51,7 @@ nvimRelativePath = \case
     cwd <- nvimCwd
     pure (cwd </> p)
 
--- |Parse a directory path and prepend Neovim's current working directory to it if it's relative.
+-- | Parse a directory path and prepend Neovim's current working directory to it if it's relative.
 parseNvimDir ::
   Member Rpc r =>
   Text ->
@@ -61,7 +61,7 @@ parseNvimDir "" =
 parseNvimDir p =
   traverse nvimRelativePath (parseSomeDir (toString p))
 
--- |Parse a directory path and prepend the supplied directory to it if it's relative.
+-- | Parse a directory path and prepend the supplied directory to it if it's relative.
 parseDirAt ::
   Path Abs Dir ->
   Text ->
@@ -71,7 +71,7 @@ parseDirAt cwd "" =
 parseDirAt cwd p =
   relativePathAt cwd <$> parseSomeDir (toString p)
 
--- |Parse a list of directory paths and prepend Neovim's current working directory to it if a path is relative.
+-- | Parse a list of directory paths and prepend Neovim's current working directory to it if a path is relative.
 parseNvimDirs ::
   Member Rpc r =>
   [Text] ->
@@ -80,7 +80,7 @@ parseNvimDirs paths = do
   cwd <- nvimCwd
   pure (mapMaybe (parseDirAt cwd) paths)
 
--- |Parse a file path and prepend Neovim's current working directory to it if it's relative.
+-- | Parse a file path and prepend Neovim's current working directory to it if it's relative.
 parseNvimFile ::
   Member Rpc r =>
   Text ->
@@ -88,7 +88,7 @@ parseNvimFile ::
 parseNvimFile =
   traverse nvimRelativePath . parseSomeFile . toString
 
--- |Parse a file path and prepend the supplied directory to it if it's relative.
+-- | Parse a file path and prepend the supplied directory to it if it's relative.
 parseFileAt ::
   Path Abs Dir ->
   Text ->
@@ -96,7 +96,7 @@ parseFileAt ::
 parseFileAt cwd p =
   relativePathAt cwd <$> parseSomeFile (toString p)
 
--- |Parse a list of file paths and prepend Neovim's current working directory to it if a path is relative.
+-- | Parse a list of file paths and prepend Neovim's current working directory to it if a path is relative.
 parseNvimFiles ::
   Member Rpc r =>
   [Text] ->
@@ -105,7 +105,7 @@ parseNvimFiles paths = do
   cwd <- nvimCwd
   pure (mapMaybe (parseFileAt cwd) paths)
 
--- |Parse a directory path and prepend Neovim's current working directory to it if it's relative.
+-- | Parse a directory path and prepend Neovim's current working directory to it if it's relative.
 --
 -- If parsing fails, emit an error 'Report'.
 nvimDir ::
@@ -115,7 +115,7 @@ nvimDir ::
 nvimDir spec =
   failInvalidPath spec =<< parseNvimDir spec
 
--- |Parse a file path and prepend Neovim's current working directory to it if it's relative.
+-- | Parse a file path and prepend Neovim's current working directory to it if it's relative.
 --
 -- If parsing fails, emit an error 'Report'.
 nvimFile ::

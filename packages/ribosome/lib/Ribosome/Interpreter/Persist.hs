@@ -1,4 +1,4 @@
--- |Interpreters for 'Persist'
+-- | Interpreters for 'Persist'
 module Ribosome.Interpreter.Persist where
 
 import Data.Aeson (eitherDecodeFileStrict', encodeFile)
@@ -17,14 +17,14 @@ import Ribosome.Host.Data.BootError (BootError (BootError))
 import Ribosome.Host.Interpret (with)
 import Ribosome.Host.Path (pathText)
 
--- |Obtain the root directory or stop.
+-- | Obtain the root directory or stop.
 persistBase ::
   Members [PersistPath !! PersistPathError, Stop PersistError] r =>
   Sem r (Path Abs Dir)
 persistBase =
   resumeHoist PersistError.Path persistRoot
 
--- |Load a file and JSON-decode it.
+-- | Load a file and JSON-decode it.
 loadFile ::
   FromJSON a =>
   Members [Stop PersistError, Log, Embed IO] r =>
@@ -39,7 +39,7 @@ loadFile file = do
     decodeFailed =
       PersistError.Decode (pathText file) . toText
 
--- |Determine the path to use for a 'Persist' action.
+-- | Determine the path to use for a 'Persist' action.
 -- If a @subpath@ is given, append it to @dir@, otherwise use @singleFile@.
 -- Append the result of the first step to the root dir given by 'PersistPath'.
 filepath ::
@@ -52,7 +52,7 @@ filepath singleFile dir subpath = do
   base <- persistBase
   pure (base </> maybe singleFile (dir </>) subpath)
 
--- |Interpret 'Persist' by writing to the file system.
+-- | Interpret 'Persist' by writing to the file system.
 --
 -- Paths are determined as follows:
 --
@@ -91,7 +91,7 @@ interpretPersist name =
     namePaths =
       (,) <$> parseRelFile (toString [exon|#{name}.json|]) <*> parseRelDir (toString name)
 
--- |Interpret 'Persist' by storing nothing.
+-- | Interpret 'Persist' by storing nothing.
 interpretPersistNull ::
   ∀ a err r .
   InterpreterFor (Persist a !! err) r

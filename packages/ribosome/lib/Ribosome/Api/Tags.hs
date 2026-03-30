@@ -1,4 +1,4 @@
--- |API functions for tags.
+-- | API functions for tags.
 module Ribosome.Api.Tags where
 
 import Path (Abs, File, Path)
@@ -9,7 +9,7 @@ import Ribosome.Host.Class.Msgpack.Encode (toMsgpack)
 import Ribosome.Host.Effect.Rpc (Rpc)
 import Ribosome.Host.Path (pathText)
 
--- |Return all tags matching the supplied regex (default @.@), optionally prioritizing the supplied file.
+-- | Return all tags matching the supplied regex (default @.@), optionally prioritizing the supplied file.
 taglist ::
   Member Rpc r =>
   Maybe Text ->

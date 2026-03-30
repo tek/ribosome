@@ -1,4 +1,4 @@
--- |Special command parameter that activates the bang modifier.
+-- | Special command parameter that activates the bang modifier.
 module Ribosome.Host.Data.Bang where
 
 import Data.MessagePack (Object (ObjectBool))
@@ -7,14 +7,14 @@ import Exon (exon)
 import Ribosome.Host.Class.Msgpack.Decode (pattern Msgpack, MsgpackDecode (fromMsgpack))
 import Ribosome.Host.Class.Msgpack.Error (decodeError)
 
--- |When this type is used as a parameter of a command handler function, the command is declared with the @-bang@
+-- | When this type is used as a parameter of a command handler function, the command is declared with the @-bang@
 -- option, and when invoked, the argument passed to the handler is v'Bang' if the user specified the @!@ and 'NoBang'
 -- otherwise.
 data Bang =
-  -- |Bang was used.
+  -- | Bang was used.
   Bang
   |
-  -- |Bang was not used.
+  -- | Bang was not used.
   NoBang
   deriving stock (Eq, Show)
 

@@ -281,7 +281,7 @@ test_unselectedCursor =
     entries =
       simpleIntEntries [2, 3, 4]
 
--- |When some entries are selected, 'unselected' should return the non-selected entries, including the cursor if it
+-- | When some entries are selected, 'unselected' should return the non-selected entries, including the cursor if it
 -- isn't selected.
 test_unselectedWithSelection :: UnitTest
 test_unselectedWithSelection =
@@ -301,7 +301,7 @@ test_unselectedWithSelection =
         (2, Entry (simpleMenuItem @Word 2 "2") 2 False)
         ]
 
--- |When some entries are selected but the cursor is not among them, 'unselected' should include the cursor entry.
+-- | When some entries are selected but the cursor is not among them, 'unselected' should include the cursor entry.
 test_unselectedCursorNotSelected :: UnitTest
 test_unselectedCursorNotSelected =
   runTestAuto do

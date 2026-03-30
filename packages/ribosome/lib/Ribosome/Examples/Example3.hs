@@ -1,6 +1,6 @@
 {-# options_haddock prune, hide #-}
 
--- |An example for the docs.
+-- | An example for the docs.
 module Ribosome.Examples.Example3 where
 
 import qualified Data.Text.IO as Text

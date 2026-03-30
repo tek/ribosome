@@ -1,4 +1,4 @@
--- |Combinators for aborting tests on Ribosome errors
+-- | Combinators for aborting tests on Ribosome errors
 module Ribosome.Test.Error where
 
 import Polysemy.Test (TestError (TestError))
@@ -6,7 +6,7 @@ import Polysemy.Test (TestError (TestError))
 import Ribosome.Host.Data.Report (Reportable, mapReport, reportMessages)
 import Ribosome.Host.Data.RpcHandler (Handler)
 
--- |Convert the effect @eff@ to @eff '!!' err@ and @'Error' 'TestError'@, failing the test when 'Stop' is used.
+-- | Convert the effect @eff@ to @eff '!!' err@ and @'Error' 'TestError'@, failing the test when 'Stop' is used.
 resumeTestError ::
   ∀ eff e r .
   Show e =>
@@ -15,7 +15,7 @@ resumeTestError ::
 resumeTestError =
   resumeHoistError (TestError . show)
 
--- |Convert a 'LogReport' from a 'Handler' to an @'Error' 'TestError'@, failing the test when 'Stop' is used.
+-- | Convert a 'LogReport' from a 'Handler' to an @'Error' 'TestError'@, failing the test when 'Stop' is used.
 testHandler ::
   Member (Error TestError) r =>
   Handler r a ->
@@ -23,7 +23,7 @@ testHandler ::
 testHandler =
   stopToError . mapStop (TestError . reportMessages) . raiseUnder
 
--- |Reinterpret @'Stop' err@ to @'Error' 'TestError'@ if @err@ is an instance of 'Reportable'.
+-- | Reinterpret @'Stop' err@ to @'Error' 'TestError'@ if @err@ is an instance of 'Reportable'.
 testError ::
   ∀ e r a .
   Reportable e =>

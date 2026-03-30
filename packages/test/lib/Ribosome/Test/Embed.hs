@@ -67,7 +67,7 @@ import Ribosome.Test.Log (testLogLevel)
 -- This is the most advisable way to test plugins, running handlers directly as Haskell functions instead of routing
 -- them through Neovim, in particular for those that don't have any parameters.
 
--- |The extra effects that tests are expected to use, related to errors.
+-- | The extra effects that tests are expected to use, related to errors.
 --
 -- The plugin effects 'Scratch', 'Settings' and 'Rpc' are allowed without 'Resume', causing tests to terminate
 -- immediately if one of these effects is used and throws an error.
@@ -82,19 +82,19 @@ type TestEffects =
     Rpc
   ]
 
--- |The full test stack below test effects and extra effects.
+-- | The full test stack below test effects and extra effects.
 type EmbedHandlerStack =
   HandlerEffects ++ Reader PluginName : TestStack
 
--- |The full test stack with additional effects.
+-- | The full test stack with additional effects.
 type EmbedStackWith r =
   TestEffects ++ r ++ EmbedHandlerStack
 
--- |The full test stack with no additional effects.
+-- | The full test stack with no additional effects.
 type EmbedStack =
   EmbedStackWith '[]
 
--- |Interpret the basic test effects without 'IO' related effects.
+-- | Interpret the basic test effects without 'IO' related effects.
 runTestLogConf ::
   Members [Error BootError, Resource, Race, Async, Embed IO] r =>
   TestConfig ->
@@ -103,7 +103,7 @@ runTestLogConf (TestConfig freezeTime (PluginConfig name conf _)) =
   Host.runTestLogConf (Host.TestConfig freezeTime conf) .
   runReader name
 
--- |Run the basic test effects as a "Hedgehog" test.
+-- | Run the basic test effects as a "Hedgehog" test.
 runTestConf ::
   HasCallStack =>
   TestConfig ->
@@ -113,7 +113,7 @@ runTestConf conf =
   runUnitTest .
   runTestLogConf conf
 
--- |Run the plugin stack and the test stack, using the supplied config.
+-- | Run the plugin stack and the test stack, using the supplied config.
 runEmbedTest ::
   HasCallStack =>
   TestConfig ->
@@ -123,7 +123,7 @@ runEmbedTest conf =
   runTestConf conf .
   interpretPluginEmbed
 
--- |Run the plugin stack and the test stack, using the default config.
+-- | Run the plugin stack and the test stack, using the default config.
 runTest ::
   HasCallStack =>
   Sem EmbedHandlerStack () ->
@@ -131,7 +131,7 @@ runTest ::
 runTest =
   runEmbedTest def
 
--- |Run the test plugin effects, 'TestEffects', and start an embedded Neovim subprocess.
+-- | Run the test plugin effects, 'TestEffects', and start an embedded Neovim subprocess.
 testPluginEmbed ::
   Members (HostDeps er) r =>
   Members BuiltinHandlersDeps r =>
@@ -146,7 +146,7 @@ testPluginEmbed =
   testHandler .
   insertAt @4
 
--- |Run a full plugin test, using extra effects and RPC handlers.
+-- | Run a full plugin test, using extra effects and RPC handlers.
 testPluginConf ::
   ∀ r .
   HasCallStack =>
@@ -162,7 +162,7 @@ testPluginConf conf effs handlers =
   withHandlers handlers .
   testPluginEmbed
 
--- |Run a full plugin test, using extra effects and RPC handlers.
+-- | Run a full plugin test, using extra effects and RPC handlers.
 testPlugin ::
   ∀ r .
   HasCallStack =>
@@ -174,7 +174,7 @@ testPlugin ::
 testPlugin =
   testPluginConf @r def
 
--- |Run a plugin test with RPC handlers.
+-- | Run a plugin test with RPC handlers.
 testPlugin_ ::
   HasCallStack =>
   [RpcHandler EmbedHandlerStack] ->
@@ -183,7 +183,7 @@ testPlugin_ ::
 testPlugin_ =
   testPlugin @'[] id
 
--- |Run a plugin test with extra effects but no RPC handlers.
+-- | Run a plugin test with extra effects but no RPC handlers.
 testEmbedConf ::
   ∀ r .
   HasCallStack =>
@@ -195,7 +195,7 @@ testEmbedConf ::
 testEmbedConf conf effs =
   testPluginConf @r conf effs mempty
 
--- |Run a plugin test with extra effects but no RPC handlers.
+-- | Run a plugin test with extra effects but no RPC handlers.
 testEmbed ::
   ∀ r .
   HasCallStack =>
@@ -206,7 +206,7 @@ testEmbed ::
 testEmbed =
   testEmbedConf @r def
 
--- |Run a plugin test with extra effects but no RPC handlers.
+-- | Run a plugin test with extra effects but no RPC handlers.
 --
 -- Takes a log level, for which the default is to only print critical errors.
 testEmbedLevel ::
@@ -220,7 +220,7 @@ testEmbedLevel ::
 testEmbedLevel level =
   testEmbedConf @r (def & #plugin . #host %~ setStderr level)
 
--- |Run a plugin test with extra effects but no RPC handlers at the 'Debug' log level.
+-- | Run a plugin test with extra effects but no RPC handlers at the 'Debug' log level.
 testEmbedDebug ::
   ∀ r .
   HasCallStack =>
@@ -231,7 +231,7 @@ testEmbedDebug ::
 testEmbedDebug effs =
   testLogLevel Debug \ conf -> testEmbedConf @r conf effs
 
--- |Run a plugin test with extra effects but no RPC handlers at the 'Trace' log level for debugging RPC traffic.
+-- | Run a plugin test with extra effects but no RPC handlers at the 'Trace' log level for debugging RPC traffic.
 testEmbedTrace ::
   ∀ r .
   HasCallStack =>
@@ -242,7 +242,7 @@ testEmbedTrace ::
 testEmbedTrace effs =
   testLogLevel Trace \ conf -> testEmbedConf @r conf effs
 
--- |Run a plugin test without extra effects and RPC handlers.
+-- | Run a plugin test without extra effects and RPC handlers.
 testEmbed_ ::
   HasCallStack =>
   Sem EmbedStack () ->
@@ -250,7 +250,7 @@ testEmbed_ ::
 testEmbed_ =
   testPlugin_ mempty
 
--- |Run a plugin test without extra effects and RPC handlers.
+-- | Run a plugin test without extra effects and RPC handlers.
 --
 -- Takes a log level, for which the default is to only print critical errors.
 testEmbedLevel_ ::
@@ -261,7 +261,7 @@ testEmbedLevel_ ::
 testEmbedLevel_ level =
   testEmbedConf @'[] (def & #plugin . #host %~ setStderr level) id
 
--- |Run a plugin test without extra effects and RPC handlers at the 'Debug' log level.
+-- | Run a plugin test without extra effects and RPC handlers at the 'Debug' log level.
 testEmbedDebug_ ::
   HasCallStack =>
   Sem EmbedStack () ->
@@ -269,7 +269,7 @@ testEmbedDebug_ ::
 testEmbedDebug_ =
   testEmbedLevel_ Debug
 
--- |Run a plugin test without extra effects and RPC handlers at the 'Trace' log level for debugging RPC traffic.
+-- | Run a plugin test without extra effects and RPC handlers at the 'Trace' log level for debugging RPC traffic.
 testEmbedTrace_ ::
   HasCallStack =>
   Sem EmbedStack () ->

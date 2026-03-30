@@ -1,4 +1,4 @@
--- |Error for 'Ribosome.Persist'.
+-- | Error for 'Ribosome.Persist'.
 module Ribosome.Data.PersistError where
 
 import Exon (exon)
@@ -7,15 +7,15 @@ import Polysemy.Log (Severity (Error))
 import Ribosome.Data.PersistPathError (PersistPathError)
 import Ribosome.Host.Data.Report (Report (Report), Reportable (toReport))
 
--- |The errors emitted by the effect 'Ribosome.PersistPath'.
+-- | The errors emitted by the effect 'Ribosome.PersistPath'.
 data PersistError =
-  -- |Can't access the persistence files.
+  -- | Can't access the persistence files.
   Permission Text
   |
-  -- |Data in the persistence file has invalid format.
+  -- | Data in the persistence file has invalid format.
   Decode Text Text
   |
-  -- |'Ribosome.PeristPath' threw an error.
+  -- | 'Ribosome.PeristPath' threw an error.
   Path PersistPathError
   deriving stock (Eq, Show)
 

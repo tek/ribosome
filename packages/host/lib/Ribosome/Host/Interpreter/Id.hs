@@ -3,7 +3,7 @@ module Ribosome.Host.Interpreter.Id where
 import Conc (interpretAtomic)
 import Polysemy.Input (Input (Input))
 
--- |Interpret 'Input' by incrementing a numeric type starting from @1@.
+-- | Interpret 'Input' by incrementing a numeric type starting from @1@.
 interpretInputNum ::
   ∀ a r .
   Num a =>

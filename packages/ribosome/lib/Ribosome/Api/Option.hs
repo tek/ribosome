@@ -1,4 +1,4 @@
--- |API functions for Neovim options.
+-- | API functions for Neovim options.
 module Ribosome.Api.Option where
 
 import Data.MessagePack (Object)
@@ -10,7 +10,7 @@ import Ribosome.Host.Class.Msgpack.Encode (MsgpackEncode)
 import Ribosome.Host.Effect.Rpc (Rpc)
 import qualified Data.Text as Text
 
--- |Append a string to a comma-separated option.
+-- | Append a string to a comma-separated option.
 optionCat ::
   Member Rpc r =>
   Text ->
@@ -20,7 +20,7 @@ optionCat name extra = do
   current <- vimGetOption name
   vimSetOption name [exon|#{current},#{extra}|]
 
--- |Append a string to the option @runtimepath@.
+-- | Append a string to the option @runtimepath@.
 rtpCat ::
   Member Rpc r =>
   Text ->
@@ -28,7 +28,7 @@ rtpCat ::
 rtpCat =
   optionCat "runtimepath"
 
--- |Get a list of strings from a comma-separated option.
+-- | Get a list of strings from a comma-separated option.
 optionList ::
   Member Rpc r =>
   Text ->
@@ -37,7 +37,7 @@ optionList name = do
   s <- vimGetOption name
   pure (splitOn "," s)
 
--- |Set an option to a comma-separated list of strings.
+-- | Set an option to a comma-separated list of strings.
 optionSetList ::
   Member Rpc r =>
   Text ->
@@ -46,7 +46,7 @@ optionSetList ::
 optionSetList name values =
   nvimSetOption name (Text.intercalate "," values)
 
--- |Run an action with an option temporarily set to a value, then restore the old value.
+-- | Run an action with an option temporarily set to a value, then restore the old value.
 withOption ::
   ∀ a r b .
   Members [Rpc, Resource] r =>

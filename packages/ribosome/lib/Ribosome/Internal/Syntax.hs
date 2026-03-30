@@ -1,6 +1,6 @@
 {-# options_haddock prune #-}
 
--- |Internal combinators for syntax.
+-- | Internal combinators for syntax.
 module Ribosome.Internal.Syntax where
 
 import Data.List.Extra (nubOrd)

@@ -1,4 +1,4 @@
--- |API for the effect 'Persist'.
+-- | API for the effect 'Persist'.
 module Ribosome.Persist (
   module Ribosome.Effect.Persist,
   module Ribosome.Effect.PersistPath,

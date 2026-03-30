@@ -1,6 +1,6 @@
 {-# options_haddock prune #-}
 
--- |Main function combinators for embedding Neovim
+-- | Main function combinators for embedding Neovim
 module Ribosome.Embed where
 
 import Ribosome.Data.PluginConfig (PluginConfig)
@@ -26,7 +26,7 @@ import Ribosome.Run (PluginEffects)
 type HandlerEffects =
   PluginEffects ++ RpcStack ++ EmbedExtra ++ RpcDeps
 
--- |The complete stack for an embedded plugin test.
+-- | The complete stack for an embedded plugin test.
 type EmbedStack c =
   HandlerEffects ++ BasicPluginStack c
 
@@ -37,7 +37,7 @@ interpretRpcDeps =
   interpretUserErrorPrefixed .
   interpretProcessCerealNvimEmbed Nothing Nothing
 
--- |Run the internal stack for an embedded Neovim test, without IO effects.
+-- | Run the internal stack for an embedded Neovim test, without IO effects.
 interpretPluginEmbed ::
   Members [Log, Reader LogConfig, Reader PluginName] r =>
   Members IOStack r =>
@@ -51,7 +51,7 @@ interpretPluginEmbed =
   interpretSettingsRpc .
   interpretScratch
 
--- |Fork the main loop for a plugin connected to an embedded Neovim.
+-- | Fork the main loop for a plugin connected to an embedded Neovim.
 embedPlugin ::
   Members (HostDeps er) r =>
   Members BuiltinHandlersDeps r =>
@@ -62,7 +62,7 @@ embedPlugin =
   withHost .
   insertAt @0
 
--- |Run an embedded Neovim, plugin internals and IO effects, reading options from the CLI.
+-- | Run an embedded Neovim, plugin internals and IO effects, reading options from the CLI.
 --
 -- Like 'runEmbedStack', but allows the CLI option parser to be specified.
 runEmbedStackCli ::
@@ -72,7 +72,7 @@ runEmbedStackCli ::
 runEmbedStackCli conf =
   runCli conf . interpretPluginEmbed
 
--- |Run an embedded Neovim, plugin internals and IO effects, reading options from the CLI.
+-- | Run an embedded Neovim, plugin internals and IO effects, reading options from the CLI.
 runEmbedStack ::
   PluginConfig () ->
   Sem (EmbedStack ()) () ->
@@ -80,7 +80,7 @@ runEmbedStack ::
 runEmbedStack conf =
   runCli conf . interpretPluginEmbed
 
--- |Run a 'Sem' in an embedded plugin context by starting a Neovim subprocess, forking the Ribosome main loop and
+-- | Run a 'Sem' in an embedded plugin context by starting a Neovim subprocess, forking the Ribosome main loop and
 -- registering the supplied handlers, using the supplied custom effect stack.
 --
 -- Like 'runEmbedPluginIO', but allows the 'PluginConfig' to contain a CLI parser for an arbitrary type @c@ that is then
@@ -101,7 +101,7 @@ runEmbedPluginCli conf effs handlers =
   withHandlers handlers .
   embedPlugin
 
--- |Run a 'Sem' in an embedded plugin context by starting a Neovim subprocess, forking the Ribosome main loop and
+-- | Run a 'Sem' in an embedded plugin context by starting a Neovim subprocess, forking the Ribosome main loop and
 -- registering the supplied handlers, using the supplied custom effect stack.
 --
 -- This is a basic version of what
@@ -123,7 +123,7 @@ runEmbedPluginIO conf effs handlers =
   withHandlers handlers .
   embedPlugin
 
--- |Run a 'Sem' in an embedded plugin context by starting a Neovim subprocess, forking the Ribosome main loop and
+-- | Run a 'Sem' in an embedded plugin context by starting a Neovim subprocess, forking the Ribosome main loop and
 -- registering the supplied handlers.
 --
 -- Like 'runEmbedPluginIO', but without extra effects.

@@ -21,7 +21,7 @@ import Time (Seconds (Seconds))
 import Ribosome.Host.Effect.Log (StderrLog, stderrLog)
 import Ribosome.Test.Wait (assertWait)
 
--- |Nvim appears to add random whitespace sequences, optionally interspersed with color codes, to empty lines.
+-- | Nvim appears to add random whitespace sequences, optionally interspersed with color codes, to empty lines.
 -- This removes that noise from lines starting with @~\ESC[39m@ or @\ESC[94m~\ESC[39m@.
 sanitize :: Text -> Text
 sanitize =

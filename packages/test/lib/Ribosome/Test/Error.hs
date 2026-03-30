@@ -7,7 +7,7 @@ import Polysemy.Test (TestError (TestError))
 import Ribosome.Host.Data.Report (Reportable, mapReport, reportMessages)
 import Ribosome.Host.Data.RpcHandler (Handler)
 
--- |Resume an effect and convert its error from @'Stop' err@ to @'Error' 'TestError'@.
+-- | Resume an effect and convert its error from @'Stop' err@ to @'Error' 'TestError'@.
 resumeTestError ::
   HasCallStack =>
   ∀ eff err r .
@@ -18,7 +18,7 @@ resumeTestError =
   withFrozenCallStack do
     resumeHoistError (TestError . show)
 
--- |Run a 'Handler', converting the @'Stop' 'Report'@ at its head to @'Error' 'TestError'@.
+-- | Run a 'Handler', converting the @'Stop' 'Report'@ at its head to @'Error' 'TestError'@.
 testHandler ::
   HasCallStack =>
   Member (Error TestError) r =>
@@ -28,7 +28,7 @@ testHandler =
   withFrozenCallStack do
     stopToErrorWith (TestError . reportMessages)
 
--- |Run a 'Handler' in a new thread and return an action that waits for the thread to terminate when sequenced.
+-- | Run a 'Handler' in a new thread and return an action that waits for the thread to terminate when sequenced.
 -- Converts the @'Stop' 'Report'@ at its head to @'Error' 'TestError'@ when it is awaited.
 testHandlerAsync ::
   HasCallStack =>
@@ -42,7 +42,7 @@ testHandlerAsync h =
     pure do
       testHandler . stopEither =<< note (TestError "async handler didn't produce result") =<< await thread
 
--- |Interpret @'Stop' err@ to @'Error' 'TestError'@ by using @err@'s instance of 'Reportable'.
+-- | Interpret @'Stop' err@ to @'Error' 'TestError'@ by using @err@'s instance of 'Reportable'.
 testError ::
   ∀ err r .
   HasCallStack =>

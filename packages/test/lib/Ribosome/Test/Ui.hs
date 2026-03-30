@@ -1,4 +1,4 @@
--- |Assertions for Neovim UI elements
+-- | Assertions for Neovim UI elements
 module Ribosome.Test.Ui where
 
 import Polysemy.Test (Hedgehog, assertEq, (===))
@@ -8,7 +8,7 @@ import Ribosome.Host.Api.Data (Window)
 import Ribosome.Host.Api.Data (nvimListWins)
 import Ribosome.Host.Effect.Rpc (Rpc)
 
--- |Assert the number of windows.
+-- | Assert the number of windows.
 windowCountIs ::
   Monad m =>
   Members [Rpc, Hedgehog m] r =>
@@ -18,7 +18,7 @@ windowCountIs count = do
   wins <- nvimListWins
   count === length wins
 
--- |Assert the cursor position in a window.
+-- | Assert the cursor position in a window.
 cursorIs ::
   Monad m =>
   Members [Rpc, Hedgehog m] r =>
@@ -29,7 +29,7 @@ cursorIs ::
 cursorIs line col =
   assertEq (line, col) <=< cursor
 
--- |Assert the cursor position in the current window.
+-- | Assert the cursor position in the current window.
 currentCursorIs ::
   Monad m =>
   Members [Rpc, Hedgehog m] r =>

@@ -1,6 +1,6 @@
 {-# options_haddock prune #-}
 
--- |Conversion of 'RpcCall' to 'RpcBatch'
+-- | Conversion of 'RpcCall' to 'RpcBatch'
 module Ribosome.Host.RpcCall where
 
 import Data.MessagePack (Object (ObjectArray, ObjectNil))
@@ -43,7 +43,7 @@ atomicResult decode = \case
   o ->
     atomicError [exon|Not an array: #{show o}|]
 
--- |Create calls to @nvim_call_atomic@ from 'RpcAtomic' requests and unify their constructor with 'RpcRequest'.
+-- | Create calls to @nvim_call_atomic@ from 'RpcAtomic' requests and unify their constructor with 'RpcRequest'.
 cata :: RpcCall a -> RpcBatch a
 cata = \case
   RpcPure a ->

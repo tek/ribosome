@@ -1,4 +1,4 @@
--- |Assertions that are made repeatedly until the succeed
+-- | Assertions that are made repeatedly until the succeed
 module Ribosome.Test.Wait where
 
 import qualified Conc
@@ -8,7 +8,7 @@ import Polysemy.Test (Hedgehog, liftH)
 import qualified Polysemy.Time as Time
 import Polysemy.Time (MilliSeconds (MilliSeconds), Seconds (Seconds))
 
--- |Run an action and make an assertion about its result.
+-- | Run an action and make an assertion about its result.
 -- Repeat on failure until the @timeout@ has been exceeded.
 --
 -- Sleeps for @interval@ between attempts.
@@ -39,7 +39,7 @@ assertWaitFor timeout interval acquire test =
         Just e -> liftTest (mkTest (Left e, mempty))
         Nothing -> failWith Nothing "timed out before an assertion was made"
 
--- |Run an action and make an assertion about its result.
+-- | Run an action and make an assertion about its result.
 -- Repeat on failure for three seconds, every 100 milliseconds.
 assertWait ::
   Monad m =>

@@ -1,4 +1,4 @@
--- |Error for 'Ribosome.Settings'.
+-- | Error for 'Ribosome.Settings'.
 module Ribosome.Data.SettingError where
 
 import Exon (exon)
@@ -8,15 +8,15 @@ import Ribosome.Host.Class.Msgpack.Error (DecodeError, renderError)
 import Ribosome.Host.Data.Report (Report (Report), Reportable (toReport))
 import Ribosome.Host.Data.RpcError (RpcError, rpcError)
 
--- |The errors emitted by the effect 'Ribosome.Settings'.
+-- | The errors emitted by the effect 'Ribosome.Settings'.
 data SettingError =
-  -- |The variable is unset and has no associated default.
+  -- | The variable is unset and has no associated default.
   Unset Text
   |
-  -- |The variable contains data that is incompatible with the type parameter of the 'Ribosome.Setting'.
+  -- | The variable contains data that is incompatible with the type parameter of the 'Ribosome.Setting'.
   Decode Text DecodeError
   |
-  -- |Something went wrong while attempting to set a variable.
+  -- | Something went wrong while attempting to set a variable.
   UpdateFailed Text RpcError
   deriving stock (Eq, Show)
 

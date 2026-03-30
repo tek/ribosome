@@ -1,4 +1,4 @@
--- |Abstraction of 'RpcCall' and 'Sem'
+-- | Abstraction of 'RpcCall' and 'Sem'
 module Ribosome.Host.Class.MonadRpc where
 
 import Ribosome.Host.Class.Msgpack.Decode (MsgpackDecode (fromMsgpack))
@@ -9,7 +9,7 @@ import Ribosome.Host.Effect.Rpc (Rpc)
 
 type MonadRpc :: (Type -> Type) -> Constraint
 
--- |This class abstracts over the data representation of RPC calls, 'RpcCall', and their reified form in 'Sem'.
+-- | This class abstracts over the data representation of RPC calls, 'RpcCall', and their reified form in 'Sem'.
 --
 -- This allows composite functions that send multiple requests to the Neovim API to use the atomic call batching feature
 -- without having to specialize to 'RpcCall', which would require the use of @Rpc.sync@ to convert them to 'Sem'.
@@ -32,7 +32,7 @@ class (
     Monad m,
     (∀ a . Monoid a => Monoid (m a))
   ) => MonadRpc m where
-    -- |Instantiate a program to 'RpcCall' so it is guaranteed to use @nvim_call_atomic@ when possible.
+    -- | Instantiate a program to 'RpcCall' so it is guaranteed to use @nvim_call_atomic@ when possible.
     atomic :: RpcCall a -> m a
 
 instance MonadRpc RpcCall where
@@ -47,7 +47,7 @@ instance (
       Rpc.sync
     {-# inline atomic #-}
 
--- |Lift a 'Request' into @m@.
+-- | Lift a 'Request' into @m@.
 rpcRequest ::
   MonadRpc m =>
   MsgpackDecode a =>

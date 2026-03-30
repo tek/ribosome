@@ -1,4 +1,4 @@
--- |Autocmd functions.
+-- | Autocmd functions.
 module Ribosome.Api.Autocmd (
   module Ribosome.Api.Autocmd,
   autocmd,
@@ -14,7 +14,7 @@ import Ribosome.Host.Data.RpcType (AutocmdBuffer (AutocmdBuffer), AutocmdEvents,
 import qualified Ribosome.Host.Effect.Rpc as Rpc
 import Ribosome.Host.Effect.Rpc (Rpc)
 
--- |Trigger a set of autocmds.
+-- | Trigger a set of autocmds.
 --
 -- Same as 'nvimExecAutocmds', but specializing the parameter type.
 doautocmdWith ::
@@ -25,7 +25,7 @@ doautocmdWith ::
 doautocmdWith =
   nvimExecAutocmds
 
--- |Trigger a set of autocmds.
+-- | Trigger a set of autocmds.
 doautocmd ::
   Member Rpc r =>
   AutocmdEvents ->
@@ -33,7 +33,7 @@ doautocmd ::
 doautocmd events =
   nvimExecAutocmds events mempty
 
--- |Trigger a user autocmd.
+-- | Trigger a user autocmd.
 uautocmd ::
   Member Rpc r =>
   Text ->
@@ -41,7 +41,7 @@ uautocmd ::
 uautocmd name =
   doautocmdWith "User" [("pattern", toMsgpack name)]
 
--- |Execute an action with all autocmds disabled.
+-- | Execute an action with all autocmds disabled.
 eventignore ::
   Members [Rpc, Resource] r =>
   Sem r a ->
@@ -56,13 +56,13 @@ eventignore =
     restore =
       vimSetOption "eventignore"
 
--- |Create an autocmd in a buffer.
+-- | Create an autocmd in a buffer.
 bufferAutocmd ::
   Member Rpc r =>
   Buffer ->
   AutocmdEvents ->
   AutocmdOptions ->
-  -- |Command to execute when the autocmd triggers.
+  -- | Command to execute when the autocmd triggers.
   Text ->
   Sem r AutocmdId
 bufferAutocmd buf events options cmd = do

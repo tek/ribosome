@@ -1,4 +1,4 @@
--- |Tools for writing instances of 'MsgpackDecode'.
+-- | Tools for writing instances of 'MsgpackDecode'.
 module Ribosome.Msgpack (
   module Ribosome.Host.Class.Msgpack.Decode,
   module Ribosome.Host.Class.Msgpack.Encode,

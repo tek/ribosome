@@ -32,7 +32,7 @@ readyToSend ::
 readyToSend i =
   atomicGets \ prev -> prev >= i - 1
 
--- |Send a response, increment the 'RequestId' tracking the latest sent response, and publish an event that unblocks all
+-- | Send a response, increment the 'RequestId' tracking the latest sent response, and publish an event that unblocks all
 -- waiting responses.
 sendResponse ::
   Members [Process RpcMessage a, AtomicState RequestId, Events ResponseSent, Log] r =>
@@ -45,7 +45,7 @@ sendResponse i response = do
   atomicModify' (max i)
   publish ResponseSent
 
--- |Check whether the last sent response has a 'RequestId' one smaller than the current response.
+-- | Check whether the last sent response has a 'RequestId' one smaller than the current response.
 -- If true, send the response.
 -- This is protected by a mutex to avoid deadlock.
 -- Returns whether the response was sent for 'sendWhenReady' to decide whether to recurse.
@@ -59,7 +59,7 @@ sendIfReady i response =
   tag $ lock do
     ifM (readyToSend i) (True <$ sendResponse i response) (pure False)
 
--- |Neovim doesn't permit responses to be sent out of order.
+-- | Neovim doesn't permit responses to be sent out of order.
 -- If multiple requests from Neovim have been sent concurrently (e.g. triggered from rpc calls themselves, since the
 -- user can't achieve this through the UI due to it being single-threaded), and the first one runs longer than the rest,
 -- the others have to wait for the first response to be sent.
