@@ -134,14 +134,14 @@ unselectedItems s =
       first toList .
       foldEntries folder (mempty, False)
     extract ents = \case
-      True -> mapMaybe rightToMaybe ents
-      False -> either id id <$> ents
+      True -> unify <$> ents
+      False -> mapMaybe rightToMaybe ents
     folder (z, _) _ e | e.selected =
       (z, True)
     folder (z, foundSelected) i e | i == fromIntegral cursorIndex =
       (Left e : z, foundSelected)
-    folder (z, _) _ e =
-      (Right e : z, True)
+    folder (z, foundSelected) _ e =
+      (Right e : z, foundSelected)
     cursorIndex =
       s ^. #cursor
 

@@ -281,6 +281,44 @@ test_unselectedCursor =
     entries =
       simpleIntEntries [2, 3, 4]
 
+-- |When some entries are selected, 'unselected' should return the non-selected entries, including the cursor if it
+-- isn't selected.
+test_unselectedWithSelection :: UnitTest
+test_unselectedWithSelection =
+  runTestAuto do
+    [2, 3, 5] === ((.meta) <$> MTL.evalState (Lens.use unselected) menu)
+  where
+    menu =
+      WithCursor (Modal (Core (Primary mempty ents mempty) 0 0) mempty fuzzy) 1
+    -- Fold order (descending key): 5(i=0), 4(i=1, cursor), 3(i=2), 2(i=3)
+    -- Selected: 4 (cursor, selected)
+    -- Expected unselected: [2, 3, 5] (everything except 4)
+    ents =
+      Entry.fromList [
+        (5, Entry (simpleMenuItem @Word 5 "5") 5 False),
+        (4, Entry (simpleMenuItem @Word 4 "4") 4 True),
+        (3, Entry (simpleMenuItem @Word 3 "3") 3 False),
+        (2, Entry (simpleMenuItem @Word 2 "2") 2 False)
+        ]
+
+-- |When some entries are selected but the cursor is not among them, 'unselected' should include the cursor entry.
+test_unselectedCursorNotSelected :: UnitTest
+test_unselectedCursorNotSelected =
+  runTestAuto do
+    [2, 4, 5] === ((.meta) <$> MTL.evalState (Lens.use unselected) menu)
+  where
+    menu =
+      WithCursor (Modal (Core (Primary mempty ents mempty) 0 0) mempty fuzzy) 1
+    -- Fold order (descending key): 5(i=0), 4(i=1, cursor), 3(i=2), 2(i=3)
+    -- Selected: 3
+    -- Expected unselected: [2, 4, 5] (everything except 3; cursor 4 is NOT selected so it's included)
+    ents =
+      Entry.fromList (reverse
+        [(2, Entry (simpleMenuItem @Word 2 "2") 2 False),
+         (3, Entry (simpleMenuItem @Word 3 "3") 3 True),
+         (4, Entry (simpleMenuItem @Word 4 "4") 4 False),
+         (5, Entry (simpleMenuItem @Word 5 "5") 5 False)])
+
 test_basic :: TestTree
 test_basic =
   testGroup "basic" [
@@ -293,5 +331,7 @@ test_basic =
     unitTestTimes 3 "refine large number of items" test_refineMany,
     unitTestTimes 3 "send many prompts in quick succession" test_fastPromptAcc,
     unitTest "delete selected" test_deleteSelected,
-    unitTest "unselected items with no selected items" test_unselectedCursor
+    unitTest "unselected items with no selected items" test_unselectedCursor,
+    unitTest "unselected items with selected entries" test_unselectedWithSelection,
+    unitTest "unselected items with cursor not selected" test_unselectedCursorNotSelected
   ]
