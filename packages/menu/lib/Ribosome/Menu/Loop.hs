@@ -7,7 +7,7 @@ import qualified Streamly.Prelude as Stream
 import Streamly.Prelude (SerialT)
 
 import Ribosome.Data.Mapping (MappingLhs, MappingSpec)
-import Ribosome.Host.Data.RpcError (RpcError)
+import Ribosome.Host.Data.RpcError (RpcError, rpcError)
 import Ribosome.Menu.Action (MenuActionSem)
 import qualified Ribosome.Menu.App
 import Ribosome.Menu.App (InputDispatch, MenuApp, PromptApp, hoistPromptApp, promptApp)
@@ -264,38 +264,46 @@ withUi' ui =
   rescope \ p -> UiMenuParams p ui
 
 withUi ::
-  Members [UiMenus ui s !! RpcError, Stop RpcError] r =>
+  Member (UiMenus ui s !! RpcError) r =>
   ui ->
-  InterpreterFor (Menus s) r
+  Sem (Menus s : r) a ->
+  Sem r (Either RpcError a)
 withUi ui =
+  runStop .
   restop .
   withUi' ui .
-  raiseUnder
+  insertAt @1
+
+menuError :: Either RpcError (MenuResult result) -> MenuResult result
+menuError = \case
+  Right result -> result
+  Left err -> MenuResult.Error [exon|Unhandled RPC error in menu: #{rpcError err}|]
 
 headlessMenu ::
   ∀ result s r .
   MenuState s =>
-  Members [Menus s !! RpcError, Log, Stop RpcError] r =>
+  Members [Menus s !! RpcError, Log] r =>
   SerialT IO (MenuItem (Item s)) ->
   s ->
   PromptState ->
   MenuApp s r result ->
   Sem r (MenuResult result)
 headlessMenu items initial prompt app =
-  menuApp prompt app \ papp ->
-    restop @RpcError $ runPromptApp items initial (hoistPromptApp raise2Under papp)
+  menuError <$> runStop do
+    menuApp prompt (fmap raise2Under app) \ papp ->
+      restop @RpcError $ runPromptApp items initial (hoistPromptApp raise2Under papp)
 
 uiMenuApp ::
   ∀ result s ui r a .
   MenuState s =>
-  Members [UiMenus ui s !! RpcError, Log, Stop RpcError] r =>
+  Members [UiMenus ui s !! RpcError, Log] r =>
   SerialT IO (MenuItem (Item s)) ->
   s ->
   PromptState ->
   ([MappingSpec] -> ui) ->
   MenuApp s r result ->
   (PromptApp s (MenuLoop s ++ r) result -> Sem (MenuLoop s ++ r) a) ->
-  Sem r a
+  Sem r (Either RpcError a)
 uiMenuApp items initial prompt ui app use =
   menuApp prompt app \ papp ->
     withUi (ui papp.mappings) do
@@ -305,7 +313,7 @@ uiMenuApp items initial prompt ui app use =
 uiMenu ::
   ∀ result s ui r .
   MenuState s =>
-  Members [UiMenus ui s !! RpcError, Log, Stop RpcError] r =>
+  Members [UiMenus ui s !! RpcError, Log] r =>
   SerialT IO (MenuItem (Item s)) ->
   s ->
   PromptState ->
@@ -313,39 +321,40 @@ uiMenu ::
   MenuApp s r result ->
   Sem r (MenuResult result)
 uiMenu items initial prompt ui app =
-  uiMenuApp items initial prompt ui app \ papp ->
+  menuError <$> uiMenuApp items initial prompt ui app \ papp ->
     menuLoop (hoistPromptApp (insertAt @2) papp)
 
 windowMenuApp ::
   ∀ result s r a .
   MenuState s =>
-  Members [UiMenus WindowConfig s !! RpcError, Log, Stop RpcError] r =>
+  Members [UiMenus WindowConfig s !! RpcError, Log] r =>
   SerialT IO (MenuItem (Item s)) ->
   s ->
   WindowOptions ->
   MenuApp s r result ->
   (PromptApp s (MenuLoop s ++ r) result -> Sem (MenuLoop s ++ r) a) ->
-  Sem r a
+  Sem r (Either RpcError a)
 windowMenuApp items initial options =
   uiMenuApp items initial options.prompt (toWindowConfig options)
 
 windowMenu ::
   ∀ result s r .
   MenuState s =>
-  Members [UiMenus WindowConfig s !! RpcError, Log, Stop RpcError] r =>
+  Members [UiMenus WindowConfig s !! RpcError, Log] r =>
   SerialT IO (MenuItem (Item s)) ->
   s ->
   WindowOptions ->
   MenuApp s r result ->
   Sem r (MenuResult result)
 windowMenu items initial options app =
-  windowMenuApp items initial options app \ papp ->
-    menuLoop (hoistPromptApp (insertAt @2) papp)
+  menuError <$>
+    windowMenuApp items initial options app \ papp ->
+      menuLoop (hoistPromptApp (insertAt @2) papp)
 
 staticWindowMenu ::
   ∀ result s r .
   MenuState s =>
-  Members [UiMenus WindowConfig s !! RpcError, Log, Stop RpcError] r =>
+  Members [UiMenus WindowConfig s !! RpcError, Log] r =>
   [MenuItem (Item s)] ->
   s ->
   WindowOptions ->

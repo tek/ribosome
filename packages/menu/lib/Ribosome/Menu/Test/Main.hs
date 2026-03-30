@@ -75,7 +75,7 @@ testMenu ::
 testMenu ui conf initial app sem =
   interpretMenuTestLocal $ scoped @_ @(MenuTest (Item s) result) conf do
     menuAppWith addBuiltin addDefault prompt app \ papp ->
-      withUi (ui papp.mappings) do
+      stopEither =<< withUi (ui papp.mappings) do
         promptTestApp conf initial (hoistPromptApp (insertAt @2) papp) $ insertAt @5 $ raise3Under sem
   where
     addBuiltin = fromMaybe True conf.addBuiltin

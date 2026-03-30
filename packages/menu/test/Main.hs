@@ -4,6 +4,7 @@ import Polysemy.Test (unitTest, unitTestTimes)
 import Ribosome.Menu.Test.BasicTest (test_basic)
 import Ribosome.Menu.Test.BottomStatusTest (test_bottomStatus)
 import Ribosome.Menu.Test.CursorClampTest (test_clampCursor)
+import Ribosome.Menu.Test.DeleteCursorTest (test_deleteCursor)
 import Ribosome.Menu.Test.EditTest (test_editMode)
 import Ribosome.Menu.Test.FilterTest (test_filterFuzzy, test_filterNoSort)
 import Ribosome.Menu.Test.MultilineTest (test_multiline, test_multilineCramped)
@@ -30,7 +31,8 @@ tests =
     unitTest "query with no match" test_filterNoMatch,
     unitTest "clamp cursor after refining" test_clampCursor,
     unitTest "use the menu as a kv editor" test_editMode,
-    unitTest "trigger priority" test_triggerPrio
+    unitTest "trigger priority" test_triggerPrio,
+    unitTest "delete cursor" test_deleteCursor
   ]
 
 main :: IO ()

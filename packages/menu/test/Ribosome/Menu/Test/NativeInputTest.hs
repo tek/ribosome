@@ -58,9 +58,10 @@ nativeTest ::
   [SyncChar] ->
   Sem r (MenuResult Text)
 nativeTest opts chars =
-  interpretSingleWindowMenu $ windowMenuApp (mkItems items) (modal fuzzy) opts app \ papp ->
-    withPromptInputSync chars do
-      timeoutStop "timed out" (Seconds 3) (menuLoop papp)
+  interpretSingleWindowMenu do
+    stopEither =<< windowMenuApp (mkItems items) (modal fuzzy) opts app \ papp ->
+      withPromptInputSync chars do
+        timeoutStop "timed out" (Seconds 3) (menuLoop papp)
 
 test_nativeBasic :: UnitTest
 test_nativeBasic =

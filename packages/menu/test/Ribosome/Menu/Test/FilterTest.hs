@@ -37,9 +37,10 @@ test_filterNoSort :: UnitTest
 test_filterNoSort =
   runTest do
     interpretFilter $ interpretMenuUiNvimNull $ interpretMenuDeps $ interpretMenus do
-      testError $ withUi () $ menuParams (Stream.fromList noSortItems) (modal fuzzy) do
-        assertWait currentEntries (assertEq (length noSortItems) . length)
-        assertEq ((.text) <$> noSortItems) =<< currentEntriesText
+      testError do
+        stopEither =<< withUi () (menuParams (Stream.fromList noSortItems) (modal fuzzy) do
+          assertWait currentEntries (assertEq (length noSortItems) . length)
+          assertEq ((.text) <$> noSortItems) =<< currentEntriesText)
   where
     noSortItems = item <$> [1 :: Int .. 120]
 
