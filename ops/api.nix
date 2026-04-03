@@ -1,4 +1,4 @@
-self: { config, lib, ... }:
+self: {config, pkgs, project, lib, ...}:
 with lib;
 {
   options = with types; {
@@ -64,9 +64,9 @@ with lib;
 
       name = config.exe;
 
-      dir = config.outputs.packages.${name}.min;
+      dir = config.outputs.legacyPackages.env.min.${name} or config.outputs.packages.${name}.min;
 
-      plugin = config.pkgs.writeTextFile {
+      src = config.pkgs.writeTextFile {
         inherit name;
         destination = "/plugin/${name}.vim";
         text = ''
@@ -74,6 +74,12 @@ with lib;
         let s:opts = { 'rpc': v:true, 'cwd': '${dir}', }
         call jobstart(['${dir}/bin/${name}'] + s:args, s:opts)
         '';
+      };
+
+      plugin = pkgs.vimUtils.buildVimPlugin {
+        pname = name;
+        version = project.packages.${name}.version;
+        inherit src;
       };
 
     in config.pkgs.vimUtils.toVimPlugin plugin;
