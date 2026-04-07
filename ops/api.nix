@@ -1,7 +1,46 @@
-self: {config, pkgs, project, lib, ...}:
-with lib;
-{
-  options = with types; {
+self: {config, pkgs, project, lib, ...}: let
+
+  inherit (lib) types mkDefault mkOption;
+  inherit (types) str nullOr;
+
+  defaultBoot = let
+    name = config.exe;
+    dir = config.outputs.legacyPackages.env.min.${name} or config.outputs.packages.${name}.min;
+  in config.pkgs.writeTextFile {
+    inherit name;
+    destination = "/plugin/${name}.vim";
+    text = ''
+    let s:args = get(g:, '${name}_cli_args', [])
+    let s:opts = { 'rpc': v:true, 'cwd': '${dir}', }
+    call jobstart(['${dir}/bin/${name}'] + s:args, s:opts)
+    '';
+  };
+
+in {
+  options = {
+
+    plugin = {
+
+      boot = mkOption {
+        type = types.path;
+        description = "The vim script file starting the plugin.";
+      };
+
+      package = mkOption {
+        type = types.package;
+        description = "The plugin package exposed as the flake package output `plugin`.";
+      };
+
+      dependencies = mkOption {
+        description = ''
+        Neovim plugin dependencies required by the derivation.
+        This is a function whose argument is the set of plugins from nixpkgs, `pkgs.vimPlugins`.
+        '';
+        type = types.functionTo (types.listOf types.package);
+        default = _: [];
+      };
+
+    };
 
     exe = mkOption {
       type = str;
@@ -60,29 +99,20 @@ with lib;
       program = "${import ./boot.nix { inherit self config; }}";
     };
 
-    outputs.packages.plugin = let
+    plugin = {
 
-      name = config.exe;
+      boot = mkDefault defaultBoot;
 
-      dir = config.outputs.legacyPackages.env.min.${name} or config.outputs.packages.${name}.min;
-
-      src = config.pkgs.writeTextFile {
-        inherit name;
-        destination = "/plugin/${name}.vim";
-        text = ''
-        let s:args = get(g:, '${name}_cli_args', [])
-        let s:opts = { 'rpc': v:true, 'cwd': '${dir}', }
-        call jobstart(['${dir}/bin/${name}'] + s:args, s:opts)
-        '';
+      package = pkgs.vimUtils.buildVimPlugin {
+        pname = config.exe;
+        version = project.packages.${config.exe}.version;
+        src = config.plugin.boot;
+        dependencies = config.plugin.dependencies pkgs.vimPlugins;
       };
 
-      plugin = pkgs.vimUtils.buildVimPlugin {
-        pname = name;
-        version = project.packages.${name}.version;
-        inherit src;
-      };
+    };
 
-    in config.pkgs.vimUtils.toVimPlugin plugin;
+    outputs.packages.plugin = mkDefault config.plugin.package;
 
   };
 }
