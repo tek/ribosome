@@ -40,6 +40,22 @@ in {
         default = _: [];
       };
 
+      nvim = mkOption {
+        description = ''
+        A neovim package that includes the plugin's dependencies, to be used in tests.
+        '';
+        type = types.package;
+      };
+
+      nvimOverrides = mkOption {
+        description = ''
+        Derivation overrides for `nvim`.
+        Takes the `old` args.
+        '';
+        type = types.functionTo types.unspecified;
+        default = _: {};
+      };
+
     };
 
     exe = mkOption {
@@ -103,16 +119,30 @@ in {
 
       boot = mkDefault defaultBoot;
 
-      package = pkgs.vimUtils.buildVimPlugin {
+      package = mkDefault (pkgs.vimUtils.buildVimPlugin {
         pname = config.exe;
         version = project.packages.${config.exe}.version;
         src = config.plugin.boot;
         dependencies = config.plugin.dependencies pkgs.vimPlugins;
-      };
+      });
+
+      nvim = mkDefault (config.pkgs.neovim.override (old: let
+        user = config.plugin.nvimOverrides old;
+      in user // {
+        configure = (user.configure or {}) // {
+          customRC = ''
+          ${user.configure.customRC or ""}
+          packloadall
+          '';
+          packages.custom.start = config.plugin.dependencies pkgs.vimPlugins ++ (user.plugins or []);
+        };
+      }));
 
     };
 
     outputs.packages.plugin = mkDefault config.plugin.package;
+
+    outputs.packages.nvim = mkDefault config.plugin.nvim;
 
   };
 }
