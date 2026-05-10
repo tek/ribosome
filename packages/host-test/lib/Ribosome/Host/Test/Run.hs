@@ -1,11 +1,13 @@
 module Ribosome.Host.Test.Run where
 
 import qualified Chronos
-import Conc (Gates, interpretGates, interpretMaskFinal, interpretRace, interpretUninterruptibleMaskFinal)
+import Conc (Gates, interpretGates, interpretMaskFinal, interpretRace)
+import Hedgehog (TestT)
 import Hedgehog.Internal.Property (Failure)
 import Log (Severity (Debug, Trace, Warn), interpretLogStderrLevelConc)
 import Polysemy.Chronos (ChronosTime, interpretTimeChronos, interpretTimeChronosConstant)
-import Polysemy.Test (Hedgehog, Test, TestError (TestError), UnitTest, runTestAuto)
+import Polysemy.Test (Hedgehog, Test, TestError (TestError), runTestAuto)
+import Polysemy.Test.Data.TestError (SkipTestDefaultValue)
 import Time (mkDatetime)
 
 import Ribosome.Host.Data.BootError (BootError (..))
@@ -20,7 +22,6 @@ type TestIOStack =
   [
     Log,
     Mask,
-    UninterruptibleMask,
     Gates,
     Race,
     Async,
@@ -50,15 +51,15 @@ testTime =
 
 runUnitTest ::
   HasCallStack =>
-  Sem TestIOStack () ->
-  UnitTest
+  SkipTestDefaultValue a =>
+  Sem TestIOStack a ->
+  TestT IO a
 runUnitTest =
   runTestAuto .
   mapError (TestError . (.unBootError)) .
   asyncToIOFinal .
   interpretRace .
   interpretGates .
-  interpretUninterruptibleMaskFinal .
   interpretMaskFinal .
   interpretLogStderrLevelConc (Just Warn)
 
@@ -72,103 +73,116 @@ runTestLogConf (TestConfig freezeTime conf) =
 
 runTestConf ::
   HasCallStack =>
+  SkipTestDefaultValue a =>
   TestConfig ->
-  Sem TestStack () ->
-  UnitTest
+  Sem TestStack a ->
+  TestT IO a
 runTestConf conf =
   runUnitTest .
   runTestLogConf conf
 
 runTest ::
   HasCallStack =>
-  Sem TestStack () ->
-  UnitTest
+  SkipTestDefaultValue a =>
+  Sem TestStack a ->
+  TestT IO a
 runTest =
   runTestConf def
 
 runTestLevel ::
   HasCallStack =>
+  SkipTestDefaultValue a =>
   Severity ->
-  Sem TestStack () ->
-  UnitTest
+  Sem TestStack a ->
+  TestT IO a
 runTestLevel level =
   runTestConf def { host = setStderr level def }
 
 runTestDebug ::
   HasCallStack =>
-  Sem TestStack () ->
-  UnitTest
+  SkipTestDefaultValue a =>
+  Sem TestStack a ->
+  TestT IO a
 runTestDebug =
   runTestLevel Debug
 
 runTestTrace ::
   HasCallStack =>
-  Sem TestStack () ->
-  UnitTest
+  SkipTestDefaultValue a =>
+  Sem TestStack a ->
+  TestT IO a
 runTestTrace =
   runTestLevel Trace
 
 embedTestConf ::
   HasCallStack =>
+  SkipTestDefaultValue a =>
   TestConfig ->
   [RpcHandler EmbedTestStack] ->
-  Sem (Rpc : EmbedTestStack) () ->
-  UnitTest
+  Sem (Rpc : EmbedTestStack) a ->
+  TestT IO a
 embedTestConf conf handlers =
   runTestConf conf .
   embedNvim handlers
 
 embedTest ::
   HasCallStack =>
+  SkipTestDefaultValue a =>
   [RpcHandler EmbedTestStack] ->
-  Sem (Rpc : EmbedTestStack) () ->
-  UnitTest
+  Sem (Rpc : EmbedTestStack) a ->
+  TestT IO a
 embedTest =
   embedTestConf def
 
 embedTestLevel ::
   HasCallStack =>
+  SkipTestDefaultValue a =>
   Severity ->
   [RpcHandler EmbedTestStack] ->
-  Sem (Rpc : EmbedTestStack) () ->
-  UnitTest
+  Sem (Rpc : EmbedTestStack) a ->
+  TestT IO a
 embedTestLevel level =
   embedTestConf def { host = setStderr level def }
 
 embedTestDebug ::
   HasCallStack =>
+  SkipTestDefaultValue a =>
   [RpcHandler EmbedTestStack] ->
-  Sem (Rpc : EmbedTestStack) () ->
-  UnitTest
+  Sem (Rpc : EmbedTestStack) a ->
+  TestT IO a
 embedTestDebug =
   embedTestLevel Debug
 
 embedTestTrace ::
   HasCallStack =>
+  SkipTestDefaultValue a =>
   [RpcHandler EmbedTestStack] ->
-  Sem (Rpc : EmbedTestStack) () ->
-  UnitTest
+  Sem (Rpc : EmbedTestStack) a ->
+  TestT IO a
 embedTestTrace =
   embedTestLevel Trace
 
 embedTest_ ::
   HasCallStack =>
-  Sem (Rpc : EmbedTestStack) () ->
-  UnitTest
+  SkipTestDefaultValue a =>
+  Sem (Rpc : EmbedTestStack) a ->
+  TestT IO a
 embedTest_ =
   runTest .
   embedNvim_
 
 embedTestDebug_ ::
   HasCallStack =>
-  Sem (Rpc : EmbedTestStack) () ->
-  UnitTest
+  SkipTestDefaultValue a =>
+  Sem (Rpc : EmbedTestStack) a ->
+  TestT IO a
 embedTestDebug_ =
   embedTestDebug mempty
 
 embedTestTrace_ ::
   HasCallStack =>
-  Sem (Rpc : EmbedTestStack) () ->
-  UnitTest
+  SkipTestDefaultValue a =>
+  Sem (Rpc : EmbedTestStack) a ->
+  TestT IO a
 embedTestTrace_ =
   embedTestTrace mempty

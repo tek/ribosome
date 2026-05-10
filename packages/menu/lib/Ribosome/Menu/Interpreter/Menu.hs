@@ -9,7 +9,7 @@ import Polysemy.Chronos (ChronosTime, interpretTimeChronos)
 import Polysemy.Conc.Gate (gate, signal, withGate)
 import Polysemy.Membership (ElemOf (Here, There))
 import qualified Queue
-import Streamly.Prelude (SerialT)
+import Streamly.Data.Stream (Stream)
 import qualified Sync
 
 import Ribosome.Data.SettingError (SettingError)
@@ -133,7 +133,7 @@ menuStream ::
   MenuState s =>
   Members [Queue (Maybe Prompt), Queue RenderEvent, Events MenuEvent] r =>
   Members [MenuStream, MenuFilter, MState (MS s), Sync MenuSync, Log] r =>
-  SerialT IO (MenuItem (Item s)) ->
+  Stream IO (MenuItem (Item s)) ->
   Sem r ()
 menuStream items = do
   Log.debug "Starting menu stream"

@@ -1,7 +1,7 @@
 module Ribosome.Menu.Test.FilterTest where
 
 import Polysemy.Test (UnitTest, assertEq, runTestAuto, (===))
-import qualified Streamly.Prelude as Stream
+import qualified Streamly.Data.Stream.Prelude as Stream
 import Zeugma (runTest)
 
 import Ribosome.Menu.Combinators (sortEntriesText)

@@ -25,8 +25,9 @@ module Ribosome.Test.Embed (
   TestEffects,
 ) where
 
+import Hedgehog (TestT)
 import Log (Severity (Debug, Trace))
-import Polysemy.Test (TestError, UnitTest)
+import Polysemy.Test (SkipTestDefaultValue, TestError)
 
 import Ribosome.Data.PluginConfig (PluginConfig (PluginConfig))
 import Ribosome.Data.PluginName (PluginName)
@@ -106,9 +107,10 @@ runTestLogConf (TestConfig freezeTime (PluginConfig name conf _)) =
 -- | Run the basic test effects as a "Hedgehog" test.
 runTestConf ::
   HasCallStack =>
+  SkipTestDefaultValue a =>
   TestConfig ->
-  Sem (Reader PluginName : TestStack) () ->
-  UnitTest
+  Sem (Reader PluginName : TestStack) a ->
+  TestT IO a
 runTestConf conf =
   runUnitTest .
   runTestLogConf conf
@@ -116,9 +118,10 @@ runTestConf conf =
 -- | Run the plugin stack and the test stack, using the supplied config.
 runEmbedTest ::
   HasCallStack =>
+  SkipTestDefaultValue a =>
   TestConfig ->
-  Sem EmbedHandlerStack () ->
-  UnitTest
+  Sem EmbedHandlerStack a ->
+  TestT IO a
 runEmbedTest conf =
   runTestConf conf .
   interpretPluginEmbed
@@ -126,8 +129,9 @@ runEmbedTest conf =
 -- | Run the plugin stack and the test stack, using the default config.
 runTest ::
   HasCallStack =>
-  Sem EmbedHandlerStack () ->
-  UnitTest
+  SkipTestDefaultValue a =>
+  Sem EmbedHandlerStack a ->
+  TestT IO a
 runTest =
   runEmbedTest def
 
@@ -148,14 +152,15 @@ testPluginEmbed =
 
 -- | Run a full plugin test, using extra effects and RPC handlers.
 testPluginConf ::
-  ∀ r .
+  ∀ r a .
   HasCallStack =>
+  SkipTestDefaultValue a =>
   HigherOrder r EmbedHandlerStack =>
   TestConfig ->
   InterpretersFor r EmbedHandlerStack ->
   [RpcHandler (r ++ EmbedHandlerStack)] ->
-  Sem (EmbedStackWith r) () ->
-  UnitTest
+  Sem (EmbedStackWith r) a ->
+  TestT IO a
 testPluginConf conf effs handlers =
   runEmbedTest conf .
   effs .
@@ -164,45 +169,49 @@ testPluginConf conf effs handlers =
 
 -- | Run a full plugin test, using extra effects and RPC handlers.
 testPlugin ::
-  ∀ r .
+  ∀ r a .
   HasCallStack =>
+  SkipTestDefaultValue a =>
   HigherOrder r EmbedHandlerStack =>
   InterpretersFor r EmbedHandlerStack ->
   [RpcHandler (r ++ EmbedHandlerStack)] ->
-  Sem (EmbedStackWith r) () ->
-  UnitTest
+  Sem (EmbedStackWith r) a ->
+  TestT IO a
 testPlugin =
   testPluginConf @r def
 
 -- | Run a plugin test with RPC handlers.
 testPlugin_ ::
   HasCallStack =>
+  SkipTestDefaultValue a =>
   [RpcHandler EmbedHandlerStack] ->
-  Sem EmbedStack () ->
-  UnitTest
+  Sem EmbedStack a ->
+  TestT IO a
 testPlugin_ =
   testPlugin @'[] id
 
 -- | Run a plugin test with extra effects but no RPC handlers.
 testEmbedConf ::
-  ∀ r .
+  ∀ r a .
   HasCallStack =>
+  SkipTestDefaultValue a =>
   HigherOrder r EmbedHandlerStack =>
   TestConfig ->
   InterpretersFor r EmbedHandlerStack ->
-  Sem (EmbedStackWith r) () ->
-  UnitTest
+  Sem (EmbedStackWith r) a ->
+  TestT IO a
 testEmbedConf conf effs =
   testPluginConf @r conf effs mempty
 
 -- | Run a plugin test with extra effects but no RPC handlers.
 testEmbed ::
-  ∀ r .
+  ∀ r a .
   HasCallStack =>
+  SkipTestDefaultValue a =>
   HigherOrder r EmbedHandlerStack =>
   InterpretersFor r EmbedHandlerStack ->
-  Sem (EmbedStackWith r) () ->
-  UnitTest
+  Sem (EmbedStackWith r) a ->
+  TestT IO a
 testEmbed =
   testEmbedConf @r def
 
@@ -210,43 +219,47 @@ testEmbed =
 --
 -- Takes a log level, for which the default is to only print critical errors.
 testEmbedLevel ::
-  ∀ r .
+  ∀ r a .
   HasCallStack =>
+  SkipTestDefaultValue a =>
   HigherOrder r EmbedHandlerStack =>
   Severity ->
   InterpretersFor r EmbedHandlerStack ->
-  Sem (EmbedStackWith r) () ->
-  UnitTest
+  Sem (EmbedStackWith r) a ->
+  TestT IO a
 testEmbedLevel level =
   testEmbedConf @r (def & #plugin . #host %~ setStderr level)
 
 -- | Run a plugin test with extra effects but no RPC handlers at the 'Debug' log level.
 testEmbedDebug ::
-  ∀ r .
+  ∀ r a .
   HasCallStack =>
+  SkipTestDefaultValue a =>
   HigherOrder r EmbedHandlerStack =>
   InterpretersFor r EmbedHandlerStack ->
-  Sem (EmbedStackWith r) () ->
-  UnitTest
+  Sem (EmbedStackWith r) a ->
+  TestT IO a
 testEmbedDebug effs =
   testLogLevel Debug \ conf -> testEmbedConf @r conf effs
 
 -- | Run a plugin test with extra effects but no RPC handlers at the 'Trace' log level for debugging RPC traffic.
 testEmbedTrace ::
-  ∀ r .
+  ∀ r a .
   HasCallStack =>
+  SkipTestDefaultValue a =>
   HigherOrder r EmbedHandlerStack =>
   InterpretersFor r EmbedHandlerStack ->
-  Sem (EmbedStackWith r) () ->
-  UnitTest
+  Sem (EmbedStackWith r) a ->
+  TestT IO a
 testEmbedTrace effs =
   testLogLevel Trace \ conf -> testEmbedConf @r conf effs
 
 -- | Run a plugin test without extra effects and RPC handlers.
 testEmbed_ ::
   HasCallStack =>
-  Sem EmbedStack () ->
-  UnitTest
+  SkipTestDefaultValue a =>
+  Sem EmbedStack a ->
+  TestT IO a
 testEmbed_ =
   testPlugin_ mempty
 
@@ -255,24 +268,27 @@ testEmbed_ =
 -- Takes a log level, for which the default is to only print critical errors.
 testEmbedLevel_ ::
   HasCallStack =>
+  SkipTestDefaultValue a =>
   Severity ->
-  Sem EmbedStack () ->
-  UnitTest
+  Sem EmbedStack a ->
+  TestT IO a
 testEmbedLevel_ level =
   testEmbedConf @'[] (def & #plugin . #host %~ setStderr level) id
 
 -- | Run a plugin test without extra effects and RPC handlers at the 'Debug' log level.
 testEmbedDebug_ ::
   HasCallStack =>
-  Sem EmbedStack () ->
-  UnitTest
+  SkipTestDefaultValue a =>
+  Sem EmbedStack a ->
+  TestT IO a
 testEmbedDebug_ =
   testEmbedLevel_ Debug
 
 -- | Run a plugin test without extra effects and RPC handlers at the 'Trace' log level for debugging RPC traffic.
 testEmbedTrace_ ::
   HasCallStack =>
-  Sem EmbedStack () ->
-  UnitTest
+  SkipTestDefaultValue a =>
+  Sem EmbedStack a ->
+  TestT IO a
 testEmbedTrace_ =
   testEmbedLevel_ Trace

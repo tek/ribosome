@@ -2,7 +2,7 @@
 
 module Ribosome.Menu.Data.TestMenuConfig where
 
-import Streamly.Prelude (SerialT)
+import Streamly.Data.Stream (Stream)
 import Time (NanoSeconds)
 
 import Ribosome.Menu.Data.MenuItem (MenuItem)
@@ -12,12 +12,12 @@ newtype TestTimeout =
   TestTimeout { unTestTimeout :: NanoSeconds }
   deriving stock (Eq, Show)
 
-instance Show (SerialT IO (MenuItem i)) where
+instance Show (Stream IO (MenuItem i)) where
   showsPrec _ _ = showString "<stream>"
 
 data TestMenuConfig i =
   TestMenuConfig {
-    items :: Maybe (SerialT IO (MenuItem i)),
+    items :: Maybe (Stream IO (MenuItem i)),
     nativePrompt :: Maybe Bool,
     initialItems :: Maybe Bool,
     prompt :: Maybe PromptState,

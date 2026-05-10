@@ -2,8 +2,8 @@ module Ribosome.Menu.Stream.Accumulate where
 
 import Data.Sequence (Seq (Empty, (:<|), (:|>)), (|>))
 import Prelude hiding (consume, finally, output)
-import qualified Streamly.Internal.Data.Stream.IsStream as Stream
-import Streamly.Prelude (IsStream, SerialT)
+import Streamly.Data.Stream (Stream)
+import qualified Streamly.Data.Stream.Prelude as Stream
 
 overMVar :: MVar a -> (a -> (a, b)) -> IO b
 overMVar v f =
@@ -48,7 +48,7 @@ emitBuffer ::
   (NonEmpty a -> IO r) ->
   Seq a ->
   a ->
-  SerialT IO r
+  Stream IO r
 emitBuffer handleAcc buffer a =
   Stream.fromEffect (handleAcc (nonEmptyBuffer buffer a))
 
@@ -56,7 +56,7 @@ bufferedElement ::
   (NonEmpty a -> IO r) ->
   a ->
   BusyEnv r a ->
-  (BusyEnv r a, SerialT IO r)
+  (BusyEnv r a, Stream IO r)
 bufferedElement handleAcc a = \case
   BusyEnv {buffer, state = Idle} ->
     (BusyEnv {buffer = [], state = Busy 1}, emitBuffer handleAcc buffer a)
@@ -68,7 +68,7 @@ element ::
   (b -> IO r) ->
   MVar (BusyEnv r a) ->
   Either a b ->
-  SerialT IO (SerialT IO r)
+  Stream IO (Stream IO r)
 element handleAcc handleReg envVar el =
   Stream.fromEffect $ overMVar envVar \ env ->
     case el of
@@ -80,22 +80,23 @@ element handleAcc handleReg envVar el =
 checkBuffer ::
   (NonEmpty a -> IO r) ->
   MVar (BusyEnv r a) ->
-  SerialT IO r
+  Stream IO r
 checkBuffer handleAcc envVar =
-  Stream.concatM $ overMVar envVar \case
+  Stream.concatEffect $ overMVar envVar \case
     env | (buf :|> a) <- env.buffer ->
-      (env {buffer = []}, emitBuffer handleAcc buf a <> checkBuffer handleAcc envVar)
+      (env {buffer = []}, Stream.append (emitBuffer handleAcc buf a) (checkBuffer handleAcc envVar))
         | otherwise ->
       (decrement env, Stream.nil)
 
 accLeftBusy ::
-  IsStream t =>
   (NonEmpty a -> IO r) ->
   (b -> IO r) ->
-  t IO (Either a b) ->
-  SerialT IO r
+  Stream IO (Either a b) ->
+  Stream IO r
 accLeftBusy handleAcc handleReg str =
-  Stream.bracket_ (liftIO (newMVar (BusyEnv [] Idle))) (const unit) \ envVar ->
-    Stream.concatMap (\ r -> Stream.serial r (checkBuffer handleAcc envVar)) $
-    Stream.concatMapWith Stream.ahead (element handleAcc handleReg envVar) $
-    Stream.adapt str
+  Stream.concatMap use (Stream.fromEffect (liftIO (newMVar (BusyEnv [] Idle))))
+  where
+    use envVar =
+      Stream.concatMap (\ r -> Stream.append r (checkBuffer handleAcc envVar)) $
+      Stream.parConcatMap (Stream.ordered True) (element handleAcc handleReg envVar) $
+      str

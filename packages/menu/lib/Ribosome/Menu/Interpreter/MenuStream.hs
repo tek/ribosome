@@ -3,8 +3,9 @@ module Ribosome.Menu.Interpreter.MenuStream where
 import qualified Data.List.NonEmpty as NonEmpty
 import Polysemy.Final (bindS, getInitialStateS, getInspectorS, interpretFinal, runS)
 import qualified Streamly.Data.Fold as Fold
-import qualified Streamly.Internal.Data.Stream.IsStream as Stream
-import Streamly.Prelude (SerialT)
+import qualified Streamly.Data.Stream.Prelude as Stream
+import qualified Streamly.Internal.Data.Stream as Stream
+import Streamly.Internal.Data.Stream.Prelude (parListEagerFst)
 
 import Ribosome.Menu.Effect.MenuStream (MenuStream (MenuStream))
 import Ribosome.Menu.Stream.Accumulate (accLeftBusy)
@@ -30,7 +31,7 @@ interpretMenuStream =
         maybeF :: ∀ b . f (Maybe b) -> Maybe (f b)
         maybeF = fmap (<$ s) <=< ins
 
-        prompt = repeatUntilNothing @SerialT (maybeF <$> promptEvents)
+        prompt = repeatUntilNothing (maybeF <$> promptEvents)
 
         insert new = insertItems (pureS new)
 
@@ -39,8 +40,7 @@ interpretMenuStream =
           _ -> Fold.take 10000 Fold.toList
 
         menuItems =
-          Stream.foldIterateM chunker (pure []) $
-          Stream.fromSerial items
+          Stream.foldIterateM chunker (pure []) items
 
         handleItems = \case
           Just i -> Just <$> insert i
@@ -50,8 +50,8 @@ interpretMenuStream =
           fmap Just . queryUpdate . NonEmpty.last
 
         stream =
-          Stream.fold (Fold.drainBy (traverse_ renderEvent)) $
+          Stream.fold (Fold.drainMapM (traverse_ renderEvent)) $
           accLeftBusy handlePrompts handleItems $
-          Stream.parallelFst (Left <$> prompt) (Right <$> nothingTerminated menuItems)
+          parListEagerFst [Left <$> prompt, Right <$> nothingTerminated menuItems]
 
       pure (pureS <$> stream)

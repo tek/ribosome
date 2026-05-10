@@ -2,7 +2,7 @@ module Ribosome.Menu.Effect.MenuTest where
 
 import qualified Data.Text as Text
 import Exon (exon)
-import Streamly.Prelude (SerialT)
+import Streamly.Data.Stream (Stream)
 
 import Ribosome.Data.Mapping (MappingLhs)
 import qualified Ribosome.Menu.Data.MenuEvent as MenuEvent
@@ -16,7 +16,7 @@ import Ribosome.Menu.Prompt.Data.PromptEvent (PromptEvent)
 
 data MenuTest i result :: Effect where
   Config :: MenuTest i result m (TestMenuConfig i)
-  ItemsStream :: MenuTest i result m (SerialT IO (MenuItem i))
+  ItemsStream :: MenuTest i result m (Stream IO (MenuItem i))
   PromptEvent :: MenuTest i result m PromptEvent
   SendItem :: MenuItem i -> MenuTest i result m ()
   ItemsDone :: Text -> MenuTest i result m ()

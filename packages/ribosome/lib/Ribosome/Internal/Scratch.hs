@@ -194,7 +194,7 @@ setupScratchIn ::
   Maybe Tabpage ->
   ScratchOptions ->
   Sem r ScratchState
-setupScratchIn buffer previous window tabpage options@(ScratchOptions {..}) = do
+setupScratchIn buffer previous window tabpage options@(ScratchOptions {modify = _, ..}) = do
   validBuffer <- setupScratchBuffer window buffer filetype name
   traverse_ (executeWindowSyntax window) syntax
   activateBufferMappings validBuffer mappings

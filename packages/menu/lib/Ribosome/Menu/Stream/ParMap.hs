@@ -2,47 +2,43 @@ module Ribosome.Menu.Stream.ParMap where
 
 import Control.Concurrent (getNumCapabilities)
 import qualified Streamly.Data.Fold as Fold
-import qualified Streamly.Internal.Data.Stream.IsStream as Stream
-import Streamly.Prelude (IsStream)
+import Streamly.Data.Stream (Stream)
+import qualified Streamly.Data.Stream.Prelude as Stream
 
 parConcatMap ::
-  IsStream t =>
   Int ->
-  ([a] -> t IO b) ->
-  t IO a ->
-  t IO b
+  ([a] -> Stream IO b) ->
+  Stream IO a ->
+  Stream IO b
 parConcatMap chunks f s =
-  Stream.bracket_ getNumCapabilities (const unit) \ threads ->
-    Stream.maxThreads (max 1 (threads - 1)) $
-    Stream.fromParallel $
-    Stream.concatMapWith Stream.parallel (Stream.adapt . f) $
-    Stream.adapt $
-    Stream.chunksOf chunks Fold.toList s
+  Stream.concatMap use (Stream.fromEffect getNumCapabilities)
+  where
+    use threads =
+      Stream.parConcatMap (Stream.eager True . Stream.maxThreads (max 1 (threads - 1))) f chunked
+
+    chunked = Stream.groupsOf chunks Fold.toList s
 
 parMapChunks ::
-  IsStream t =>
   Int ->
   ([a] -> [b]) ->
-  t IO a ->
-  t IO b
+  Stream IO a ->
+  Stream IO b
 parMapChunks chunks f =
   parConcatMap chunks (Stream.fromList . f)
 
 parMap ::
-  IsStream t =>
   Int ->
   (a -> b) ->
-  t IO a ->
-  t IO b
+  Stream IO a ->
+  Stream IO b
 parMap chunks f =
   parConcatMap chunks (Stream.fromList . fmap f)
 
 parMapMaybe ::
-  IsStream t =>
   Int ->
   (a -> Maybe b) ->
-  t IO a ->
-  t IO b
+  Stream IO a ->
+  Stream IO b
 parMapMaybe chunks f =
   parConcatMap chunks (Stream.fromList . mapMaybe f)
 

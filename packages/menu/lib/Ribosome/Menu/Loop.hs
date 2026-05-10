@@ -3,8 +3,8 @@ module Ribosome.Menu.Loop where
 import Control.Monad.Extra (loopM)
 import Exon (exon)
 import qualified Log
-import qualified Streamly.Prelude as Stream
-import Streamly.Prelude (SerialT)
+import qualified Streamly.Data.Stream as Stream
+import Streamly.Data.Stream (Stream)
 
 import Ribosome.Data.Mapping (MappingLhs, MappingSpec)
 import Ribosome.Host.Data.RpcError (RpcError, rpcError)
@@ -229,7 +229,7 @@ menuApp =
 
 menuParamsEngine ::
   Member (Menus s) r =>
-  SerialT IO (MenuItem (Item s)) ->
+  Stream IO (MenuItem (Item s)) ->
   s ->
   InterpreterFor (MenuEngine s) r
 menuParamsEngine items initial =
@@ -237,7 +237,7 @@ menuParamsEngine items initial =
 
 menuParams ::
   Member (Menus s) r =>
-  SerialT IO (MenuItem (Item s)) ->
+  Stream IO (MenuItem (Item s)) ->
   s ->
   InterpretersFor (MenuLoop s) r
 menuParams items initial =
@@ -248,7 +248,7 @@ menuParams items initial =
 runPromptApp ::
   ∀ result s r .
   Members [Menus s, Log] r =>
-  SerialT IO (MenuItem (Item s)) ->
+  Stream IO (MenuItem (Item s)) ->
   s ->
   PromptApp s r result ->
   Sem r (MenuResult result)
@@ -283,7 +283,7 @@ headlessMenu ::
   ∀ result s r .
   MenuState s =>
   Members [Menus s !! RpcError, Log] r =>
-  SerialT IO (MenuItem (Item s)) ->
+  Stream IO (MenuItem (Item s)) ->
   s ->
   PromptState ->
   MenuApp s r result ->
@@ -297,7 +297,7 @@ uiMenuApp ::
   ∀ result s ui r a .
   MenuState s =>
   Members [UiMenus ui s !! RpcError, Log] r =>
-  SerialT IO (MenuItem (Item s)) ->
+  Stream IO (MenuItem (Item s)) ->
   s ->
   PromptState ->
   ([MappingSpec] -> ui) ->
@@ -314,7 +314,7 @@ uiMenu ::
   ∀ result s ui r .
   MenuState s =>
   Members [UiMenus ui s !! RpcError, Log] r =>
-  SerialT IO (MenuItem (Item s)) ->
+  Stream IO (MenuItem (Item s)) ->
   s ->
   PromptState ->
   ([MappingSpec] -> ui) ->
@@ -328,7 +328,7 @@ windowMenuApp ::
   ∀ result s r a .
   MenuState s =>
   Members [UiMenus WindowConfig s !! RpcError, Log] r =>
-  SerialT IO (MenuItem (Item s)) ->
+  Stream IO (MenuItem (Item s)) ->
   s ->
   WindowOptions ->
   MenuApp s r result ->
@@ -341,7 +341,7 @@ windowMenu ::
   ∀ result s r .
   MenuState s =>
   Members [UiMenus WindowConfig s !! RpcError, Log] r =>
-  SerialT IO (MenuItem (Item s)) ->
+  Stream IO (MenuItem (Item s)) ->
   s ->
   WindowOptions ->
   MenuApp s r result ->

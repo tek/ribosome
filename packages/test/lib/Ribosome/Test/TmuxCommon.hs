@@ -6,7 +6,8 @@ import Chiasma.Data.TmuxError (TmuxError)
 import Chiasma.Effect.TmuxClient (NativeTmux)
 import qualified Chiasma.Test.Data.TmuxTestConfig as Chiasma
 import Chiasma.Test.Tmux (TestTmuxEffects, withSystemTempDir, withTestTmux)
-import Polysemy.Test (UnitTest)
+import Hedgehog (TestT)
+import Polysemy.Test (SkipTestDefaultValue)
 
 import Ribosome.Data.PluginName (PluginName)
 import Ribosome.Host.Data.BootError (BootError (BootError))
@@ -54,9 +55,10 @@ withTmuxTest conf =
 
 runTmuxNvim ::
   HasCallStack =>
+  SkipTestDefaultValue a =>
   TmuxTestConfig ->
-  Sem TmuxStack () ->
-  UnitTest
+  Sem TmuxStack a ->
+  TestT IO a
 runTmuxNvim (TmuxTestConfig conf tmuxConf) =
   runTestConf conf .
   withTmuxTest tmuxConf .

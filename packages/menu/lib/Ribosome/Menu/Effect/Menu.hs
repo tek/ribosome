@@ -2,7 +2,7 @@ module Ribosome.Menu.Effect.Menu where
 
 import Lens.Micro.Mtl (view)
 import Polysemy.Bundle (Bundle, sendBundle)
-import Streamly.Prelude (SerialT)
+import Streamly.Data.Stream (Stream)
 
 import Ribosome.Menu.Class.MenuState (Item, MenuState (core))
 import Ribosome.Menu.Data.CursorIndex (CursorIndex)
@@ -61,7 +61,7 @@ type ModalMenu i =
   Menu (ModalState i)
 
 type ItemStream s =
-  SerialT IO (MenuItem (Item s))
+  Stream IO (MenuItem (Item s))
 
 data MenuParams s =
   MenuParams {

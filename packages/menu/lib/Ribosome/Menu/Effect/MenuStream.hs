@@ -1,10 +1,10 @@
 module Ribosome.Menu.Effect.MenuStream where
 
-import Streamly.Prelude (SerialT)
+import Streamly.Data.Stream (Stream)
 
 data MenuStream :: Effect where
   MenuStream ::
-    SerialT IO i ->
+    Stream IO i ->
     m (Maybe query) ->
     (query -> m render) ->
     ([i] -> m render) ->

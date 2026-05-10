@@ -1,7 +1,7 @@
 module Ribosome.Menu.Test.Run where
 
-import qualified Streamly.Prelude as Stream
-import Streamly.Prelude (SerialT)
+import qualified Streamly.Data.Stream as Stream
+import Streamly.Data.Stream (Stream)
 
 import Ribosome.Data.ScratchOptions (ScratchOptions)
 import Ribosome.Menu.App (MenuApp)
@@ -92,7 +92,7 @@ testNativeMenu ::
   MenuState s =>
   Members MenuTestIO r =>
   Members NvimMenuTest r =>
-  SerialT IO (MenuItem (Item s)) ->
+  Stream IO (MenuItem (Item s)) ->
   TestMenuConfig (Item s) ->
   s ->
   ScratchOptions ->
