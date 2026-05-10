@@ -25,4 +25,4 @@ data TmuxTestConfig =
 
 instance Default TmuxTestConfig where
   def =
-    TmuxTestConfig def def { Chiasma.gui = False }
+    TmuxTestConfig def def { Chiasma.gui = False, Chiasma.conf = ["set-environment -g COLORTERM truecolor"] }

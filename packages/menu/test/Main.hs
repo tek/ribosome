@@ -13,7 +13,6 @@ import Ribosome.Menu.Test.NoMatchTest (test_filterNoMatch)
 import Ribosome.Menu.Test.NvimMenuTest (test_nvimMenu)
 import Ribosome.Menu.Test.SliceTest (test_slice)
 import Ribosome.Menu.Test.TriggerPrioTest (test_triggerPrio)
-import Ribosome.Test.Skip (requireX)
 import Test.Tasty (TestTree, defaultMain, testGroup)
 
 tests :: TestTree
@@ -22,7 +21,7 @@ tests =
     test_basic,
     test_nvimMenu,
     test_nativeInput,
-    requireX (unitTestTimes 3 "extra bottom status message") test_bottomStatus,
+    unitTestTimes 3 "extra bottom status message" test_bottomStatus,
     unitTest "fuzzy filter" test_filterFuzzy,
     unitTest "fuzzy filter without sorting on empty query" test_filterNoSort,
     test_slice,
