@@ -3,16 +3,17 @@ self: {config, pkgs, project, lib, ...}: let
   inherit (lib) types mkDefault mkOption;
   inherit (types) str nullOr;
 
+  package = config.outputs.legacyPackages.env.min.${config.exe} or config.outputs.packages.${config.exe}.min;
+
   defaultBoot = let
     name = config.exe;
-    dir = config.outputs.legacyPackages.env.min.${name} or config.outputs.packages.${name}.min;
   in config.pkgs.writeTextFile {
     inherit name;
     destination = "/plugin/${name}.vim";
     text = ''
     let s:args = get(g:, '${name}_cli_args', [])
-    let s:opts = { 'rpc': v:true, 'cwd': '${dir}', }
-    call jobstart(['${dir}/bin/${name}'] + s:args, s:opts)
+    let s:opts = { 'rpc': v:true, 'cwd': '${package}', }
+    call jobstart(['${package}/bin/${name}'] + s:args, s:opts)
     '';
   };
 
